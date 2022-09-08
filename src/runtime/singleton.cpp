@@ -4,7 +4,7 @@
 
 #include <labstor/runtime/configuration_manager.h>
 #include <labstor/runtime/macros.h>
-#include <labstor/runtime/ipc_manager.h>
+#include "labstor/ipc_manager/ipc_manager.h"
 
 namespace labstor {
     uint32_t thread_local_counter_ = 0;

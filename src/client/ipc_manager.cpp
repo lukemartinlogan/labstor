@@ -3,10 +3,11 @@
 //
 
 #include <memory>
-#include <labstor/types/basics.h>
+#include "labstor/types/basics.h"
 #include <sys/sysinfo.h>
+#include "labstor/client/ipc_manager.h"
 
-void labstor::Client::IPCManager::Connect() {
+void labstor::IPCManager::Connect() {
     AUTO_TRACE("")
     ssize_t ret;
     int serverfd;

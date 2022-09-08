@@ -5,7 +5,7 @@
 #ifndef LABSTOR_IPC_MANAGER_H
 #define LABSTOR_IPC_MANAGER_H
 
-namespace labstor::Runtime {
+namespace labstor {
 
 class IPCManager {
 private:

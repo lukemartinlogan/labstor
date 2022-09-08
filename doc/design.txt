@@ -1,0 +1,7 @@
+Client:
+    IPCManager connects to server
+
+Shared Memory:
+    Regular
+    Hugepage
+    Kernel

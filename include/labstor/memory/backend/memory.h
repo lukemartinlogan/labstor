@@ -10,9 +10,13 @@
 namespace labstor {
 
 class MemoryBackend {
+protected:
+    void *ptr_;
 public:
-    void Reserve(std::size_t size);
-    void* Get();
+    MemoryBackend() : ptr_(nullptr) {}
+    virtual void Reserve(std::size_t size, int pid) = 0;
+    virtual void Attach(std::size_t size, int pid) = 0;
+    char* GetPtr() { return static_cast<char*>(ptr_); }
 };
 
 }

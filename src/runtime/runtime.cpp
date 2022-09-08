@@ -22,7 +22,7 @@
 #include <labstor/util/debug.h>
 
 #include <labstor/runtime/configuration_manager.h>
-#include <labstor/runtime/ipc_manager.h>
+#include "labstor/ipc_manager/ipc_manager.h"
 #include <labstor/runtime/macros.h>
 
 #define TRUSTED_SERVER_PATH "/tmp/labstor_trusted_server"
