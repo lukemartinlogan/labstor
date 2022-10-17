@@ -27,39 +27,41 @@
 namespace labstor {
 
 class AutoTrace {
-private:
-    std::string base_text_;
-    bool tracepoint_;
-    labstor::HighResCpuTimer t_cpu_;
-    labstor::HighResMonotonicTimer t_total_;
-public:
-    template<typename ...Args>
-    AutoTrace(bool tracepoint, Args ...args) : tracepoint_(tracepoint) {
-        labstor::ArgPacker params(args...);
-        char *buffer = (char *) calloc(8192, 1);
-        size_t off = 0;
-        for (auto &param : params) {
-            off += param.serialize(buffer + off);
-            buffer[off++] = ';';
-        }
-        base_text_ = std::string(buffer, off) + ";";
-        t_cpu_.Resume();
-        t_total_.Resume();
-        if(!tracepoint) { printf("%s\n", (base_text_ + "start").c_str()); }
-        else { printf("%d;%s\n", gettid(),(base_text_).c_str()); }
+ private:
+  std::string base_text_;
+  bool tracepoint_;
+  labstor::HighResCpuTimer t_cpu_;
+  labstor::HighResMonotonicTimer t_total_;
+ public:
+  template<typename ...Args>
+  AutoTrace(bool tracepoint, Args ...args) : tracepoint_(tracepoint) {
+    labstor::ArgPacker params(args...);
+    char *buffer = (char *) calloc(8192, 1);
+    size_t off = 0;
+    for (auto &param : params) {
+      off += param.serialize(buffer + off);
+      buffer[off++] = ';';
     }
+    base_text_ = std::string(buffer, off) + ";";
+    t_cpu_.Resume();
+    t_total_.Resume();
+    if (!tracepoint) { printf("%s\n", (base_text_ + "start").c_str()); }
+    else { printf("%d;%s\n", gettid(),(base_text_).c_str()); }
+  }
 
-    ~AutoTrace() {
-        if(!tracepoint_) {
-            t_cpu_.Pause();
-            t_total_.Pause();
-            base_text_ += "cpu-time-us;" + std::to_string(t_cpu_.GetUsec()) + ";total-time-us;" + std::to_string(t_total_.GetUsec()) + ";";
-            printf("%s\n", (base_text_ + "end").c_str());
-        }
+  ~AutoTrace() {
+    if(!tracepoint_) {
+      t_cpu_.Pause();
+      t_total_.Pause();
+      base_text_ += "cpu-time-us;" +
+          std::to_string(t_cpu_.GetUsec()) + ";total-time-us;" +
+          std::to_string(t_total_.GetUsec()) + ";";
+      printf("%s\n", (base_text_ + "end").c_str());
     }
+  }
 };
 
-}
+}  // namespace labstor
 
 #endif
 

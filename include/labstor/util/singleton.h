@@ -21,6 +21,6 @@ class Singleton {
   }
 };
 
-}
+}  // namespace scs
 
 #endif //SCS_SINGLETON_H

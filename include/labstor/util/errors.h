@@ -62,7 +62,7 @@ namespace labstor {
   const Error QP_WAIT_TIMED_OUT(511, "Failed to wait for a request");
 
   const Error NOT_YET_IMPLEMENTED(1000, "{} is not yet implemented");
-}
+}  // namespace labstor
 
 #endif
 

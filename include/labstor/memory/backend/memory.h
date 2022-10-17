@@ -7,6 +7,8 @@
 
 #include <cstdint>
 #include <vector>
+#include <string>
+#include <labstor/constants/singleton_macros.h>
 
 namespace labstor {
 
@@ -22,12 +24,18 @@ class MemoryBackend {
 protected:
   std::vector<MemorySlot> slots_;
   std::size_t cur_size_;
+  int pid_;
+  std::string mem_url_;
 public:
-  MemoryBackend() : cur_size_(0) {}
-  virtual void Reserve(std::size_t size, int pid) = 0;
-  virtual void AttachSlot(std::size_t size, int pid) = 0;
+  MemoryBackend() : cur_size_(0) {
+    auto sys_info = LABSTOR_SYSTEM_INFO;
+    pid_ = sys_info->pid_;
+    mem_url_ = "labstor_mem_" + std::to_string(pid_);
+  }
+  virtual void Reserve(std::size_t size) = 0;
+  virtual void AttachSlot(std::size_t size) = 0;
   virtual void MergeSlots() = 0;
-  char* GetPtr(int i) { return slots_[i].ptr_; }
+  const MemorySlot& GetSlot(int i) const { return slots_[i]; }
 };
 
 }

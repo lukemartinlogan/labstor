@@ -11,4 +11,8 @@
 #define LABSTOR_CONFIGURATION_MANAGER scs::Singleton<labstor::ConfigurationManager>::GetInstance()
 #define LABSTOR_CONFIGURATION_MANAGER_T labstor::ConfigurationManager*
 
+#include <labstor/introspect/system_info.h>
+#define LABSTOR_SYSTEM_INFO scs::Singleton<labstor::SystemInfo>::GetInstance()
+#define LABSTOR_SYSTEM_INFO_T labstor::SystemInfo*
+
 #endif  // LABSTOR_SINGLETON_MACROS_H

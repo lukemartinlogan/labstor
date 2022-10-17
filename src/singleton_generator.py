@@ -85,5 +85,6 @@ gen = SingletonGenerator()
 
 gen.Add("labstor", "IpcManager", "labstor/ipc_manager/ipc_manager.h")
 gen.Add("labstor", "ConfigurationManager", "labstor/runtime/configuration_manager.h")
+gen.Add("labstor", "SystemInfo", "labstor/introspect/system_info.h")
 
 gen.Generate("src/singleton.cc", "include/labstor/constants/singleton_macros.h")

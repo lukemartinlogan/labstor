@@ -13,10 +13,8 @@ namespace labstor {
 struct SystemInfo {
   int pid_;
   int ncpu_;
-};
 
-struct UnixSysInfo : public SystemInfo {
-  UnixSysInfo() {
+  SystemInfo() {
     pid_ = getpid();
     ncpu_ = get_nprocs_conf();
   }

@@ -30,24 +30,17 @@ private:
 public:
   Posix() : MemoryBackend() {}
 
-  void Reserve(std::size_t size, int pid) {
-    _Open(pid);
+  void Reserve(std::size_t size) {
+    _Open(pid_);
     ftruncate(fd_, size);
   }
 
-  void AttachSlot(std::size_t size, int pid) {
+  void AttachSlot(std::size_t size) {
     char *ptr = reinterpret_cast<char*>(
         mmap(0, size, PROT_READ | PROT_WRITE,
              MAP_SHARED, fd_, 0));
     slots_.emplace_back(ptr, cur_size_, size);
     cur_size_ += size;
-  }
-
-  void Detach() {
-    for (auto &slot : slots_) {
-      munmap(slot.ptr_, slot.size_);
-    }
-    slots_.erase(slots_.begin(), slots_.end());
   }
 
   void MergeSlots() {
@@ -56,6 +49,14 @@ public:
         mmap(0, cur_size_, PROT_READ | PROT_WRITE,
              MAP_SHARED, fd_, 0));
     slots_.emplace_back(ptr, 0, cur_size_);
+  }
+
+ private:
+  void Detach() {
+    for (auto &slot : slots_) {
+      munmap(slot.ptr_, slot.size_);
+    }
+    slots_.erase(slots_.begin(), slots_.end());
   }
 };
 

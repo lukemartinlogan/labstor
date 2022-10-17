@@ -22,30 +22,32 @@
 #define LABSTOR_ERROR_IS(err, check) (err->get_code() == check.get_code())
 
 namespace labstor {
-    class Error {
-    private:
-        int code_;
-        std::string fmt_;
-        std::string msg_;
-    public:
-        Error() : code_(0), fmt_(nullptr) {}
-        Error(int code, const std::string &fmt) : code_(code), fmt_(fmt) {}
-        ~Error() {}
 
-        int get_code() { return code_; }
+class Error {
+ private:
+  int code_;
+  std::string fmt_;
+  std::string msg_;
+ public:
+  Error() : code_(0), fmt_(nullptr) {}
+  Error(int code, const std::string &fmt) : code_(code), fmt_(fmt) {}
+  ~Error() {}
 
-        template<typename ...Args>
-        std::shared_ptr<Error> format(Args ...args) const {
-            std::shared_ptr<Error> err = std::make_shared<Error>(code_, fmt_);
-            err->msg_ = Formatter::format(fmt_, args...);
-            return err;
-        }
+  int get_code() { return code_; }
 
-        void print() {
-            std::cout << msg_ << std::endl;
-        }
-    };
-}
+  template<typename ...Args>
+  std::shared_ptr<Error> format(Args ...args) const {
+    std::shared_ptr<Error> err = std::make_shared<Error>(code_, fmt_);
+    err->msg_ = Formatter::format(fmt_, args...);
+    return err;
+  }
+
+  void print() {
+    std::cout << msg_ << std::endl;
+  }
+};
+
+}  // namespace labstor
 
 #endif
 
