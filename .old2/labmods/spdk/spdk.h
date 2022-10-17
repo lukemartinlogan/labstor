@@ -5,7 +5,7 @@
 #ifndef LABSTOR_SPDK_DRIVER_H
 #define LABSTOR_SPDK_DRIVER_H
 
-#include <labstor/userspace/util/errors.h>
+#include <labstor/util/errors.h>
 #include <labstor/constants/constants.h>
 #include <labstor/types/data_structures/shmem_qtok.h>
 #include "labstor/types/data_structures/queue_pair.h"
@@ -24,7 +24,7 @@
 #include <spdk/string.h>
 #include <spdk/log.h>
 
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 #include <labstor/types/data_structures/shmem_request.h>
 //#include <labstor/types/data_structures/shmem_poll.h>
 #include "labstor/types/data_structures/c/shmem_queue_pair.h"

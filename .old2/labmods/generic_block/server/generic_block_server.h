@@ -5,7 +5,7 @@
 #ifndef LABSTOR_BLOCK_SERVER_H
 #define LABSTOR_BLOCK_SERVER_H
 
-#include "labstor/userspace/types/module.h"
+#include "labstor/types/module.h"
 #include <labmods/generic_block/generic_block.h>
 
 namespace labstor::GenericBlock {

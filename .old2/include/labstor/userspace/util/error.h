@@ -11,7 +11,7 @@
 #include <string>
 #include <cstdlib>
 #include <memory>
-#include <labstor/userspace/util/serializeable.h>
+#include <labstor/util/serializeable.h>
 
 #define LABSTOR_ERROR_TYPE std::shared_ptr<labstor::Error>
 #define LABSTOR_ERROR_HANDLE_START() try {

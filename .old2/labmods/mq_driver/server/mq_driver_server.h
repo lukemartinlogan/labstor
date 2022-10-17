@@ -5,10 +5,10 @@
 #ifndef LABSTOR_MQ_DRIVER_SERVER_H
 #define LABSTOR_MQ_DRIVER_SERVER_H
 
-#include <labstor/userspace/server/server.h>
-#include <labstor/userspace/server/macros.h>
-#include <labstor/userspace/server/ipc_manager.h>
-#include <labstor/userspace/types/module.h>
+#include <labstor/server/server.h>
+#include <labstor/server/macros.h>
+#include <labstor/server/ipc_manager.h>
+#include <labstor/types/module.h>
 #include <labmods/generic_queue/server/generic_queue_server.h>
 #include "mq_driver.h"
 

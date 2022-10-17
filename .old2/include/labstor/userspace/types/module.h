@@ -10,10 +10,10 @@
 #include <atomic>
 #include <memory>
 #include <mutex>
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 #include "labstor/types/data_structures/c/shmem_queue_pair.h"
 #include "registrar.h"
-#include <labstor/userspace/util/errors.h>
+#include <labstor/util/errors.h>
 #include <list>
 #include <yaml-cpp/yaml.h>
 

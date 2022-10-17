@@ -5,7 +5,7 @@
 #ifndef LABSTOR_MQ_DRIVER_H
 #define LABSTOR_MQ_DRIVER_H
 
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 #include <labstor/types/data_structures/shmem_request.h>
 #include "labstor/types/data_structures/c/shmem_queue_pair.h"
 #include <labmods/generic_queue/generic_queue.h>

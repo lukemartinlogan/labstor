@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <memory>
 
-#include <labstor/userspace/util/errors.h>
+#include <labstor/util/errors.h>
 #include <labstor/constants/debug.h>
 #include <labstor/constants/constants.h>
 #include "ipc_manager_client_netlink.h"

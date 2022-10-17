@@ -2,7 +2,7 @@
 // Created by lukemartinlogan on 2/9/22.
 //
 
-#include "labstor/userspace/client/client.h"
+#include "labstor/client/client.h"
 #include "labmods/registrar/client/registrar_client.h"
 
 int main(int argc, char **argv) {

@@ -5,9 +5,9 @@
 #ifndef LABSTOR_MACROS_H
 #define LABSTOR_MACROS_H
 
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 #include <labstor/constants/debug.h>
-#include <labstor/userspace/util/errors.h>
+#include <labstor/util/errors.h>
 
 /*KERNEL_PID*/
 #define KERNEL_PID 0

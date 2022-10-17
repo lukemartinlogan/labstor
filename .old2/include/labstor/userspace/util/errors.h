@@ -7,7 +7,7 @@
 
 #ifdef __cplusplus
 
-#include <labstor/userspace/util/error.h>
+#include <labstor/util/error.h>
 
 namespace labstor {
     const Error FILE_NOT_FOUND(0, "File not found at {}");

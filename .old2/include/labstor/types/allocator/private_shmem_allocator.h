@@ -6,7 +6,7 @@
 #define LABSTOR_PRIVATE_SHMEM_ALLOCATOR_KERNEL_H
 
 #include <labstor/constants/macros.h>
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 #include "labstor/types/data_structures/c/shmem_request_ring_buffer.h"
 #ifdef __cplusplus
 #include "allocator.h"

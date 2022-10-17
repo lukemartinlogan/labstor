@@ -3,7 +3,7 @@
 //
 
 #include <labmods/registrar/client/registrar_client.h>
-#include <labstor/userspace/client/ipc_manager.h>
+#include <labstor/client/ipc_manager.h>
 #include "generic_posix_client.h"
 #include "lib/posix_client.h"
 #include <mutex>

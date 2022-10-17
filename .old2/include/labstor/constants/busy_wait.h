@@ -12,7 +12,7 @@
 
 /*TIMER*/
 #if defined(__cplusplus)
-#include <labstor/userspace/util/timer.h>
+#include <labstor/util/timer.h>
 #define LABSTOR_TIMER_PREAMBLE()\
     labstor::HighResMonotonicTimer labstor_timer;\
     int labstor_timer_out;

@@ -5,13 +5,13 @@
 #ifndef LABSTOR_BLKDEV_TABLE_SERVER_H
 #define LABSTOR_BLKDEV_TABLE_SERVER_H
 
-#include <labstor/userspace/server/server.h>
+#include <labstor/server/server.h>
 
 #include "blkdev_table.h"
-#include <labstor/userspace/types/module.h>
-#include <labstor/userspace/server/macros.h>
-#include <labstor/userspace/server/ipc_manager.h>
-#include <labstor/userspace/server/namespace.h>
+#include <labstor/types/module.h>
+#include <labstor/server/macros.h>
+#include <labstor/server/ipc_manager.h>
+#include <labstor/server/namespace.h>
 
 #include "labstor/types/data_structures/shmem_ring_buffer.h"
 

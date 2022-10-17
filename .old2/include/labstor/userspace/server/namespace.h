@@ -9,9 +9,9 @@
 #include <queue>
 
 #include <labstor/constants/macros.h>
-#include <labstor/types/basics.h>
-#include <labstor/userspace/types/module.h>
-#include <labstor/userspace/types/shared_namespace.h>
+#include <labstor/types/basic.h>
+#include <labstor/types/module.h>
+#include <labstor/types/shared_namespace.h>
 #include <labstor/types/allocator/shmem_allocator.h>
 #include "labstor/types/data_structures/shmem_ring_buffer.h"
 #include <labstor/types/data_structures/unordered_map/shmem_string_map.h>

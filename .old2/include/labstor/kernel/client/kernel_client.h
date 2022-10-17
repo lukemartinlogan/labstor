@@ -13,7 +13,7 @@
 #include <sys/socket.h>
 #include <linux/netlink.h>
 
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 
 #define NETLINK_USER 31
 

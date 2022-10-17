@@ -2,7 +2,7 @@
 // Created by lukemartinlogan on 9/12/21.
 //
 
-#include <labstor/userspace/server/macros.h>
+#include <labstor/server/macros.h>
 #include <labstor/kernel/client/kernel_client.h>
 #include <secure_shmem/secure_shmem.h>
 #include <labmods/secure_shmem/netlink_client/secure_shmem_client_netlink.h>

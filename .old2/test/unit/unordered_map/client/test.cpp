@@ -2,7 +2,7 @@
 // Created by lukemartinlogan on 11/25/21.
 //
 
-#include <labstor/userspace/util/errors.h>
+#include <labstor/util/errors.h>
 #include <labstor/types/data_structures/unordered_map/shmem_string_map.h>
 #include <cstdio>
 #include <cstdlib>

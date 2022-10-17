@@ -2,12 +2,12 @@
 // Created by lukemartinlogan on 11/28/21.
 //
 
-#include <labstor/userspace/server/server.h>
-#include <labstor/userspace/server/macros.h>
-#include <labstor/userspace/server/ipc_manager.h>
-#include <labstor/userspace/server/namespace.h>
-#include <labstor/userspace/server/module_manager.h>
-#include <labstor/userspace/server/work_orchestrator.h>
+#include <labstor/server/server.h>
+#include <labstor/server/macros.h>
+#include <labstor/server/ipc_manager.h>
+#include <labstor/server/namespace.h>
+#include <labstor/server/module_manager.h>
+#include <labstor/server/work_orchestrator.h>
 #include <labmods/registrar/server/registrar_server.h>
 
 namespace labstor {

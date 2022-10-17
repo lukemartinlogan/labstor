@@ -8,12 +8,12 @@
 #include <generic_posix.h>
 #include <labstor/constants/macros.h>
 #include <labstor/constants/constants.h>
-#include <labstor/userspace/client/client.h>
-#include <labstor/userspace/types/module.h>
-#include <labstor/userspace/client/macros.h>
-#include <labstor/userspace/client/ipc_manager.h>
-#include <labstor/userspace/client/namespace.h>
-#include <labstor/userspace/util/error.h>
+#include <labstor/client/client.h>
+#include <labstor/types/module.h>
+#include <labstor/client/macros.h>
+#include <labstor/client/ipc_manager.h>
+#include <labstor/client/namespace.h>
+#include <labstor/util/error.h>
 #include <mutex>
 
 //TODO: Make this configurable

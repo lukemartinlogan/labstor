@@ -5,13 +5,13 @@
 #ifndef LABSTOR_NO_OP_IOSCHED_SERVER_H
 #define LABSTOR_NO_OP_IOSCHED_SERVER_H
 
-#include "labstor/userspace/server/server.h"
+#include "labstor/server/server.h"
 #include <labmods/generic_block/generic_block.h>
-#include "labstor/userspace/types/module.h"
+#include "labstor/types/module.h"
 #include "labmods/no_op/no_op.h"
-#include "labstor/userspace/server/macros.h"
-#include "labstor/userspace/server/ipc_manager.h"
-#include "labstor/userspace/server/namespace.h"
+#include "labstor/server/macros.h"
+#include "labstor/server/ipc_manager.h"
+#include "labstor/server/namespace.h"
 
 
 namespace labstor::iosched::NoOp {

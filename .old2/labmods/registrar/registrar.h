@@ -6,7 +6,7 @@
 #define LABSTOR_REGISTRAR_H
 
 #include <labstor/constants/constants.h>
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 #include <labstor/types/data_structures/shmem_request.h>
 
 #define LABSTOR_REGISTRAR_MODULE_ID "Registrar"

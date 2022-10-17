@@ -5,13 +5,13 @@
 #ifndef LABSTOR_IPC_TEST_SERVER_H
 #define LABSTOR_IPC_TEST_SERVER_H
 
-#include <labstor/userspace/server/server.h>
+#include <labstor/server/server.h>
 
 #include "ipc_test.h"
-#include <labstor/userspace/types/module.h>
-#include <labstor/userspace/server/macros.h>
-#include <labstor/userspace/server/ipc_manager.h>
-#include <labstor/userspace/server/namespace.h>
+#include <labstor/types/module.h>
+#include <labstor/server/macros.h>
+#include <labstor/server/ipc_manager.h>
+#include <labstor/server/namespace.h>
 
 #include "labstor/types/data_structures/shmem_ring_buffer.h"
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Create the LabStor lib directory
-mkidr deps
+mkdir deps
 cd deps
 
 ########DETECT DISTRO
@@ -30,23 +30,23 @@ fi
 ########FROM SOURCE
 
 #Install SCSPKG
-git clone https://github.com/scs-lab/scspkg.git
-cd scspkg
-bash install.sh
-source ~/.bashrc
+#git clone https://github.com/scs-lab/scspkg.git
+#cd scspkg
+#bash install.sh
+#source ~/.bashrc
 
 #Install Jarvis-CD
-git clone https://github.com/scs-lab/jarvis-cd.git
-cd jarvis-cd
-bash install.sh
-source ~/.bashrc
+#git clone https://github.com/scs-lab/jarvis-cd.git
+#cd jarvis-cd
+#bash install.sh
+#source ~/.bashrc
 
 #Install Spack
-cd ${HOME}
-git clone https://github.com/spack/spack.git
-cd spack
-echo ". `pwd`/share/spack/setup-env.sh" >> ~/.bashrc
-source ~/.bashrc
+#cd ${HOME}
+#git clone https://github.com/spack/spack.git
+#cd spack
+#echo ". `pwd`/share/spack/setup-env.sh" >> ~/.bashrc
+#source ~/.bashrc
 
 #Install CMAKE
 spack install cmake@3.22.1

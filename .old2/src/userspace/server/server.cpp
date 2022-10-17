@@ -16,18 +16,18 @@
 #include <sched.h>
 #include <yaml-cpp/yaml.h>
 
-#include <labstor/userspace/server/server.h>
-#include <labstor/types/basics.h>
-#include <labstor/userspace/util/errors.h>
+#include <labstor/server/server.h>
+#include <labstor/types/basic.h>
+#include <labstor/util/errors.h>
 #include <labstor/constants/debug.h>
-#include <labstor/userspace/types/userspace_daemon.h>
-#include <labstor/userspace/server/macros.h>
-#include <labstor/userspace/server/module_manager.h>
-#include <labstor/userspace/server/ipc_manager.h>
-#include <labstor/userspace/server/work_orchestrator.h>
+#include <labstor/types/userspace_daemon.h>
+#include <labstor/server/macros.h>
+#include <labstor/server/module_manager.h>
+#include <labstor/server/ipc_manager.h>
+#include <labstor/server/work_orchestrator.h>
 #include <labstor/kernel/client/kernel_client.h>
-#include "labstor/userspace/server/wreaper_thread.h"
-#include "labstor/userspace/server/upgrade_thread.h"
+#include "labstor/server/wreaper_thread.h"
+#include "labstor/server/upgrade_thread.h"
 
 #define TRUSTED_SERVER_PATH "/tmp/labstor_trusted_server"
 

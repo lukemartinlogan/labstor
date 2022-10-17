@@ -3,7 +3,7 @@
 //
 
 #include <stdio.h>
-#include <labstor/userspace/util/timer.h>
+#include <labstor/util/timer.h>
 
 const int hi = 124;
 

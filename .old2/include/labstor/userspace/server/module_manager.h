@@ -5,9 +5,9 @@
 #ifndef LABSTOR_SERVER_MODULE_MANAGER_H
 #define LABSTOR_SERVER_MODULE_MANAGER_H
 
-#include <labstor/userspace/types/module.h>
-#include <labstor/userspace/server/macros.h>
-#include <labstor/userspace/server/server.h>
+#include <labstor/types/module.h>
+#include <labstor/server/macros.h>
+#include <labstor/server/server.h>
 #include <set>
 
 namespace labstor::Server {

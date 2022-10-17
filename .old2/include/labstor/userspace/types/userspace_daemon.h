@@ -6,8 +6,8 @@
 #define LABSTOR_USERSPACE_DAEMON_H
 
 #include <labstor/types/daemon.h>
-#include <labstor/userspace/util/errors.h>
-#include <labstor/userspace/util/timer.h>
+#include <labstor/util/errors.h>
+#include <labstor/util/timer.h>
 #include <sys/sysinfo.h>
 #include <sched.h>
 #include <thread>

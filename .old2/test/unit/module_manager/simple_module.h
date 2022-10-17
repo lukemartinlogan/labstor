@@ -5,7 +5,7 @@
 #ifndef LABSTOR_SIMPLE_MODULE_H
 #define LABSTOR_SIMPLE_MODULE_H
 
-#include <labstor/userspace/types/module.h>
+#include <labstor/types/module.h>
 
 #define LABSTOR_SIMPLE_MODULE_ID "SIMPLE_MODULE"
 

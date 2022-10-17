@@ -5,7 +5,10 @@
 #ifndef LABSTOR_DAEMON_H
 #define LABSTOR_DAEMON_H
 
-#include <labstor/userspace/util/errors.h>
+#include <labstor/util/errors.h>
+#include <labstor/thread/thread_factory.h>
+#include <functional>
+
 #include <sys/sysinfo.h>
 #include <sched.h>
 #include <thread>
@@ -13,36 +16,34 @@
 
 namespace labstor {
 
-class DaemonWorker {
-public:
-    virtual void DoWork() = 0;
-};
-
 class Daemon {
-protected:
-    int n_cpu_;
-    int affinity_;
-    std::shared_ptr<DaemonWorker> worker_;
-public:
-    Daemon() {
-        n_cpu_ = get_nprocs_conf();
-        affinity_ = -1;
-    }
+ private:
+  ThreadType type_;
+  std::unique_ptr<Thread> thread_;
+  bool stop_;
 
-    void SetWorker(std::shared_ptr<DaemonWorker> worker) {
-        worker_ = worker;
-    }
+ public:
+  explicit Daemon(ThreadType type) : stop_(false), type_(type) {}
 
-    inline std::shared_ptr<DaemonWorker> GetWorker() {
-        return worker_;
-    }
+  void Start() {
+    _Init();
+    auto bind = std::bind(&Daemon::DoWork, this);
+    thread_ = ThreadFactory(type_, bind).Get();
+  }
 
-    virtual void Start() = 0;
-    virtual void Pause() = 0;
-    virtual void Resume() = 0;
-    virtual void Wait() = 0;
-    virtual void Stop() = 0;
-    virtual void SetAffinity(int cpu_id) = 0;
+  void Pause() { thread_->Pause();  }
+  void Resume() { thread_->Resume(); }
+  void Wait() { thread_->Join(); }
+  void Stop() { stop_ = true; }
+
+ protected:
+  void DoWork() {
+    while (!stop_) {
+      _DoWork();
+    }
+  }
+  virtual void _Init() = 0;
+  virtual void _DoWork() = 0;
 };
 
 }

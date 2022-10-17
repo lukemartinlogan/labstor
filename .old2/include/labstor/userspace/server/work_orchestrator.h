@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <labstor/userspace/server/worker.h>
+#include <labstor/server/worker.h>
 #include "labstor/types/data_structures/c/shmem_queue_pair.h"
 
 namespace labstor::Server {

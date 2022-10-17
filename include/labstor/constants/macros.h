@@ -5,7 +5,7 @@
 #ifndef LABSTOR_MACROS_H
 #define LABSTOR_MACROS_H
 
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 #include <labstor/util/debug.h>
 #include <labstor/util/errors.h>
 

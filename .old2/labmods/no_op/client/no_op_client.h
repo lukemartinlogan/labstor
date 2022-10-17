@@ -5,14 +5,14 @@
 #ifndef LABSTOR_NO_OP_IOSCHED_CLIENT_H
 #define LABSTOR_NO_OP_IOSCHED_CLIENT_H
 
-#include "labstor/userspace/client/client.h"
+#include "labstor/client/client.h"
 #include "labmods/no_op/no_op.h"
 #include "labstor/constants/macros.h"
 #include "labstor/constants/constants.h"
-#include "labstor/userspace/types/module.h"
-#include "labstor/userspace/client/macros.h"
-#include "labstor/userspace/client/ipc_manager.h"
-#include "labstor/userspace/client/namespace.h"
+#include "labstor/types/module.h"
+#include "labstor/client/macros.h"
+#include "labstor/client/ipc_manager.h"
+#include "labstor/client/namespace.h"
 #include <labmods/generic_block/client/generic_block_client.h>
 
 namespace labstor::iosched::NoOp {

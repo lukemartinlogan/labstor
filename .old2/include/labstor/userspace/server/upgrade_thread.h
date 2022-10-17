@@ -5,12 +5,12 @@
 #ifndef LABSTOR_UPGRADE_THREAD_H
 #define LABSTOR_UPGRADE_THREAD_H
 
-#include <labstor/userspace/util/errors.h>
+#include <labstor/util/errors.h>
 #include <labstor/types/daemon.h>
-#include <labstor/userspace/server/ipc_manager.h>
-#include <labstor/userspace/types/messages.h>
-#include <labstor/userspace/server/module_manager.h>
-#include <labstor/userspace/util/timer.h>
+#include <labstor/server/ipc_manager.h>
+#include <labstor/types/messages.h>
+#include <labstor/server/module_manager.h>
+#include <labstor/util/timer.h>
 
 namespace labstor::Server {
 

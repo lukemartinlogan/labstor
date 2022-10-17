@@ -19,8 +19,8 @@
 #ifdef __cplusplus
 
 #include "stdio.h"
-#include "labstor/userspace/util/timer.h"
-#include "labstor/userspace/util/serializeable.h"
+#include "labstor/util/timer.h"
+#include "labstor/util/serializeable.h"
 #include <sched.h>
 #include <unistd.h>
 

@@ -5,7 +5,7 @@
 #ifndef LABSTOR_THREAD_LOCAL_H
 #define LABSTOR_THREAD_LOCAL_H
 
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 #include <unistd.h>
 
 namespace labstor {

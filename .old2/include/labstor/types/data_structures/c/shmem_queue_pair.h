@@ -2,12 +2,12 @@
 #ifndef LABSTOR_SHMEM_QUEUE_PAIR1_H
 #define LABSTOR_SHMEM_QUEUE_PAIR1_H
 
-#include "labstor/types/basics.h"
+#include "labstor/types/basic.h"
 #include "labstor/types/data_structures/shmem_qtok.h"
 #include "shmem_request_queue.h"
 #include "shmem_request_map.h"
 #include "labstor/constants/debug.h"
-#include "labstor/userspace/util/errors.h"
+#include "labstor/util/errors.h"
 #include "labstor/types/data_structures/queue_pair.h"
 
 

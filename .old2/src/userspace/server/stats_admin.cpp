@@ -2,8 +2,8 @@
 // Created by lukemartinlogan on 2/9/22.
 //
 
-#include <labstor/userspace/util/timer.h>
-#include <labstor/userspace/types/userspace_daemon.h>
+#include <labstor/util/timer.h>
+#include <labstor/types/userspace_daemon.h>
 
 struct shmem_stats {
     size_t ns_since_start_;

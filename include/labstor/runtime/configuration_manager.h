@@ -13,7 +13,7 @@
 
 #define LABSTOR_SERVER
 
-namespace labstor::Runtime {
+namespace labstor {
 
 struct ConfigurationManager {
     YAML::Node config_;

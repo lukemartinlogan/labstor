@@ -5,7 +5,7 @@
 #ifndef LABSTOR_MODULE_MANAGER_KERNEL_H
 #define LABSTOR_MODULE_MANAGER_KERNEL_H
 
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 #include <labstor/kernel/types/module.h>
 
 void init_labstor_module_manager(void);

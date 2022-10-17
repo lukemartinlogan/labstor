@@ -5,7 +5,7 @@
 #ifndef LABSTOR_REQUEST_KERNEL_H
 #define LABSTOR_REQUEST_KERNEL_H
 
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 #include <labstor/types/data_structures/shmem_qtok.h>
 #ifdef __cplusplus
 #include <cstring>

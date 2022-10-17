@@ -10,7 +10,7 @@
 #include "io_uring.h"
 #include "libaio.h"
 //#include "spdk.h"
-#include <labstor/userspace/util/partitioner.h>
+#include <labstor/util/partitioner.h>
 
 
 void io_test(labstor::IOTest *test, const std::string &readwrite);

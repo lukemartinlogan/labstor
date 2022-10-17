@@ -5,7 +5,7 @@
 #ifndef LABSTOR_GENERIC_QUEUE_CLIENT_H
 #define LABSTOR_GENERIC_QUEUE_CLIENT_H
 
-#include <labstor/userspace/types/module.h>
+#include <labstor/types/module.h>
 #include <labmods/generic_block/generic_block.h>
 
 namespace labstor::GenericQueue {

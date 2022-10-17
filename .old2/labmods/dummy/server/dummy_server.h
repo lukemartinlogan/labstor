@@ -5,11 +5,11 @@
 #ifndef LABSTOR_DUMMY_SERVER_H
 #define LABSTOR_DUMMY_SERVER_H
 
-#include <labstor/userspace/server/server.h>
+#include <labstor/server/server.h>
 #include "dummy.h"
-#include <labstor/userspace/types/module.h>
-#include <labstor/userspace/server/macros.h>
-#include <labstor/userspace/server/ipc_manager.h>
+#include <labstor/types/module.h>
+#include <labstor/server/macros.h>
+#include <labstor/server/ipc_manager.h>
 
 namespace labstor::test::Dummy {
 

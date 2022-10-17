@@ -3,7 +3,7 @@
 //
 
 #include <unordered_map>
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 
 
 int main(){

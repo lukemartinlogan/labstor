@@ -6,7 +6,7 @@
 #define LABSTOR_SERVER_MACROS_H
 
 #include <labstor/constants/macros.h>
-#include <labstor/userspace/util/singleton.h>
+#include <labstor/util/singleton.h>
 #define LABSTOR_CONFIGURATION_MANAGER_CLASS labstor::Server::ConfigurationManager
 #define LABSTOR_IPC_MANAGER_CLASS labstor::Server::IPCManager
 #define LABSTOR_MODULE_MANAGER_CLASS labstor::Server::ModuleManager

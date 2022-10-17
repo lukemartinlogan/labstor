@@ -11,9 +11,9 @@
 #include <mutex>
 
 #include <labstor/constants/constants.h>
-#include <labstor/userspace/types/messages.h>
-#include <labstor/userspace/types/socket.h>
-#include <labstor/types/basics.h>
+#include <labstor/types/messages.h>
+#include <labstor/types/socket.h>
+#include <labstor/types/basic.h>
 #include <labstor/types/allocator/allocator.h>
 #include <labstor/types/allocator/segment_allocator.h>
 #include "labstor/types/data_structures/c/shmem_queue_pair.h"

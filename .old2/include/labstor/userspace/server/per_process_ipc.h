@@ -7,10 +7,10 @@
 
 #include <labstor/types/allocator/allocator.h>
 #include <labstor/types/allocator/segment_allocator.h>
-#include <labstor/userspace/util/errors.h>
-#include <labstor/userspace/types/queue_pool.h>
+#include <labstor/util/errors.h>
+#include <labstor/types/queue_pool.h>
 #include <vector>
-#include "labstor/userspace/types/memory_manager.h"
+#include "labstor/types/memory_manager.h"
 
 namespace labstor::Server {
 struct PerProcessIPC : public QueuePool, public MemoryManager {

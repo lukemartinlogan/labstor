@@ -8,7 +8,7 @@
 #ifdef __cplusplus
 
 #include <string>
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 #include <labstor/types/allocator/allocator.h>
 
 namespace labstor::ipc {

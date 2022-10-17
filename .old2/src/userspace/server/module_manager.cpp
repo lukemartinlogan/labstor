@@ -3,15 +3,15 @@
 //
 
 #include <filesystem>
-#include <labstor/userspace/server/server.h>
-#include <labstor/userspace/util/errors.h>
+#include <labstor/server/server.h>
+#include <labstor/util/errors.h>
 #include <labstor/constants/debug.h>
-#include <labstor/userspace/util/path_parser.h>
-#include <labstor/types/basics.h>
-#include <labstor/userspace/types/module.h>
-#include <labstor/userspace/server/module_manager.h>
-#include <labstor/userspace/server/namespace.h>
-#include <labstor/userspace/server/ipc_manager.h>
+#include <labstor/util/path_parser.h>
+#include <labstor/types/basic.h>
+#include <labstor/types/module.h>
+#include <labstor/server/module_manager.h>
+#include <labstor/server/namespace.h>
+#include <labstor/server/ipc_manager.h>
 
 bool labstor::Server::ModuleManager::LoadRepos() {
     AUTO_TRACE("")

@@ -14,7 +14,7 @@
 #include <cstdio>
 #include <errno.h>
 #include <vector>
-#include "labstor/userspace/util/error.h"
+#include "labstor/util/error.h"
 
 int main(int argc, char **argv) {
     char *path = argv[1];

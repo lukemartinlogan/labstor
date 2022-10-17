@@ -5,7 +5,7 @@
 #ifndef LABSTOR_SOCKET_H
 #define LABSTOR_SOCKET_H
 
-#include <labstor/userspace/util/errors.h>
+#include <labstor/util/errors.h>
 
 #include <sys/socket.h>
 #include <sys/un.h>

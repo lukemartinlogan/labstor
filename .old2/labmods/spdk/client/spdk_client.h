@@ -5,14 +5,14 @@
 #ifndef LABSTOR_SPDK_DRIVER_CLIENT_H
 #define LABSTOR_SPDK_DRIVER_CLIENT_H
 
-#include <labstor/userspace/client/client.h>
+#include <labstor/client/client.h>
 #include <labmods/spdk/spdk.h>
 #include <labstor/constants/macros.h>
 #include <labstor/constants/constants.h>
-#include <labstor/userspace/types/module.h>
-#include <labstor/userspace/client/macros.h>
-#include <labstor/userspace/client/ipc_manager.h>
-#include <labstor/userspace/client/namespace.h>
+#include <labstor/types/module.h>
+#include <labstor/client/macros.h>
+#include <labstor/client/ipc_manager.h>
+#include <labstor/client/namespace.h>
 
 namespace labstor::SPDK {
 

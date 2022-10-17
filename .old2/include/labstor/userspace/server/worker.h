@@ -8,9 +8,9 @@
 #ifdef __cplusplus
 
 #include <thread>
-#include <labstor/userspace/util/errors.h>
-#include <labstor/userspace/server/macros.h>
-#include <labstor/userspace/server/namespace.h>
+#include <labstor/util/errors.h>
+#include <labstor/server/macros.h>
+#include <labstor/server/namespace.h>
 #include <labstor/types/daemon.h>
 #include "labstor/types/data_structures/c/shmem_work_queue_secure.h"
 

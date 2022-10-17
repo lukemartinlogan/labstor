@@ -7,16 +7,16 @@
 
 #include <vector>
 
-#include <labstor/userspace/types/shared_namespace.h>
+#include <labstor/types/shared_namespace.h>
 #include <labstor/constants/macros.h>
-#include <labstor/userspace/client/macros.h>
-#include <labstor/userspace/client/module_manager.h>
-#include <labstor/userspace/client/ipc_manager.h>
+#include <labstor/client/macros.h>
+#include <labstor/client/module_manager.h>
+#include <labstor/client/ipc_manager.h>
 
 #include "labstor/types/data_structures/c/shmem_queue_pair.h"
 #include "labstor/types/data_structures/shmem_ring_buffer.h"
 #include <labstor/types/data_structures/unordered_map/shmem_string_map.h>
-#include <labstor/userspace/types/module.h>
+#include <labstor/types/module.h>
 #include <labmods/registrar/client/registrar_client.h>
 #include <labmods/secure_shmem/netlink_client/secure_shmem_client_netlink.h>
 

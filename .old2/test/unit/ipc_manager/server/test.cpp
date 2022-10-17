@@ -2,7 +2,7 @@
 // Created by lukemartinlogan on 12/5/21.
 //
 
-#include <labstor/userspace/server/ipc_manager.h>
+#include <labstor/server/ipc_manager.h>
 
 int main() {
     /*labstor::ipc::mpmc::int_map<labstor::ipc::qid_t,labstor::queue_pair*> qps_by_id_;

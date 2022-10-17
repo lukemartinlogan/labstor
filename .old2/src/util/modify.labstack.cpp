@@ -2,7 +2,7 @@
 // Created by lukemartinlogan on 5/14/22.
 //
 
-#include <labstor/userspace/types/labstack.h>
+#include <labstor/types/labstack.h>
 
 int main(int argc, char **argv) {
     labstor::LabStack stack;

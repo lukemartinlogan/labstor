@@ -6,12 +6,12 @@
 #define LABSTOR_REGISTRAR_SERVER_H
 
 #include "registrar.h"
-#include <labstor/userspace/server/server.h>
-#include <labstor/userspace/types/module.h>
-#include <labstor/userspace/server/macros.h>
-#include <labstor/userspace/server/module_manager.h>
-#include <labstor/userspace/server/ipc_manager.h>
-#include <labstor/userspace/server/namespace.h>
+#include <labstor/server/server.h>
+#include <labstor/types/module.h>
+#include <labstor/server/macros.h>
+#include <labstor/server/module_manager.h>
+#include <labstor/server/ipc_manager.h>
+#include <labstor/server/namespace.h>
 
 namespace labstor::Registrar {
 

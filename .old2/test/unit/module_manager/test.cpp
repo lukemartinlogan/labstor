@@ -2,8 +2,8 @@
 // Created by lukemartinlogan on 11/2/21.
 //
 
-#include <labstor/userspace/client/client.h>
-#include <labstor/userspace/server/module_manager.h>
+#include <labstor/client/client.h>
+#include <labstor/server/module_manager.h>
 
 const labstor::id SIMPLE_MODULE_ID = "SIMPLE_MODULE";
 

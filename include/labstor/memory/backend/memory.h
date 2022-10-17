@@ -6,17 +6,28 @@
 #define LABSTOR_MEMORY_H
 
 #include <cstdint>
+#include <vector>
 
 namespace labstor {
 
+struct MemorySlot {
+  char *ptr_;
+  size_t off_;
+  size_t size_;
+
+  MemorySlot(char *ptr, size_t off, size_t size) : ptr_(ptr), off_(off), size_(size) {}
+};
+
 class MemoryBackend {
 protected:
-    void *ptr_;
+  std::vector<MemorySlot> slots_;
+  std::size_t cur_size_;
 public:
-    MemoryBackend() : ptr_(nullptr) {}
-    virtual void Reserve(std::size_t size, int pid) = 0;
-    virtual void Attach(std::size_t size, int pid) = 0;
-    char* GetPtr() { return static_cast<char*>(ptr_); }
+  MemoryBackend() : cur_size_(0) {}
+  virtual void Reserve(std::size_t size, int pid) = 0;
+  virtual void AttachSlot(std::size_t size, int pid) = 0;
+  virtual void MergeSlots() = 0;
+  char* GetPtr(int i) { return slots_[i].ptr_; }
 };
 
 }

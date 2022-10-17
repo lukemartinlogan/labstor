@@ -7,7 +7,7 @@
 
 #define IPC_TEST_MODULE_ID "IPCTest"
 
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 #include <labstor/types/data_structures/shmem_request.h>
 //#include <labstor/types/data_structures/shmem_poll.h>
 #include "labstor/types/data_structures/c/shmem_queue_pair.h"

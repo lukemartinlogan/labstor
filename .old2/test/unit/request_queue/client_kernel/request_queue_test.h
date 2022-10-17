@@ -5,7 +5,7 @@
 #ifndef LABSTOR_REQUEST_QUEUE_TEST_H
 #define LABSTOR_REQUEST_QUEUE_TEST_H
 
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 
 #define REQUEST_QUEUE_TEST_ID "REQUEST_QUEUE_TEST"
 

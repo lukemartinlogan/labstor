@@ -35,6 +35,8 @@ struct labstor_credentials {
 
 namespace labstor {
 
+typedef labstor_credentials UserCredentials;
+
 struct id {
     char key_[MODULE_KEY_SIZE];
     id() = default;
@@ -58,11 +60,8 @@ struct id {
 };
 
 typedef int32_t off_t;
-typedef labstor_credentials credentials;
 
 }
-
-
 
 namespace std {
     template<>

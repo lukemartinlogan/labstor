@@ -5,7 +5,7 @@
 #ifndef LABSTOR_KERNEL_CLIENT_MACROS_H
 #define LABSTOR_KERNEL_CLIENT_MACROS_H
 
-#include <labstor/userspace/util/singleton.h>
+#include <labstor/util/singleton.h>
 #define LABSTOR_KERNEL_CLIENT_CLASS labstor::Kernel::NetlinkClient
 #define LABSTOR_KERNEL_IPC_MANAGER_CLASS labstor::kernel::netlink::IPCManager
 #define LABSTOR_KERNEL_WORK_ORCHESTRATOR_CLASS labstor::kernel::netlink::WorkerClient

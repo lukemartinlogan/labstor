@@ -8,7 +8,7 @@
 #define LABSTOR_CLIENT
 #include <yaml-cpp/yaml.h>
 #include "labmods/registrar/client/registrar_client.h"
-#include "labstor/userspace/client/namespace.h"
+#include "labstor/client/namespace.h"
 
 namespace labstor {
 

@@ -5,7 +5,7 @@
 #ifndef LABSTOR_CLIENT_MODULE_MANAGER_H
 #define LABSTOR_CLIENT_MODULE_MANAGER_H
 
-#include <labstor/userspace/types/module.h>
+#include <labstor/types/module.h>
 
 namespace labstor::Client {
 

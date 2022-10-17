@@ -2,16 +2,16 @@
 // Created by lukemartinlogan on 9/19/21.
 //
 
-#include <labstor/userspace/server/server.h>
-#include <labstor/userspace/util/errors.h>
+#include <labstor/server/server.h>
+#include <labstor/util/errors.h>
 #include <labstor/constants/debug.h>
-#include <labstor/userspace/types/userspace_daemon.h>
-#include <labstor/userspace/server/macros.h>
-#include <labstor/userspace/server/work_orchestrator.h>
-#include <labstor/userspace/server/worker.h>
-#include <labstor/userspace/server/ipc_manager.h>
-#include <labstor/userspace/server/server.h>
-#include <labstor/userspace/util/partitioner.h>
+#include <labstor/types/userspace_daemon.h>
+#include <labstor/server/macros.h>
+#include <labstor/server/work_orchestrator.h>
+#include <labstor/server/worker.h>
+#include <labstor/server/ipc_manager.h>
+#include <labstor/server/server.h>
+#include <labstor/util/partitioner.h>
 #include <labstor/kernel/client/kernel_client.h>
 
 #include <labmods/secure_shmem/netlink_client/secure_shmem_client_netlink.h>

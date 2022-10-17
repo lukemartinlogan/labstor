@@ -3,8 +3,8 @@
 //
 
 #include <omp.h>
-#include <labstor/userspace/client/client.h>
-#include <labstor/userspace/util/timer.h>
+#include <labstor/client/client.h>
+#include <labstor/util/timer.h>
 #include "labstor/types/data_structures/c/shmem_queue_pair.h"
 
 #include <unistd.h>

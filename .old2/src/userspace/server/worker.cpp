@@ -2,12 +2,12 @@
 // Created by lukemartinlogan on 9/7/21.
 //
 
-#include <labstor/userspace/server/server.h>
+#include <labstor/server/server.h>
 #include <labstor/constants/debug.h>
-#include <labstor/userspace/types/module.h>
-#include <labstor/userspace/server/worker.h>
-#include <labstor/userspace/server/macros.h>
-#include <labstor/userspace/server/ipc_manager.h>
+#include <labstor/types/module.h>
+#include <labstor/server/worker.h>
+#include <labstor/server/macros.h>
+#include <labstor/server/ipc_manager.h>
 
 void labstor::Server::Worker::DoWork() {
     LABSTOR_IPC_MANAGER_T ipc_manager_ = LABSTOR_IPC_MANAGER;

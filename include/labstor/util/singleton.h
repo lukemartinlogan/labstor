@@ -11,17 +11,15 @@ namespace scs {
 
 template<typename T>
 class Singleton {
-private:
-    static T* obj_;
-public:
-    Singleton() = default;
-    static T* GetInstance() {
-        if(!obj_) { obj_ = new T(); }
-        return obj_;
-    }
+ private:
+  static std::unique_ptr<T> obj_;
+ public:
+  Singleton() = default;
+  static T* GetInstance() {
+    if(!obj_) { obj_ = std::make_unique<T>(); }
+    return obj_.get();
+  }
 };
-
-#define SINGLETON_T(T) T*
 
 }
 

@@ -21,29 +21,42 @@ namespace labstor::shmem {
 
 class Posix : public MemoryBackend {
 private:
-    int fd_;
-    std::size_t size_;
+  int fd_;
+  void _Open(int pid) {
+      std::string name = "labstor_client_" + std::to_string(pid);
+      fd_ = shm_open(name.c_str(), O_CREAT | O_RDWR, 0666);
+  }
 
-    void _Open(int pid) {
-        std::string name = "labstor_client_" + std::to_string(pid);
-        fd_ = shm_open(name.c_str(), O_CREAT | O_RDWR, 0666);
-    }
 public:
-    Posix() : MemoryBackend() {}
+  Posix() : MemoryBackend() {}
 
-    void Reserve(std::size_t size, int pid) {
-        _Open(pid);
-        ftruncate(fd_, size);
-    }
-    void Attach(std::size_t size, int pid) {
-        if(!ptr_) {
-            size_ = size;
-            ptr_ = mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0);
-        } else {
-            ptr_ = mremap(ptr_, size_, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0);
-        }
-    }
+  void Reserve(std::size_t size, int pid) {
+    _Open(pid);
+    ftruncate(fd_, size);
+  }
 
+  void AttachSlot(std::size_t size, int pid) {
+    char *ptr = reinterpret_cast<char*>(
+        mmap(0, size, PROT_READ | PROT_WRITE,
+             MAP_SHARED, fd_, 0));
+    slots_.emplace_back(ptr, cur_size_, size);
+    cur_size_ += size;
+  }
+
+  void Detach() {
+    for (auto &slot : slots_) {
+      munmap(slot.ptr_, slot.size_);
+    }
+    slots_.erase(slots_.begin(), slots_.end());
+  }
+
+  void MergeSlots() {
+    Detach();
+    char *ptr = reinterpret_cast<char*>(
+        mmap(0, cur_size_, PROT_READ | PROT_WRITE,
+             MAP_SHARED, fd_, 0));
+    slots_.emplace_back(ptr, 0, cur_size_);
+  }
 };
 
 }

@@ -4,16 +4,16 @@
 
 #include <memory>
 
-#include <labstor/userspace/server/server.h>
-#include <labstor/userspace/util/errors.h>
+#include <labstor/server/server.h>
+#include <labstor/util/errors.h>
 #include <labstor/constants/debug.h>
-#include <labstor/types/basics.h>
-#include <labstor/userspace/types/socket.h>
-#include <labstor/userspace/server/server.h>
-#include <labstor/userspace/server/ipc_manager.h>
-#include <labstor/userspace/server/work_orchestrator.h>
+#include <labstor/types/basic.h>
+#include <labstor/types/socket.h>
+#include <labstor/server/server.h>
+#include <labstor/server/ipc_manager.h>
+#include <labstor/server/work_orchestrator.h>
 #include <labstor/kernel/client/kernel_client.h>
-#include <labstor/userspace/types/messages.h>
+#include <labstor/types/messages.h>
 #include <labmods/ipc_manager/netlink_client/ipc_manager_client_netlink.h>
 #include <labmods/work_orchestrator/netlink_client/work_orchestrator_client_netlink.h>
 

@@ -5,10 +5,10 @@
 #ifndef LABSTOR_TIMER_THREAD_H
 #define LABSTOR_TIMER_THREAD_H
 
-#include <labstor/userspace/util/errors.h>
+#include <labstor/util/errors.h>
 #include <labstor/types/daemon.h>
-#include <labstor/userspace/server/ipc_manager.h>
-#include <labstor/userspace/types/messages.h>
+#include <labstor/server/ipc_manager.h>
+#include <labstor/types/messages.h>
 
 namespace labstor::Server {
 

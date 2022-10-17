@@ -11,7 +11,7 @@
 #define BDEV_ACCESS_FLAGS FMODE_READ | FMODE_WRITE | FMODE_PREAD | FMODE_PWRITE //| FMODE_EXCL
 #define MAX_PAGES_PER_GET 128
 
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 #include <labstor/types/data_structures/shmem_request.h>
 //#include <labstor/types/data_structures/shmem_poll.h>
 #include "labstor/types/data_structures/c/shmem_queue_pair.h"

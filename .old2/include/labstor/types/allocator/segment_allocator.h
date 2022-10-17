@@ -10,7 +10,7 @@
 //
 
 #include <labstor/constants/macros.h>
-#include <labstor/types/basics.h>
+#include <labstor/types/basic.h>
 
 struct labstor_segment_allocator {
     uint32_t offset_, max_size_;

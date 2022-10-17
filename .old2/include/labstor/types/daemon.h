@@ -5,7 +5,7 @@
 #ifndef LABSTOR_DAEMON_H
 #define LABSTOR_DAEMON_H
 
-#include <labstor/userspace/util/errors.h>
+#include <labstor/util/errors.h>
 #include <sys/sysinfo.h>
 #include <sched.h>
 #include <thread>

@@ -10,7 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include "io_logger.h"
-#include <labstor/userspace/util/timer.h>
+#include <labstor/util/timer.h>
 
 namespace labstor {
 class IOTest {

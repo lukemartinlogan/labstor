@@ -3,7 +3,7 @@
 //
 
 #include <unordered_map>
-#include <labstor/userspace/util/timer.h>
+#include <labstor/util/timer.h>
 
 int main() {
     int ops = 1024;

@@ -2,14 +2,14 @@
 // Created by lukemartinlogan on 11/4/21.
 //
 
-#include <labstor/userspace/client/client.h>
-#include <labstor/types/basics.h>
-#include <labstor/userspace/types/module.h>
-#include <labstor/userspace/util/errors.h>
-#include <labstor/userspace/client/macros.h>
-#include <labstor/userspace/client/ipc_manager.h>
-#include <labstor/userspace/client/namespace.h>
-#include <labstor/userspace/client/module_manager.h>
+#include <labstor/client/client.h>
+#include <labstor/types/basic.h>
+#include <labstor/types/module.h>
+#include <labstor/util/errors.h>
+#include <labstor/client/macros.h>
+#include <labstor/client/ipc_manager.h>
+#include <labstor/client/namespace.h>
+#include <labstor/client/module_manager.h>
 #include <labmods/registrar/client/registrar_client.h>
 
 labstor::id labstor::Client::ModuleManager::UpdateModule(std::string path) {

@@ -5,12 +5,12 @@
 #ifndef LABSTOR_REGISTRAR_CLIENT_H
 #define LABSTOR_REGISTRAR_CLIENT_H
 
-#include <labstor/userspace/client/client.h>
+#include <labstor/client/client.h>
 #include "labmods/registrar/registrar.h"
 #include <labstor/types/data_structures/shmem_request.h>
-#include <labstor/userspace/client/macros.h>
-#include <labstor/userspace/client/ipc_manager.h>
-#include <labstor/userspace/types/module.h>
+#include <labstor/client/macros.h>
+#include <labstor/client/ipc_manager.h>
+#include <labstor/types/module.h>
 
 namespace labstor::Registrar {
 

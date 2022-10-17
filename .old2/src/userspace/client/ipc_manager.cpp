@@ -4,16 +4,16 @@
 
 #include <memory>
 
-#include <labstor/userspace/client/client.h>
-#include <labstor/userspace/types/messages.h>
+#include <labstor/client/client.h>
+#include <labstor/types/messages.h>
 #include <labstor/constants/debug.h>
-#include <labstor/userspace/util/errors.h>
-#include <labstor/types/basics.h>
-#include <labstor/userspace/types/socket.h>
+#include <labstor/util/errors.h>
+#include <labstor/types/basic.h>
+#include <labstor/types/socket.h>
 #include <labstor/types/allocator/shmem_allocator.h>
 #include <labstor/types/allocator/segment_allocator.h>
-#include <labstor/userspace/client/ipc_manager.h>
-#include <labstor/userspace/client/namespace.h>
+#include <labstor/client/ipc_manager.h>
+#include <labstor/client/namespace.h>
 #include <labmods/secure_shmem/netlink_client/secure_shmem_client_netlink.h>
 #include <sys/sysinfo.h>
 

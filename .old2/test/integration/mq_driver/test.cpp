@@ -3,7 +3,7 @@
 //
 
 
-#include <labstor/userspace/client/client.h>
+#include <labstor/client/client.h>
 #include <labmods/blkdev_table/client/blkdev_table_client.h>
 #include <labmods/mq_driver/client/mq_driver_client.h>
 #include <unistd.h>
