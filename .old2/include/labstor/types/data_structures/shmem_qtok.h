@@ -28,7 +28,7 @@
 #define LABSTOR_SHMEM_QTOK_H
 
 #ifdef __cplusplus
-#include <labstor/util/serializeable.h>
+#include <labstor/util/formatter.h>
 #endif
 
 #define LABSTOR_QTOK_INVALID(qtok) (qtok.req_id==-1 || qtok.qid==-1)

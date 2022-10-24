@@ -46,6 +46,6 @@ class Thread {
   virtual void SetAffinity(int cpu_start, int count) = 0;
 };
 
-}
+}  // namespace labstor
 
-#endif //LABSTOR_INCLUDE_LABSTOR_THREAD_THREAD_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_THREAD_THREAD_H_

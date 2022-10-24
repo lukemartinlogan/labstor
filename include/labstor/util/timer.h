@@ -60,20 +60,24 @@ class Timer {
 
   double GetNsecFromStart() {
     end_ = T::now();
-    double elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end_ - start_).count();
+    double elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        end_ - start_).count();
     return elapsed;
   }
   double GetUsecFromStart() {
     end_ = T::now();
-    return std::chrono::duration_cast<std::chrono::microseconds>(end_ - start_).count();
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+        end_ - start_).count();
   }
   double GetMsecFromStart() {
     end_ = T::now();
-    return std::chrono::duration_cast<std::chrono::milliseconds>(end_ - start_).count();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        end_ - start_).count();
   }
   double GetSecFromStart() {
     end_ = T::now();
-    return std::chrono::duration_cast<std::chrono::seconds>(end_ - start_).count();
+    return std::chrono::duration_cast<std::chrono::seconds>(
+        end_ - start_).count();
   }
 
   double GetNsec() const {
@@ -90,8 +94,10 @@ class Timer {
   }
 
   double GetUsFromEpoch() const {
-    std::chrono::time_point<std::chrono::system_clock> point = std::chrono::system_clock::now();
-    return std::chrono::duration_cast<std::chrono::microseconds>(point.time_since_epoch()).count();
+    std::chrono::time_point<std::chrono::system_clock> point =
+        std::chrono::system_clock::now();
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+        point.time_since_epoch()).count();
   }
 };
 
@@ -99,6 +105,7 @@ template<typename T>
 class ThreadedTimer {
  private:
   std::vector<Timer<T>> timers_;
+
  public:
   ThreadedTimer() = default;
 
@@ -147,49 +154,50 @@ class ThreadedTimer {
 
   double GetMsecFromStart() const {
     auto iter = std::max_element(timers_.begin(), timers_.end(),
-                                 [] (Timer<T> const& lhs, Timer<T> const& rhs) {
-                                   return lhs.GetMsecFromStart() < rhs.GetMsecFromStart();
-                                 });
+                   [] (Timer<T> const& lhs, Timer<T> const& rhs) {
+                     return lhs.GetMsecFromStart() < rhs.GetMsecFromStart();
+                   });
     return iter->GetMsecFromStart();
   }
   double GetNsec() const {
     auto iter = std::max_element(timers_.begin(), timers_.end(),
-                                 [] (Timer<T> const& lhs, Timer<T> const& rhs) {
-                                   return lhs.GetNsec() < rhs.GetNsec();
-                                 });
+                   [] (Timer<T> const& lhs, Timer<T> const& rhs) {
+                     return lhs.GetNsec() < rhs.GetNsec();
+                   });
     return iter->GetNsec();
   }
   double GetUsec() const {
     auto iter = std::max_element(timers_.begin(), timers_.end(),
-                                 [] (Timer<T> const& lhs, Timer<T> const& rhs) {
-                                   return lhs.GetUsec() < rhs.GetUsec();
-                                 });
+                   [] (Timer<T> const& lhs, Timer<T> const& rhs) {
+                     return lhs.GetUsec() < rhs.GetUsec();
+                   });
     return iter->GetUsec();
   }
   double GetMsec() const {
     auto iter = std::max_element(timers_.begin(), timers_.end(),
-                                 [] (Timer<T> const& lhs, Timer<T> const& rhs) {
-                                   return lhs.GetMsec() < rhs.GetMsec();
-                                 });
+                   [] (Timer<T> const& lhs, Timer<T> const& rhs) {
+                     return lhs.GetMsec() < rhs.GetMsec();
+                   });
     return iter->GetMsec();
   }
   double GetSec() const {
     auto iter = std::max_element(timers_.begin(), timers_.end(),
-                                 [] (Timer<T> const& lhs, Timer<T> const& rhs) {
-                                   return lhs.GetSec() < rhs.GetSec();
-                                 });
+                   [] (Timer<T> const& lhs, Timer<T> const& rhs) {
+                     return lhs.GetSec() < rhs.GetSec();
+                   });
     return iter->GetSec();
   }
   double GetUsFromEpoch() const {
     auto iter = std::max_element(timers_.begin(), timers_.end(),
-                                 [] (Timer<T> const& lhs, Timer<T> const& rhs) {
-                                   return lhs.GetUsFromEpoch() < rhs.GetUsFromEpoch();
-                                 });
+                   [] (Timer<T> const& lhs, Timer<T> const& rhs) {
+                     return lhs.GetUsFromEpoch() < rhs.GetUsFromEpoch();
+                   });
     return iter->GetUsFromEpoch();
   }
+
  private:
   void MinimumTID(int tid) {
-    if((size_t)tid >= timers_.size()) {
+    if ((size_t)tid >= timers_.size()) {
       timers_.resize(tid+1);
     }
   }
@@ -197,9 +205,11 @@ class ThreadedTimer {
 
 typedef Timer<std::chrono::high_resolution_clock> HighResCpuTimer;
 typedef Timer<std::chrono::steady_clock> HighResMonotonicTimer;
-typedef ThreadedTimer<std::chrono::high_resolution_clock> ThreadedHighResCpuTimer;
-typedef ThreadedTimer<std::chrono::steady_clock> ThreadedHighResMonotonicTimer;
+typedef ThreadedTimer<std::chrono::high_resolution_clock>
+    ThreadedHighResCpuTimer;
+typedef ThreadedTimer<std::chrono::steady_clock>
+    ThreadedHighResMonotonicTimer;
 
 }  // namespace labstor
 
-#endif //LABSTOR_TIMER_H
+#endif  // LABSTOR_TIMER_H

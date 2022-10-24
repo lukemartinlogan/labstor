@@ -33,7 +33,7 @@
 
 void labstor::IpcManager::Connect() {
     AUTO_TRACE("")
-    if(comm_ && comm_->IsConnected()) {
+    if (comm_ && comm_->IsConnected()) {
         return;
     }
 
@@ -41,10 +41,11 @@ void labstor::IpcManager::Connect() {
     comm_ = CommunicatorFactory::Get(CommunicatorType::kUnixDomain);
     comm_->Connect(kLabStorRuntimeUrl);
 
-    //Receive SHMEM region
-    //labstor::setup_reply reply;
-    //comm_->Recv(reinterpret_cast<char*>(&reply), sizeof(reply));
+    // Receive SHMEM region
+    // labstor::setup_reply reply;
+    // comm_->Recv(reinterpret_cast<char*>(&reply), sizeof(reply));
 }
 
-void labstor::IpcManager::Register(std::unique_ptr<Communicator> &comm, UserCredentials creds) {
+void labstor::IpcManager::Register(std::unique_ptr<Communicator> &comm,
+                                   UserCredentials creds) {
 }

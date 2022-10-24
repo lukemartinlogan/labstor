@@ -40,7 +40,7 @@
 
 int main(int argc, char **argv) {
   AUTO_TRACE("")
-  if(argc != 2) {
+  if (argc != 2) {
     printf("USAGE: ./server [config.yaml]\n");
     exit(1);
   }

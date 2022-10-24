@@ -18,7 +18,7 @@ add_executable(labstor_runtime
         src/singleton.cc)
 target_link_libraries(labstor_runtime yaml-cpp pthread)
 
-add_custom_target(lint COMMAND bash ${CMAKE_SOURCE_DIR}/test/lint/lint.sh ${CMAKE_SOURCE_DIR})
+add_custom_target(lint COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/lint.sh ${CMAKE_SOURCE_DIR})
 
 ######MODULES & TESTS
 enable_testing()

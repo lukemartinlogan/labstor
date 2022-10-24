@@ -41,13 +41,13 @@ class ThreadFactory {
  public:
   ThreadFactory(ThreadType type, BIND bind) : type_(type), bind_(bind) {}
   std::unique_ptr<Thread> Get() {
-    switch(type_) {
+    switch (type_) {
       case ThreadType::kPthread: return std::make_unique<Pthread<BIND>>(bind_);
       default: return nullptr;
     }
   }
 };
 
-}
+}  // namespace labstor
 
-#endif //LABSTOR_INCLUDE_LABSTOR_THREAD_THREAD_FACTORY_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_THREAD_THREAD_FACTORY_H_

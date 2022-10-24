@@ -38,11 +38,11 @@ class Singleton {
  public:
   Singleton() = default;
   static T* GetInstance() {
-    if(!obj_) { obj_ = std::make_unique<T>(); }
+    if (!obj_) { obj_ = std::make_unique<T>(); }
     return obj_.get();
   }
 };
 
 }  // namespace scs
 
-#endif //SCS_SINGLETON_H
+#endif  // SCS_SINGLETON_H

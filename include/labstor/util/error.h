@@ -33,11 +33,12 @@
 #include <string>
 #include <cstdlib>
 #include <memory>
-#include <labstor/util/serializeable.h>
+#include <labstor/util/formatter.h>
 
 #define LABSTOR_ERROR_TYPE std::shared_ptr<labstor::Error>
 #define LABSTOR_ERROR_HANDLE_START() try {
-#define LABSTOR_ERROR_HANDLE_END() } catch(LABSTOR_ERROR_TYPE &err) { err->print(); exit(err->get_code()); }
+#define LABSTOR_ERROR_HANDLE_END() \
+  } catch(LABSTOR_ERROR_TYPE &err) { err->print(); exit(err->get_code()); }
 #define LABSTOR_ERROR_HANDLE_TRY try
 #define LABSTOR_ERROR_PTR err
 #define LABSTOR_ERROR_HANDLE_CATCH catch(LABSTOR_ERROR_TYPE &LABSTOR_ERROR_PTR)
@@ -73,4 +74,4 @@ class Error {
 
 #endif
 
-#endif //LABSTOR_ERROR_H
+#endif  // LABSTOR_ERROR_H

@@ -54,7 +54,7 @@ class Pthread : public Thread {
   bool started_;
 
  public:
-  Pthread(BIND bind) : started_(false), pthread_(-1) {
+  explicit Pthread(BIND bind) : started_(false), pthread_(-1) {
     PthreadParams<BIND> params(this, bind);
     int ret = pthread_create(&pthread_, nullptr,
                              DoWork,
@@ -62,7 +62,7 @@ class Pthread : public Thread {
     if (ret != 0) {
       throw PTHREAD_CREATE_FAILED.format();
     }
-    while(!started_);
+    while (!started_) {}
   }
 
   void Pause() override {}
@@ -91,12 +91,12 @@ class Pthread : public Thread {
 
   inline void pthread_setaffinity_np_safe(int n_cpu, cpu_set_t *cpus) {
     int ret = pthread_setaffinity_np(pthread_, n_cpu, cpus);
-    if(ret != 0) {
+    if (ret != 0) {
       throw INVALID_AFFINITY.format(strerror(ret));
     }
   }
 };
 
-}
+}  // namespace labstor
 
-#endif //LABSTOR_INCLUDE_LABSTOR_THREAD_PTHREAD_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_THREAD_PTHREAD_H_

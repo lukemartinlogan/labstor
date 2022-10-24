@@ -43,14 +43,14 @@ typedef uint32_t labstor_runtime_id_t;
 typedef int32_t labstor_off_t;
 
 struct labstor_id {
-    char key_[MODULE_KEY_SIZE];
+  char key_[MODULE_KEY_SIZE];
 };
 
 struct labstor_credentials {
-    int pid_;
-    int uid_;
-    int gid_;
-    int priority_;
+  int pid_;
+  int uid_;
+  int gid_;
+  int priority_;
 };
 
 #ifdef __cplusplus
@@ -60,47 +60,48 @@ namespace labstor {
 typedef labstor_credentials UserCredentials;
 
 struct id {
-    char key_[MODULE_KEY_SIZE];
-    id() = default;
-    ~id() = default;
-    id(std::string key_str) {
-        strcpy(key_, key_str.c_str());
-    }
-    id(const char* key_str) {
-        strcpy(key_, key_str);
-    }
-    bool operator==(const id &other) const {
-        return strncmp(key_, other.key_, MODULE_KEY_SIZE) == 0;
-    }
-    void copy(const std::string &str) {
-        memcpy(key_, str.c_str(), str.size());
-        key_[str.size()] = 0;
-    }
-    const char& operator [](int i) {
-        return key_[i];
-    }
+  char key_[MODULE_KEY_SIZE];
+  id() = default;
+  ~id() = default;
+  explicit id(const std::string &key_str) {
+    snprintf(key_, MODULE_KEY_SIZE, "%s", key_str.c_str());
+  }
+  explicit id(const char* key_str) {
+    snprintf(key_, MODULE_KEY_SIZE, "%s", key_str);
+  }
+  bool operator==(const id &other) const {
+    return strncmp(key_, other.key_, MODULE_KEY_SIZE) == 0;
+  }
+  void copy(const std::string &str) {
+    memcpy(key_, str.c_str(), str.size());
+    key_[str.size()] = 0;
+  }
+  const char& operator[](int i) {
+    return key_[i];
+  }
 };
 
 typedef int32_t off_t;
 
-}
+}  // namespace labstor
 
 namespace std {
-    template<>
-    struct hash<labstor::id> {
-        std::size_t operator()(const labstor::id &id) const {
-            size_t sum = 0;
-            int len = strnlen(id.key_, MODULE_KEY_SIZE);
-            for (int i = 0; i < len; ++i) {
-                if (id.key_[i] == 0) { break; }
-                sum += id.key_[i] << (i % 8);
-            }
-            return sum;
-        }
-    };
-}
+template<>
+struct hash<labstor::id> {
+  std::size_t operator()(const labstor::id &id) const {
+    size_t sum = 0;
+    int len = strnlen(id.key_, MODULE_KEY_SIZE);
+    for (int i = 0; i < len; ++i) {
+      if (id.key_[i] == 0) { break; }
+      sum += id.key_[i] << (i % 8);
+    }
+    return sum;
+  }
+};
+}  // namespace std
+
 #endif
 
 
 
-#endif //LABSTOR_BASICS_H
+#endif  // LABSTOR_BASICS_H

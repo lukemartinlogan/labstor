@@ -27,7 +27,7 @@
 #ifndef LABSTOR_PARTITIONER_H
 #define LABSTOR_PARTITIONER_H
 
-//Reference: https://stackoverflow.com/questions/63372288/getting-list-of-pids-from-proc-in-linux
+// Reference: https://stackoverflow.com/questions/63372288/getting-list-of-pids-from-proc-in-linux
 
 #include <vector>
 #include <dirent.h>
@@ -41,6 +41,7 @@ class ProcessAffiner {
  private:
   int n_cpu_;
   cpu_set_t *cpus_;
+
  public:
   ProcessAffiner() {
     n_cpu_ = get_nprocs_conf();
@@ -65,7 +66,7 @@ class ProcessAffiner {
   }
 
   inline void SetCpus(int off, int len) {
-    for(int i = 0; i < len; ++i) {
+    for (int i = 0; i < len; ++i) {
       SetCpu(off + i);
     }
   }
@@ -75,7 +76,7 @@ class ProcessAffiner {
   }
 
   inline void ClearCpus(int off, int len) {
-    for(int i = 0; i < len; ++i) {
+    for (int i = 0; i < len; ++i) {
       ClearCpu(off + i);
     }
   }
@@ -101,9 +102,9 @@ class ProcessAffiner {
       // Skip anything that is not a PID folder.
       if (!is_pid_folder(entry))
         continue;
-      //Get the PID of the running process
+      // Get the PID of the running process
       int proc_pid = atoi(entry->d_name);
-      //Set the affinity of all running process to this mask
+      // Set the affinity of all running process to this mask
       count += Affine(proc_pid);
     }
     closedir(procdir);
@@ -113,9 +114,9 @@ class ProcessAffiner {
     return Affine(pids);
   }
   int Affine(std::vector<pid_t> &pids) {
-    //Set the affinity of all running process to this mask
+    // Set the affinity of all running process to this mask
     int count = 0;
-    for(pid_t &pid : pids) {
+    for (pid_t &pid : pids) {
       count += Affine(pid);
     }
     return count;
@@ -128,9 +129,9 @@ class ProcessAffiner {
     PrintAffinity("", pid);
   }
   void PrintAffinity(std::string prefix, int pid) {
-    cpu_set_t cpus[n_cpu_];
-    sched_getaffinity(pid, n_cpu_, cpus);
-    PrintAffinity(prefix, pid, cpus);
+    std::vector<cpu_set_t> cpus(n_cpu_);
+    sched_getaffinity(pid, n_cpu_, cpus.data());
+    PrintAffinity(prefix, pid, cpus.data());
   }
 
   void PrintAffinity(std::string prefix, int pid, cpu_set_t *cpus) {
@@ -140,7 +141,8 @@ class ProcessAffiner {
         affinity += std::to_string(i) + ", ";
       }
     }
-    printf("%s: CPU affinity[pid=%d]: %s\n", prefix.c_str(), pid, affinity.c_str());
+    printf("%s: CPU affinity[pid=%d]: %s\n", prefix.c_str(),
+           pid, affinity.c_str());
   }
 
  private:
@@ -165,4 +167,4 @@ class ProcessAffiner {
 
 }  // namespace labstor
 
-#endif //LABSTOR_PARTITIONER_H
+#endif  // LABSTOR_PARTITIONER_H

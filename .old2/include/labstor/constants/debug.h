@@ -42,7 +42,7 @@
 
 #include "stdio.h"
 #include "labstor/util/timer.h"
-#include "labstor/util/serializeable.h"
+#include "labstor/util/formatter.h"
 #include <sched.h>
 #include <unistd.h>
 

@@ -88,4 +88,4 @@ namespace labstor {
 
 #endif
 
-#endif //LABSTOR_ERRORS_H
+#endif  // LABSTOR_ERRORS_H

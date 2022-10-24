@@ -39,7 +39,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-namespace labstor::shmem {
+namespace labstor::memory {
 
 class Posix : public MemoryBackend {
 private:
@@ -82,6 +82,6 @@ public:
   }
 };
 
-}
+}  // namespace labstor::memory
 
-#endif //LABSTOR_UNIX_SYSV_H
+#endif  // LABSTOR_UNIX_SYSV_H

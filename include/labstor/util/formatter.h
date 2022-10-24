@@ -32,30 +32,29 @@
 #include <string>
 #include <type_traits>
 #include <cstring>
+#include <sstream>
 
 #define NUMBER_SERIAL(type) \
-    std::string new_str = std::to_string(num_.type); \
-    memcpy(buf, new_str.c_str(), new_str.size()); \
-    return new_str.size();
+    return std::to_string(num_.type);
 
 namespace labstor {
 
-class Serializeable {
+class Formattable {
  public:
-  virtual size_t serialize(char *buf) = 0;
+  virtual std::string ToString() = 0;
 };
 
-class SizeType : public Serializeable {
+class SizeType : public Formattable {
  public:
   double num_;
   size_t unit_;
 
   static const size_t
-      BYTES=1,
-      KB=(1ul << 10),
-      MB=(1ul << 20),
-      GB=(1ul << 30),
-      TB=(1ul << 40);
+      BYTES = 1,
+      KB = (1ul << 10),
+      MB = (1ul << 20),
+      GB = (1ul << 30),
+      TB = (1ul << 40);
 
   std::string unit_to_str(size_t unit) {
     switch (unit) {
@@ -74,30 +73,33 @@ class SizeType : public Serializeable {
     unit_ = old_obj.unit_;
   }
 
-  SizeType(int8_t bytes, size_t unit) : num_(((double)bytes)/unit), unit_(unit) {}
-  SizeType(int16_t bytes, size_t unit) : num_(((double)bytes)/unit), unit_(unit) {}
-  SizeType(int32_t bytes, size_t unit) : num_(((double)bytes)/unit), unit_(unit) {}
-  SizeType(int64_t bytes, size_t unit) : num_(((double)bytes)/unit), unit_(unit) {}
-  SizeType(uint8_t bytes, size_t unit) : num_(((double)bytes)/unit), unit_(unit) {}
-  SizeType(uint16_t bytes, size_t unit) : num_(((double)bytes)/unit), unit_(unit) {}
-  SizeType(uint32_t bytes, size_t unit) : num_(((double)bytes)/unit), unit_(unit) {}
-  SizeType(uint64_t bytes, size_t unit) : num_(((double)bytes)/unit), unit_(unit) {}
-  SizeType(float bytes, size_t unit) : num_(((double)bytes)/unit), unit_(unit) {}
-  SizeType(double bytes, size_t unit) : num_(((double)bytes)/unit), unit_(unit) {}
-
-  size_t serialize(char *buf) {
-    std::string serial = ToString();
-    memcpy(buf, serial.c_str(), serial.size());
-    printf("serial: %s\n", serial.c_str());
-    return serial.size();
-  }
+  SizeType(int8_t bytes, size_t unit) :
+  num_(((double)bytes)/unit), unit_(unit) {}
+  SizeType(int16_t bytes, size_t unit) :
+  num_(((double)bytes)/unit), unit_(unit) {}
+  SizeType(int32_t bytes, size_t unit) :
+  num_(((double)bytes)/unit), unit_(unit) {}
+  SizeType(int64_t bytes, size_t unit) :
+  num_(((double)bytes)/unit), unit_(unit) {}
+  SizeType(uint8_t bytes, size_t unit) :
+  num_(((double)bytes)/unit), unit_(unit) {}
+  SizeType(uint16_t bytes, size_t unit) :
+  num_(((double)bytes)/unit), unit_(unit) {}
+  SizeType(uint32_t bytes, size_t unit) :
+  num_(((double)bytes)/unit), unit_(unit) {}
+  SizeType(uint64_t bytes, size_t unit) :
+  num_(((double)bytes)/unit), unit_(unit) {}
+  SizeType(float bytes, size_t unit) :
+  num_(((double)bytes)/unit), unit_(unit) {}
+  SizeType(double bytes, size_t unit) :
+  num_(((double)bytes)/unit), unit_(unit) {}
 
   std::string ToString() {
     return std::to_string(num_) + unit_to_str(unit_);
   }
 };
 
-class Arg : Serializeable {
+class Arg : Formattable {
  private:
   union {
     char d8;
@@ -115,21 +117,11 @@ class Arg : Serializeable {
     long double f96;
   } num_;
   std::string str_;
-  Serializeable *obj_;
-  std::shared_ptr<Serializeable> obj_shared_;
+  Formattable *obj_;
+  std::shared_ptr<Formattable> obj_shared_;
   int type_;
+
  public:
-  /*
-  Arg(char num) : type_(0) { num_.d8 = num; }
-  Arg(short int num) : type_(0) { num_.d16 = num; }
-  Arg(int num) : type_(0) { num_.d32 = num; }
-  Arg(long num) : type_(1) { num_.d64 = num; }
-  Arg(long long num) : type_(2) { num_.d128 = num; }
-  Arg(unsigned char num) : type_(3) { num_.u8 = num; }
-  Arg(unsigned short int num) : type_(3) { num_.u16 = num; }
-  Arg(unsigned int num) : type_(3) { num_.u32 = num; }
-  Arg(unsigned long num) : type_(4) { num_.u64 = num; }
-  Arg(unsigned long long num) : type_(5) { num_.u128 = num; }*/
   Arg(int8_t num) : type_(0) { num_.d8 = num; }
   Arg(int16_t num) : type_(1) { num_.d16 = num; }
   Arg(int32_t num) : type_(2) { num_.d32 = num; }
@@ -141,15 +133,17 @@ class Arg : Serializeable {
   Arg(float num) : type_(8) { num_.f32 = num; }
   Arg(double num) : type_(9) { num_.f64 = num; }
   Arg(long double num) : type_(10) { num_.f96 = num; }
-  Arg(char *str) : type_(11) { if(str) str_ = std::string(str); else str_ = ""; }
-  Arg(const char *str) : type_(11) { if(str) str_ = std::string(str); else str_ = ""; }
-  Arg(std::string str) : type_(11) { str_ = str; }
-  Arg(Serializeable *obj) : type_(12) { obj_ = obj; }
-  Arg(std::shared_ptr<Serializeable> obj) : type_(13) { obj_shared_ = obj; }
-  template<typename T>
-  Arg(T obj) : type_(11) { obj_shared_ = std::shared_ptr<Serializeable>(new T(obj)); }
-
-  size_t serialize(char *buf) {
+  Arg(const char *str) : type_(11) { str_ = str; }
+  Arg(std::string str) : type_(11) { str_ = std::move(str); }
+  Arg(const std::string &str) : type_(11) { str_ = str; }
+  Arg(Formattable *obj) : type_(12) { obj_ = obj; }
+  Arg(std::unique_ptr<Formattable> &obj) : type_(12) {
+    obj_ = obj.get();
+  }
+  Arg(std::shared_ptr<Formattable> &obj) : type_(13) {
+    obj_shared_ = obj;
+  }
+  std::string ToString() override {
     switch (type_) {
       case 0: {
         NUMBER_SERIAL(d8)
@@ -185,17 +179,16 @@ class Arg : Serializeable {
         NUMBER_SERIAL(f96)
       }
       case 11: {
-        memcpy(buf, str_.c_str(), str_.size());
-        return str_.size();
+        return str_;
       }
       case 12: {
-        return obj_->serialize(buf);
+        return obj_->ToString();
       }
       case 13: {
-        return obj_shared_->serialize(buf);
+        return obj_shared_->ToString();
       }
     }
-    return 0;
+    return "";
   }
 };
 
@@ -204,10 +197,10 @@ class ArgPacker {
   std::vector<Arg> args_;
  public:
   template<typename ...Args>
-  ArgPacker(Args ...args) {
+  explicit ArgPacker(Args ...args) {
     args_ = {args...};
   }
-  Arg& operator [](int pos) { return args_[pos]; }
+  Arg& operator[](int pos) { return args_[pos]; }
 
   std::vector<Arg>::iterator begin() { return args_.begin(); }
   std::vector<Arg>::iterator end() { return args_.end(); }
@@ -220,23 +213,19 @@ class Formatter {
   template<typename ...Args>
   static std::string format(std::string fmt, Args ...args) {
     ArgPacker params(args...);
-    char *buffer = (char*)calloc(8192, 1);
-    size_t off = 0;
+    std::stringstream ss;
     int arg = 0;
     for (size_t i = 0; i < fmt.size(); ++i) {
       if (fmt[i] == '{' && fmt[i + 1] == '}') {
-        off += params[arg++].serialize(buffer + off);
+        ss << params[arg++].ToString();
         ++i;
         continue;
       }
-      buffer[off++] = fmt[i];
     }
-    std::string str(buffer, off);
-    free(buffer);
-    return str;
+    return ss.str();
   }
 };
 
 }  // namespace labstor
 
-#endif //LABSTOR_ERROR_SERIALIZER_H
+#endif  //LABSTOR_ERROR_SERIALIZER_H

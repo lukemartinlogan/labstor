@@ -38,12 +38,12 @@
 namespace labstor {
 
 struct ConfigurationManager {
-    YAML::Node config_;
-    void LoadConfig(char *path) {
-        config_ = YAML::LoadFile(path);
-    }
+  YAML::Node config_;
+  void LoadConfig(char *path) {
+      config_ = YAML::LoadFile(path);
+  }
 };
 
-}
+}  // namespace labstor
 
-#endif //LABSTOR_SERVER_H
+#endif  // LABSTOR_SERVER_H

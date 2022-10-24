@@ -57,12 +57,13 @@ class UnixAcceptDaemon : public Daemon {
     remove(kLabStorRuntimeUrl.c_str());
 
     fd_ = socket(AF_UNIX, SOCK_STREAM, 0);
-    if(fd_ < 0) {
+    if (fd_ < 0) {
       throw labstor::UNIX_SOCKET_FAILED.format(strerror(errno));
     }
 
-    ret = setsockopt(fd_, SOL_SOCKET, SO_PASSCRED, (void*)&optval, sizeof(optval));
-    if(ret < 0) {
+    ret = setsockopt(fd_, SOL_SOCKET, SO_PASSCRED,
+                     (void*)&optval, sizeof(optval));
+    if (ret < 0) {
       throw labstor::UNIX_SETSOCKOPT_FAILED.format(strerror(errno));
     }
 
@@ -70,13 +71,14 @@ class UnixAcceptDaemon : public Daemon {
     server_addr_.sun_family = AF_UNIX;
     strncpy(server_addr_.sun_path,
             kLabStorRuntimeUrl.c_str(), kLabStorRuntimeUrl.size());
-    ret = bind(fd_, (struct sockaddr *)&server_addr_, SUN_LEN(&server_addr_));
-    if(ret < 0) {
+    ret = bind(fd_,
+               (struct sockaddr *)&server_addr_, SUN_LEN(&server_addr_));
+    if (ret < 0) {
       throw labstor::UNIX_BIND_FAILED.format(strerror(errno));
     }
 
     ret = listen(fd_, 1024);
-    if(ret < 0) {
+    if (ret < 0) {
       throw labstor::UNIX_LISTEN_FAILED.format(strerror(errno));
     }
   }
@@ -91,7 +93,8 @@ class UnixAcceptDaemon : public Daemon {
 
     //Accept client connection
     clilen = sizeof(client_addr_);
-    client_fd_ = accept(fd_, (struct sockaddr *) &client_addr_, &clilen);
+    client_fd_ = accept(fd_,
+                        (struct sockaddr *) &client_addr_, &clilen);
     if (client_fd_ < 0) {
       throw labstor::UNIX_ACCEPT_FAILED.format(strerror(errno));
     }
@@ -99,7 +102,8 @@ class UnixAcceptDaemon : public Daemon {
     printf("New client was accepted!\n");
     //Get the client's credentials
     len = sizeof(struct ucred);
-    ret = getsockopt(client_fd_, SOL_SOCKET, SO_PEERCRED, &ucred, &len);
+    ret = getsockopt(client_fd_, SOL_SOCKET, SO_PEERCRED,
+                     &ucred, &len);
     if (ret < 0) {
       throw labstor::UNIX_GETSOCKOPT_FAILED.format(strerror(errno));
     }
@@ -110,13 +114,15 @@ class UnixAcceptDaemon : public Daemon {
       //ipc_manager_->RegisterClient(client_fd_, creds);
     }
     LABSTOR_ERROR_HANDLE_CATCH {
-      printf("Failed to accept client (pid=%d uid=%d gid=%d)\n", creds.pid_, creds.uid_, creds.gid_);
+      printf("Failed to accept client (pid=%d uid=%d gid=%d)\n",
+             creds.pid_, creds.uid_, creds.gid_);
       LABSTOR_ERROR_PTR->print();
     };
-    printf("New client (pid=%d uid=%d gid=%d) was accepted!\n", creds.pid_, creds.uid_, creds.gid_);
+    printf("New client (pid=%d uid=%d gid=%d) was accepted!\n",
+           creds.pid_, creds.uid_, creds.gid_);
   }
 };
 
-}
+}  // namespace labstor
 
-#endif //LABSTOR_INCLUDE_LABSTOR_RUNTIME_UNIX_RUNTIME_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_RUNTIME_UNIX_RUNTIME_H_
