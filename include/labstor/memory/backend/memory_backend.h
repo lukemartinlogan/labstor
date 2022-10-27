@@ -31,33 +31,73 @@
 #include <vector>
 #include <string>
 #include <labstor/constants/singleton_macros.h>
+#include <labstor/memory/attachable.h>
 
-namespace labstor {
+namespace labstor::memory {
 
 struct MemorySlot {
   char *ptr_;
   size_t off_;
   size_t size_;
 
-  MemorySlot(char *ptr, size_t off, size_t size) : ptr_(ptr), off_(off), size_(size) {}
+  MemorySlot() = default;
+
+  explicit MemorySlot(char *ptr, size_t off, size_t size) :
+      ptr_(ptr), off_(off), size_(size) {}
 };
 
-class MemoryBackend {
+class MemoryBackend : public Attachable {
 protected:
   std::vector<MemorySlot> slots_;
-  std::size_t cur_size_;
-  int pid_;
-  std::string mem_url_;
+  std::size_t cur_size_, max_size_;
+  std::string url_;
+
 public:
-  MemoryBackend() : cur_size_(0) {
-    auto sys_info = LABSTOR_SYSTEM_INFO;
-    pid_ = sys_info->pid_;
-    mem_url_ = "labstor_mem_" + std::to_string(pid_);
+  explicit MemoryBackend(const std::string &url) :
+    cur_size_(0), max_size_(0), url_(url) {}
+  virtual ~MemoryBackend() = default;
+
+  void MapSlot(std::size_t size) {
+    MemorySlot slot;
+    slot.off_ = cur_size_;
+    slot.size_ = size;
+    _MapSlot(slot);
+    slots_.emplace_back(slot);
+    cur_size_ += size;
   }
-  virtual void Reserve(std::size_t size) = 0;
-  virtual void AttachSlot(std::size_t size) = 0;
-  virtual void MergeSlots() = 0;
+
   const MemorySlot& GetSlot(int i) const { return slots_[i]; }
+
+  void Detach() override {
+    _UnmapSlots();
+    _Detach();
+  }
+
+  void Destroy() override {
+    _UnmapSlots();
+    _Detach();
+    _Destroy();
+  }
+
+  void Reserve(std::size_t size) {
+    max_size_ = size;
+    _Reserve(size);
+  }
+
+ protected:
+  void _UnmapSlots() {
+    for (auto &slot : slots_) {
+      _FreeSlot(slot);
+    }
+    slots_.erase(slots_.begin(), slots_.end());
+    cur_size_ = 0;
+  }
+
+  virtual void _MapSlot(MemorySlot &slot) = 0;
+  virtual void _FreeSlot(MemorySlot &slot) = 0;
+  virtual void _Reserve(std::size_t size) = 0;
+  virtual void _Detach() = 0;
+  virtual void _Destroy() = 0;
 };
 
 }
