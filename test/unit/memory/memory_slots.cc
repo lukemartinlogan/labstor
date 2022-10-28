@@ -4,10 +4,10 @@
 
 #include <mpi.h>
 #include <iostream>
-#include <labstor/memory/backend/shared_memory_mmap.h>
+#include <labstor/memory/backend/posix_shm_mmap.h>
 #include <assert.h>
 
-using labstor::memory::SharedMemoryMmap;
+using labstor::memory::PosixShmMmap;
 
 bool VerifyBuffer(char *ptr, size_t size, char nonce) {
   for (size_t i = 0; i < size; ++i) {
@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
 
   LABSTOR_ERROR_HANDLE_START()
 
-  SharedMemoryMmap backend(shm_name);
+  PosixShmMmap backend(shm_name);
   if (rank == 0) {
     std::cout << "Creating SHMEM (rank 0): " << shm_name << std::endl;
     backend.Create();

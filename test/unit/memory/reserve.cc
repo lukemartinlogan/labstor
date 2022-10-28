@@ -2,13 +2,13 @@
 // Created by lukemartinlogan on 10/26/22.
 //
 
-#include <labstor/memory/backend/shared_memory_mmap.h>
+#include <labstor/memory/backend/posix_shm_mmap.h>
 
 using labstor::memory::MemorySlot;
-using labstor::memory::SharedMemoryMmap;
+using labstor::memory::PosixShmMmap;
 
 int main() {
-  SharedMemoryMmap b1("shmem_test");
+  PosixShmMmap b1("shmem_test");
   // Reserve 8GB of SHMEM
   b1.Reserve(GIGABYTES(8));
   sleep(2);

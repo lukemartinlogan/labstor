@@ -56,16 +56,16 @@ struct SharedMemorySlot {
   }
 };
 
-class SharedMemoryMmap : public MemoryBackend {
+class PosixShmMmap : public MemoryBackend {
 private:
   int fd_;
   size_t header_size_;
   Array<SharedMemorySlot> slot_array_;
 
 public:
-  SharedMemoryMmap(const std::string &url) :
+  explicit PosixShmMmap(const std::string &url) :
     MemoryBackend(url), fd_(-1), header_size_(MEGABYTES(32)) {}
-  ~SharedMemoryMmap() override = default;
+  ~PosixShmMmap() override = default;
 
   bool Create() override {
     fd_ = shm_open(url_.c_str(), O_CREAT | O_RDWR, 0666);
