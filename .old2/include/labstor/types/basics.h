@@ -89,7 +89,7 @@ typedef labstor_credentials credentials;
 namespace std {
     template<>
     struct hash<labstor::id> {
-        std::size_t operator()(const labstor::id &id) const {
+        size_t operator()(const labstor::id &id) const {
             size_t sum = 0;
             int len = strnlen(id.key_, MODULE_KEY_SIZE);
             for (int i = 0; i < len; ++i) {

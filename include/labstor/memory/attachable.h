@@ -14,7 +14,19 @@ class Attachable {
   virtual bool Create() = 0;
   virtual bool Attach() = 0;
   virtual void Detach() = 0;
-  virtual void Destroy() = 0;
+  void Destroy() {
+    Detach();
+    _Destroy();
+  }
+
+ protected:
+  virtual void _Destroy() = 0;
+};
+
+class BufferAttachable {
+ public:
+  virtual bool Create(void *buffer, size_t size) = 0;
+  virtual bool Attach(void *buffer) = 0;
 };
 
 }

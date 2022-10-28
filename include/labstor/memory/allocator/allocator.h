@@ -23,7 +23,7 @@ class Allocator : public Attachable {
 
  public:
   Allocator(uint64_t id) : id_(id) {}
-  virtual Pointer Allocate(std::size_t size) = 0;
+  virtual Pointer Allocate(size_t size) = 0;
   virtual void Free(Pointer &ptr) = 0;
 
   void* Convert(Pointer p) {

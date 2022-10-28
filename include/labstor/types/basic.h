@@ -29,6 +29,8 @@
 
 #define MODULE_KEY_SIZE 32
 
+#include <cstdint>
+using std::size_t;
 
 #ifdef KERNEL_BUILD
 #include <linux/types.h>
@@ -88,7 +90,7 @@ typedef int32_t off_t;
 namespace std {
 template<>
 struct hash<labstor::id> {
-  std::size_t operator()(const labstor::id &id) const {
+  size_t operator()(const labstor::id &id) const {
     size_t sum = 0;
     int len = strnlen(id.key_, MODULE_KEY_SIZE);
     for (int i = 0; i < len; ++i) {

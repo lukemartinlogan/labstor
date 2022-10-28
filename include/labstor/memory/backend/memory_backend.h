@@ -41,23 +41,24 @@ struct MemorySlot {
   size_t size_;
 
   MemorySlot() = default;
-
-  explicit MemorySlot(char *ptr, size_t off, size_t size) :
-      ptr_(ptr), off_(off), size_(size) {}
 };
 
 class MemoryBackend : public Attachable {
 protected:
-  std::vector<MemorySlot> slots_;
-  std::size_t cur_size_, max_size_;
   std::string url_;
+  std::vector<MemorySlot> slots_;
+  size_t cur_size_, max_size_;
 
 public:
   explicit MemoryBackend(const std::string &url) :
-    cur_size_(0), max_size_(0), url_(url) {}
+    url_(url), cur_size_(0), max_size_(0) {}
+
   virtual ~MemoryBackend() = default;
 
-  void MapSlot(std::size_t size) {
+  void MapSlot(size_t size) {
+    if (cur_size_ + size > max_size_) {
+      Reserve(cur_size_ + size);
+    }
     MemorySlot slot;
     slot.off_ = cur_size_;
     slot.size_ = size;
@@ -66,38 +67,22 @@ public:
     cur_size_ += size;
   }
 
-  const MemorySlot& GetSlot(int i) const { return slots_[i]; }
-
-  void Detach() override {
-    _UnmapSlots();
-    _Detach();
-  }
-
-  void Destroy() override {
-    _UnmapSlots();
-    _Detach();
-    _Destroy();
-  }
-
-  void Reserve(std::size_t size) {
-    max_size_ = size;
-    _Reserve(size);
+  [[nodiscard]]
+  const MemorySlot& GetSlot(uint32_t slot_id) {
+    if (slot_id > slots_.size()) {
+      _GetSlot(slot_id);
+    }
+    return slots_[slot_id];
   }
 
  protected:
-  void _UnmapSlots() {
-    for (auto &slot : slots_) {
-      _FreeSlot(slot);
-    }
-    slots_.erase(slots_.begin(), slots_.end());
-    cur_size_ = 0;
+  void Reserve(size_t size) {
+    _Reserve(size);
+    max_size_ = size;
   }
-
+  virtual void _Reserve(size_t size) = 0;
   virtual void _MapSlot(MemorySlot &slot) = 0;
-  virtual void _FreeSlot(MemorySlot &slot) = 0;
-  virtual void _Reserve(std::size_t size) = 0;
-  virtual void _Detach() = 0;
-  virtual void _Destroy() = 0;
+  virtual void _GetSlot(uint32_t slot_id) = 0;
 };
 
 }
