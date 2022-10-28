@@ -129,6 +129,6 @@ class Array : public BufferAttachable {
   }
 };
 
-}
+}  // namespace labstor::memory
 
-#endif //LABSTOR_INCLUDE_LABSTOR_MEMORY_DATA_STRUCTURES_ARRAY_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_MEMORY_DATA_STRUCTURES_ARRAY_H_

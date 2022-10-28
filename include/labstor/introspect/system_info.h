@@ -41,6 +41,6 @@ struct SystemInfo {
   }
 };
 
-}
+}  // namespace labstor
 
-#endif //LABSTOR_INCLUDE_LABSTOR_SYSINFO_INFO_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_SYSINFO_INFO_H_

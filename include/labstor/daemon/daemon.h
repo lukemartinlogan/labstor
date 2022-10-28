@@ -67,6 +67,6 @@ class Daemon {
   virtual void _DoWork() = 0;
 };
 
-}
+}  // namespace labstor
 
-#endif //LABSTOR_DAEMON_H
+#endif  // LABSTOR_DAEMON_H

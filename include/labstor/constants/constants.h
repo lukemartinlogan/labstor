@@ -28,6 +28,6 @@
 
 #include <string>
 
-const std::string kLabStorRuntimeUrl = "labstor_runtime_url";
+const char kLabStorRuntimeUrl[] = "labstor_runtime_url";
 
-#endif //LABSTOR_INCLUDE_LABSTOR_CONSTANTS_CONSTANTS_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_CONSTANTS_CONSTANTS_H_

@@ -44,7 +44,7 @@ class Allocator : public Attachable {
   std::unique_ptr<MemoryBackend> backend_;
 
  public:
-  Allocator(uint64_t id) : id_(id) {}
+  explicit Allocator(uint64_t id) : id_(id) {}
   virtual Pointer Allocate(size_t size) = 0;
   virtual void Free(Pointer &ptr) = 0;
 
@@ -56,4 +56,4 @@ class Allocator : public Attachable {
 
 }  // namespace labstor::memory
 
-#endif //LABSTOR_INCLUDE_LABSTOR_MEMORY_ALLOCATOR_ALLOCATOR_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_MEMORY_ALLOCATOR_ALLOCATOR_H_

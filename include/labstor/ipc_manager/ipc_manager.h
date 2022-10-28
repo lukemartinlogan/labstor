@@ -43,14 +43,15 @@ struct ClientInfo {
 };
 
 class IpcManager {
-private:
+ private:
   std::unique_ptr<Communicator> comm_;
   std::unordered_map<pid_t, ClientInfo> clients_;
-public:
+
+ public:
   void Connect();
   void Register(std::unique_ptr<Communicator> &comm, UserCredentials creds);
 };
 
-}
+}  // namespace labstor
 
-#endif //LABSTOR_IPC_MANAGER_H
+#endif  // LABSTOR_IPC_MANAGER_H

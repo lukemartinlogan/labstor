@@ -30,4 +30,4 @@
 #define MEGABYTES(n) ((size_t)(n) * (1<<20))
 #define GIGABYTES(n) ((size_t)(n) * (1<<30))
 
-#endif //LABSTOR_MACROS_H
+#endif  // LABSTOR_MACROS_H

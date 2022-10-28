@@ -53,4 +53,4 @@ class BufferAttachable {
 
 }  // namespace labstor::memory
 
-#endif //LABSTOR_INCLUDE_LABSTOR_MEMORY_ATTACHABLE_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_MEMORY_ATTACHABLE_H_

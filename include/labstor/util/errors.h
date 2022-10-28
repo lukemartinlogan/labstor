@@ -33,7 +33,7 @@
 namespace labstor {
   const Error FILE_NOT_FOUND("File not found at {}");
   const Error INVALID_STORAGE_TYPE("{} is not a valid storage method");
-  const Error INVALID_SERIALIZER_TYPE( "{} is not a valid serializer type");
+  const Error INVALID_SERIALIZER_TYPE("{} is not a valid serializer type");
   const Error INVALID_TRANSPORT_TYPE("{} is not a valid transport type");
   const Error INVALID_AFFINITY("Could not set CPU affinity of thread: {}");
   const Error MMAP_FAILED("Could not mmap file: {}");

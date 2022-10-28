@@ -43,6 +43,6 @@ class Communicator {
   virtual void Recv(char *buf, size_t size) = 0;
 };
 
-}
+}  // namespace labstor
 
-#endif //LABSTOR_INCLUDE_LABSTOR_IPC_MANAGER_COMM_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_IPC_MANAGER_COMM_H_

@@ -43,12 +43,12 @@ struct MemorySlot {
 };
 
 class MemoryBackend : public Attachable {
-protected:
+ protected:
   std::string url_;
   std::vector<MemorySlot> slots_;
   size_t cur_size_;
 
-public:
+ public:
   explicit MemoryBackend(const std::string &url) :
     url_(url), cur_size_(0) {}
 
@@ -81,6 +81,6 @@ public:
   virtual void _GetSlot(uint32_t slot_id) = 0;
 };
 
-}
+}  // namespace labstor::memory
 
-#endif //LABSTOR_MEMORY_H
+#endif  // LABSTOR_MEMORY_H

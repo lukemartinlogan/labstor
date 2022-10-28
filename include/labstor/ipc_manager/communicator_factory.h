@@ -35,14 +35,15 @@ namespace labstor {
 class CommunicatorFactory {
  public:
   static std::unique_ptr<Communicator> Get(CommunicatorType type) {
-    switch(type) {
-      case CommunicatorType::kUnixDomain: return std::make_unique<UnixDomainSocket>();
+    switch (type) {
+      case CommunicatorType::kUnixDomain: {
+        return std::make_unique<UnixDomainSocket>();
+      }
       default: return nullptr;
     }
   }
-
 };
 
-}
+}  // namespace labstor
 
-#endif //LABSTOR_INCLUDE_LABSTOR_IPC_MANAGER_COMMUNICATOR_FACTORY_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_IPC_MANAGER_COMMUNICATOR_FACTORY_H_
