@@ -1,7 +1,9 @@
 
 LABSTOR_ROOT=$1
 
-cpplint --recursive ${LABSTOR_ROOT}/src --recursive ${LABSTOR_ROOT}/include --recursive ${LABSTOR_ROOT}/test \
---exclude=${LABSTOR_ROOT}/include/labstor/constants/singleton_macros.h \
---exclude=${LABSTOR_ROOT}/src/singleton.cc \
---exclude=${LABSTOR_ROOT}/include/labstor/errors.h
+cpplint --recursive \
+--exclude="${LABSTOR_ROOT}/include/labstor/constants/singleton_macros.h" \
+--exclude="${LABSTOR_ROOT}/src/singleton.cc" \
+--exclude="${LABSTOR_ROOT}/include/labstor/util/formatter.h" \
+--exclude="${LABSTOR_ROOT}/include/labstor/errors.h" \
+"${LABSTOR_ROOT}/src" "${LABSTOR_ROOT}/include" "${LABSTOR_ROOT}/test"

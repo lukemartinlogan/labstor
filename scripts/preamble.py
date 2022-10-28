@@ -2,8 +2,7 @@
 Prepends the preabmle to all files in the repo
 
 USAGE:
-    cd /path/to/labstor
-    python3 scripts/preamble.py
+    python3 scripts/preamble.py ${LABSTOR_ROOT}
 """
 
 import sys,os,re
@@ -61,5 +60,5 @@ def LocateCppFiles(root):
                 PrependPreamble(full_path)
 
 
-root = os.getcwd()
+root = sys.argv[1]
 LocateCppFiles(root)

@@ -52,8 +52,8 @@ class Error {
   std::string msg_;
  public:
   Error() : fmt_() {}
-  Error(const std::string &fmt) : fmt_(fmt) {}
-  ~Error() {}
+  explicit Error(std::string fmt) : fmt_(std::move(fmt)) {}
+  ~Error() = default;
 
   template<typename ...Args>
   std::shared_ptr<Error> format(Args ...args) const {

@@ -29,6 +29,6 @@ class BufferAttachable {
   virtual bool Attach(void *buffer) = 0;
 };
 
-}
+}  // namespace labstor::memory
 
 #endif //LABSTOR_INCLUDE_LABSTOR_MEMORY_ATTACHABLE_H_

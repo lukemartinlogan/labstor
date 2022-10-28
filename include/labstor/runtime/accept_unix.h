@@ -91,7 +91,7 @@ class UnixAcceptDaemon : public Daemon {
     socklen_t clilen, len;
     int client_fd_;
 
-    //Accept client connection
+    // Accept client connection
     clilen = sizeof(client_addr_);
     client_fd_ = accept(fd_,
                         (struct sockaddr *) &client_addr_, &clilen);
@@ -100,7 +100,7 @@ class UnixAcceptDaemon : public Daemon {
     }
 
     printf("New client was accepted!\n");
-    //Get the client's credentials
+    // Get the client's credentials
     len = sizeof(struct ucred);
     ret = getsockopt(client_fd_, SOL_SOCKET, SO_PEERCRED,
                      &ucred, &len);
@@ -109,9 +109,9 @@ class UnixAcceptDaemon : public Daemon {
     }
     memcpy(&creds, &ucred, sizeof(ucred));
 
-    //Register Client with LabStor
+    // Register Client with LabStor
     LABSTOR_ERROR_HANDLE_TRY {
-      //ipc_manager_->RegisterClient(client_fd_, creds);
+      // ipc_manager_->RegisterClient(client_fd_, creds);
     }
     LABSTOR_ERROR_HANDLE_CATCH {
       printf("Failed to accept client (pid=%d uid=%d gid=%d)\n",
