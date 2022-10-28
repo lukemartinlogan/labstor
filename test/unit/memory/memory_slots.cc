@@ -31,7 +31,8 @@ int main(int argc, char **argv) {
   if (rank == 0) {
     std::cout << "Creating SHMEM (rank 0): " << shm_name << std::endl;
     backend.Create();
-    backend.MapSlot(MEGABYTES(1));
+    backend.Reserve(MEGABYTES(34));
+    backend.MapSlot(MEGABYTES(1), true);
     auto &slot = backend.GetSlot(1);
     memset(slot.ptr_, nonce, slot.size_);
   }
@@ -46,7 +47,7 @@ int main(int argc, char **argv) {
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
     std::cout << "Creating new slot (rank 0): " << shm_name << std::endl;
-    backend.MapSlot(MEGABYTES(1));
+    backend.MapSlot(MEGABYTES(1), true);
     auto &slot = backend.GetSlot(2);
     memset(slot.ptr_, nonce, slot.size_);
   }

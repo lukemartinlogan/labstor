@@ -47,41 +47,38 @@ class MemoryBackend : public Attachable {
 protected:
   std::string url_;
   std::vector<MemorySlot> slots_;
-  size_t cur_size_, max_size_;
+  size_t cur_size_;
 
 public:
   explicit MemoryBackend(const std::string &url) :
-    url_(url), cur_size_(0), max_size_(0) {}
+    url_(url), cur_size_(0) {}
 
   virtual ~MemoryBackend() = default;
 
-  void MapSlot(size_t size) {
-    if (cur_size_ + size > max_size_) {
-      Reserve(cur_size_ + size);
-    }
+  void Reserve(size_t size) {
+    _Reserve(size);
+  }
+
+  void MapSlot(size_t size, bool create) {
     MemorySlot slot;
     slot.off_ = cur_size_;
     slot.size_ = size;
-    _MapSlot(slot);
+    _MapSlot(slot, create);
     slots_.emplace_back(slot);
     cur_size_ += size;
   }
 
   [[nodiscard]]
   const MemorySlot& GetSlot(uint32_t slot_id) {
-    if (slot_id > slots_.size()) {
+    if (slot_id >= slots_.size()) {
       _GetSlot(slot_id);
     }
     return slots_[slot_id];
   }
 
  protected:
-  void Reserve(size_t size) {
-    _Reserve(size);
-    max_size_ = size;
-  }
   virtual void _Reserve(size_t size) = 0;
-  virtual void _MapSlot(MemorySlot &slot) = 0;
+  virtual void _MapSlot(MemorySlot &slot, bool create) = 0;
   virtual void _GetSlot(uint32_t slot_id) = 0;
 };
 

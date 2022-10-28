@@ -40,6 +40,9 @@ struct ArrayIterator {
   }
 
   ArrayIterator operator+(size_t i) {
+    if (i_ > array_.size()) {
+      return array_.end();
+    }
     return ArrayIterator(array_, i_ + i);
   }
 

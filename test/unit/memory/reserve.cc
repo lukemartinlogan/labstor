@@ -9,8 +9,12 @@ using labstor::memory::SharedMemoryMmap;
 
 int main() {
   SharedMemoryMmap b1("shmem_test");
+  // Reserve 8GB of SHMEM
+  b1.Reserve(GIGABYTES(8));
+  sleep(2);
+
   // Map 8GB of SHMEM
-  b1.MapSlot(GIGABYTES(8));
+  b1.MapSlot(GIGABYTES(8), true);
   sleep(2);
 
   // Set 2GB of SHMEM

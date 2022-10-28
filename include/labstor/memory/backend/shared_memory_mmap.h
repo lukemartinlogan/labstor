@@ -59,7 +59,7 @@ struct SharedMemorySlot {
 class SharedMemoryMmap : public MemoryBackend {
 private:
   int fd_;
-  size_t header_size_, reserve_step_;
+  size_t header_size_;
   Array<SharedMemorySlot> slot_array_;
 
 public:
@@ -72,7 +72,8 @@ public:
     if (fd_ < 0) {
       return false;
     }
-    MapSlot(header_size_);
+    Reserve(header_size_);
+    MapSlot(header_size_, true);
     auto &slot = GetSlot(0);
     slot_array_.Create(slot.ptr_, slot.size_);
     slot_array_.emplace_back(slot);
@@ -86,13 +87,13 @@ public:
       return false;
     }
     // Load the slot array header
-    MapSlot(header_size_);
+    MapSlot(header_size_, false);
     auto &slot = GetSlot(0);
     slot_array_.Attach(slot.ptr_);
     // Attach all known slots
     for (auto shm_slot = slot_array_.begin() + 1;
          shm_slot != slot_array_.end(); ++shm_slot) {
-      MapSlot(shm_slot->size_);
+      MapSlot(shm_slot->size_, false);
     }
     return true;
   }
@@ -109,14 +110,14 @@ public:
     ftruncate64(fd_, static_cast<off64_t>(size));
   }
 
-  void _MapSlot(MemorySlot &slot) override {
+  void _MapSlot(MemorySlot &slot, bool create) override {
     slot.ptr_ = reinterpret_cast<char*>(
       mmap64(nullptr, slot.size_, PROT_READ | PROT_WRITE,
              MAP_SHARED, fd_, static_cast<off64_t>(slot.off_)));
     if (slot.ptr_ == MAP_FAILED) {
       throw SHMEM_CREATE_FAILED.format();
     }
-    if (slot_array_.IsInitialized()) {
+    if (create && slot_array_.IsInitialized()) {
       slot_array_.emplace_back(slot);
     }
   }
@@ -128,7 +129,7 @@ public:
   void _GetSlot(uint32_t slot_id) {
     for (uint32_t i = slots_.size(); i <= slot_id; ++i) {
       auto &shm_slot = slot_array_[i];
-      MapSlot(shm_slot.size_);
+      MapSlot(shm_slot.size_, false);
     }
   }
 };
