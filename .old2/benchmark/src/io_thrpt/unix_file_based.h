@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_FILE_BASED_H
 #define LABSTOR_FILE_BASED_H
 

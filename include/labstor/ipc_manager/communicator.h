@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_INCLUDE_LABSTOR_IPC_MANAGER_COMM_H_
 #define LABSTOR_INCLUDE_LABSTOR_IPC_MANAGER_COMM_H_
 

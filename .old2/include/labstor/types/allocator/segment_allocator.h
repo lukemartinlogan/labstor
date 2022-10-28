@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_SEGMENT_ALLOCATOR_H
 #define LABSTOR_SEGMENT_ALLOCATOR_H
 

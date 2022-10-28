@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_THREAD_LOCAL_H
 #define LABSTOR_THREAD_LOCAL_H
 

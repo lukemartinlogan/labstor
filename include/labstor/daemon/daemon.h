@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_DAEMON_H
 #define LABSTOR_DAEMON_H
 

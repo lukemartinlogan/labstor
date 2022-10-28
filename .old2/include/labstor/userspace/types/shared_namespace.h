@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_SHARED_NAMESPACE_H
 #define LABSTOR_SHARED_NAMESPACE_H
 

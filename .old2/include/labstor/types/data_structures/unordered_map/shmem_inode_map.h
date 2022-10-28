@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_SHMEM_INODE_MAP_H
 #define LABSTOR_SHMEM_INODE_MAP_H
 

@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_RING_BUFFER_OFF_T_SPSC_H
 #define LABSTOR_RING_BUFFER_OFF_T_SPSC_H
 

@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #include <memory>
 #include "labstor/types/basic.h"
 #include "labstor/ipc_manager/ipc_manager.h"

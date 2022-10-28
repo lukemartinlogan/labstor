@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_LIBAIO_H
 #define LABSTOR_LIBAIO_H
 

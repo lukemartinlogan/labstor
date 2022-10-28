@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_SHMEM_TYPE_H
 #define LABSTOR_SHMEM_TYPE_H
 

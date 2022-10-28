@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_PATH_PARSER_H
 #define LABSTOR_PATH_PARSER_H
 

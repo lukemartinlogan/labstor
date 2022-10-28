@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #include <iostream>
 #include <pthread.h>
 #include <memory>

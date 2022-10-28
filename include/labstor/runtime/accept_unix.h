@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_INCLUDE_LABSTOR_RUNTIME_UNIX_RUNTIME_H_
 #define LABSTOR_INCLUDE_LABSTOR_RUNTIME_UNIX_RUNTIME_H_
 

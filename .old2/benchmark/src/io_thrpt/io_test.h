@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_IO_TEST_H
 #define LABSTOR_IO_TEST_H
 

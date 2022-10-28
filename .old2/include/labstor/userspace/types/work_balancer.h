@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_WORK_BALANCER_H
 #define LABSTOR_WORK_BALANCER_H
 

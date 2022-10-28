@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_LABSTACK_H
 #define LABSTOR_LABSTACK_H
 

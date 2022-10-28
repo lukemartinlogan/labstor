@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_WREAPER_THREAD_H
 #define LABSTOR_WREAPER_THREAD_H
 

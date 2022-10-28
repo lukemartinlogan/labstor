@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_SEQUENTIAL_H
 #define LABSTOR_SEQUENTIAL_H
 

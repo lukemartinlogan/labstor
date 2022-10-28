@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_MESSAGES_H
 #define LABSTOR_MESSAGES_H
 

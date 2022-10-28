@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_GENERIC_QUEUE_SERVER_H
 #define LABSTOR_GENERIC_QUEUE_SERVER_H
 

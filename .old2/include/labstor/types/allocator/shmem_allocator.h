@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_SMALL_SHMEM_ALLOCATOR_H
 #define LABSTOR_SMALL_SHMEM_ALLOCATOR_H
 

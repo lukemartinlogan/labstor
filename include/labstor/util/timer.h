@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_TIMER_H
 #define LABSTOR_TIMER_H
 

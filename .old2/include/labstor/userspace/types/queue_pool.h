@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_QUEUE_POOL_H
 #define LABSTOR_QUEUE_POOL_H
 

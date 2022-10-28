@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_RING_BUFFER_MPMC_H
 #define LABSTOR_RING_BUFFER_MPMC_H
 

@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_ERROR_SERIALIZER_H
 #define LABSTOR_ERROR_SERIALIZER_H
 

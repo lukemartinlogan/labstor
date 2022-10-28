@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_PER_PROCESS_IPC_H
 #define LABSTOR_PER_PROCESS_IPC_H
 

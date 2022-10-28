@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_SPDK_DRIVER_CLIENT_H
 #define LABSTOR_SPDK_DRIVER_CLIENT_H
 

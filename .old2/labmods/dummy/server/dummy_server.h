@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_DUMMY_SERVER_H
 #define LABSTOR_DUMMY_SERVER_H
 

@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_INCLUDE_LABSTOR_SYSINFO_INFO_H_
 #define LABSTOR_INCLUDE_LABSTOR_SYSINFO_INFO_H_
 

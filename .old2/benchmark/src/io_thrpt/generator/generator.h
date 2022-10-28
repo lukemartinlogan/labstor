@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_GENERATOR_H
 #define LABSTOR_GENERATOR_H
 

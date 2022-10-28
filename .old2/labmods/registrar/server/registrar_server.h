@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_REGISTRAR_SERVER_H
 #define LABSTOR_REGISTRAR_SERVER_H
 

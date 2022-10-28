@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_IPC_MANAGER_KERNEL_H
 #define LABSTOR_IPC_MANAGER_KERNEL_H
 

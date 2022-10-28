@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_CONSTANTS_H
 #define LABSTOR_CONSTANTS_H
 

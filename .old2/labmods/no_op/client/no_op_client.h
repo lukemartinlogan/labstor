@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_NO_OP_IOSCHED_CLIENT_H
 #define LABSTOR_NO_OP_IOSCHED_CLIENT_H
 

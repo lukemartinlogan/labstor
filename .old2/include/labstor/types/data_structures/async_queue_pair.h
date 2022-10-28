@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_ASYNC_QUEUE_PAIR_H
 #define LABSTOR_ASYNC_QUEUE_PAIR_H
 

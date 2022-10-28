@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_MEMORY_H
 #define LABSTOR_MEMORY_H
 

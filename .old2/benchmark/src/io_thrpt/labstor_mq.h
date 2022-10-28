@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_LABSTOR_MQ_H
 #define LABSTOR_LABSTOR_MQ_H
 

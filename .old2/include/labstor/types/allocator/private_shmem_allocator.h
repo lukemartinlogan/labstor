@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_PRIVATE_SHMEM_ALLOCATOR_KERNEL_H
 #define LABSTOR_PRIVATE_SHMEM_ALLOCATOR_KERNEL_H
 

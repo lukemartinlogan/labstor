@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_POSIX_CLIENT_H
 #define LABSTOR_POSIX_CLIENT_H
 

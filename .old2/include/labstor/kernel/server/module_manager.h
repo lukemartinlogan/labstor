@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_MODULE_MANAGER_KERNEL_H
 #define LABSTOR_MODULE_MANAGER_KERNEL_H
 

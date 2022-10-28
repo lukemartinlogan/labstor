@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_KERNEL_CLIENT_H
 #define LABSTOR_KERNEL_CLIENT_H
 

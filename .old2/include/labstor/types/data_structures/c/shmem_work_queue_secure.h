@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef labstor_work_queue_secure_H
 #define labstor_work_queue_secure_H
 

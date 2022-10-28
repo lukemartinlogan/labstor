@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 //We have to write 256KB of log data to disk. How to do while detecting faults?
     //Can we assume that some size of I/O is guaranteed to complete when issued?
     //If not, there is no real way?

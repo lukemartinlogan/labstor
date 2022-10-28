@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_SECURE_SHMEM_H
 #define LABSTOR_SECURE_SHMEM_H
 

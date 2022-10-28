@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_DEBUG_H
 #define LABSTOR_DEBUG_H
 

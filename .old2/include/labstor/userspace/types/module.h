@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_MODULE_H
 #define LABSTOR_MODULE_H
 

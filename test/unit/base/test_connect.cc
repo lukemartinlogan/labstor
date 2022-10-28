@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #include "labstor/constants/singleton_macros.h"
 #include "labstor/ipc_manager/ipc_manager.h"
 

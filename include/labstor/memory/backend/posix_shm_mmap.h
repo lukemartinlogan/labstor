@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_UNIX_SYSV_H
 #define LABSTOR_UNIX_SYSV_H
 

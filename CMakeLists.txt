@@ -37,7 +37,7 @@ target_link_libraries(labstor_runtime yaml-cpp pthread -lrt -ldl)
 
 add_custom_target(lint COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/lint.sh ${CMAKE_SOURCE_DIR})
 
-add_custom_target(preamble COMMAND python3 scripts/preamble.py ${CMAKE_SOURCE_DIR})
+add_custom_target(preamble COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/preamble.py ${CMAKE_SOURCE_DIR})
 
 ##################MODULES & TESTS
 enable_testing()

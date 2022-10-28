@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_SERVER_WORKER_H
 #define LABSTOR_SERVER_WORKER_H
 

@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_ERRORS_H
 #define LABSTOR_ERRORS_H
 

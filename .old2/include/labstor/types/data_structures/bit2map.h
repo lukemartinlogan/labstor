@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_BIT2MAP_H
 #define LABSTOR_BIT2MAP_H
 

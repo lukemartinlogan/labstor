@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_MQ_DRIVER_CLIENT_H
 #define LABSTOR_MQ_DRIVER_CLIENT_H
 

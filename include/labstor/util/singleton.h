@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef SCS_SINGLETON_H
 #define SCS_SINGLETON_H
 

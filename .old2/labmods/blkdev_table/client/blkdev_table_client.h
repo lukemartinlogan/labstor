@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_BLKDEV_TABLE_CLIENT_H
 #define LABSTOR_BLKDEV_TABLE_CLIENT_H
 

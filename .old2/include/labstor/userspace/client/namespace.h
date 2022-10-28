@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_CLIENT_NAMESPACE_H
 #define LABSTOR_CLIENT_NAMESPACE_H
 

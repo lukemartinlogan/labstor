@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_INCLUDE_LABSTOR_THREAD_THREAD_FACTORY_H_
 #define LABSTOR_INCLUDE_LABSTOR_THREAD_THREAD_FACTORY_H_
 

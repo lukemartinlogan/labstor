@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_PARTITIONER_H
 #define LABSTOR_PARTITIONER_H
 

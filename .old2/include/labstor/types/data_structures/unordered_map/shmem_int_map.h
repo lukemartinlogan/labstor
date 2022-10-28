@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_INT_MAP_H
 #define LABSTOR_INT_MAP_H
 

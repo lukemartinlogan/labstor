@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_WORK_ORCHESTRATION_KERNEL_H
 #define LABSTOR_WORK_ORCHESTRATION_KERNEL_H
 

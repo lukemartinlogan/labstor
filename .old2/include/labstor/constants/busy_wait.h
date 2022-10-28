@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_BUSY_WAIT_H
 #define LABSTOR_BUSY_WAIT_H
 

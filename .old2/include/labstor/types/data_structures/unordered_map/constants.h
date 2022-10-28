@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_UNORDERED_MAP_CONSTANTS_H
 #define LABSTOR_UNORDERED_MAP_CONSTANTS_H
 

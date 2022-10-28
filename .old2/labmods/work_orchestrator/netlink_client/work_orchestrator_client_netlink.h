@@ -23,7 +23,6 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef LABSTOR_WORKER_CLIENT_NETLINK_H
 #define LABSTOR_WORKER_CLIENT_NETLINK_H
 
