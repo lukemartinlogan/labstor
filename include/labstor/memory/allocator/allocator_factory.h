@@ -7,7 +7,7 @@
 
 #include "allocator.h"
 #include "fixed_fragmentation_allocator.h"
-#include "page_allocator.h"
+// #include "page_allocator.h"
 
 namespace labstor::memory {
 

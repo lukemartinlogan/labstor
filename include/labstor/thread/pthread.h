@@ -53,6 +53,7 @@ class Pthread : public Thread {
   bool started_;
 
  public:
+  Pthread() = default;
   explicit Pthread(BIND bind) : started_(false), pthread_(-1) {
     PthreadParams<BIND> params(this, bind);
     int ret = pthread_create(&pthread_, nullptr,
@@ -93,6 +94,17 @@ class Pthread : public Thread {
     if (ret != 0) {
       throw INVALID_AFFINITY.format(strerror(ret));
     }
+  }
+};
+
+class PthreadStatic : public ThreadStatic {
+ public:
+  void Yield() override {
+    pthread_yield();
+  }
+
+  tid_t GetTid() override {
+    return static_cast<tid_t>(pthread_self());
   }
 };
 

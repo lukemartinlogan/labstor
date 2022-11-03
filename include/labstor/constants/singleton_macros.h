@@ -15,4 +15,7 @@
 #define LABSTOR_MEMORY_MANAGER scs::Singleton<labstor::memory::MemoryManager>::GetInstance()
 #define LABSTOR_MEMORY_MANAGER_T labstor::memory::MemoryManager*
 
+#define LABSTOR_THREAD_MANAGER scs::Singleton<labstor::ThreadManager>::GetInstance()
+#define LABSTOR_THREAD_MANAGER_T labstor::ThreadManager*
+
 #endif  // LABSTOR_SINGLETON_MACROS_H

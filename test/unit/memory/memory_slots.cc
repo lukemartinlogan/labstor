@@ -43,15 +43,15 @@ bool VerifyBuffer(char *ptr, size_t size, char nonce) {
 int main(int argc, char **argv) {
   int rank;
   char nonce = 8;
-  std::string shm_name = "test_mem_backend";
+  std::string shm_url = "test_mem_backend";
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   LABSTOR_ERROR_HANDLE_START()
 
-  PosixShmMmap backend(shm_name);
+  PosixShmMmap backend(shm_url);
   if (rank == 0) {
-    std::cout << "Creating SHMEM (rank 0): " << shm_name << std::endl;
+    std::cout << "Creating SHMEM (rank 0): " << shm_url << std::endl;
     backend.Create();
     backend.CreateSlot(MEGABYTES(1));
     auto &slot = backend.GetSlot(1);
@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank != 0) {
-    std::cout << "Attaching SHMEM (rank 1): " << shm_name << std::endl;
+    std::cout << "Attaching SHMEM (rank 1): " << shm_url << std::endl;
     backend.Attach();
     std::cout << "Attached header" << std::endl;
     auto &slot = backend.GetSlot(1);
@@ -69,21 +69,21 @@ int main(int argc, char **argv) {
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
-    std::cout << "Creating new slot (rank 0): " << shm_name << std::endl;
+    std::cout << "Creating new slot (rank 0): " << shm_url << std::endl;
     backend.CreateSlot(MEGABYTES(1));
     auto &slot = backend.GetSlot(2);
     memset(slot.ptr_, nonce, slot.size_);
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank != 0) {
-    std::cout << "Getting new slot (rank 1): " << shm_name << std::endl;
+    std::cout << "Getting new slot (rank 1): " << shm_url << std::endl;
     auto &slot = backend.GetSlot(2);
     char *ptr = reinterpret_cast<char*>(slot.ptr_);
     assert(VerifyBuffer(ptr, slot.size_, nonce));
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
-    std::cout << "Destroying shmem (rank 1): " << shm_name << std::endl;
+    std::cout << "Destroying shmem (rank 1): " << shm_url << std::endl;
     backend.Destroy();
   }
   MPI_Finalize();

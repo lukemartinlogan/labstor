@@ -47,8 +47,8 @@ void MemoryManager::ScanBackends() {
   }
 }
 
-Allocator* MemoryManager::CreateAllocator(const std::string &url,
-                                          AllocatorType type,
+Allocator* MemoryManager::CreateAllocator(AllocatorType type,
+                                          const std::string &url,
                                           allocator_id_t alloc_id,
                                           size_t slot_size,
                                           size_t custom_header_size) {

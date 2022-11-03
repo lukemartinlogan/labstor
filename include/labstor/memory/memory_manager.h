@@ -22,11 +22,11 @@ class MemoryManager {
   MemoryBackend* AttachBackend(MemoryBackendType type, const std::string &url);
   MemoryBackend* GetBackend(const std::string &url);
   void ScanBackends();
-  Allocator* CreateAllocator(const std::string &url, AllocatorType type,
+  Allocator* CreateAllocator(AllocatorType type,
+                             const std::string &url,
                              allocator_id_t alloc_id,
                              size_t slot_size = kDefaultSlotSize,
                              size_t custom_header_size = 0);
-  Allocator* GetAllocator(const std::string url, uint16_t slot_off);
   Allocator* GetAllocator(allocator_id_t alloc_id);
 
   template<typename T>

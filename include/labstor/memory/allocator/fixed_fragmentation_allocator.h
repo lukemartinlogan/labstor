@@ -7,7 +7,7 @@
 
 #include <labstor/types/basic.h>
 #include "allocator.h"
-#include "page_allocator.h"
+// #include "page_allocator.h"
 #include <labstor/data_structures/unordered_map.h>
 
 namespace labstor::memory {
@@ -40,6 +40,7 @@ class FixedFragmentationAllocator : public Allocator {
   }
 
   Pointer Allocate(size_t size) override {
+    return Pointer();
   }
 
   void Free(Pointer &ptr) override {

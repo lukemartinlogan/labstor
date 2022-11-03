@@ -68,7 +68,11 @@ struct allocator_id_t {
   allocator_id_t(uint32_t id_major, uint32_t id_minor) {
     id_ = id_major ^ id_minor;
   }
-  bool is_null() { return id_ == -1; }
+  bool is_null() const { return id_ == -1; }
+
+  bool operator==(const allocator_id_t &other) const {
+    return other.id_ == id_;
+  }
 };
 
 typedef uint32_t slot_id_t;
@@ -76,7 +80,7 @@ typedef uint32_t slot_id_t;
 struct Pointer {
   allocator_id_t allocator_id_;
   slot_id_t slot_id_;
-  uint64_t off_;
+  size_t off_;
 };
 
 }  // namespace labstor::memory

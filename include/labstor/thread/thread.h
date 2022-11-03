@@ -29,8 +29,11 @@
 #include <vector>
 #include <cstdint>
 #include <memory>
+#include <atomic>
 
 namespace labstor {
+
+typedef uint32_t tid_t;
 
 enum class ThreadType {
   kPthread
@@ -43,6 +46,12 @@ class Thread {
   virtual void Join() = 0;
   void SetAffinity(int cpu_id) { SetAffinity(cpu_id, 1); }
   virtual void SetAffinity(int cpu_start, int count) = 0;
+};
+
+class ThreadStatic {
+ public:
+  virtual void Yield() = 0;
+  virtual tid_t GetTid() = 0;
 };
 
 }  // namespace labstor

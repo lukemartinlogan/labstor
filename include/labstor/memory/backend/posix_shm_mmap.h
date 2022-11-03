@@ -94,13 +94,11 @@ class PosixShmMmap : public MemoryBackend {
     header_ = reinterpret_cast<MemoryBackendHeader*>(only_header_slot.ptr_);
     header_size_ = header_->header_size_;
     _UnmapSlot(only_header_slot);
-    std::cout << "Header size: " <<  header_size_ << std::endl;
 
     // Map the memory header
     auto header_slot = GetHeaderSlot(header_size_, true);
     header_ = reinterpret_cast<MemoryBackendHeader*>(header_slot.ptr_);
     slot_array_.Attach(reinterpret_cast<void*>(header_ + 1));
-    std::cout << "Slot table attached: " <<  header_size_ << std::endl;
 
     // Attach all known slots
     GetSlot(header_->num_slots_ - 1);

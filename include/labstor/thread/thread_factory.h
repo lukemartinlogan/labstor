@@ -38,10 +38,20 @@ class ThreadFactory {
   BIND bind_;
 
  public:
-  ThreadFactory(ThreadType type, BIND bind) : type_(type), bind_(bind) {}
+  explicit ThreadFactory(ThreadType type, BIND bind) : type_(type), bind_(bind) {}
   std::unique_ptr<Thread> Get() {
     switch (type_) {
       case ThreadType::kPthread: return std::make_unique<Pthread<BIND>>(bind_);
+      default: return nullptr;
+    }
+  }
+};
+
+class ThreadStaticFactory {
+ public:
+  static std::unique_ptr<ThreadStatic> Get(ThreadType type) {
+    switch (type) {
+      case ThreadType::kPthread: return std::make_unique<PthreadStatic>();
       default: return nullptr;
     }
   }

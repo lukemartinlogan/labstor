@@ -26,13 +26,15 @@ endif()
 
 add_library(labstor_client
         src/ipc_manager.cc
-        src/singleton.cc)
+        src/singleton.cc
+        src/memory/memory_manager.cc)
 target_link_libraries(labstor_client yaml-cpp pthread -lrt -ldl)
 
 add_executable(labstor_runtime
         src/runtime/runtime.cc
         src/ipc_manager.cc
-        src/singleton.cc)
+        src/singleton.cc
+        src/memory/memory_manager.cc)
 target_link_libraries(labstor_runtime yaml-cpp pthread -lrt -ldl)
 
 add_custom_target(lint COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/lint.sh ${CMAKE_SOURCE_DIR})
