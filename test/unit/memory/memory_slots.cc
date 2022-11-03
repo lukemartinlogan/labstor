@@ -61,7 +61,9 @@ int main(int argc, char **argv) {
   if (rank != 0) {
     std::cout << "Attaching SHMEM (rank 1): " << shm_name << std::endl;
     backend.Attach();
+    std::cout << "Attached header" << std::endl;
     auto &slot = backend.GetSlot(1);
+    std::cout << "Acquired slot" << std::endl;
     char *ptr = reinterpret_cast<char*>(slot.ptr_);
     assert(VerifyBuffer(ptr, slot.size_, nonce));
   }

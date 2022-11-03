@@ -46,7 +46,7 @@ struct MemorySlot {
 
 struct MemoryBackendHeader {
   size_t num_slots_;
-  size_t slot_table_size_;
+  size_t header_size_;
   size_t cur_size_;
   size_t max_size_;
 };
@@ -103,8 +103,21 @@ class MemoryBackend {
     return slots_[slot.slot_id_];
   }
 
+  MemorySlot GetHeaderSlot(size_t size = sizeof(MemoryBackendHeader),
+                            bool keep=false) {
+    MemorySlot slot;
+    slot.slot_id_ = 0;
+    slot.off_ = 0;
+    slot.size_ = size;
+    _MapSlot(slot, false);
+    if (keep) {
+      slots_.emplace_back(slot);
+    }
+    return slot;
+  }
+
   MemorySlot& GetSlot(slot_id_t slot_id) {
-    for(slot_id_t i = slots_.size(); i < slot_id; ++i) {
+    for(slot_id_t i = slots_.size(); i <= slot_id; ++i) {
       MemorySlot slot;
       slot.slot_id_ = slot_id;
       _MapSlot(slot, false);
@@ -121,6 +134,7 @@ class MemoryBackend {
  protected:
   virtual void _Reserve(size_t size) = 0;
   virtual void _MapSlot(MemorySlot &slot, bool create) = 0;
+  virtual void _UnmapSlot(MemorySlot &slot) = 0;
 };
 
 }  // namespace labstor::memory

@@ -73,6 +73,7 @@ class PosixShmMmap : public MemoryBackend {
     auto &header_slot = CreateSlot(header_size_);
     header_ = reinterpret_cast<MemoryBackendHeader*>(header_slot.ptr_);
     header_->num_slots_ = 1;
+    header_->header_size_ = header_size_;
     header_->cur_size_ = header_size_;
     header_->max_size_ = max_size_;
     slot_array_.Create(header_slot.ptr_ + sizeof(MemoryBackendHeader),
@@ -88,10 +89,18 @@ class PosixShmMmap : public MemoryBackend {
       return false;
     }
 
-    // Load the memory backend header & slot array
-    auto &header_slot = GetSlot(0);
+    // Get the size of the memory header
+    auto only_header_slot = GetHeaderSlot();
+    header_ = reinterpret_cast<MemoryBackendHeader*>(only_header_slot.ptr_);
+    header_size_ = header_->header_size_;
+    _UnmapSlot(only_header_slot);
+    std::cout << "Header size: " <<  header_size_ << std::endl;
+
+    // Map the memory header
+    auto header_slot = GetHeaderSlot(header_size_, true);
     header_ = reinterpret_cast<MemoryBackendHeader*>(header_slot.ptr_);
     slot_array_.Attach(reinterpret_cast<void*>(header_ + 1));
+    std::cout << "Slot table attached: " <<  header_size_ << std::endl;
 
     // Attach all known slots
     GetSlot(header_->num_slots_ - 1);
@@ -112,7 +121,7 @@ class PosixShmMmap : public MemoryBackend {
   }
 
   void _MapSlot(MemorySlot &slot, bool create) override {
-    if (!create) {
+    if (!create && slot_array_.IsInitialized()) {
       auto &shm_slot = slot_array_[slot.slot_id_];
       slot.off_ = shm_slot.off_;
       slot.size_ = shm_slot.size_;
@@ -128,9 +137,13 @@ class PosixShmMmap : public MemoryBackend {
     }
   }
 
+  void _UnmapSlot(MemorySlot &slot) {
+    munmap(slot.ptr_, slot.size_);
+  }
+
   void _Detach() {
     for (auto &slot : slots_) {
-      munmap(slot.ptr_, slot.size_);
+      _UnmapSlot(slot);
     }
     close(fd_);
   }
