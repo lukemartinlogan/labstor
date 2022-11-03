@@ -88,10 +88,12 @@ class MemoryBackend {
     slot.size_ = size;
     if (header_) {
       slot.slot_id_ = header_->num_slots_;
-      _Reserve(header_->cur_size_ + size);
+      slot.off_ = header_->cur_size_;
     } else {
       slot.slot_id_ = 0;
+      slot.off_ = 0;
     }
+    _Reserve(slot.off_ + size);
     _MapSlot(slot, true);
     slots_.emplace_back(slot);
     if (header_) {

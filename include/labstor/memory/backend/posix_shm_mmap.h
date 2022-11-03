@@ -58,12 +58,11 @@ struct SharedMemorySlot {
 class PosixShmMmap : public MemoryBackend {
  private:
   int fd_;
-  size_t header_size_;
   Array<SharedMemorySlot> slot_array_;
 
  public:
   explicit PosixShmMmap(const std::string &url) :
-    MemoryBackend(url), fd_(-1), header_size_(MEGABYTES(32)) {}
+    MemoryBackend(url), fd_(-1) {}
   ~PosixShmMmap() override = default;
 
   bool Create() override {

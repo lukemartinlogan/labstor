@@ -31,6 +31,7 @@ using labstor::memory::PosixShmMmap;
 
 int main() {
   PosixShmMmap b1("shmem_test");
+  b1.Create();
 
   // Reserve + Map 8GB of memory
   b1.CreateSlot(GIGABYTES(8));
