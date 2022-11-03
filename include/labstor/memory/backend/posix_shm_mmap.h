@@ -114,6 +114,11 @@ class PosixShmMmap : public MemoryBackend {
   }
 
   void _MapSlot(MemorySlot &slot, bool create) override {
+    if (!create) {
+      auto &shm_slot = slot_array_[slot.slot_id_];
+      slot.off_ = shm_slot.off_;
+      slot.size_ = shm_slot.size_;
+    }
     slot.ptr_ = reinterpret_cast<char*>(
       mmap64(nullptr, slot.size_, PROT_READ | PROT_WRITE,
              MAP_SHARED, fd_, static_cast<off64_t>(slot.off_)));
