@@ -1,0 +1,16 @@
+//
+// Created by lukemartinlogan on 10/30/22.
+//
+
+#ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_UNORDERED_MAP_H_
+#define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_UNORDERED_MAP_H_
+
+namespace labstor {
+
+class unordered_map {
+
+};
+
+}
+
+#endif  // LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_UNORDERED_MAP_H_

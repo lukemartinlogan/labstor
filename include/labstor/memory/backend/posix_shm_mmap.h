@@ -39,7 +39,7 @@
 #include <unistd.h>
 
 #include <labstor/util/errors.h>
-#include <labstor/memory/data_structures/array.h>
+#include "labstor/data_structures/fixed_array.h"
 #include <labstor/constants/macros.h>
 
 namespace labstor::memory {
@@ -71,11 +71,15 @@ class PosixShmMmap : public MemoryBackend {
     if (fd_ < 0) {
       return false;
     }
-    Reserve(header_size_);
-    MapSlot(header_size_, true);
-    auto &slot = GetSlot(0);
-    slot_array_.Create(slot.ptr_, slot.size_);
-    slot_array_.emplace_back(slot);
+    auto &header_slot = CreateSlot(sizeof(MemoryBackendHeader));
+    header_ = reinterpret_cast<MemoryBackendHeader*>(header_slot.ptr_);
+    header_->num_slots_ = 1;
+    header_->cur_size_ = sizeof(MemoryBackendHeader);
+    header_->max_size_ = max_size_;
+
+    auto &table_slot = CreateSlot(slot_table_size_);
+    slot_array_.Create(table_slot.ptr_, table_slot.size_);
+    slot_array_.emplace_back(table_slot);
     return true;
   }
 
@@ -85,23 +89,24 @@ class PosixShmMmap : public MemoryBackend {
     if (fd_ < 0) {
       return false;
     }
+
     // Load the slot array header
-    MapSlot(header_size_, false);
-    auto &slot = GetSlot(0);
-    slot_array_.Attach(slot.ptr_);
+    auto &header_slot = GetSlot(0);
+    header_ = reinterpret_cast<MemoryBackendHeader*>(header_slot.ptr_);
+    auto &table_slot = GetSlot(1);
+    slot_array_.Attach(table_slot.ptr_);
+
     // Attach all known slots
-    for (auto shm_slot = slot_array_.begin() + 1;
-         shm_slot != slot_array_.end(); ++shm_slot) {
-      MapSlot(shm_slot->size_, false);
-    }
+    GetSlot(header_->num_slots_ - 1);
     return true;
   }
 
   void Detach() override {
-    for (auto &slot : slots_) {
-      munmap(slot.ptr_, slot.size_);
-    }
-    close(fd_);
+    _Detach();
+  }
+
+  void Destroy() override {
+    _Destroy();
   }
 
  protected:
@@ -121,15 +126,16 @@ class PosixShmMmap : public MemoryBackend {
     }
   }
 
-  void _Destroy() override {
-    shm_unlink(url_.c_str());
+  void _Detach() {
+    for (auto &slot : slots_) {
+      munmap(slot.ptr_, slot.size_);
+    }
+    close(fd_);
   }
 
-  void _GetSlot(uint32_t slot_id) {
-    for (uint32_t i = slots_.size(); i <= slot_id; ++i) {
-      auto &shm_slot = slot_array_[i];
-      MapSlot(shm_slot.size_, false);
-    }
+  void _Destroy() {
+    Detach();
+    shm_unlink(url_.c_str());
   }
 };
 

@@ -55,6 +55,7 @@ class SingletonGenerator:
         lines.append("#include <labstor/constants/singleton_macros.h>")
         lines.append("")
         for defn in self.defs:
+            lines.append(f"#include <{defn.include}>")
             lines.append(f"template<> std::unique_ptr<{defn.class_name}> scs::Singleton<{defn.class_name}>::obj_ = nullptr;")
         self._SaveLines(lines, path)
 
@@ -66,7 +67,6 @@ class SingletonGenerator:
         lines.append("#include <labstor/util/singleton.h>")
         lines.append("")
         for defn in self.defs:
-            lines.append(f"#include <{defn.include}>")
             lines.append(f"#define {defn.macro_name} scs::Singleton<{defn.class_name}>::GetInstance()")
             lines.append(f"#define {defn.type_name} {defn.class_name}*")
             lines.append("")
@@ -86,5 +86,6 @@ gen = SingletonGenerator()
 gen.Add("labstor", "IpcManager", "labstor/ipc_manager/ipc_manager.h")
 gen.Add("labstor", "ConfigurationManager", "labstor/runtime/configuration_manager.h")
 gen.Add("labstor", "SystemInfo", "labstor/introspect/system_info.h")
+gen.Add("labstor::memory", "MemoryManager", "labstor/memory/memory_manager.h")
 
 gen.Generate("src/singleton.cc", "include/labstor/constants/singleton_macros.h")

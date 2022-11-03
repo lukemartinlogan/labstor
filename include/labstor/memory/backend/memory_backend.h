@@ -29,12 +29,14 @@
 #include <cstdint>
 #include <vector>
 #include <string>
-#include <labstor/constants/singleton_macros.h>
-#include <labstor/memory/attachable.h>
+#include <labstor/memory/memory.h>
+#include "labstor/constants/macros.h"
+#include <limits>
 
 namespace labstor::memory {
 
 struct MemorySlot {
+  slot_id_t slot_id_;
   char *ptr_;
   size_t off_;
   size_t size_;
@@ -42,43 +44,81 @@ struct MemorySlot {
   MemorySlot() = default;
 };
 
-class MemoryBackend : public Attachable {
+struct MemoryBackendHeader {
+  size_t num_slots_;
+  size_t slot_table_size_;
+  size_t cur_size_;
+  size_t max_size_;
+};
+
+enum class MemoryBackendType {
+  kPosixShmMmap
+};
+
+class MemoryBackend {
  protected:
   std::string url_;
+  size_t slot_table_size_, max_size_;
+  MemoryBackendHeader *header_;
   std::vector<MemorySlot> slots_;
-  size_t cur_size_;
 
  public:
-  explicit MemoryBackend(const std::string &url) :
-    url_(url), cur_size_(0) {}
+  explicit MemoryBackend(std::string url) :
+    url_(std::move(url)), slot_table_size_(MEGABYTES(1)),
+    max_size_(std::numeric_limits<size_t>::max()),
+    header_(nullptr) {}
+
+  explicit MemoryBackend(std::string url,
+                         size_t slot_table_size, size_t max_size) :
+    url_(std::move(url)), slot_table_size_(slot_table_size),
+    max_size_(max_size), header_(nullptr) {}
 
   virtual ~MemoryBackend() = default;
 
-  void Reserve(size_t size) {
-    _Reserve(size);
+  size_t GetNumSlots() {
+    return header_->num_slots_;
   }
 
-  void MapSlot(size_t size, bool create) {
+  size_t GetMappedSlots() {
+    return slots_.size();
+  }
+
+  MemorySlot& CreateSlot(size_t size) {
     MemorySlot slot;
-    slot.off_ = cur_size_;
     slot.size_ = size;
-    _MapSlot(slot, create);
+    if (header_) {
+      slot.slot_id_ = header_->num_slots_;
+      _Reserve(header_->cur_size_ + size);
+    } else {
+      slot.slot_id_ = 0;
+    }
+    _MapSlot(slot, true);
     slots_.emplace_back(slot);
-    cur_size_ += size;
+    if (header_) {
+      header_->num_slots_ += 1;
+      header_->cur_size_ += size;
+    }
+    return slots_[slot.slot_id_];
   }
 
-  [[nodiscard]]
-  const MemorySlot& GetSlot(uint32_t slot_id) {
-    if (slot_id >= slots_.size()) {
-      _GetSlot(slot_id);
+  MemorySlot& GetSlot(slot_id_t slot_id) {
+    for(slot_id_t i = slots_.size(); i < slot_id; ++i) {
+      MemorySlot slot;
+      slot.slot_id_ = slot_id;
+      _MapSlot(slot, false);
+      slots_.emplace_back(slot);
     }
     return slots_[slot_id];
   }
 
+  virtual bool Create() = 0;
+  virtual bool Attach() = 0;
+  virtual void Detach() = 0;
+  virtual void Destroy() = 0;
+
  protected:
   virtual void _Reserve(size_t size) = 0;
   virtual void _MapSlot(MemorySlot &slot, bool create) = 0;
-  virtual void _GetSlot(uint32_t slot_id) = 0;
 };
 
 }  // namespace labstor::memory

@@ -52,8 +52,9 @@ class UnixAcceptDaemon : public Daemon {
     int optval = 1;
     int ret;
     struct sockaddr_un server_addr_;
+    std::string runtime_url = kLabStorRuntimeUrl;
 
-    remove(kLabStorRuntimeUrl.c_str());
+    remove(runtime_url.c_str());
 
     fd_ = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd_ < 0) {
@@ -69,7 +70,7 @@ class UnixAcceptDaemon : public Daemon {
     memset(&server_addr_, 0, sizeof(server_addr_));
     server_addr_.sun_family = AF_UNIX;
     strncpy(server_addr_.sun_path,
-            kLabStorRuntimeUrl.c_str(), kLabStorRuntimeUrl.size());
+            runtime_url.c_str(), runtime_url.size());
     ret = bind(fd_,
                (struct sockaddr *)&server_addr_, SUN_LEN(&server_addr_));
     if (ret < 0) {

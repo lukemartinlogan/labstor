@@ -28,29 +28,59 @@
 #define LABSTOR_INCLUDE_LABSTOR_MEMORY_ALLOCATOR_ALLOCATOR_H_
 
 #include <cstdint>
-#include <labstor/memory/backend/memory_backend.h>
+#include <labstor/memory/backend/memory_backend_factory.h>
+#include <labstor/memory/memory.h>
 
 namespace labstor::memory {
 
-struct Pointer {
-  uint32_t allocator_id_;
-  uint32_t slot_id_;
-  uint64_t off_;
+enum class AllocatorType {
+  kPageAllocator,
+  kFixedFragmentationAllocator
 };
 
-class Allocator : public Attachable {
- private:
-  uint64_t id_;
-  std::unique_ptr<MemoryBackend> backend_;
+struct AllocatorHeader {
+  int allocator_type_;
+};
+
+class Allocator {
+ protected:
+  allocator_id_t id_;
+  slot_id_t slot_id_;
+  size_t custom_header_size_;
+  MemoryBackend *backend_;
+  MemorySlot &slot_;
 
  public:
-  explicit Allocator(uint64_t id) : id_(id) {}
+  explicit Allocator(slot_id_t slot_id, MemoryBackend *backend,
+                     size_t custom_header_size) :
+    slot_id_(slot_id),
+    custom_header_size_(custom_header_size),
+    backend_(backend),
+    slot_(backend_->GetSlot(slot_id)) {}
+
+  virtual void Create(allocator_id_t id) = 0;
+  virtual void Attach() = 0;
   virtual Pointer Allocate(size_t size) = 0;
   virtual void Free(Pointer &ptr) = 0;
+  virtual void* GetCustomHeaderPtr() = 0;
 
-  void* Convert(Pointer p) {
+  allocator_id_t GetId() {
+    return id_;
+  }
+
+  slot_id_t GetSlotId() {
+    return slot_id_;
+  }
+
+  template<typename T>
+  T* GetCustomHeader() {
+    return GetCustomHeaderPtr();
+  }
+
+  template<typename T>
+  T* Convert(Pointer &p) {
     auto &slot = backend_->GetSlot(p.slot_id_);
-    return slot.ptr_ + p.off_;
+    return reinterpret_cast<T*>(slot.ptr_ + p.off_);
   }
 };
 

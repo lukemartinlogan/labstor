@@ -28,8 +28,8 @@
 #define LABSTOR_INCLUDE_LABSTOR_MEMORY_DATA_STRUCTURES_ARRAY_H_
 
 #include <cstdint>
-#include <labstor/types/basic.h>
-#include <labstor/util/errors.h>
+#include "labstor/types/basic.h"
+#include "labstor/util/errors.h"
 
 namespace labstor::memory {
 
@@ -78,7 +78,7 @@ struct ArrayIterator {
 };
 
 template <typename T>
-class Array : public BufferAttachable {
+class Array {
  private:
   ArrayHeader *header_;
   T *array_;
@@ -90,7 +90,7 @@ class Array : public BufferAttachable {
     return header_ != nullptr;
   }
 
-  bool Create(void *buffer, size_t size) override {
+  bool Create(void *buffer, size_t size) {
     header_ = reinterpret_cast<ArrayHeader*>(buffer);
     header_->length_ = 0;
     header_->max_length_ = (size - sizeof(ArrayHeader)) / sizeof(T);
@@ -98,7 +98,7 @@ class Array : public BufferAttachable {
     return true;
   }
 
-  bool Attach(void *buffer) override {
+  bool Attach(void *buffer) {
     header_ = reinterpret_cast<ArrayHeader*>(buffer);
     array_ = reinterpret_cast<T*>(header_ + 1);
     return true;
