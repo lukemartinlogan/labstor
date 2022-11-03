@@ -38,7 +38,7 @@ int main() {
   sleep(2);
 
   // Set 2GB of SHMEM
-  auto &slot = b1.GetSlot(0);
+  auto &slot = b1.GetSlot(1);
   memset(slot.ptr_, 0, GIGABYTES(2));
   sleep(2);
 

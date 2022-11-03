@@ -58,19 +58,19 @@ enum class MemoryBackendType {
 class MemoryBackend {
  protected:
   std::string url_;
-  size_t slot_table_size_, max_size_;
+  size_t header_size_, max_size_;
   MemoryBackendHeader *header_;
   std::vector<MemorySlot> slots_;
 
  public:
   explicit MemoryBackend(std::string url) :
-    url_(std::move(url)), slot_table_size_(MEGABYTES(1)),
+    url_(std::move(url)), header_size_(MEGABYTES(1)),
     max_size_(std::numeric_limits<size_t>::max()),
     header_(nullptr) {}
 
   explicit MemoryBackend(std::string url,
-                         size_t slot_table_size, size_t max_size) :
-    url_(std::move(url)), slot_table_size_(slot_table_size),
+                         size_t header_size, size_t max_size) :
+    url_(std::move(url)), header_size_(header_size),
     max_size_(max_size), header_(nullptr) {}
 
   virtual ~MemoryBackend() = default;
