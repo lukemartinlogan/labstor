@@ -8,31 +8,29 @@
 #include <atomic>
 #include "thread_manager.h"
 
+namespace labstor {
+
 struct Mutex {
   std::atomic<uint32_t> lock_;
 
   Mutex() : lock_(0) {}
 
-  void Lock() {
-    auto thread_info = LABSTOR_THREAD_MANAGER->GetThreadStatic();
-    while (!TryLock()) {
-      thread_info->Yield();
-    }
-  }
-
-  bool TryLock() {
-    if (lock_.load() != 0) return false;
-    uint32_t tkt = lock_.fetch_add(1);
-    if (tkt != 0) {
-      lock_.fetch_sub(1);
-      return false;
-    }
-    return true;
-  }
-
-  void Unlock() {
-    lock_.fetch_sub(1);
-  }
+  void Lock();
+  bool TryLock();
+  void Unlock();
 };
 
-#endif //LABSTOR_INCLUDE_LABSTOR_THREAD_MUTEX_H_
+struct ScopedMutex {
+  Mutex &lock_;
+  bool is_locked_;
+
+  explicit ScopedMutex(Mutex &lock);
+  ~ScopedMutex();
+
+  void Lock();
+  bool TryLock();
+};
+
+}  // namespace labstor
+
+#endif  // LABSTOR_INCLUDE_LABSTOR_THREAD_MUTEX_H_

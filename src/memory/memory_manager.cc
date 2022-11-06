@@ -36,8 +36,8 @@ void MemoryManager::ScanBackends() {
     for (auto slot_id = backend->GetMappedSlots();
          slot_id < backend->GetNumSlots(); ++slot_id) {
       auto &slot = backend->GetSlot(slot_id);
-      AllocatorHeader *header = reinterpret_cast<AllocatorHeader*>(slot.ptr_);
-      AllocatorType type = static_cast<AllocatorType>(header->allocator_type_);
+      auto header = reinterpret_cast<AllocatorHeader*>(slot.ptr_);
+      auto type = static_cast<AllocatorType>(header->allocator_type_);
       auto alloc = AllocatorFactory::Get(
         type, slot_id, backend.get());
       auto alloc_id = alloc->GetId();
@@ -67,6 +67,10 @@ Allocator* MemoryManager::CreateAllocator(AllocatorType type,
 }
 
 Allocator* MemoryManager::GetAllocator(allocator_id_t alloc_id) {
+  auto iter = allocators_.find(alloc_id);
+  if (iter == allocators_.end()) {
+    ScanBackends();
+  }
   return allocators_[alloc_id].get();
 }
 

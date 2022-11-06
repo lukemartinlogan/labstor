@@ -79,9 +79,17 @@ typedef uint32_t slot_id_t;
 
 struct Pointer {
   allocator_id_t allocator_id_;
-  slot_id_t slot_id_;
   size_t off_;
+
+  Pointer() : off_(0) {}
+  explicit Pointer(allocator_id_t id, size_t off) :
+    allocator_id_(id), off_(off) {}
+  bool is_null() {
+    return (off_ == 0 && allocator_id_.is_null());
+  }
 };
+
+static const Pointer kNullPointer;
 
 }  // namespace labstor::memory
 

@@ -7,7 +7,7 @@
 
 #include "allocator.h"
 #include "fixed_fragmentation_allocator.h"
-// #include "page_allocator.h"
+#include "page_allocator.h"
 
 namespace labstor::memory {
 
@@ -20,6 +20,10 @@ class AllocatorFactory {
     switch (type) {
       case AllocatorType::kFixedFragmentationAllocator: {
         return std::make_unique<FixedFragmentationAllocator>(
+          slot_id, backend, custom_header_size);
+      }
+      case AllocatorType::kPageAllocator: {
+        return std::make_unique<PageAllocator>(
           slot_id, backend, custom_header_size);
       }
       default: return nullptr;

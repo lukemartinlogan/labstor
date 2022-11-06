@@ -11,9 +11,15 @@ add_executable(test_memory_slots_exec memory_slots.cc)
 add_dependencies(test_memory_slots_exec labstor_client)
 target_link_libraries(test_memory_slots_exec labstor_client MPI::MPI_CXX)
 
+add_executable(test_memory_manager_exec memory_manager.cc)
+add_dependencies(test_memory_manager_exec labstor_client)
+target_link_libraries(test_memory_manager_exec labstor_client MPI::MPI_CXX)
 
 add_test(NAME test_memory_slots COMMAND
         mpirun -n 2 ${CMAKE_CURRENT_BINARY_DIR}/test_memory_slots_exec)
 
 add_test(NAME test_reserve COMMAND
         ${CMAKE_CURRENT_BINARY_DIR}/test_reserve_exec)
+
+add_test(NAME test_memory_manager COMMAND
+        mpirun -n 2 ${CMAKE_CURRENT_BINARY_DIR}/test_memory_manager_exec)

@@ -16,6 +16,12 @@ class ThreadManager {
   ThreadType type_;
   std::unique_ptr<ThreadStatic> thread_static_;
 
+  ThreadManager() : type_(ThreadType::kPthread) {}
+
+  void SetThreadType(ThreadType type) {
+    type_ = type;
+  }
+
   ThreadStatic* GetThreadStatic() {
     if (!thread_static_) {
       thread_static_ = ThreadStaticFactory::Get(type_);

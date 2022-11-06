@@ -27,7 +27,19 @@ class MemoryManager {
                              allocator_id_t alloc_id,
                              size_t slot_size = kDefaultSlotSize,
                              size_t custom_header_size = 0);
+  Allocator* DefineAllocator(AllocatorType type,
+                             const std::string &url,
+                             allocator_id_t alloc_id,
+                             size_t slot_size = kDefaultSlotSize,
+                             size_t custom_header_size = 0);
   Allocator* GetAllocator(allocator_id_t alloc_id);
+
+  template<typename T, typename ...Args>
+  Allocator* ConfigureAllocator(allocator_id_t allocator_id, Args ...args) {
+    T *allocator = dynamic_cast<T*>(GetAllocator(allocator_id));
+    allocator->Configure(args...);
+    return allocator;
+  }
 
   template<typename T>
   T* Convert(Pointer &p) {

@@ -56,6 +56,8 @@ namespace labstor {
   const Error ARRAY_OUT_OF_BOUNDS("Exceeded the bounds of array in {}");
 
   const Error SHMEM_CREATE_FAILED("Failed to allocate SHMEM");
+  const Error NOT_ENOUGH_CONCURRENT_SPACE("{}: Failed to divide memory slot {} among {} devices");
+  const Error PAGE_SIZE_UNSUPPORTED("Allocator does not support size: {}");
 }  // namespace labstor
 
 #endif

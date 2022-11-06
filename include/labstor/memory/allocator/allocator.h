@@ -62,7 +62,7 @@ class Allocator {
   virtual void Attach() = 0;
   virtual Pointer Allocate(size_t size) = 0;
   virtual void Free(Pointer &ptr) = 0;
-  virtual void* GetCustomHeaderPtr() = 0;
+  virtual size_t GetInternalHeaderSize() = 0;
 
   allocator_id_t GetId() {
     return id_;
@@ -74,12 +74,12 @@ class Allocator {
 
   template<typename T>
   T* GetCustomHeader() {
-    return GetCustomHeaderPtr();
+    return reinterpret_cast<T*>(slot_.ptr_ + GetInternalHeaderSize());
   }
 
   template<typename T>
   T* Convert(Pointer &p) {
-    auto &slot = backend_->GetSlot(p.slot_id_);
+    auto &slot = backend_->GetSlot(slot_id_);
     return reinterpret_cast<T*>(slot.ptr_ + p.off_);
   }
 };
