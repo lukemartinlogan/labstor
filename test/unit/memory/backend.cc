@@ -23,13 +23,14 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include "basic_test.h"
 
 #include <labstor/memory/backend/posix_shm_mmap.h>
 
 using labstor::memory::MemorySlot;
 using labstor::memory::PosixShmMmap;
 
-int main() {
+TEST_CASE("BackendReserve") {
   PosixShmMmap b1("shmem_test");
   b1.Create();
 

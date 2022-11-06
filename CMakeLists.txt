@@ -13,9 +13,11 @@ option(BUILD_OpenMP_TESTS "Build tests which depend on OpenMP" ON)
 
 #YAML-CPP
 find_package(yaml-cpp REQUIRED)
-if(yaml-cpp_FOUND)
-    message(STATUS "found yaml-cpp at ${yaml-cpp_DIR}")
-endif()
+message(STATUS "found yaml-cpp at ${yaml-cpp_DIR}")
+
+#Catch2
+find_package(Catch2 3.0.1 REQUIRED)
+message(STATUS "found catch2.h at ${Catch2_CXX_INCLUDE_DIRS}")
 
 #MPICH
 if(BUILD_MPI_TESTS)

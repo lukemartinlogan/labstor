@@ -23,70 +23,63 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include "basic_test.h"
 
 #include <mpi.h>
 #include <iostream>
 #include <labstor/memory/backend/posix_shm_mmap.h>
-#include <assert.h>
 
 using labstor::memory::PosixShmMmap;
 
-bool VerifyBuffer(char *ptr, size_t size, char nonce) {
-  for (size_t i = 0; i < size; ++i) {
-    if (ptr[i] != nonce) {
-      return false;
-    }
-  }
-  return true;
-}
-
-int main(int argc, char **argv) {
+TEST_CASE("MemorySlot") {
   int rank;
   char nonce = 8;
   std::string shm_url = "test_mem_backend";
-  MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   LABSTOR_ERROR_HANDLE_START()
 
   PosixShmMmap backend(shm_url);
   if (rank == 0) {
-    std::cout << "Creating SHMEM (rank 0): " << shm_url << std::endl;
-    backend.Create();
-    backend.CreateSlot(MEGABYTES(1));
-    auto &slot = backend.GetSlot(1);
-    memset(slot.ptr_, nonce, slot.size_);
+    std::cout << "HERE?" << std::endl;
+    SECTION("Creating SHMEM (rank 0)") {
+      backend.Create();
+      backend.CreateSlot(MEGABYTES(1));
+      auto &slot = backend.GetSlot(1);
+      memset(slot.ptr_, nonce, slot.size_);
+    }
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank != 0) {
-    std::cout << "Attaching SHMEM (rank 1): " << shm_url << std::endl;
-    backend.Attach();
-    std::cout << "Attached header" << std::endl;
-    auto &slot = backend.GetSlot(1);
-    std::cout << "Acquired slot" << std::endl;
-    char *ptr = reinterpret_cast<char*>(slot.ptr_);
-    assert(VerifyBuffer(ptr, slot.size_, nonce));
+    SECTION("Attaching SHMEM (rank 1)") {
+      backend.Attach();
+      auto &slot = backend.GetSlot(1);
+      char *ptr = reinterpret_cast<char *>(slot.ptr_);
+      REQUIRE(VerifyBuffer(ptr, slot.size_, nonce));
+    }
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
-    std::cout << "Creating new slot (rank 0): " << shm_url << std::endl;
-    backend.CreateSlot(MEGABYTES(1));
-    auto &slot = backend.GetSlot(2);
-    memset(slot.ptr_, nonce, slot.size_);
+    SECTION("Creating new slot (rank 0)") {
+      backend.CreateSlot(MEGABYTES(1));
+      auto &slot = backend.GetSlot(2);
+      memset(slot.ptr_, nonce, slot.size_);
+    }
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank != 0) {
-    std::cout << "Getting new slot (rank 1): " << shm_url << std::endl;
-    auto &slot = backend.GetSlot(2);
-    char *ptr = reinterpret_cast<char*>(slot.ptr_);
-    assert(VerifyBuffer(ptr, slot.size_, nonce));
+    SECTION("Getting new slot (rank 1)") {
+      auto &slot = backend.GetSlot(2);
+      char *ptr = reinterpret_cast<char *>(slot.ptr_);
+      REQUIRE(VerifyBuffer(ptr, slot.size_, nonce));
+    }
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
-    std::cout << "Destroying shmem (rank 1): " << shm_url << std::endl;
-    backend.Destroy();
+    SECTION("Destroying shmem (rank 1)") {
+      backend.Destroy();
+    }
   }
-  MPI_Finalize();
 
   LABSTOR_ERROR_HANDLE_END()
 }

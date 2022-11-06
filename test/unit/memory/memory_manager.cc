@@ -2,6 +2,8 @@
 // Created by lukemartinlogan on 11/3/22.
 //
 
+#include "basic_test.h"
+
 #include <mpi.h>
 #include <labstor/memory/memory_manager.h>
 
@@ -11,11 +13,10 @@ using labstor::memory::allocator_id_t;
 using labstor::memory::AllocatorType;
 using labstor::memory::MemoryManager;
 
-int main(int argc, char **argv) {
+TEST_CASE("MemoryManager") {
   int rank;
   char nonce = 8;
-  std::string shm_url = "test_mem_backend";
-  MPI_Init(&argc, &argv);
+  std::string shm_url = "test_mem_backend";\
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   allocator_id_t alloc_id(0, 0);
 
@@ -43,7 +44,6 @@ int main(int argc, char **argv) {
     auto alloc = mem_mngr->GetAllocator(alloc_id);
     auto page = alloc->Allocate(KILOBYTES(4));
   }
-  MPI_Finalize();
 
   LABSTOR_ERROR_HANDLE_END()
 }
