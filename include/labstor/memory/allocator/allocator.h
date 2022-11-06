@@ -40,21 +40,27 @@ enum class AllocatorType {
 
 struct AllocatorHeader {
   int allocator_type_;
+  allocator_id_t allocator_id_;
+  size_t custom_header_size_;
+
+  AllocatorHeader() = default;
+
+  // NOTE(llogan): allocator_id_ is set after construction
+  explicit AllocatorHeader(AllocatorType type,
+                           size_t custom_header_size) :
+    allocator_type_(static_cast<int>(type)),
+    custom_header_size_(custom_header_size) {}
 };
 
 class Allocator {
  protected:
-  allocator_id_t id_;
   slot_id_t slot_id_;
-  size_t custom_header_size_;
   MemoryBackend *backend_;
   MemorySlot &slot_;
 
  public:
-  explicit Allocator(slot_id_t slot_id, MemoryBackend *backend,
-                     size_t custom_header_size) :
+  explicit Allocator(slot_id_t slot_id, MemoryBackend *backend) :
     slot_id_(slot_id),
-    custom_header_size_(custom_header_size),
     backend_(backend),
     slot_(backend_->GetSlot(slot_id)) {}
 
@@ -63,17 +69,14 @@ class Allocator {
   virtual Pointer Allocate(size_t size) = 0;
   virtual void Free(Pointer &ptr) = 0;
   virtual size_t GetInternalHeaderSize() = 0;
-
-  allocator_id_t GetId() {
-    return id_;
-  }
+  virtual allocator_id_t GetId() = 0;
 
   slot_id_t GetSlotId() {
     return slot_id_;
   }
 
   template<typename T>
-  void* AllocatePtr(size_t size) {
+  T* AllocatePtr(size_t size) {
     Pointer p = Allocate(size);
     return reinterpret_cast<T*>(slot_.ptr_ + p.off_);
   }
@@ -92,14 +95,16 @@ class Allocator {
   template<typename T>
   Pointer Convert(T *ptr) {
     Pointer p;
-    p.off_ = reinterpret_cast<size_t>(ptr) - slot_.off_;
-    p.allocator_id_ = id_;
+    p.off_ = reinterpret_cast<size_t>(ptr) -
+             reinterpret_cast<size_t>(slot_.ptr_);
+    p.allocator_id_ = GetId();
     return p;
   }
 
   template<typename T>
   bool ContainsPtr(T *ptr) {
-    return reinterpret_cast<size_t>(ptr) >= slot_.off_;
+    return  reinterpret_cast<size_t>(ptr) >=
+            reinterpret_cast<size_t>(slot_.ptr_);
   }
 };
 

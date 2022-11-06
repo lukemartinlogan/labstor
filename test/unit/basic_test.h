@@ -8,9 +8,12 @@
 namespace cl = Catch::Clara;
 cl::Parser define_options();
 
+#include <iostream>
+
 static bool VerifyBuffer(char *ptr, size_t size, char nonce) {
   for (size_t i = 0; i < size; ++i) {
     if (ptr[i] != nonce) {
+      std::cout << (int)ptr[i] << std::endl;
       return false;
     }
   }

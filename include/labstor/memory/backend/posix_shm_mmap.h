@@ -99,9 +99,6 @@ class PosixShmMmap : public MemoryBackend {
     auto header_slot = GetHeaderSlot(header_size_, true);
     header_ = reinterpret_cast<MemoryBackendHeader*>(header_slot.ptr_);
     slot_array_.Attach(reinterpret_cast<void*>(header_ + 1));
-
-    // Attach all known slots
-    GetSlot(header_->num_slots_ - 1);
     return true;
   }
 

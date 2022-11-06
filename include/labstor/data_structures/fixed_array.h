@@ -104,6 +104,10 @@ class Array {
     return true;
   }
 
+  char* After() {
+    return reinterpret_cast<char*>(array_ + header_->max_length_);
+  }
+
   T& operator[](const size_t i) {
     return array_[i];
   }

@@ -31,17 +31,22 @@ MemoryBackend* MemoryManager::GetBackend(const std::string &url) {
   return backends_[url].get();
 }
 
+void MemoryManager::DestroyBackend(const std::string &url) {
+  auto backend = GetBackend(url);
+  backend->Destroy();
+}
+
 void MemoryManager::ScanBackends() {
   for (auto &[url, backend] : backends_) {
-    for (auto slot_id = backend->GetMappedSlots();
-         slot_id < backend->GetNumSlots(); ++slot_id) {
+    for (auto slot_id = backend->FirstAllocatorSlot();
+          slot_id < backend->GetNumSlots(); ++slot_id) {
       auto &slot = backend->GetSlot(slot_id);
       auto header = reinterpret_cast<AllocatorHeader*>(slot.ptr_);
       auto type = static_cast<AllocatorType>(header->allocator_type_);
       auto alloc = AllocatorFactory::Get(
         type, slot_id, backend.get());
-      auto alloc_id = alloc->GetId();
       alloc->Attach();
+      auto alloc_id = alloc->GetId();
       allocators_.emplace(alloc_id, std::move(alloc));
     }
   }

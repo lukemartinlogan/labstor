@@ -21,6 +21,7 @@ class MemoryManager {
   MemoryBackend* CreateBackend(MemoryBackendType type, const std::string &url);
   MemoryBackend* AttachBackend(MemoryBackendType type, const std::string &url);
   MemoryBackend* GetBackend(const std::string &url);
+  void DestroyBackend(const std::string &url);
   void ScanBackends();
   Allocator* CreateAllocator(AllocatorType type,
                              const std::string &url,

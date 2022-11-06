@@ -21,7 +21,7 @@ TEST_CASE("MemoryManager") {
   int rank;
   char nonce = 8;
   size_t page_size = KILOBYTES(4);
-  std::string shm_url = "test_mem_backend";\
+  std::string shm_url = "test_mem_backend";
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   allocator_id_t alloc_id(0, 0);
 
@@ -45,12 +45,14 @@ TEST_CASE("MemoryManager") {
   if (rank == 0) {
     std::cout << "Allocating pages (rank 0)" << std::endl;
     auto alloc = mem_mngr->GetAllocator(alloc_id);
-    auto page = alloc->AllocatePtr<void>(page_size);
+    auto page = alloc->AllocatePtr<char>(page_size);
     memset(page, nonce, page_size);
     auto header = alloc->GetCustomHeader<SimpleHeader>();
     auto p1 = mem_mngr->Convert<void>(alloc_id, page);
     auto p2 = mem_mngr->Convert<void>(page);
+    header->p_ = p1;
     REQUIRE(p1 == p2);
+    REQUIRE(VerifyBuffer(page, page_size, nonce));
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank != 0) {
@@ -59,6 +61,10 @@ TEST_CASE("MemoryManager") {
     auto header = alloc->GetCustomHeader<SimpleHeader>();
     auto page = alloc->Convert<char>(header->p_);
     REQUIRE(VerifyBuffer(page, page_size, nonce));
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == 0) {
+    mem_mngr->DestroyBackend(shm_url);
   }
 
   LABSTOR_ERROR_HANDLE_END()

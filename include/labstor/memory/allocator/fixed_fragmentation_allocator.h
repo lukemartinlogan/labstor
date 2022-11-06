@@ -27,10 +27,14 @@ class FixedFragmentationAllocator : public Allocator {
   FixedFragmentationAllocator(slot_id_t slot_id, MemoryBackend *backend,
                               size_t custom_header_size = 0) :
     base_(64), growth_(1.2), alignment_(8),
-    Allocator(slot_id, backend, custom_header_size) {}
+    Allocator(slot_id, backend) {}
 
   size_t GetInternalHeaderSize() override {
     return 0;
+  }
+
+  allocator_id_t GetId() override {
+    return allocator_id_t();
   }
 
   void Create(allocator_id_t id) override {

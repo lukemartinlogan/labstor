@@ -7,31 +7,34 @@
 namespace labstor::memory {
 
 void PageAllocator::Configure(size_t page_size, size_t thread_table_size,
-               int concurrency, size_t min_free_count) {
-  params_ = PageAllocatorParams(page_size, thread_table_size,
-                                concurrency, min_free_count);
+                              int concurrency, size_t min_free_count) {
+  params_.Configure(page_size, thread_table_size, concurrency, min_free_count);
+}
+
+void* PageAllocator::GetFreeListStart() {
+  return reinterpret_cast<void*>(
+    custom_header_ + header_->custom_header_size_);;
 }
 
 void PageAllocator::Create(allocator_id_t id) {
   header_ = reinterpret_cast<PageAllocatorHeader*>(slot_.ptr_);
-  header_->page_size_ = params_.page_size_;
-  header_->thread_table_size_ = params_.thread_table_size_;
-  header_->concurrency_ = params_.concurrency_;
-  header_->min_free_size_ = params_.min_free_count_ * params_.page_size_;
-  free_lists_.Create(reinterpret_cast<void*>(header_ + 1),
-                     params_.thread_table_size_);
+  params_.allocator_id_ = id;
+  memcpy(header_, &params_, sizeof(params_));
+  custom_header_ = GetCustomHeader<char>();
+  void *free_list_start = GetFreeListStart();
+  free_lists_.Create(free_list_start, header_->thread_table_size_);
   for (auto &free_list : free_lists_) {
     simple_queue<Page> q;
     q.Create(&free_list.queue_, sizeof(Page), slot_.ptr_);
   }
-  size_t cur_off = sizeof(PageAllocatorHeader) + custom_header_size_;
+  size_t cur_off = free_lists_.After() - slot_.ptr_;
   size_t cur_size = slot_.size_ - cur_off;
-  size_t per_conc_region = cur_size / params_.concurrency_;
+  size_t per_conc_region = cur_size / header_->concurrency_;
   if (per_conc_region == 0) {
     throw NOT_ENOUGH_CONCURRENT_SPACE.format(
-      "PageAllocator", slot_.size_, params_.concurrency_);
+      "PageAllocator", slot_.size_, header_->concurrency_);
   }
-  for (auto i = 0; i < params_.concurrency_; ++i) {
+  for (auto i = 0; i < header_->concurrency_; ++i) {
     free_lists_[i].region_off_ = cur_off;
     free_lists_[i].region_size_ = per_conc_region;
     free_lists_[i].free_size_ = per_conc_region;
@@ -41,7 +44,9 @@ void PageAllocator::Create(allocator_id_t id) {
 
 void PageAllocator::Attach() {
   header_ = reinterpret_cast<PageAllocatorHeader*>(slot_.ptr_);
-  free_lists_.Attach(reinterpret_cast<void*>(header_ + 1));
+  custom_header_ = GetCustomHeader<char>();
+  void *free_list_start = GetFreeListStart();
+  free_lists_.Attach(free_list_start);
 }
 
 Pointer PageAllocator::Allocate(size_t size) {
@@ -101,7 +106,7 @@ Pointer PageAllocator::_Allocate(PageFreeList &free_list) {
   if (q.size()) {
     size_t off = q.dequeue_off();
     free_list.free_size_ -= header_->page_size_;
-    return Pointer(id_, off);
+    return Pointer(GetId(), off);
   }
 
   // Create a new page from the segment
@@ -110,7 +115,7 @@ Pointer PageAllocator::_Allocate(PageFreeList &free_list) {
     free_list.region_size_ -= header_->page_size_;
     free_list.region_off_ += header_->page_size_;
     free_list.free_size_ -= header_->page_size_;
-    return Pointer(id_, off);
+    return Pointer(GetId(), off);
   }
 
   return kNullPointer;

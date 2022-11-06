@@ -79,6 +79,10 @@ class MemoryBackend {
     return header_->num_slots_;
   }
 
+  size_t FirstAllocatorSlot() {
+    return 1;
+  }
+
   size_t GetMappedSlots() {
     return slots_.size();
   }
