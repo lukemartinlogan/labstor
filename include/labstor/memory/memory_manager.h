@@ -43,7 +43,25 @@ class MemoryManager {
 
   template<typename T>
   T* Convert(Pointer &p) {
-    return allocators_[p.allocator_id_]->Convert<T>(p);
+    if (p == kNullPointer) {
+      return nullptr;
+    }
+    return GetAllocator(p.allocator_id_)->Convert<T>(p);
+  }
+
+  template<typename T>
+  Pointer Convert(allocator_id_t allocator_id, T *ptr) {
+    return GetAllocator(allocator_id)->Convert(ptr);
+  }
+
+  template<typename T>
+  Pointer Convert(T *ptr) {
+    for (auto &[alloc_id, alloc] : allocators_) {
+      if (alloc->ContainsPtr(ptr)) {
+        return alloc->Convert(ptr);
+      }
+    }
+    return kNullPointer;
   }
 };
 

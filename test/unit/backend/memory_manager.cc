@@ -13,9 +13,14 @@ using labstor::memory::allocator_id_t;
 using labstor::memory::AllocatorType;
 using labstor::memory::MemoryManager;
 
+struct SimpleHeader {
+  labstor::memory::Pointer p_;
+};
+
 TEST_CASE("MemoryManager") {
   int rank;
   char nonce = 8;
+  size_t page_size = KILOBYTES(4);
   std::string shm_url = "test_mem_backend";\
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   allocator_id_t alloc_id(0, 0);
@@ -35,14 +40,25 @@ TEST_CASE("MemoryManager") {
   if (rank != 0) {
     std::cout << "Attaching SHMEM (rank 1): " << shm_url << std::endl;
     mem_mngr->AttachBackend(MemoryBackendType::kPosixShmMmap, shm_url);
-    auto alloc = mem_mngr->GetAllocator(alloc_id);
-
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
     std::cout << "Allocating pages (rank 0)" << std::endl;
     auto alloc = mem_mngr->GetAllocator(alloc_id);
-    auto page = alloc->Allocate(KILOBYTES(4));
+    auto page = alloc->AllocatePtr<void>(page_size);
+    memset(page, nonce, page_size);
+    auto header = alloc->GetCustomHeader<SimpleHeader>();
+    auto p1 = mem_mngr->Convert<void>(alloc_id, page);
+    auto p2 = mem_mngr->Convert<void>(page);
+    REQUIRE(p1 == p2);
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank != 0) {
+    std::cout << "Finding and checking pages (rank 1)" << std::endl;
+    auto alloc = mem_mngr->GetAllocator(alloc_id);
+    auto header = alloc->GetCustomHeader<SimpleHeader>();
+    auto page = alloc->Convert<char>(header->p_);
+    REQUIRE(VerifyBuffer(page, page_size, nonce));
   }
 
   LABSTOR_ERROR_HANDLE_END()

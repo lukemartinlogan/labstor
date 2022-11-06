@@ -73,6 +73,12 @@ class Allocator {
   }
 
   template<typename T>
+  void* AllocatePtr(size_t size) {
+    Pointer p = Allocate(size);
+    return reinterpret_cast<T*>(slot_.ptr_ + p.off_);
+  }
+
+  template<typename T>
   T* GetCustomHeader() {
     return reinterpret_cast<T*>(slot_.ptr_ + GetInternalHeaderSize());
   }
@@ -81,6 +87,19 @@ class Allocator {
   T* Convert(Pointer &p) {
     auto &slot = backend_->GetSlot(slot_id_);
     return reinterpret_cast<T*>(slot.ptr_ + p.off_);
+  }
+
+  template<typename T>
+  Pointer Convert(T *ptr) {
+    Pointer p;
+    p.off_ = reinterpret_cast<size_t>(ptr) - slot_.off_;
+    p.allocator_id_ = id_;
+    return p;
+  }
+
+  template<typename T>
+  bool ContainsPtr(T *ptr) {
+    return reinterpret_cast<size_t>(ptr) >= slot_.off_;
   }
 };
 

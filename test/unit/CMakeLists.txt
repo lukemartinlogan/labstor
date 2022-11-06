@@ -5,4 +5,4 @@ set(CMAKE_CXX_STANDARD 17)
 
 include_directories(${CMAKE_SOURCE_DIR}/test/unit)
 add_subdirectory(base)
-add_subdirectory(memory)
+add_subdirectory(backend)

@@ -87,6 +87,10 @@ struct Pointer {
   bool is_null() {
     return (off_ == 0 && allocator_id_.is_null());
   }
+
+  bool operator==(const Pointer &other) const {
+    return (other.allocator_id_ == allocator_id_ && other.off_ == off_);
+  }
 };
 
 static const Pointer kNullPointer;
