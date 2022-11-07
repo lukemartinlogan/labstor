@@ -33,7 +33,7 @@
 #include "labstor/constants/macros.h"
 #include <limits>
 
-namespace labstor::memory {
+namespace labstor::ipc {
 
 struct MemorySlot {
   slot_id_t slot_id_;
@@ -141,6 +141,6 @@ class MemoryBackend {
   virtual void _UnmapSlot(MemorySlot &slot) = 0;
 };
 
-}  // namespace labstor::memory
+}  // namespace labstor::ipc
 
 #endif  // LABSTOR_MEMORY_H

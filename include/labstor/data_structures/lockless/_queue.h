@@ -5,33 +5,33 @@
 #ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_SIMPLE_QUEUE_H_
 #define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_SIMPLE_QUEUE_H_
 
-#include <labstor/types/basic.h>
+#include "labstor/types/basic.h"
 
-namespace labstor {
+namespace labstor::ipc::lockless {
 
-struct simple_queue_entry {
+struct _queue_entry {
   size_t next_;
 };
 
-struct simple_queue_header {
+struct _queue_header {
   size_t head_, tail_, size_;
 };
 
 template<typename T>
-class simple_queue {
+class _queue {
  private:
-  simple_queue_header *header_;
+  _queue_header *header_;
   size_t region_start_;
 
  public:
   void Create(void *buffer, size_t size, char *region_start) {
-    header_ = reinterpret_cast<simple_queue_header*>(buffer);
+    header_ = reinterpret_cast<_queue_header*>(buffer);
     memset(header_, 0, size);
     region_start_ = reinterpret_cast<size_t>(region_start);
   }
 
   void Attach(void *buffer, char *region_start) {
-    header_ = reinterpret_cast<simple_queue_header*>(buffer);
+    header_ = reinterpret_cast<_queue_header*>(buffer);
     region_start_ = reinterpret_cast<size_t>(region_start);
   }
 

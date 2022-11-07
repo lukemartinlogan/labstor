@@ -29,7 +29,7 @@
 #include <iostream>
 #include <labstor/memory/backend/posix_shm_mmap.h>
 
-using labstor::memory::PosixShmMmap;
+using labstor::ipc::PosixShmMmap;
 
 TEST_CASE("MemorySlot") {
   int rank;

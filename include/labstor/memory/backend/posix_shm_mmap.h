@@ -23,8 +23,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LABSTOR_UNIX_SYSV_H
-#define LABSTOR_UNIX_SYSV_H
+#ifndef LABSTOR_INCLUDE_MEMORY_BACKEND_POSIX_SHM_MMAP_H
+#define LABSTOR_INCLUDE_MEMORY_BACKEND_POSIX_SHM_MMAP_H
 
 #include "memory_backend.h"
 #include <string>
@@ -39,10 +39,10 @@
 #include <unistd.h>
 
 #include <labstor/util/errors.h>
-#include "labstor/data_structures/fixed_array.h"
+#include "labstor/data_structures/lockless/_array.h"
 #include <labstor/constants/macros.h>
 
-namespace labstor::memory {
+namespace labstor::ipc {
 
 struct SharedMemorySlot {
   size_t off_;
@@ -58,7 +58,7 @@ struct SharedMemorySlot {
 class PosixShmMmap : public MemoryBackend {
  private:
   int fd_;
-  Array<SharedMemorySlot> slot_array_;
+  _array<SharedMemorySlot> slot_array_;
 
  public:
   explicit PosixShmMmap(const std::string &url) :
@@ -149,6 +149,6 @@ class PosixShmMmap : public MemoryBackend {
   }
 };
 
-}  // namespace labstor::memory
+}  // namespace labstor::ipc
 
-#endif  // LABSTOR_UNIX_SYSV_H
+#endif  // LABSTOR_INCLUDE_MEMORY_BACKEND_POSIX_SHM_MMAP_H

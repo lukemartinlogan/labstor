@@ -8,7 +8,7 @@
 #include <labstor/introspect/system_info.h>
 #include <labstor/constants/singleton_macros.h>
 
-namespace labstor::memory {
+namespace labstor::ipc {
 
 MemoryBackend* MemoryManager::CreateBackend(MemoryBackendType type,
                                             const std::string &url) {

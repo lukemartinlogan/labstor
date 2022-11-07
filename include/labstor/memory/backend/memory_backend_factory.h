@@ -8,7 +8,7 @@
 #include "memory_backend.h"
 #include "posix_shm_mmap.h"
 
-namespace labstor::memory {
+namespace labstor::ipc {
 
 class MemoryBackendFactory {
  public:
@@ -23,6 +23,6 @@ class MemoryBackendFactory {
   }
 };
 
-}  // namespace labstor::memory
+}  // namespace labstor::ipc
 
 #endif  // LABSTOR_INCLUDE_LABSTOR_MEMORY_BACKEND_MEMORY_BACKEND_FACTORY_H_

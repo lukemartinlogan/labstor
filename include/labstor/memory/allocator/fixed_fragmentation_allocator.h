@@ -10,7 +10,7 @@
 // #include "page_allocator.h"
 #include <labstor/data_structures/unordered_map.h>
 
-namespace labstor::memory {
+namespace labstor::ipc {
 
 /**
  * unordered_map<offset, MemoryRegion>
@@ -52,6 +52,6 @@ class FixedFragmentationAllocator : public Allocator {
   
 };
 
-}  // namespace labstor::memory
+}  // namespace labstor::ipc
 
 #endif  // LABSTOR_INCLUDE_LABSTOR_MEMORY_ALLOCATOR_FIXED_FRAGMENTATION_ALLOCATOR_H_

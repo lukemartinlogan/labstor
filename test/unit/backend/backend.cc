@@ -27,8 +27,8 @@
 
 #include <labstor/memory/backend/posix_shm_mmap.h>
 
-using labstor::memory::MemorySlot;
-using labstor::memory::PosixShmMmap;
+using labstor::ipc::MemorySlot;
+using labstor::ipc::PosixShmMmap;
 
 TEST_CASE("BackendReserve") {
   PosixShmMmap b1("shmem_test");

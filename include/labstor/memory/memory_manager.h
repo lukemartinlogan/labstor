@@ -8,7 +8,7 @@
 #include "allocator/allocator.h"
 #include "backend/memory_backend.h"
 
-namespace labstor::memory {
+namespace labstor::ipc {
 
 class MemoryManager {
  private:
@@ -66,6 +66,6 @@ class MemoryManager {
   }
 };
 
-}  // namespace labstor::memory
+}  // namespace labstor::ipc
 
 #endif //LABSTOR_INCLUDE_LABSTOR_MEMORY_MEMORY_MANAGER_H_

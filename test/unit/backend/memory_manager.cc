@@ -7,14 +7,14 @@
 #include <mpi.h>
 #include <labstor/memory/memory_manager.h>
 
-using labstor::memory::MemoryBackendType;
-using labstor::memory::MemoryBackend;
-using labstor::memory::allocator_id_t;
-using labstor::memory::AllocatorType;
-using labstor::memory::MemoryManager;
+using labstor::ipc::MemoryBackendType;
+using labstor::ipc::MemoryBackend;
+using labstor::ipc::allocator_id_t;
+using labstor::ipc::AllocatorType;
+using labstor::ipc::MemoryManager;
 
 struct SimpleHeader {
-  labstor::memory::Pointer p_;
+  labstor::ipc::Pointer p_;
 };
 
 TEST_CASE("MemoryManager") {

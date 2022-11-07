@@ -33,15 +33,11 @@ endif()
 
 ##################Build LabStor main packages
 
-add_library(labstor_thread
-        src/thread/mutex.cc)
-
 add_library(labstor_data_structures
-        src/memory/page_allocator.cc)
-add_dependencies(labstor_data_structures
-        labstor_thread)
-target_link_libraries(labstor_data_structures
-        labstor_thread)
+        src/thread/mutex.cc
+        src/thread/rwlock.cc
+        src/memory/page_allocator.cc
+        src/thread/rwqueue.cc)
 
 add_library(labstor_client
         src/ipc_manager.cc

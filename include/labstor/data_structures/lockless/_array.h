@@ -24,82 +24,82 @@
  */
 
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_MEMORY_DATA_STRUCTURES_ARRAY_H_
-#define LABSTOR_INCLUDE_LABSTOR_MEMORY_DATA_STRUCTURES_ARRAY_H_
+#ifndef LABSTOR_INCLUDE_LABSTOR_MEMORY_DATA_STRUCTURES__ARRAY_H_
+#define LABSTOR_INCLUDE_LABSTOR_MEMORY_DATA_STRUCTURES__ARRAY_H_
 
 #include <cstdint>
 #include "labstor/types/basic.h"
 #include "labstor/util/errors.h"
 
-namespace labstor::memory {
+namespace labstor::ipc {
 
-struct ArrayHeader {
+struct _array_header {
   size_t length_;
   size_t max_length_;
 };
 
 template<typename T>
-class Array;
+class _array;
 
 template<typename T>
-struct ArrayIterator {
-  Array<T> &array_;
+struct _array_iterator {
+  _array<T> &array_;
   size_t i_;
 
-  explicit ArrayIterator(Array<T> &array) : array_(array), i_(0) {}
-  explicit ArrayIterator(Array<T> &array, size_t i) : array_(array), i_(i) {}
+  explicit _array_iterator(_array<T> &array) : array_(array), i_(0) {}
+  explicit _array_iterator(_array<T> &array, size_t i) : array_(array), i_(i) {}
 
   T& operator*() const { return array_[i_]; }
   T* operator->() const { return &array_[i_]; }
 
-  ArrayIterator& operator++() {
+  _array_iterator& operator++() {
     ++i_;
     return *this;
   }
 
-  ArrayIterator operator++(int) {
-    return ArrayIterator(array_, i_ + 1);
+  _array_iterator operator++(int) {
+    return _array_iterator(array_, i_ + 1);
   }
 
-  ArrayIterator operator+(size_t i) {
+  _array_iterator operator+(size_t i) {
     if (i_ > array_.size()) {
       return array_.end();
     }
-    return ArrayIterator(array_, i_ + i);
+    return _array_iterator(array_, i_ + i);
   }
 
-  friend bool operator==(const ArrayIterator &a, const ArrayIterator &b) {
+  friend bool operator==(const _array_iterator &a, const _array_iterator &b) {
     return a.i_ == b.i_;
   }
 
-  friend bool operator!=(const ArrayIterator &a, const ArrayIterator &b) {
+  friend bool operator!=(const _array_iterator &a, const _array_iterator &b) {
     return a.i_ != b.i_;
   }
 };
 
 template <typename T>
-class Array {
+class _array {
  private:
-  ArrayHeader *header_;
+  _array_header *header_;
   T *array_;
 
  public:
-  Array() : header_(nullptr), array_(nullptr) {}
+  _array() : header_(nullptr), array_(nullptr) {}
 
   bool IsInitialized() {
     return header_ != nullptr;
   }
 
   bool Create(void *buffer, size_t size) {
-    header_ = reinterpret_cast<ArrayHeader*>(buffer);
+    header_ = reinterpret_cast<_array_header*>(buffer);
     header_->length_ = 0;
-    header_->max_length_ = (size - sizeof(ArrayHeader)) / sizeof(T);
+    header_->max_length_ = (size - sizeof(_array_header)) / sizeof(T);
     array_ = reinterpret_cast<T*>(header_ + 1);
     return true;
   }
 
   bool Attach(void *buffer) {
-    header_ = reinterpret_cast<ArrayHeader*>(buffer);
+    header_ = reinterpret_cast<_array_header*>(buffer);
     array_ = reinterpret_cast<T*>(header_ + 1);
     return true;
   }
@@ -124,15 +124,15 @@ class Array {
     return header_->length_;
   }
 
-  ArrayIterator<T> begin() {
-    return ArrayIterator<T>(*this, 0);
+  _array_iterator<T> begin() {
+    return _array_iterator<T>(*this, 0);
   }
 
-  ArrayIterator<T> end() {
-    return ArrayIterator<T>(*this, size());
+  _array_iterator<T> end() {
+    return _array_iterator<T>(*this, size());
   }
 };
 
-}  // namespace labstor::memory
+}  // namespace labstor::ipc
 
-#endif  // LABSTOR_INCLUDE_LABSTOR_MEMORY_DATA_STRUCTURES_ARRAY_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_MEMORY_DATA_STRUCTURES__ARRAY_H_

@@ -31,6 +31,36 @@ struct ScopedMutex {
   bool TryLock();
 };
 
+union RwLockPayload {
+  struct {
+    uint32_t r_;
+    uint32_t w_;
+  } bits;
+  uint64_t as_int_;
+
+  bool IsWriteLocked() {
+    return bits.r_ == 0 && bits.w_ > 0;
+  }
+
+  bool IsReadLocked() {
+    return bits.r_ > 0 && bits.w_ == 0;
+  }
+};
+
+struct RwLock {
+  std::atomic<RwLockPayload> payload_;
+
+  void ReadLock();
+  void ReadUnlock();
+
+  void WriteLock();
+  void WriteUnlock();
+};
+
+struct ScopedRwLock {
+  RwLock &lock_;
+};
+
 }  // namespace labstor
 
 #endif  // LABSTOR_INCLUDE_LABSTOR_THREAD_MUTEX_H_

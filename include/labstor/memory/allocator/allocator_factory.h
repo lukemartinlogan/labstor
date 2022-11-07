@@ -9,7 +9,7 @@
 #include "fixed_fragmentation_allocator.h"
 #include "page_allocator.h"
 
-namespace labstor::memory {
+namespace labstor::ipc {
 
 class AllocatorFactory {
  public:
@@ -31,6 +31,6 @@ class AllocatorFactory {
   }
 };
 
-}  // namespace labstor::memory
+}  // namespace labstor::ipc
 
 #endif //LABSTOR_INCLUDE_LABSTOR_MEMORY_ALLOCATOR_ALLOCATOR_FACTORY_H_

@@ -31,7 +31,7 @@
 #include <labstor/memory/backend/memory_backend_factory.h>
 #include <labstor/memory/memory.h>
 
-namespace labstor::memory {
+namespace labstor::ipc {
 
 enum class AllocatorType {
   kPageAllocator,
@@ -108,6 +108,6 @@ class Allocator {
   }
 };
 
-}  // namespace labstor::memory
+}  // namespace labstor::ipc
 
 #endif  // LABSTOR_INCLUDE_LABSTOR_MEMORY_ALLOCATOR_ALLOCATOR_H_

@@ -60,7 +60,7 @@ class ShmSerializeable {
 
 }  // namespace labstor
 
-namespace labstor::memory {
+namespace labstor::ipc {
 
 struct allocator_id_t {
   uint32_t id_;
@@ -95,12 +95,12 @@ struct Pointer {
 
 static const Pointer kNullPointer;
 
-}  // namespace labstor::memory
+}  // namespace labstor::ipc
 
 namespace std {
 template <>
-struct hash<labstor::memory::allocator_id_t> {
-  std::size_t operator()(const labstor::memory::allocator_id_t &key) const {
+struct hash<labstor::ipc::allocator_id_t> {
+  std::size_t operator()(const labstor::ipc::allocator_id_t &key) const {
     return std::hash<uint32_t>{}(key.id_);
   }
 };

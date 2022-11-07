@@ -14,7 +14,7 @@ class vector_iter;
 
 template<typename T>
 class vector;
-}  // namespace labstor::memory
+}  // namespace labstor::ipc
 
 
 namespace labstor {

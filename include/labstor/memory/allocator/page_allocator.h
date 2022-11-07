@@ -7,15 +7,15 @@
 
 #include "allocator.h"
 #include <labstor/thread/mutex.h>
-#include <labstor/data_structures/simple_queue.h>
+#include "labstor/data_structures/lockless/_queue.h"
 
-namespace labstor::memory {
+namespace labstor::ipc {
 
-typedef simple_queue_entry Page;
+typedef _queue_entry Page;
 
 struct PageFreeList {
   Mutex lock_;
-  simple_queue_header queue_;
+  _queue_header queue_;
   size_t region_off_, region_size_;
   size_t free_size_;
 };

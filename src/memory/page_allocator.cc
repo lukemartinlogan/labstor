@@ -4,7 +4,7 @@
 
 #include <labstor/memory/allocator/page_allocator.h>
 
-namespace labstor::memory {
+namespace labstor::ipc {
 
 void PageAllocator::Configure(size_t page_size, size_t thread_table_size,
                               int concurrency, size_t min_free_count) {
@@ -24,7 +24,7 @@ void PageAllocator::Create(allocator_id_t id) {
   void *free_list_start = GetFreeListStart();
   free_lists_.Create(free_list_start, header_->thread_table_size_);
   for (auto &free_list : free_lists_) {
-    simple_queue<Page> q;
+    _queue<Page> q;
     q.Create(&free_list.queue_, sizeof(Page), slot_.ptr_);
   }
   size_t cur_off = free_lists_.After() - slot_.ptr_;
@@ -101,7 +101,7 @@ void PageAllocator::Free(Pointer &ptr) {
 
 Pointer PageAllocator::_Allocate(PageFreeList &free_list) {
   // Dequeue a page from the free list
-  simple_queue<Page> q;
+  _queue<Page> q;
   q.Attach(&free_list.queue_, slot_.ptr_);
   if (q.size()) {
     size_t off = q.dequeue_off();
@@ -140,9 +140,9 @@ void PageAllocator::_Borrow(PageFreeList *to, int tid, bool append) {
 }
 
 void PageAllocator::_Free(PageFreeList *free_list, Pointer &p) {
-  simple_queue<Page> q;
+  _queue<Page> q;
   q.Attach(&free_list->queue_, slot_.ptr_);
   q.enqueue_off(p.off_);
 }
 
-}  // namespace labstor::memory
+}  // namespace labstor::ipc
