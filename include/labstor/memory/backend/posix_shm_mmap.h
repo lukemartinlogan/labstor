@@ -44,6 +44,8 @@
 
 namespace labstor::ipc {
 
+using labstor::ipc::lockless::_array;
+
 struct SharedMemorySlot {
   size_t off_;
   size_t size_;

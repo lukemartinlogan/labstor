@@ -10,20 +10,28 @@
 #include <labstor/memory/memory_manager.h>
 #include <labstor/constants/singleton_macros.h>
 
-namespace labstor {
+namespace labstor::ipc {
 
 template<typename T>
 class ShmDataStructure : public ShmSerializeable<T> {
  protected:
-  memory::Pointer header_ptr_;
+  Pointer header_ptr_;
   ShmHeader<T> *header_;
-  memory::Allocator *alloc_;
+  Allocator *alloc_;
   LABSTOR_MEMORY_MANAGER_T mem_mngr_;
 
  public:
-  ShmDataStructure(memory::Allocator *alloc) :
-    alloc_(alloc), header_(nullptr) {
-    mem_mngr_ = LABSTOR_MEMORY_MANAGER;
+  ShmDataStructure() :
+    header_(nullptr), mem_mngr_(LABSTOR_MEMORY_MANAGER) {
+    alloc_ = mem_mngr_->GetDefaultAllocator();
+  }
+
+  explicit ShmDataStructure(Allocator *alloc) :
+    header_(nullptr), alloc_(alloc), mem_mngr_(LABSTOR_MEMORY_MANAGER) {}
+
+  explicit ShmDataStructure(allocator_id_t alloc_id) :
+    header_(nullptr), mem_mngr_(LABSTOR_MEMORY_MANAGER) {
+    alloc_ = mem_mngr_->GetAllocator(alloc_id);
   }
 };
 

@@ -11,6 +11,11 @@
 
 namespace labstor::ipc {
 
+using lockless::_queue;
+using lockless::_queue_entry;
+using lockless::_queue_header;
+using lockless::_array;
+
 typedef _queue_entry Page;
 
 struct PageFreeList {
@@ -47,7 +52,7 @@ class PageAllocator : public Allocator {
   PageAllocatorHeader params_;
   PageAllocatorHeader *header_;
   char *custom_header_;
-  Array<PageFreeList> free_lists_;
+  _array<PageFreeList> free_lists_;
 
  public:
   explicit PageAllocator(slot_id_t slot_id, MemoryBackend *backend,

@@ -36,8 +36,7 @@ endif()
 add_library(labstor_data_structures
         src/thread/mutex.cc
         src/thread/rwlock.cc
-        src/memory/page_allocator.cc
-        src/thread/rwqueue.cc)
+        src/memory/page_allocator.cc)
 
 add_library(labstor_client
         src/ipc_manager.cc

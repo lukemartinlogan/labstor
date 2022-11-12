@@ -5,3 +5,15 @@ Shared Memory:
     Regular
     Hugepage
     Kernel
+
+LibFuse:
+    User creates a custom struct fuse_operations
+    LD_PRELOAD OFS with GenericFUSE LabMod
+        fuse_main will register this process as a worker
+        threads will be spawned which poll labstor request queues
+
+    User calls write()
+        - FUSE LabMod Connector
+
+    How do we forward that to
+    How do we get that into the runtime?

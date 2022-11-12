@@ -10,10 +10,10 @@
 #include <labstor/introspect/system_info.h>
 
 #define IS_SHM_SERIALIZEABLE(T) \
-  std::is_base_of<T, ShmSerializeable<T>>::value
+  std::is_base_of<T, labstor::ipc::ShmSerializeable<T>>::value
 
 /**
- * SHM_PARAM: Determines the type of the internal pointer used
+ * SHM_T_OR_ARCHIVE: Determines the type of the internal pointer used
  * to store data in a shared-memory data structure. For example,
  * let's say there are two vectors: vector<int> V1 and vector<vector<int>> V2.
  * V1 should store internally a pointer int *vec_
@@ -21,13 +21,13 @@
  * then deserialize this pointer at every index operation.
  * */
 
-#define SHM_PARAM(T) \
+#define SHM_T_OR_ARCHIVE(T) \
   typename std::conditional<         \
     IS_SHM_SERIALIZEABLE(T), \
-    ShmArchive<T>, T>::type
+    labstor::ipc::ShmArchive<T>, T>::type
 
 /**
- * SHM_RET: Determines the return value of an index operation on
+ * SHM_T_OR_REF_T: Determines the return value of an index operation on
  * a shared-memory data structure. For example, let's say there
  * are two vectors: vector<int> V1 and vector<vector<int>> V2.
  * V1[0] should return an int&
@@ -38,12 +38,12 @@
  * @T: The type being stored in the shmem data structure
  * */
 
-#define SHM_RET(T) \
+#define SHM_T_OR_REF_T(T) \
   typename std::conditional<         \
     IS_SHM_SERIALIZEABLE(T), \
     T, T&>::type
 
-namespace labstor {
+namespace labstor::ipc {
 
 template<typename T>
 class ShmHeader;
@@ -56,22 +56,32 @@ class ShmSerializeable {
  public:
   virtual void shm_serialize(ShmArchive<T> &ar) = 0;
   virtual void shm_deserialize(ShmArchive<T> &ar) = 0;
+
+  void operator>>(ShmArchive<T> &ar) {
+    shm_serialize(ar);
+  }
+
+  void operator<<(ShmArchive<T> &ar) {
+    shm_deserialize(ar);
+  }
 };
 
-}  // namespace labstor
+union allocator_id_t {
+  struct {
+    uint32_t major_;
+    uint32_t minor_;
+  } bits;
+  uint64_t int_;
 
-namespace labstor::ipc {
-
-struct allocator_id_t {
-  uint32_t id_;
-  allocator_id_t() : id_(-1) {}
-  allocator_id_t(uint32_t id_major, uint32_t id_minor) {
-    id_ = id_major ^ id_minor;
+  allocator_id_t() : int_(-1) {}
+  explicit allocator_id_t(uint32_t major, uint32_t minor) {
+    bits.major_ = major;
+    bits.minor_ = minor;
   }
-  bool is_null() const { return id_ == -1; }
+  bool is_null() const { return int_ == -1; }
 
   bool operator==(const allocator_id_t &other) const {
-    return other.id_ == id_;
+    return other.int_ == int_;
   }
 };
 
@@ -101,7 +111,7 @@ namespace std {
 template <>
 struct hash<labstor::ipc::allocator_id_t> {
   std::size_t operator()(const labstor::ipc::allocator_id_t &key) const {
-    return std::hash<uint32_t>{}(key.id_);
+    return std::hash<uint64_t>{}(key.int_);
   }
 };
 }  // namespace std

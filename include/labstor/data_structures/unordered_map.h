@@ -26,6 +26,7 @@ template<typename Key, typename T,
   class Hash = std::hash<Key>,
   class KeyEqual = std::equal_to<Key>>
 class unordered_map {
+  /*
  private:
   vector<unordered_map_bucket> buckets_;
   array_queue<unordered_map_op> reqs_;
@@ -44,7 +45,7 @@ class unordered_map {
     auto bkt_id = Hash(key) % buckets_.size();
     auto bkt = buckets_[bkt_id];
     auto scoped_lock = ScopedRwLock(bkt.lock_);
-  }
+  }*/
 };
 
 }

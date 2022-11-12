@@ -75,6 +75,6 @@ class _queue {
   size_t size() { return header_->size_; }
 };
 
-}  // namespace labstor
+}  // namespace labstor::ipc::lockless
 
 #endif  // LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_SIMPLE_QUEUE_H_

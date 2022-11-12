@@ -31,7 +31,7 @@
 #include "labstor/types/basic.h"
 #include "labstor/util/errors.h"
 
-namespace labstor::ipc {
+namespace labstor::ipc::lockless {
 
 struct _array_header {
   size_t length_;
