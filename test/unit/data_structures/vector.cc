@@ -25,9 +25,24 @@
 
 #include "basic_test.h"
 
+#include <labstor/memory/backend/posix_shm_mmap.h>
 #include <labstor/data_structures/lockless/vector.h>
 
-TEST_CASE("ArraySimple") {
+using labstor::ipc::MemoryBackendType;
+using labstor::ipc::MemoryBackend;
+using labstor::ipc::allocator_id_t;
+using labstor::ipc::AllocatorType;
+using labstor::ipc::MemoryManager;
+
+TEST_CASE("VectorSimple") {
   auto mem_mngr = LABSTOR_MEMORY_MANAGER;
-  // mem_mngr->CreateBackend(MemoryBackend:: "")
+
+  std::string shm_url = "test_vector";
+  allocator_id_t alloc_id(0, 0);
+  mem_mngr->CreateBackend(MemoryBackendType::kPosixShmMmap,
+                          shm_url);
+  mem_mngr->CreateAllocator(AllocatorType::kPageAllocator,
+                            shm_url,
+                            alloc_id);
+  labstor::ipc::lockless::vector<int> vec;
 }

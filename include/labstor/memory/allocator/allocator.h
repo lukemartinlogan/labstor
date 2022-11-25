@@ -77,8 +77,26 @@ class Allocator {
 
   template<typename T>
   T* AllocatePtr(size_t size) {
-    Pointer p = Allocate(size);
+    Pointer p;
+    return AllocatePtr<T>(size, p);
+  }
+
+  template<typename T>
+  T* AllocatePtr(size_t size, Pointer &p) {
+    p = Allocate(size);
+    if (p.is_null()) { return nullptr; }
     return reinterpret_cast<T*>(slot_.ptr_ + p.off_);
+  }
+
+  template<typename T>
+  T* AllocateObj(size_t count) {
+    Pointer p;
+    return AllocateObj<T>(count, p);
+  }
+
+  template<typename T>
+  T* AllocateObj(size_t count, Pointer &p) {
+    return AllocatePtr<T>(count * sizeof(T), p);
   }
 
   template<typename T>

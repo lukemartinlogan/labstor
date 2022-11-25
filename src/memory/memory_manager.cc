@@ -46,8 +46,7 @@ void MemoryManager::ScanBackends() {
       auto alloc = AllocatorFactory::Get(
         type, slot_id, backend.get());
       alloc->Attach();
-      auto alloc_id = alloc->GetId();
-      allocators_.emplace(alloc_id, std::move(alloc));
+      RegisterAllocator(alloc);
     }
   }
 }
@@ -67,8 +66,15 @@ Allocator* MemoryManager::CreateAllocator(AllocatorType type,
                               allocators_.size());
   }
   alloc->Create(alloc_id);
-  allocators_.emplace(alloc_id, std::move(alloc));
+  RegisterAllocator(alloc);
   return GetAllocator(alloc_id);
+}
+
+void MemoryManager::RegisterAllocator(std::unique_ptr<Allocator> &alloc) {
+  if (default_allocator_ == nullptr) {
+    default_allocator_ = alloc.get();
+  }
+  allocators_.emplace(alloc->GetId(), std::move(alloc));
 }
 
 Allocator* MemoryManager::GetAllocator(allocator_id_t alloc_id) {
@@ -77,6 +83,10 @@ Allocator* MemoryManager::GetAllocator(allocator_id_t alloc_id) {
     ScanBackends();
   }
   return allocators_[alloc_id].get();
+}
+
+Allocator* MemoryManager::GetDefaultAllocator() {
+  return default_allocator_;
 }
 
 }

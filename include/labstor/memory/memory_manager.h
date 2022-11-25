@@ -14,6 +14,7 @@ class MemoryManager {
  private:
   std::unordered_map<std::string, std::unique_ptr<MemoryBackend>> backends_;
   std::unordered_map<allocator_id_t, std::unique_ptr<Allocator>> allocators_;
+  Allocator *default_allocator_;
 
  public:
   static const size_t kDefaultSlotSize = GIGABYTES(64);
@@ -28,12 +29,9 @@ class MemoryManager {
                              allocator_id_t alloc_id,
                              size_t slot_size = kDefaultSlotSize,
                              size_t custom_header_size = 0);
-  Allocator* DefineAllocator(AllocatorType type,
-                             const std::string &url,
-                             allocator_id_t alloc_id,
-                             size_t slot_size = kDefaultSlotSize,
-                             size_t custom_header_size = 0);
+  void RegisterAllocator(std::unique_ptr<Allocator> &alloc);
   Allocator* GetAllocator(allocator_id_t alloc_id);
+  Allocator* GetDefaultAllocator();
 
   template<typename T, typename ...Args>
   Allocator* ConfigureAllocator(allocator_id_t allocator_id, Args ...args) {
