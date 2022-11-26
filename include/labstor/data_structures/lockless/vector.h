@@ -185,11 +185,6 @@ class vector : public ShmDataStructure<vector<T>> {
       Convert<void>(header_->vec_ptr_);
   }
 
-  T_Ar* _data() {
-    return mem_mngr_->template
-      Convert<T_Ar>(header_->vec_ptr_);
-  }
-
   /**
    * ITERATORS
    * */
@@ -256,16 +251,27 @@ class vector : public ShmDataStructure<vector<T>> {
 
   void shift_left(const vector_iterator<T> pos, int count = 1) {
     for (int i = 0; i < count; ++i) { _destruct<T, T_Ar>(*(pos + i)); }
+    auto dst = _data() + pos.i_;
+    auto src = dst + count;
     for (auto i = pos + count; i != end(); ++i) {
-      *(i - count) = (*i);
+      memcpy(dst, src, sizeof(T_Ar));
+      dst += 1; src += 1;
     }
   }
 
   void shift_right(const vector_iterator<T> pos, int count = 1) {
     auto pos_left = pos - 1;
+    auto src = _data() + size() - 1;
+    auto dst = src + count;
     for (auto i = end() - 1; i != pos_left; --i) {
-      *(i + count) = (*i);
+      memcpy(dst, src, sizeof(T_Ar));
+      dst -= 1; src -= 1;
     }
+  }
+
+  T_Ar* _data() {
+    return mem_mngr_->template
+      Convert<T_Ar>(header_->vec_ptr_);
   }
 };
 
