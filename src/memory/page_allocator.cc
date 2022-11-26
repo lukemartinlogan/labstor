@@ -105,8 +105,6 @@ Pointer PageAllocator::_Allocate(PageFreeList &free_list) {
   q.Attach(&free_list.queue_, slot_.ptr_);
   if (q.size()) {
     size_t off = q.dequeue_off();
-    if (off == 0)
-      return kNullPointer;
     free_list.free_size_ -= header_->page_size_;
     return Pointer(GetId(), off);
   }
@@ -114,8 +112,6 @@ Pointer PageAllocator::_Allocate(PageFreeList &free_list) {
   // Create a new page from the segment
   if (free_list.region_size_ >= header_->page_size_) {
     size_t off = free_list.region_off_;
-    if (off == 0)
-      return kNullPointer;
     free_list.region_size_ -= header_->page_size_;
     free_list.region_off_ += header_->page_size_;
     free_list.free_size_ -= header_->page_size_;
