@@ -83,6 +83,10 @@ union allocator_id_t {
   bool operator==(const allocator_id_t &other) const {
     return other.int_ == int_;
   }
+
+  bool operator!=(const allocator_id_t &other) const {
+    return other.int_ != int_;
+  }
 };
 
 typedef uint32_t slot_id_t;
@@ -100,6 +104,10 @@ struct Pointer {
 
   bool operator==(const Pointer &other) const {
     return (other.allocator_id_ == allocator_id_ && other.off_ == off_);
+  }
+
+  bool operator !=(const Pointer &other) const {
+    return (other.allocator_id_ != allocator_id_ || other.off_ != off_);
   }
 };
 

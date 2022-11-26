@@ -24,9 +24,9 @@ class _queue {
   size_t region_start_;
 
  public:
-  void Create(void *buffer, size_t size, char *region_start) {
+  void Create(void *buffer, char *region_start) {
     header_ = reinterpret_cast<_queue_header*>(buffer);
-    memset(header_, 0, size);
+    memset(header_, 0, sizeof(_queue_header));
     region_start_ = reinterpret_cast<size_t>(region_start);
   }
 
@@ -56,10 +56,11 @@ class _queue {
     if (header_->size_ == 0) {
       return 0;
     }
-    auto head = reinterpret_cast<T*>(header_->head_ + region_start_);
+    auto head_off = header_->head_;
+    auto head = reinterpret_cast<T*>(head_off + region_start_);
     header_->head_ = head->next_;
     --header_->size_;
-    return header_->head_;
+    return head_off;
   }
 
   T* dequeue() {

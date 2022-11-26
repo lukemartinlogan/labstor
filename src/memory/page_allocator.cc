@@ -25,7 +25,7 @@ void PageAllocator::Create(allocator_id_t id) {
   free_lists_.Create(free_list_start, header_->thread_table_size_);
   for (auto &free_list : free_lists_) {
     _queue<Page> q;
-    q.Create(&free_list.queue_, sizeof(Page), slot_.ptr_);
+    q.Create(&free_list.queue_, slot_.ptr_);
   }
   size_t cur_off = free_lists_.After() - slot_.ptr_;
   size_t cur_size = slot_.size_ - cur_off;
@@ -105,6 +105,8 @@ Pointer PageAllocator::_Allocate(PageFreeList &free_list) {
   q.Attach(&free_list.queue_, slot_.ptr_);
   if (q.size()) {
     size_t off = q.dequeue_off();
+    if (off == 0)
+      return kNullPointer;
     free_list.free_size_ -= header_->page_size_;
     return Pointer(GetId(), off);
   }
@@ -112,6 +114,8 @@ Pointer PageAllocator::_Allocate(PageFreeList &free_list) {
   // Create a new page from the segment
   if (free_list.region_size_ >= header_->page_size_) {
     size_t off = free_list.region_off_;
+    if (off == 0)
+      return kNullPointer;
     free_list.region_size_ -= header_->page_size_;
     free_list.region_off_ += header_->page_size_;
     free_list.free_size_ -= header_->page_size_;
@@ -143,6 +147,7 @@ void PageAllocator::_Free(PageFreeList *free_list, Pointer &p) {
   _queue<Page> q;
   q.Attach(&free_list->queue_, slot_.ptr_);
   q.enqueue_off(p.off_);
+  free_list->free_size_ += header_->page_size_;
 }
 
 }  // namespace labstor::ipc

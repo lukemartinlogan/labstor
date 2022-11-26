@@ -108,7 +108,7 @@ class vector : public ShmDataStructure<vector<T>> {
       header_->length_ = 0;
       header_->max_length_ = 0;
     }
-    grow_vector(length);
+    grow_vector(_data(), length);
   }
 
   void resize(size_t length) {
@@ -117,7 +117,7 @@ class vector : public ShmDataStructure<vector<T>> {
   }
 
   T_Ret operator[](const size_t i) {
-    T_Ar *vec = mem_mngr_->Convert(header_->vec_ptr_);
+    T_Ar *vec = _data();
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       T obj;
       obj << vec[i];
@@ -129,9 +129,9 @@ class vector : public ShmDataStructure<vector<T>> {
 
   template<typename... Args>
   void emplace_back(Args&&... args) {
-    T_Ar *vec = mem_mngr_->Convert(header_->vec_ptr_);
+    T_Ar *vec = _data();
     if (header_->length_ == header_->max_length_) {
-      vec = grow_vector();
+      vec = grow_vector(vec);
     }
     vec[header_->length_++] = T(args...);
   }
@@ -142,9 +142,9 @@ class vector : public ShmDataStructure<vector<T>> {
       emplace_back(args...);
       return;
     }
-    T_Ar *vec = mem_mngr_->Convert(header_->vec_ptr_);
+    T_Ar *vec = _data();
     if (header_->length_ == header_->max_length_) {
-      vec = grow_vector();
+      vec = grow_vector(vec);
     }
     shift_right(pos);
     (*pos) = T(args...);
@@ -156,6 +156,16 @@ class vector : public ShmDataStructure<vector<T>> {
 
   size_t size() {
     return header_->length_;
+  }
+
+  void* data() {
+    return mem_mngr_->template
+      Convert<void>(header_->vec_ptr_);
+  }
+
+  T_Ar* _data() {
+    return mem_mngr_->template
+      Convert<T_Ar>(header_->vec_ptr_);
   }
 
   /**
@@ -202,8 +212,8 @@ class vector : public ShmDataStructure<vector<T>> {
     }
 
     // Allocate new shared-memory vec
-    T_Ar *new_vec = alloc_->AllocatePtr(
-      max_length*sizeof(T_Ar), new_ptr);
+    T_Ar *new_vec = alloc_->template
+      AllocateObj<T_Ar>(max_length, new_ptr);
     if (new_vec == nullptr) {
       throw OUT_OF_MEMORY.format("vector::emplace_back",
                                  max_length*sizeof(T_Ar));

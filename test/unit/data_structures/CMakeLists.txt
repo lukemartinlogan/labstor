@@ -13,4 +13,4 @@ target_link_libraries(test_data_structure_exec
 
 # 1p - 1 process, 1t - 1 thread
 add_test(NAME test_vector_1p1t COMMAND
-        ${CMAKE_CURRENT_BINARY_DIR}/test_memory_exec "TestArraySimple")
+        ${CMAKE_CURRENT_BINARY_DIR}/test_data_structure_exec "VectorSimple")
