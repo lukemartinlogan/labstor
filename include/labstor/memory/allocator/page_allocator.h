@@ -77,7 +77,7 @@ class PageAllocator : public Allocator {
  private:
   void* GetFreeListStart();
   Pointer _Allocate(PageFreeList &free_list);
-  void _Borrow(PageFreeList *to, int tid, bool append);
+  void _Borrow(PageFreeList *to, tid_t tid, bool append);
   void _Free(PageFreeList *free_list, Pointer &p);
 };
 

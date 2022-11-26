@@ -121,7 +121,7 @@ Pointer PageAllocator::_Allocate(PageFreeList &free_list) {
   return kNullPointer;
 }
 
-void PageAllocator::_Borrow(PageFreeList *to, int tid, bool append) {
+void PageAllocator::_Borrow(PageFreeList *to, tid_t tid, bool append) {
   tid += 1;
   for (auto i = 0; i < header_->concurrency_; ++i) {
     auto free_list_id = (tid + i) % header_->concurrency_;
