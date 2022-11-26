@@ -5,82 +5,90 @@
 #include "basic_test.h"
 #include "omp.h"
 #include <labstor/data_structures/lockless/vector.h>
+#include <labstor/memory/allocator/page_allocator.h>
 
 using labstor::ipc::MemoryBackendType;
 using labstor::ipc::MemoryBackend;
 using labstor::ipc::allocator_id_t;
 using labstor::ipc::AllocatorType;
+using labstor::ipc::Allocator;
 using labstor::ipc::MemoryManager;
 using labstor::ipc::Pointer;
 
-TEST_CASE("PageAllocator") {
-  int count = 1024;
-  std::string shm_url = "test_vector";
+Allocator* Pretest(AllocatorType type) {
+  std::string shm_url = "test_allocators";
   allocator_id_t alloc_id(0, 0);
   auto mem_mngr = LABSTOR_MEMORY_MANAGER;
   mem_mngr->CreateBackend(MemoryBackendType::kPosixShmMmap,
                           shm_url);
-  mem_mngr->CreateAllocator(AllocatorType::kPageAllocator,
+  mem_mngr->CreateAllocator(type,
                             shm_url,
                             alloc_id);
   auto alloc = mem_mngr->GetAllocator(alloc_id);
+  return alloc;
+}
 
-  // Allocate 1024 pages
+void PageAllocationTest(Allocator *alloc) {
+  int count = 1024;
+  size_t page_size = KILOBYTES(4);
+  auto mem_mngr = LABSTOR_MEMORY_MANAGER;
+
+  // Allocate pages
   Pointer ps[count];
-  void *ptrs[count], *min = nullptr, *max = nullptr;
+  void *ptrs[count];
   for (int i = 0; i < count; ++i) {
-    if (i == 1023) {
-      std::cout << "HERE" << std::endl;
-    }
-    ptrs[i] = alloc->AllocatePtr<void>(KILOBYTES(4), ps[i]);
-    if (min == nullptr || ptrs[i] < min) {
-      min = ptrs[i];
-    }
-    if (max == nullptr || ptrs[i] > max) {
-      max = ptrs[i];
-    }
+    ptrs[i] = alloc->AllocatePtr<void>(page_size, ps[i]);
+    memset(ptrs[i], i, page_size);
     REQUIRE(ps[i].off_ != 0);
     REQUIRE(!ps[i].is_null());
     REQUIRE(ptrs[i] != nullptr);
-  }
-
-  // Verify these are at least 4KB apart
-  for (int i = 1; i < 1024; ++i) {
-    size_t p1 = reinterpret_cast<size_t>(ptrs[i]);
-    size_t p2 = reinterpret_cast<size_t>(ptrs[i-1]);
-    REQUIRE((p1 - p2) >= KILOBYTES(4));
   }
 
   //Convert process pointers into independent pointers
   for (int i = 0; i < count; ++i) {
     Pointer p = mem_mngr->Convert(ptrs[i]);
     REQUIRE(p == ps[i]);
+    REQUIRE(VerifyBuffer((char*)ptrs[i], page_size, i));
   }
 
-  // Free 1024 pages
+  // Free pages
   for (int i = 0; i < count; ++i) {
-    if (i == 1023) {
-      std::cout << "HERE" << std::endl;
-    }
     alloc->Free(ps[i]);
   }
 
-  // Reallocate 1024 pages
+  // Reallocate pages
   for (int i = 0; i < count; ++i) {
-    if (i == 1023) {
-      std::cout << "HERE" << std::endl;
-    }
-    ptrs[i] = alloc->AllocatePtr<void>(KILOBYTES(4), ps[i]);
-    if (i == 1023) {
-      std::cout << i << std::endl;
-      std::cout << ps[i].off_ << std::endl;
-      std::cout << ptrs[i] << std::endl;
-    }
+    ptrs[i] = alloc->AllocatePtr<void>(page_size, ps[i]);
     REQUIRE(ps[i].off_ != 0);
     REQUIRE(!ps[i].is_null());
-    REQUIRE((min <= ptrs[i] && ptrs[i] <= max));
   }
+}
 
-  // Destory the SHM backend
+void MultiThreadedPageAllocationTest(Allocator *alloc) {
+  int nthreads = 4;
+
+  omp_set_dynamic(0);
+#pragma omp parallel shared(alloc) num_threads(nthreads)
+  {
+#pragma omp barrier
+    PageAllocationTest(alloc);
+  }
+}
+
+void Posttest() {
+  std::string shm_url = "test_allocators";
+  auto mem_mngr = LABSTOR_MEMORY_MANAGER;
   mem_mngr->DestroyBackend(shm_url);
+}
+
+TEST_CASE("PageAllocator") {
+  auto alloc = Pretest(AllocatorType::kPageAllocator);
+  PageAllocationTest(alloc);
+  Posttest();
+}
+
+TEST_CASE("PageAllocatorMultithreaded") {
+  auto alloc = Pretest(AllocatorType::kPageAllocator);
+  MultiThreadedPageAllocationTest(alloc);
+  Posttest();
 }
