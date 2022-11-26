@@ -67,29 +67,34 @@ struct vector_iterator {
 
 template<typename T>
 class vector : public ShmDataStructure<vector<T>> {
+ SHM_DATA_STRUCTURE_TEMPLATE(vector, vector<T>)
+
  private:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
   typedef SHM_T_OR_REF_T(T) T_Ret;
-  using ShmDataStructure<vector<T>>::header_;
-  using ShmDataStructure<vector<T>>::header_ptr_;
-  using ShmDataStructure<vector<T>>::mem_mngr_;
-  using ShmDataStructure<vector<T>>::alloc_;
 
  public:
   vector() = default;
 
-  vector(size_t length) {
+  explicit vector(Allocator *alloc) : ShmDataStructure<vector<T>>(alloc) {}
+
+  explicit vector(size_t length) {
     reserve(length);
   }
 
-  vector(size_t length, Allocator *alloc) :
+  explicit vector(size_t length, Allocator *alloc) :
       ShmDataStructure<vector<T>>(alloc) {
     reserve(length);
   }
 
-  vector(size_t length, allocator_id_t alloc_id) :
+  explicit vector(size_t length, allocator_id_t alloc_id) :
       ShmDataStructure<vector<T>>(alloc_id) {
     reserve(length);
+  }
+
+  void destroy() {
+    erase(begin(), end());
+    alloc_->Free(header_->vec_ptr_);
   }
 
   void shm_serialize(ShmArchive<vector<T>> &ar) {
@@ -133,7 +138,8 @@ class vector : public ShmDataStructure<vector<T>> {
     if (header_->length_ == header_->max_length_) {
       vec = grow_vector(vec);
     }
-    vec[header_->length_++] = T(args...);
+    _construct(*(vec + header_->length_), args...);
+    ++header_->length_;
   }
 
   template<typename ...Args>
@@ -147,7 +153,8 @@ class vector : public ShmDataStructure<vector<T>> {
       vec = grow_vector(vec);
     }
     shift_right(pos);
-    (*pos) = T(args...);
+    _construct(*pos, args...);
+    ++header_->length_;
   }
 
   void erase(vector_iterator<T> first, vector_iterator<T> last) {
@@ -197,6 +204,16 @@ class vector : public ShmDataStructure<vector<T>> {
   }
 
  private:
+  template<typename ...Args>
+  void _construct(T_Ar &vec_i, Args ...args) {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      T obj(args...);
+      vec_i << obj;
+    } else {
+      new (&vec_i) T(args...);
+    }
+  }
+
   T_Ar* grow_vector(T_Ar *vec, size_t max_length = 0) {
     Pointer new_ptr;
 
@@ -213,7 +230,7 @@ class vector : public ShmDataStructure<vector<T>> {
 
     // Allocate new shared-memory vec
     T_Ar *new_vec = alloc_->template
-      AllocateObj<T_Ar>(max_length, new_ptr);
+      ConstructObj<T_Ar>(max_length, new_ptr);
     if (new_vec == nullptr) {
       throw OUT_OF_MEMORY.format("vector::emplace_back",
                                  max_length*sizeof(T_Ar));

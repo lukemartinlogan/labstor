@@ -54,17 +54,29 @@ class ShmArchive;
 template<typename T>
 class ShmSerializeable {
  public:
-  virtual void shm_serialize(ShmArchive<T> &ar) = 0;
-  virtual void shm_deserialize(ShmArchive<T> &ar) = 0;
-
-  void operator>>(ShmArchive<T> &ar) {
-    shm_serialize(ar);
-  }
-
-  void operator<<(ShmArchive<T> &ar) {
-    shm_deserialize(ar);
-  }
+  // ShmSerializeable(ShmArchive<T> &ar);
+  // virtual void destroy() = 0;
+  // virtual void shm_serialize(ShmArchive<T> &ar) = 0;
+  // virtual void shm_deserialize(ShmArchive<T> &ar) = 0;
+  // void operator>>(ShmArchive<TYPED_CLASS> &ar);
+  // void operator<<(ShmArchive<TYPED_CLASS> &ar)
 };
+
+#define SHM_SERIALIZEABLE_TEMPLATE(CLASS_NAME, TYPED_CLASS)\
+ public:\
+  CLASS_NAME(ShmArchive<TYPED_CLASS> &ar) {\
+    shm_deserialize(ar);\
+  }\
+  void operator>>(ShmArchive<TYPED_CLASS> &ar) {\
+    shm_serialize(ar);\
+  }\
+  void operator<<(ShmArchive<TYPED_CLASS> &ar) {\
+    shm_deserialize(ar);\
+  }\
+ private:\
+  void _check_template() {\
+    destroy();\
+  }
 
 union allocator_id_t {
   struct {

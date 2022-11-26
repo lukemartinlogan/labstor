@@ -35,6 +35,13 @@ class ShmDataStructure : public ShmSerializeable<T> {
   }
 };
 
+#define SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS)\
+ public:\
+  using ShmDataStructure<TYPED_CLASS>::header_;\
+  using ShmDataStructure<TYPED_CLASS>::header_ptr_;\
+  using ShmDataStructure<TYPED_CLASS>::mem_mngr_;\
+  using ShmDataStructure<TYPED_CLASS>::alloc_;\
+  SHM_SERIALIZEABLE_TEMPLATE(CLASS_NAME, TYPED_CLASS)
 }
 
 #endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_DATA_STRUCTURE_H_

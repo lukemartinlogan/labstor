@@ -28,6 +28,12 @@ Allocator* Pretest(AllocatorType type) {
   return alloc;
 }
 
+void Posttest() {
+  std::string shm_url = "test_allocators";
+  auto mem_mngr = LABSTOR_MEMORY_MANAGER;
+  mem_mngr->DestroyBackend(shm_url);
+}
+
 void PageAllocationTest(Allocator *alloc) {
   int count = 1024;
   size_t page_size = KILOBYTES(4);
@@ -73,12 +79,6 @@ void MultiThreadedPageAllocationTest(Allocator *alloc) {
 #pragma omp barrier
     PageAllocationTest(alloc);
   }
-}
-
-void Posttest() {
-  std::string shm_url = "test_allocators";
-  auto mem_mngr = LABSTOR_MEMORY_MANAGER;
-  mem_mngr->DestroyBackend(shm_url);
 }
 
 TEST_CASE("PageAllocator") {

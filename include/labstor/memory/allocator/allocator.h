@@ -99,6 +99,21 @@ class Allocator {
     return AllocatePtr<T>(count * sizeof(T), p);
   }
 
+  template<typename T, typename ...Args>
+  T* ConstructObj(size_t count, Args ...args) {
+    Pointer p;
+    return ConstructObj<T>(count, p, args...);
+  }
+
+  template<typename T, typename ...Args>
+  T* ConstructObj(size_t count, Pointer &p, Args ...args) {
+    T* ptr = AllocateObj<T>(count, p);
+    for (size_t i = 0; i < count; ++i) {
+      new (ptr + i) T(args...);
+    }
+    return ptr;
+  }
+
   template<typename T>
   T* GetCustomHeader() {
     return reinterpret_cast<T*>(slot_.ptr_ + GetInternalHeaderSize());
