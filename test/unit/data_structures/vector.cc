@@ -58,11 +58,30 @@ TEST_CASE("VectorSimple") {
   Allocator *alloc = Pretest(AllocatorType::kPageAllocator);
   labstor::ipc::lockless::vector<int> vec(alloc);
   vec.reserve(10);
+
   for (int i = 0; i < 30; ++i) {
     vec.emplace_back(i);
   }
+  REQUIRE(vec.size() == 30);
   for (int i = 0; i < 30; ++i) {
     REQUIRE(vec[i] == i);
   }
+
+  vec.emplace(vec.begin(), 100);
+  REQUIRE(vec[0] == 100);
+  REQUIRE(vec.size() == 31);
+  for (int i = 1; i < vec.size(); ++i) {
+    REQUIRE(vec[i] == i - 1);
+  }
+
+  vec.erase(vec.begin(), vec.begin() + 1);
+  REQUIRE(vec.size() == 30);
+  for (int i = 0; i < vec.size(); ++i) {
+    REQUIRE(vec[i] == i);
+  }
+
+  vec.erase(vec.begin(), vec.end());
+  REQUIRE(vec.size() == 0);
+
   Posttest();
 }

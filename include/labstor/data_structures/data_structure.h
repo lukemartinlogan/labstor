@@ -12,11 +12,11 @@
 
 namespace labstor::ipc {
 
-template<typename T>
-class ShmDataStructure : public ShmSerializeable<T> {
+template<typename TYPED_CLASS>
+class ShmDataStructure : public ShmSerializeable<TYPED_CLASS> {
  protected:
   Pointer header_ptr_;
-  ShmHeader<T> *header_;
+  ShmHeader<TYPED_CLASS> *header_;
   Allocator *alloc_;
   LABSTOR_MEMORY_MANAGER_T mem_mngr_;
 
@@ -33,7 +33,29 @@ class ShmDataStructure : public ShmSerializeable<T> {
     header_(nullptr), mem_mngr_(LABSTOR_MEMORY_MANAGER) {
     alloc_ = mem_mngr_->GetAllocator(alloc_id);
   }
+
+  void InitDataStructure(Pointer &header_ptr) {
+    header_ = mem_mngr_->template
+      Convert<ShmHeader<TYPED_CLASS>>(header_ptr_);
+    header_ptr_ = header_ptr;
+    alloc_ = mem_mngr_->GetAllocator(header_ptr.allocator_id_);
+  }
 };
+
+template<typename T, typename T_Ar, typename ...Args>
+void _construct(T_Ar &obj_ar, Args ...args) {
+  if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+    T obj(args...);
+    obj_ar << obj;
+  } else {
+    new (&obj_ar) T(args...);
+  }
+}
+
+template<typename T, typename T_Ar>
+void _destruct(T_Ar &obj_ar) {
+  obj_ar.~T();
+}
 
 #define SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS)\
  public:\
@@ -41,6 +63,7 @@ class ShmDataStructure : public ShmSerializeable<T> {
   using ShmDataStructure<TYPED_CLASS>::header_ptr_;\
   using ShmDataStructure<TYPED_CLASS>::mem_mngr_;\
   using ShmDataStructure<TYPED_CLASS>::alloc_;\
+  using ShmDataStructure<TYPED_CLASS>::InitDataStructure;\
   SHM_SERIALIZEABLE_TEMPLATE(CLASS_NAME, TYPED_CLASS)
 }
 

@@ -45,15 +45,28 @@ struct vector_iterator {
     return *this;
   }
 
-  vector_iterator operator++(int) {
+  vector_iterator& operator--() {
+    --i_;
+    return *this;
+  }
+
+  vector_iterator operator++(int) const {
     return vector_iterator(vec_, i_ + 1);
   }
 
-  vector_iterator operator+(size_t i) {
+  vector_iterator operator--(int) const {
+    return vector_iterator(vec_, i_ - 1);
+  }
+
+  vector_iterator operator+(size_t i) const {
     if (i_ > vec_.size()) {
       return vec_.end();
     }
     return vector_iterator(vec_, i_ + i);
+  }
+
+  vector_iterator operator-(size_t i) const {
+    return vector_iterator(vec_, i_ - i);
   }
 
   friend bool operator==(const vector_iterator &a, const vector_iterator &b) {
@@ -102,8 +115,7 @@ class vector : public ShmDataStructure<vector<T>> {
   }
 
   void shm_deserialize(ShmArchive<vector<T>> &ar) {
-    header_ = mem_mngr_->template
-      Convert<ShmHeader<vector<T>>>(ar.header_ptr_);
+    InitDataStructure(ar.header_ptr_);
   }
 
   void reserve(size_t length) {
@@ -138,7 +150,7 @@ class vector : public ShmDataStructure<vector<T>> {
     if (header_->length_ == header_->max_length_) {
       vec = grow_vector(vec);
     }
-    _construct(*(vec + header_->length_), args...);
+    _construct<T, T_Ar>(*(vec + header_->length_), args...);
     ++header_->length_;
   }
 
@@ -153,12 +165,15 @@ class vector : public ShmDataStructure<vector<T>> {
       vec = grow_vector(vec);
     }
     shift_right(pos);
-    _construct(*pos, args...);
+    _construct<T, T_Ar>(*pos, args...);
     ++header_->length_;
   }
 
   void erase(vector_iterator<T> first, vector_iterator<T> last) {
-    // TODO(llogan)
+    size_t count = last.i_ - first.i_;
+    if (count == 0) return;
+    shift_left(first, count);
+    header_->length_ -= count;
   }
 
   size_t size() {
@@ -180,9 +195,11 @@ class vector : public ShmDataStructure<vector<T>> {
    * */
 
   vector_iterator<T> begin() {
+    return vector_iterator<T>(*this);
   }
 
   vector_iterator<T> end() {
+    return vector_iterator<T>(*this, size());
   }
 
   vector_iterator<T> rbegin() {
@@ -204,16 +221,6 @@ class vector : public ShmDataStructure<vector<T>> {
   }
 
  private:
-  template<typename ...Args>
-  void _construct(T_Ar &vec_i, Args ...args) {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      T obj(args...);
-      vec_i << obj;
-    } else {
-      new (&vec_i) T(args...);
-    }
-  }
-
   T_Ar* grow_vector(T_Ar *vec, size_t max_length = 0) {
     Pointer new_ptr;
 
@@ -248,13 +255,15 @@ class vector : public ShmDataStructure<vector<T>> {
   }
 
   void shift_left(const vector_iterator<T> pos, int count = 1) {
+    for (int i = 0; i < count; ++i) { _destruct<T, T_Ar>(*(pos + i)); }
     for (auto i = pos + count; i != end(); ++i) {
       *(i - count) = (*i);
     }
   }
 
   void shift_right(const vector_iterator<T> pos, int count = 1) {
-    for (auto i = end() - 1; i != pos; --i) {
+    auto pos_left = pos - 1;
+    for (auto i = end() - 1; i != pos_left; --i) {
       *(i + count) = (*i);
     }
   }

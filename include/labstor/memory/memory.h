@@ -64,7 +64,7 @@ class ShmSerializeable {
 
 #define SHM_SERIALIZEABLE_TEMPLATE(CLASS_NAME, TYPED_CLASS)\
  public:\
-  CLASS_NAME(ShmArchive<TYPED_CLASS> &ar) {\
+  explicit CLASS_NAME(ShmArchive<TYPED_CLASS> &ar) {\
     shm_deserialize(ar);\
   }\
   void operator>>(ShmArchive<TYPED_CLASS> &ar) {\
