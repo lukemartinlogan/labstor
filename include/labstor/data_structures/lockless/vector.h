@@ -29,54 +29,129 @@ struct ShmHeader<lockless::vector<T>> {
 
 namespace labstor::ipc::lockless {
 
-template<typename T>
-struct vector_iterator {
+template<typename T, typename T_Ret, bool FORWARD_ITER>
+struct vector_iterator_templ {
   vector<T> &vec_;
-  size_t i_;
+  off64_t i_;
 
-  explicit vector_iterator(vector<T> &vec) : vec_(vec), i_(0) {}
-  explicit vector_iterator(vector<T> &vec, size_t i) : vec_(vec), i_(i) {}
+  explicit vector_iterator_templ(vector<T> &vec, size_t i) :
+    vec_(vec), i_(static_cast<off64_t>(i)) {}
 
-  T& operator*() const { return vec_[i_]; }
-  T* operator->() const { return &vec_[i_]; }
+  T_Ret operator*() const { return vec_[i_]; }
 
-  vector_iterator& operator++() {
-    ++i_;
-    return *this;
-  }
-
-  vector_iterator& operator--() {
-    --i_;
-    return *this;
-  }
-
-  vector_iterator operator++(int) const {
-    return vector_iterator(vec_, i_ + 1);
-  }
-
-  vector_iterator operator--(int) const {
-    return vector_iterator(vec_, i_ - 1);
-  }
-
-  vector_iterator operator+(size_t i) const {
-    if (i_ > vec_.size()) {
-      return vec_.end();
+  vector_iterator_templ& operator++() {
+    if constexpr(FORWARD_ITER) {
+      ++i_;
+    } else {
+      --i_;
     }
-    return vector_iterator(vec_, i_ + i);
+    return *this;
   }
 
-  vector_iterator operator-(size_t i) const {
-    return vector_iterator(vec_, i_ - i);
+  vector_iterator_templ& operator--() {
+    if constexpr(FORWARD_ITER) {
+      --i_;
+    } else {
+      ++i_;
+    }
+    return *this;
   }
 
-  friend bool operator==(const vector_iterator &a, const vector_iterator &b) {
+  vector_iterator_templ operator++(int) const {
+    if constexpr(FORWARD_ITER) {
+      return vector_iterator_templ(vec_, i_ + 1);
+    } else {
+      return vector_iterator_templ(vec_, i_ - 1);
+    }
+  }
+
+  vector_iterator_templ operator--(int) const {
+    if constexpr(FORWARD_ITER) {
+      return vector_iterator_templ(vec_, i_ - 1);
+    } else {
+      return vector_iterator_templ(vec_, i_ + 1);
+    }
+  }
+
+  vector_iterator_templ operator+(size_t count) const {
+    if constexpr(FORWARD_ITER) {
+      if (i_ + count > vec_.size()) {
+        return vector_iterator_templ(vec_, vec_.size());
+      }
+      return vector_iterator_templ(vec_, i_ + count);
+    } else {
+      if (i_ < count - 1) {
+        return vector_iterator_templ(vec_, -1);
+      }
+      return vector_iterator_templ(vec_, i_ - count);
+    }
+  }
+
+  vector_iterator_templ operator-(size_t count) const {
+    if constexpr(FORWARD_ITER) {
+      if (i_ < count) {
+        return vector_iterator_templ(vec_, 0);
+      }
+      return vector_iterator_templ(vec_, i_ - count);
+    } else {
+      if (i_ + count > vec_.size() - 1) {
+        return vector_iterator_templ(vec_, vec_.size() - 1);
+      }
+      return vector_iterator_templ(vec_, i_ + count);
+    }
+  }
+
+  void operator+=(size_t count) {
+    if constexpr(FORWARD_ITER) {
+      if (i_ + count > vec_.size()) {
+        i_ = vec_.size();
+        return;
+      }
+      i_ += count;
+      return;
+    } else {
+      if (i_ < count - 1) {
+        i_ = 0;
+        return;
+      }
+      i_ -= count;
+      return;
+    }
+  }
+
+  void operator-=(size_t count) {
+    if constexpr(FORWARD_ITER) {
+      if (i_ < count) {
+        i_ = 0;
+        return;
+      }
+      i_ -= count;
+      return;
+    } else {
+      if (i_ + count > vec_.size() - 1) {
+        i_ = vec_.size();
+        return;
+      }
+      i_ += count;
+      return;
+    }
+  }
+
+  friend bool operator==(const vector_iterator_templ &a,
+                         const vector_iterator_templ &b) {
     return a.i_ == b.i_;
   }
 
-  friend bool operator!=(const vector_iterator &a, const vector_iterator &b) {
+  friend bool operator!=(const vector_iterator_templ &a,
+                         const vector_iterator_templ &b) {
     return a.i_ != b.i_;
   }
 };
+
+template<typename T, typename T_Ret>
+using vector_iterator = vector_iterator_templ<T, T_Ret, true>;
+template<typename T, typename T_Ret>
+using vector_riterator = vector_iterator_templ<T, T_Ret, false>;
 
 template<typename T>
 class vector : public ShmDataStructure<vector<T>> {
@@ -155,7 +230,7 @@ class vector : public ShmDataStructure<vector<T>> {
   }
 
   template<typename ...Args>
-  void emplace(const vector_iterator<T> pos, Args&&... args) {
+  void emplace(vector_iterator<T, T_Ret> pos, Args&&... args) {
     if (pos == end()) {
       emplace_back(args...);
       return;
@@ -169,50 +244,20 @@ class vector : public ShmDataStructure<vector<T>> {
     ++header_->length_;
   }
 
-  void erase(vector_iterator<T> first, vector_iterator<T> last) {
+  void erase(vector_iterator<T, T_Ret> first, vector_iterator<T, T_Ret> last) {
     size_t count = last.i_ - first.i_;
     if (count == 0) return;
     shift_left(first, count);
     header_->length_ -= count;
   }
 
-  size_t size() {
+  size_t size() const {
     return header_->length_;
   }
 
   void* data() {
     return mem_mngr_->template
       Convert<void>(header_->vec_ptr_);
-  }
-
-  /**
-   * ITERATORS
-   * */
-
-  vector_iterator<T> begin() {
-    return vector_iterator<T>(*this);
-  }
-
-  vector_iterator<T> end() {
-    return vector_iterator<T>(*this, size());
-  }
-
-  vector_iterator<T> rbegin() {
-  }
-
-  vector_iterator<T> rend() {
-  }
-
-  vector_iterator<T> cbegin() {
-  }
-
-  vector_iterator<T> cend() {
-  }
-
-  vector_iterator<T> crbegin() {
-  }
-
-  vector_iterator<T> crend() {
   }
 
  private:
@@ -249,21 +294,21 @@ class vector : public ShmDataStructure<vector<T>> {
     return new_vec;
   }
 
-  void shift_left(const vector_iterator<T> pos, int count = 1) {
+  void shift_left(const vector_iterator<T, T_Ret> pos, int count = 1) {
     for (int i = 0; i < count; ++i) { _destruct<T, T_Ar>(*(pos + i)); }
     auto dst = _data() + pos.i_;
     auto src = dst + count;
-    for (auto i = pos + count; i != end(); ++i) {
+    for (auto i = pos.i_ + count; i < size(); ++i) {
       memcpy(dst, src, sizeof(T_Ar));
       dst += 1; src += 1;
     }
   }
 
-  void shift_right(const vector_iterator<T> pos, int count = 1) {
-    auto pos_left = pos - 1;
+  void shift_right(const vector_iterator<T, T_Ret> pos, int count = 1) {
     auto src = _data() + size() - 1;
     auto dst = src + count;
-    for (auto i = end() - 1; i != pos_left; --i) {
+    auto sz = static_cast<off64_t>(size());
+    for (auto i = sz - 1; i >= pos.i_; --i) {
       memcpy(dst, src, sizeof(T_Ar));
       dst -= 1; src -= 1;
     }
@@ -272,6 +317,28 @@ class vector : public ShmDataStructure<vector<T>> {
   T_Ar* _data() {
     return mem_mngr_->template
       Convert<T_Ar>(header_->vec_ptr_);
+  }
+
+
+  /**
+   * ITERATORS
+   * */
+
+ public:
+  vector_iterator<T, T_Ret> begin() {
+    return vector_iterator<T, T_Ret>(*this, 0);
+  }
+
+  vector_iterator<T, T_Ret> end() {
+    return vector_iterator<T, T_Ret>(*this, size());
+  }
+
+  vector_riterator<T, T_Ret> rbegin() {
+    return vector_riterator<T, T_Ret>(*this, size() - 1);
+  }
+
+  vector_riterator<T, T_Ret> rend() {
+    return vector_riterator<T, T_Ret>(*this, -1);
   }
 };
 

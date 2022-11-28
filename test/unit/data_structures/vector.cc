@@ -27,6 +27,7 @@
 #include <labstor/data_structures/lockless/vector.h>
 #include <labstor/memory/allocator/page_allocator.h>
 
+
 using labstor::ipc::MemoryBackendType;
 using labstor::ipc::MemoryBackend;
 using labstor::ipc::allocator_id_t;
@@ -35,7 +36,9 @@ using labstor::ipc::Allocator;
 using labstor::ipc::MemoryManager;
 using labstor::ipc::Pointer;
 
-Allocator* Pretest(AllocatorType type) {
+Allocator *alloc_g = nullptr;
+
+void Pretest(AllocatorType type) {
   std::string shm_url = "test_allocators";
   allocator_id_t alloc_id(0, 0);
   auto mem_mngr = LABSTOR_MEMORY_MANAGER;
@@ -44,19 +47,20 @@ Allocator* Pretest(AllocatorType type) {
   mem_mngr->CreateAllocator(type,
                             shm_url,
                             alloc_id);
-  auto alloc = mem_mngr->GetAllocator(alloc_id);
-  return alloc;
+  alloc_g = mem_mngr->GetAllocator(alloc_id);
 }
 
 void Posttest() {
   std::string shm_url = "test_allocators";
   auto mem_mngr = LABSTOR_MEMORY_MANAGER;
   mem_mngr->DestroyBackend(shm_url);
+  alloc_g = nullptr;
 }
 
 TEST_CASE("VectorSimple") {
-  Allocator *alloc = Pretest(AllocatorType::kPageAllocator);
+  Allocator *alloc = alloc_g;
   labstor::ipc::lockless::vector<int> vec(alloc);
+
   vec.reserve(10);
 
   for (int i = 0; i < 30; ++i) {
@@ -65,6 +69,18 @@ TEST_CASE("VectorSimple") {
   REQUIRE(vec.size() == 30);
   for (int i = 0; i < 30; ++i) {
     REQUIRE(vec[i] == i);
+  }
+
+  int fcur = 0;
+  for (auto num : vec) {
+    REQUIRE(num == fcur);
+    ++fcur;
+  }
+
+  int rcur = (int)vec.size() - 1;
+  for (auto num_iter = vec.rbegin(); num_iter != vec.rend(); ++num_iter) {
+    REQUIRE((*num_iter) == rcur);
+    --rcur;
   }
 
   vec.emplace(vec.begin(), 100);
@@ -82,6 +98,4 @@ TEST_CASE("VectorSimple") {
 
   vec.erase(vec.begin(), vec.end());
   REQUIRE(vec.size() == 0);
-
-  Posttest();
 }
