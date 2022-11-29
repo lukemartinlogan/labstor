@@ -57,7 +57,7 @@ void Posttest() {
   alloc_g = nullptr;
 }
 
-TEST_CASE("VectorSimple") {
+void VectorTest() {
   Allocator *alloc = alloc_g;
   labstor::ipc::lockless::vector<int> vec(alloc);
 
@@ -98,4 +98,13 @@ TEST_CASE("VectorSimple") {
 
   vec.erase(vec.begin(), vec.end());
   REQUIRE(vec.size() == 0);
+
+  vec.shm_destroy();
+}
+
+TEST_CASE("VectorSimple") {
+  Allocator *alloc = alloc_g;
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+  VectorTest();
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }

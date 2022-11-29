@@ -183,7 +183,7 @@ class vector : public ShmDataStructure<vector<T>> {
   void shm_destroy() {
     erase(begin(), end());
     alloc_->Free(header_->vec_ptr_);
-    alloc_->Free(header_);
+    alloc_->Free(header_ptr_);
   }
 
   void shm_serialize(ShmArchive<vector<T>> &ar) {

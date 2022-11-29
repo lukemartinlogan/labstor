@@ -89,6 +89,14 @@ Pointer PageAllocator::Allocate(size_t size) {
   return kNullPointer;
 }
 
+Pointer PageAllocator::Reallocate(Pointer &ptr, size_t new_size) {
+  if (new_size <= header_->page_size_) {
+    return ptr;
+  } else {
+    throw PAGE_SIZE_UNSUPPORTED.format(new_size);
+  }
+}
+
 void PageAllocator::Free(Pointer &ptr) {
   auto thread_info = LABSTOR_THREAD_MANAGER->GetThreadStatic();
   auto tid = thread_info->GetTid();

@@ -67,6 +67,7 @@ class Allocator {
   virtual void Create(allocator_id_t id) = 0;
   virtual void Attach() = 0;
   virtual Pointer Allocate(size_t size) = 0;
+  virtual Pointer Reallocate(Pointer &p, size_t new_size) = 0;
   virtual void Free(Pointer &ptr) = 0;
   virtual size_t GetInternalHeaderSize() = 0;
   virtual allocator_id_t GetId() = 0;
@@ -113,6 +114,12 @@ class Allocator {
       new (ptr + i) T(args...);
     }
     return ptr;
+  }
+
+  template<typename T>
+  void FreePtr(T *ptr) {
+    Pointer p = Convert(ptr);
+    Free(p);
   }
 
   template<typename T>
