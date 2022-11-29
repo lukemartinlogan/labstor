@@ -14,6 +14,7 @@ using labstor::ipc::AllocatorType;
 using labstor::ipc::Allocator;
 using labstor::ipc::Pointer;
 
+extern Allocator *alloc_g;
 void Pretest(AllocatorType type);
 void Posttest();
 

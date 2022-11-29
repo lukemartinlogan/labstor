@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_executable(test_data_structure_exec
         main_mpi.cc
+        string.cc
         vector.cc)
 
 add_dependencies(test_data_structure_exec labstor_client)

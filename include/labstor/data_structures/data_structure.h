@@ -40,6 +40,10 @@ class ShmDataStructure : public ShmSerializeable<TYPED_CLASS> {
     header_ptr_ = header_ptr;
     alloc_ = mem_mngr_->GetAllocator(header_ptr.allocator_id_);
   }
+
+  Allocator* GetAllocator() {
+    return alloc_;
+  }
 };
 
 template<typename T, typename T_Ar, typename ...Args>
