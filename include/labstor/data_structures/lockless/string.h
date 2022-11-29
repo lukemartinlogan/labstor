@@ -67,6 +67,9 @@ class string : public ShmDataStructure<string> {
   }
 
   size_t size() const {
+    if (header_ == nullptr) {
+      return 0;
+    }
     return header_->length_;
   }
 

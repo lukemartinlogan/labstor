@@ -10,7 +10,7 @@
 #include <labstor/introspect/system_info.h>
 
 #define IS_SHM_SERIALIZEABLE(T) \
-  std::is_base_of<T, labstor::ipc::ShmSerializeable<T>>::value
+  std::is_base_of<labstor::ipc::ShmSerializeable<T>, T>::value
 
 /**
  * SHM_T_OR_ARCHIVE: Determines the type of the internal pointer used

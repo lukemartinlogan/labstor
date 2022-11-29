@@ -15,13 +15,13 @@ template<typename T>
 struct list_entry {
  private:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
-  typedef SHM_T_OR_REF_T(T) T_Ret;
+  typedef SHM_T_OR_REF_T(T) T_Ref;
 
  public:
   Pointer next_ptr_, prior_ptr_;
   T_Ar data_;
 
-  T_Ret data() {
+  T_Ref data() {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       T obj;
       obj << data_;
@@ -54,7 +54,7 @@ template<typename T>
 struct list_iterator {
  private:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
-  typedef SHM_T_OR_REF_T(T) T_Ret;
+  typedef SHM_T_OR_REF_T(T) T_Ref;
 
  public:
   list<T> &list_;
@@ -66,7 +66,7 @@ struct list_iterator {
                          Pointer &entry_ptr) :
     list_(list), entry_(entry), entry_ptr_(entry_ptr) {}
 
-  T_Ret operator*() const {
+  T_Ref operator*() const {
     return entry_->data();
   }
 
@@ -109,7 +109,7 @@ class list : public ShmDataStructure<list<T>> {
 
  private:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
-  typedef SHM_T_OR_REF_T(T) T_Ret;
+  typedef SHM_T_OR_REF_T(T) T_Ref;
 
  public:
   list() = default;

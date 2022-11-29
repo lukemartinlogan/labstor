@@ -47,9 +47,9 @@ int main(int argc, char **argv) {
   rc = session.applyCommandLine(argc, argv);
   if (rc != 0) return rc;
   Pretest(AllocatorType::kPageAllocator);
-  int test_return_code = session.run();
+  int tesT_Refurn_code = session.run();
   Posttest();
   if (rc != 0) return rc;
   MPI_Finalize();
-  return test_return_code;
+  return tesT_Refurn_code;
 }

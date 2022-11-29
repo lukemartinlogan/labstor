@@ -40,6 +40,8 @@ using labstor::ipc::lockless::string;
 TEST_CASE("String") {
   Allocator *alloc = alloc_g;
 
+  REQUIRE(std::is_base_of<labstor::ipc::ShmDataStructure<string>, string>::value);
+  REQUIRE(IS_SHM_SERIALIZEABLE(string));
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 
   auto text1 = string("hello1");
@@ -56,8 +58,6 @@ TEST_CASE("String") {
   text1.shm_destroy();
   text2.shm_destroy();
   text3.shm_destroy();
-
-  std::cout << text1 << std::endl;
 
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }

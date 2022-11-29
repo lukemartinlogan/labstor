@@ -29,7 +29,7 @@ struct ShmHeader<lockless::vector<T>> {
 
 namespace labstor::ipc::lockless {
 
-template<typename T, typename T_Ret, bool FORWARD_ITER>
+template<typename T, typename T_Ref, bool FORWARD_ITER>
 struct vector_iterator_templ {
   vector<T> &vec_;
   off64_t i_;
@@ -37,7 +37,7 @@ struct vector_iterator_templ {
   explicit vector_iterator_templ(vector<T> &vec, size_t i) :
     vec_(vec), i_(static_cast<off64_t>(i)) {}
 
-  T_Ret operator*() const { return vec_[i_]; }
+  T_Ref operator*() const { return vec_[i_]; }
 
   vector_iterator_templ& operator++() {
     if constexpr(FORWARD_ITER) {
@@ -148,10 +148,10 @@ struct vector_iterator_templ {
   }
 };
 
-template<typename T, typename T_Ret>
-using vector_iterator = vector_iterator_templ<T, T_Ret, true>;
-template<typename T, typename T_Ret>
-using vector_riterator = vector_iterator_templ<T, T_Ret, false>;
+template<typename T, typename T_Ref>
+using vector_iterator = vector_iterator_templ<T, T_Ref, true>;
+template<typename T, typename T_Ref>
+using vector_riterator = vector_iterator_templ<T, T_Ref, false>;
 
 template<typename T>
 class vector : public ShmDataStructure<vector<T>> {
@@ -159,7 +159,7 @@ class vector : public ShmDataStructure<vector<T>> {
 
  private:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
-  typedef SHM_T_OR_REF_T(T) T_Ret;
+  typedef SHM_T_OR_REF_T(T) T_Ref;
 
  public:
   vector() = default;
@@ -210,7 +210,7 @@ class vector : public ShmDataStructure<vector<T>> {
     header_->length_ = length;
   }
 
-  T_Ret operator[](const size_t i) {
+  T_Ref operator[](const size_t i) {
     T_Ar *vec = _data();
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       T obj;
@@ -232,7 +232,7 @@ class vector : public ShmDataStructure<vector<T>> {
   }
 
   template<typename ...Args>
-  void emplace(vector_iterator<T, T_Ret> pos, Args&&... args) {
+  void emplace(vector_iterator<T, T_Ref> pos, Args&&... args) {
     if (pos == end()) {
       emplace_back(args...);
       return;
@@ -242,11 +242,11 @@ class vector : public ShmDataStructure<vector<T>> {
       vec = grow_vector(vec);
     }
     shift_right(pos);
-    _construct<T, T_Ar>(*pos, args...);
+    _construct<T, T_Ar>(*(vec + pos.i_), args...);
     ++header_->length_;
   }
 
-  void erase(vector_iterator<T, T_Ret> first, vector_iterator<T, T_Ret> last) {
+  void erase(vector_iterator<T, T_Ref> first, vector_iterator<T, T_Ref> last) {
     size_t count = last.i_ - first.i_;
     if (count == 0) return;
     shift_left(first, count);
@@ -294,9 +294,12 @@ class vector : public ShmDataStructure<vector<T>> {
     return new_vec;
   }
 
-  void shift_left(const vector_iterator<T, T_Ret> pos, int count = 1) {
-    for (int i = 0; i < count; ++i) { _destruct<T, T_Ar>(*(pos + i)); }
-    auto dst = _data() + pos.i_;
+  void shift_left(const vector_iterator<T, T_Ref> pos, int count = 1) {
+    T_Ar *vec = _data();
+    for (int i = 0; i < count; ++i) {
+      _destruct<T, T_Ar>(*(vec + pos.i_ + i));
+    }
+    auto dst = vec + pos.i_;
     auto src = dst + count;
     for (auto i = pos.i_ + count; i < size(); ++i) {
       memcpy(dst, src, sizeof(T_Ar));
@@ -304,7 +307,7 @@ class vector : public ShmDataStructure<vector<T>> {
     }
   }
 
-  void shift_right(const vector_iterator<T, T_Ret> pos, int count = 1) {
+  void shift_right(const vector_iterator<T, T_Ref> pos, int count = 1) {
     auto src = _data() + size() - 1;
     auto dst = src + count;
     auto sz = static_cast<off64_t>(size());
@@ -325,20 +328,20 @@ class vector : public ShmDataStructure<vector<T>> {
    * */
 
  public:
-  vector_iterator<T, T_Ret> begin() {
-    return vector_iterator<T, T_Ret>(*this, 0);
+  vector_iterator<T, T_Ref> begin() {
+    return vector_iterator<T, T_Ref>(*this, 0);
   }
 
-  vector_iterator<T, T_Ret> end() {
-    return vector_iterator<T, T_Ret>(*this, size());
+  vector_iterator<T, T_Ref> end() {
+    return vector_iterator<T, T_Ref>(*this, size());
   }
 
-  vector_riterator<T, T_Ret> rbegin() {
-    return vector_riterator<T, T_Ret>(*this, size() - 1);
+  vector_riterator<T, T_Ref> rbegin() {
+    return vector_riterator<T, T_Ref>(*this, size() - 1);
   }
 
-  vector_riterator<T, T_Ret> rend() {
-    return vector_riterator<T, T_Ret>(*this, -1);
+  vector_riterator<T, T_Ref> rend() {
+    return vector_riterator<T, T_Ref>(*this, -1);
   }
 };
 

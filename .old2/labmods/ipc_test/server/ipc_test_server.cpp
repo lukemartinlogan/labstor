@@ -44,7 +44,7 @@ bool labstor::IPCTest::Server::IPC(labstor::queue_pair *qp, ipc_test_request *cl
             client_rq->Copy(kern_rq);
 
             //Complete SERVER -> USER interaction
-            TRACEPOINT("client_return_code", client_rq->GetCode());
+            TRACEPOINT("clienT_Refurn_code", client_rq->GetCode());
             qp->Complete<ipc_test_request>(client_rq);
 
             //Free completed requests

@@ -50,7 +50,7 @@ template<typename T, typename T_Ar, typename ...Args>
 void _construct(T_Ar &obj_ar, Args ...args) {
   if constexpr(IS_SHM_SERIALIZEABLE(T)) {
     T obj(args...);
-    obj_ar << obj;
+    obj >> obj_ar;
   } else {
     new (&obj_ar) T(args...);
   }
