@@ -72,7 +72,7 @@ class PageAllocator : public Allocator {
   void Create(allocator_id_t id) override;
   void Attach() override;
   Pointer Allocate(size_t size) override;
-  Pointer Reallocate(Pointer &p, size_t new_size) override;
+  bool ReallocateNoNullCheck(Pointer &p, size_t new_size) override;
   void Free(Pointer &ptr) override;
   size_t GetCurrentlyAllocatedSize() override;
 

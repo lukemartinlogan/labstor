@@ -197,9 +197,10 @@ class vector : public ShmDataStructure<vector<T>> {
   void reserve(size_t length) {
     if (header_ == nullptr) {
       header_ = alloc_->template
-        AllocateObj<ShmHeader<vector<T>>>(1, header_ptr_);
+        AllocateObjs<ShmHeader<vector<T>>>(1, header_ptr_);
       header_->length_ = 0;
       header_->max_length_ = 0;
+      header_->vec_ptr_ = kNullPointer;
     }
     grow_vector(_data(), length);
   }
@@ -263,8 +264,6 @@ class vector : public ShmDataStructure<vector<T>> {
 
  private:
   T_Ar* grow_vector(T_Ar *vec, size_t max_length = 0) {
-    Pointer new_ptr;
-
     // Grow vector by 25%
     if (max_length == 0) {
       max_length = 5 * header_->max_length_ / 4;
@@ -278,7 +277,8 @@ class vector : public ShmDataStructure<vector<T>> {
 
     // Allocate new shared-memory vec
     T_Ar *new_vec = alloc_->template
-      ConstructObj<T_Ar>(max_length, new_ptr);
+      ReallocateConstructObjs<T_Ar>(header_->vec_ptr_,
+                              header_->max_length_, max_length);
     if (new_vec == nullptr) {
       throw OUT_OF_MEMORY.format("vector::emplace_back",
                                  max_length*sizeof(T_Ar));
@@ -290,7 +290,6 @@ class vector : public ShmDataStructure<vector<T>> {
 
     // Update vector header
     header_->max_length_ = max_length;
-    header_->vec_ptr_ = new_ptr;
 
     return new_vec;
   }

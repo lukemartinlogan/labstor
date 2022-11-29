@@ -51,8 +51,8 @@ class FixedFragmentationAllocator : public Allocator {
     return kNullPointer;
   }
 
-  Pointer Reallocate(Pointer &ptr, size_t new_size) override {
-    return kNullPointer;
+  bool ReallocateNoNullCheck(Pointer &ptr, size_t new_size) override {
+    return false;
   }
 
   void Free(Pointer &ptr) override {

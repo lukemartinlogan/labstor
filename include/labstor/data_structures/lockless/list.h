@@ -119,7 +119,7 @@ class list : public ShmDataStructure<list<T>> {
   explicit list(Allocator *alloc, bool init) :
     ShmDataStructure<list<T>>(alloc) {
     if (init) {
-      header_ = alloc_->template AllocateObj<ShmHeader<list<T>>>(header_ptr_);
+      header_ = alloc_->template AllocateObjs<ShmHeader<list<T>>>(header_ptr_);
       memset(header_, 0, sizeof(header_));
     }
   }
@@ -231,7 +231,7 @@ class list : public ShmDataStructure<list<T>> {
   template<typename ...Args>
   inline list_entry<T>* _create_entry(Pointer &ptr, Args ...args) {
     auto entry = mem_mngr_->template
-      AllocateObj<list_entry<T>>(ptr);
+      AllocateObjs<list_entry<T>>(ptr);
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       entry->data_ << T(args...);
     } else {

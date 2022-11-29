@@ -89,12 +89,11 @@ Pointer PageAllocator::Allocate(size_t size) {
   return kNullPointer;
 }
 
-Pointer PageAllocator::Reallocate(Pointer &ptr, size_t new_size) {
-  if (new_size <= header_->page_size_) {
-    return ptr;
-  } else {
+bool PageAllocator::ReallocateNoNullCheck(Pointer &ptr, size_t new_size) {
+  if (new_size > header_->page_size_) {
     throw PAGE_SIZE_UNSUPPORTED.format(new_size);
   }
+  return false;
 }
 
 void PageAllocator::Free(Pointer &ptr) {

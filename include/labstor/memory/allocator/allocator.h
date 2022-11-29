@@ -66,11 +66,54 @@ class Allocator {
 
   virtual void Create(allocator_id_t id) = 0;
   virtual void Attach() = 0;
+
+  /**
+   * Allocate a region of memory of \a size size
+   * */
   virtual Pointer Allocate(size_t size) = 0;
-  virtual Pointer Reallocate(Pointer &p, size_t new_size) = 0;
+
+  /**
+   * Reallocate \a pointer to \a new_size new size
+   *
+   * Returns true if p was modified.
+   * If p == kNullPointer, will internally call Allocate.
+   * */
+  inline bool Reallocate(Pointer &p, size_t new_size) {
+    if (p == kNullPointer) {
+      p = Allocate(new_size);
+      return true;
+    }
+    return ReallocateNoNullCheck(p, new_size);
+  }
+
+  /**
+   * Reallocate \a pointer to \a new_size new size
+   *
+   * Returns true if p was modified.
+   * Assumes that p is not kNullPointer.
+   * */
+
+  virtual bool ReallocateNoNullCheck(Pointer &p, size_t new_size) = 0;
+
+  /**
+   * Free the memory pointed to by \a ptr Pointer
+   * */
   virtual void Free(Pointer &ptr) = 0;
+
+  /**
+   * Get the size of the user-defined custom header
+   * */
   virtual size_t GetInternalHeaderSize() = 0;
+
+  /**
+   * Get the allocator identifier
+   * */
   virtual allocator_id_t GetId() = 0;
+
+  /**
+   * Get the amount of memory that was allocated, but not yet freed.
+   * Useful for memory leak checks.
+   * */
   virtual size_t GetCurrentlyAllocatedSize() = 0;
 
   slot_id_t GetSlotId() {
@@ -91,25 +134,25 @@ class Allocator {
   }
 
   template<typename T>
-  T* AllocateObj(size_t count) {
+  T* AllocateObjs(size_t count) {
     Pointer p;
-    return AllocateObj<T>(count, p);
+    return AllocateObjs<T>(count, p);
   }
 
   template<typename T>
-  T* AllocateObj(size_t count, Pointer &p) {
+  T* AllocateObjs(size_t count, Pointer &p) {
     return AllocatePtr<T>(count * sizeof(T), p);
   }
 
   template<typename T, typename ...Args>
-  T* ConstructObj(size_t count, Args ...args) {
+  T* ConstructObjs(size_t count, Args ...args) {
     Pointer p;
-    return ConstructObj<T>(count, p, args...);
+    return ConstructObjs<T>(count, p, args...);
   }
 
   template<typename T, typename ...Args>
-  T* ConstructObj(size_t count, Pointer &p, Args ...args) {
-    T* ptr = AllocateObj<T>(count, p);
+  T* ConstructObjs(size_t count, Pointer &p, Args ...args) {
+    T *ptr = AllocateObjs<T>(count, p);
     for (size_t i = 0; i < count; ++i) {
       new (ptr + i) T(args...);
     }
@@ -117,8 +160,30 @@ class Allocator {
   }
 
   template<typename T>
+  T* ReallocatePtr(Pointer &p, size_t new_size, bool &modified) {
+    modified = Reallocate(p, new_size);
+    return Convert<T>(p);
+  }
+
+  template<typename T>
+  T* ReallocatePtr(Pointer &p, size_t new_size) {
+    Reallocate(p, new_size);
+    return Convert<T>(p);
+  }
+
+  template<typename T, typename ...Args>
+  T* ReallocateConstructObjs(Pointer &p,
+                             size_t old_count, size_t new_count, Args ...args) {
+    T *ptr = ReallocatePtr<T>(p, new_count*sizeof(T));
+    for (size_t i = old_count; i < new_count; ++i) {
+      new (ptr + i) T(args...);
+    }
+    return ptr;
+  }
+
+  template<typename T>
   void FreePtr(T *ptr) {
-    Pointer p = Convert(ptr);
+    Pointer p = Convert<T>(ptr);
     Free(p);
   }
 
