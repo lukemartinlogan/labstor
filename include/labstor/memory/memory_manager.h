@@ -42,7 +42,7 @@ class MemoryManager {
 
   template<typename T>
   T* Convert(Pointer &p) {
-    if (p == kNullPointer) {
+    if (p.is_null()) {
       return nullptr;
     }
     return GetAllocator(p.allocator_id_)->Convert<T>(p);

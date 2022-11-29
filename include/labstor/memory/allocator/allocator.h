@@ -76,10 +76,10 @@ class Allocator {
    * Reallocate \a pointer to \a new_size new size
    *
    * Returns true if p was modified.
-   * If p == kNullPointer, will internally call Allocate.
+   * If p.is_null(), will internally call Allocate.
    * */
   inline bool Reallocate(Pointer &p, size_t new_size) {
-    if (p == kNullPointer) {
+    if (p.is_null()) {
       p = Allocate(new_size);
       return true;
     }
@@ -194,6 +194,7 @@ class Allocator {
 
   template<typename T>
   T* Convert(Pointer &p) {
+    if (p.is_null()) { return nullptr; }
     auto &slot = backend_->GetSlot(slot_id_);
     return reinterpret_cast<T*>(slot.ptr_ + p.off_);
   }
@@ -201,6 +202,7 @@ class Allocator {
   template<typename T>
   Pointer Convert(T *ptr) {
     Pointer p;
+    if (ptr == nullptr) { return kNullPointer; }
     p.off_ = reinterpret_cast<size_t>(ptr) -
              reinterpret_cast<size_t>(slot_.ptr_);
     p.allocator_id_ = GetId();

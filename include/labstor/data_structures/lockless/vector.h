@@ -254,10 +254,16 @@ class vector : public ShmDataStructure<vector<T>> {
   }
 
   size_t size() const {
+    if (header_ == nullptr) {
+      return 0;
+    }
     return header_->length_;
   }
 
   void* data() {
+    if (header_ == nullptr) {
+      return nullptr;
+    }
     return mem_mngr_->template
       Convert<void>(header_->vec_ptr_);
   }

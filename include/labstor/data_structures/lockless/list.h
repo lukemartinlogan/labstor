@@ -37,7 +37,7 @@ namespace labstor::ipc {
 
 template<typename T>
 struct ShmArchive<lockless::list<T>> {
-  Pointer header_ptr_;
+  Pointer head_ptr_;
 };
 
 template<typename T>
@@ -63,16 +63,17 @@ struct list_iterator {
 
   explicit list_iterator(list<T> &list,
                          list_entry<T> *entry,
-                         Pointer &entry_ptr) :
-    list_(list), entry_(entry), entry_ptr_(entry_ptr) {}
+                         Pointer entry_ptr) :
+    list_(list), entry_(entry), entry_ptr_(std::move(entry_ptr)) {}
 
   T_Ref operator*() const {
     return entry_->data();
   }
 
   list_iterator& operator++() {
-    entry_ = LABSTOR_MEMORY_MANAGER->template
-      Convert<list_entry<T>>(entry_->next_ptr_, entry_ptr_);
+    entry_ptr_ = entry_->next_ptr_;
+    entry_ = list_.alloc_->template
+      Convert<list_entry<T>>(entry_->next_ptr_);
     return *this;
   }
 
@@ -81,6 +82,7 @@ struct list_iterator {
   }
 
   list_iterator operator++(int) const {
+    if (entry_ == nullptr) { return (*this); }
     auto next_entry = LABSTOR_MEMORY_MANAGER->template
       Convert<list_entry<T>>(entry_->next_ptr_);
     return list_iterator(list_, next_entry, entry_->next_ptr_);
@@ -90,6 +92,40 @@ struct list_iterator {
     auto prior_entry = LABSTOR_MEMORY_MANAGER->template
       Convert<list_entry<T>>(entry_->next_ptr_);
     return list_iterator(list_, prior_entry, entry_->prior_ptr_);
+  }
+
+  list_iterator operator+(size_t count) const {
+    list_iterator pos = *this;
+    for (size_t i = 0; i < count; ++i) {
+      ++pos;
+    }
+    return pos;
+  }
+
+  list_iterator operator-(size_t count) const {
+    list_iterator pos = *this;
+    for (size_t i = 0; i < count; ++i) {
+      --pos;
+    }
+    return pos;
+  }
+
+  void operator+=(size_t count) {
+    list_iterator pos = (*this) + count;
+    entry_ = pos.entry_;
+    entry_ptr_ = pos.entry_ptr_;
+  }
+
+  void operator-=(size_t count) {
+    list_iterator pos = (*this) - count;
+    entry_ = pos.entry_;
+    entry_ptr_ = pos.entry_ptr_;
+  }
+
+  void operator=(list_iterator<T> &other) {
+    list_ = other.list_;
+    entry_ = other.entry_;
+    entry_ptr_ = other.entry_ptr_;
   }
 
   friend bool operator==(const list_iterator &a,
@@ -106,6 +142,7 @@ struct list_iterator {
 template<typename T>
 class list : public ShmDataStructure<list<T>> {
  SHM_DATA_STRUCTURE_TEMPLATE(list, list<T>)
+ friend list_iterator<T>;
 
  private:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
@@ -119,14 +156,16 @@ class list : public ShmDataStructure<list<T>> {
   explicit list(Allocator *alloc, bool init) :
     ShmDataStructure<list<T>>(alloc) {
     if (init) {
-      header_ = alloc_->template AllocateObjs<ShmHeader<list<T>>>(header_ptr_);
+      Pointer head_ptr;
+      header_ = alloc_->template
+        AllocateObjs<ShmHeader<list<T>>>(1, header_ptr_);
       memset(header_, 0, sizeof(header_));
     }
   }
 
   void shm_destroy() {
     erase(begin(), end());
-    alloc_->Free(header_);
+    alloc_->Free(header_ptr_);
   }
 
   void shm_serialize(ShmArchive<list<T>> &ar) {
@@ -148,7 +187,7 @@ class list : public ShmDataStructure<list<T>> {
   }
 
   template<typename ...Args>
-  void emplace(list_entry<T> pos, Args&&... args) {
+  void emplace(list_iterator<T> pos, Args&&... args) {
     Pointer entry_ptr;
     auto entry = _create_entry(entry_ptr, args...);
     if (size() == 0) {
@@ -156,18 +195,18 @@ class list : public ShmDataStructure<list<T>> {
       entry->next_ptr_ = kNullPointer;
       header_->head_ptr_ = entry_ptr;
       header_->tail_ptr_ = entry_ptr;
-    } else if (pos.entry_ptr_ == header_->head_) {
+    } else if (pos == begin()) {
       entry->prior_ptr_ = kNullPointer;
       entry->next_ptr_ = header_->head_ptr_;
       auto head = mem_mngr_->template
-        Convert<list_entry<T>>(header_->Tail());
+        Convert<list_entry<T>>(header_->tail_ptr_);
       head->prior_ptr_ = entry_ptr;
       header_->head_ptr_ = entry_ptr;
-    } else if (pos.entry_ptr_ == header_->tail_) {
+    } else if (pos == end()) {
       entry->prior_ptr_ = header_->tail_ptr_;
       entry->next_ptr_ = kNullPointer;
       auto tail = mem_mngr_->template
-        Convert<list_entry<T>>(header_->Tail());
+        Convert<list_entry<T>>(header_->tail_ptr_);
       tail->next_ptr_ = entry_ptr;
       header_->tail_ptr_ = entry_ptr;
     } else {
@@ -183,34 +222,46 @@ class list : public ShmDataStructure<list<T>> {
     ++header_->length_;
   }
 
-  void erase(list_entry<T> first,
-             list_entry<T> last) {
+  void erase(list_iterator<T> first,
+             list_iterator<T> last) {
+    if (first == end()) { return; }
     auto first_prior_ptr = first.entry_->prior_ptr_;
     auto pos = first;
-    list_entry<T> next;
     while (pos != last) {
-      next = mem_mngr_->template
-        Convert<list_entry<T>>(pos.entry_->next_ptr_);
-      _destruct<T,T_Ar>(*pos.entry_);
+      auto next = pos + 1;
+      _destruct<T,T_Ar>(pos.entry_->data_);
+      alloc_->Free(pos.entry_ptr_);
+      --header_->length_;
       pos = next;
     }
 
-    if (first_prior_ptr == kNullPointer) {
-      header_->head_ = last.entry_ptr_;
+    if (first_prior_ptr.is_null()) {
+      header_->head_ptr_ = last.entry_ptr_;
     } else {
       auto first_prior = mem_mngr_->template
         Convert<list_entry<T>>(first_prior_ptr);
       first_prior->next_ptr_ = last.entry_ptr_;
     }
 
-    if (last.entry_ptr_ == kNullPointer) {
-      header_->tail_ = first_prior_ptr;
+    if (last.entry_ptr_.is_null()) {
+      header_->tail_ptr_ = first_prior_ptr;
     } else {
       last.entry_->prior_ptr_ = first_prior_ptr;
     }
   }
 
+  T_Ref front() {
+    return *begin();
+  }
+
+  T_Ref back() {
+    return *end();
+  }
+
   size_t size() const {
+    if (header_ == nullptr) {
+      return 0;
+    }
     return header_->length_;
   }
 
@@ -218,22 +269,24 @@ class list : public ShmDataStructure<list<T>> {
    * ITERATORS
    * */
 
- public:
-  list_entry<T> begin() {
-    return list_entry<T>(*this, 0);
+  list_iterator<T> begin() {
+    auto head = alloc_->template
+      Convert<list_entry<T>>(header_->head_ptr_);
+    return list_iterator<T>(*this, head, header_->head_ptr_);
   }
 
-  list_entry<T> end() {
-    return list_entry<T>(*this, size());
+  list_iterator<T> end() {
+    return list_iterator<T>(*this, nullptr, kNullPointer);
   }
 
  private:
   template<typename ...Args>
   inline list_entry<T>* _create_entry(Pointer &ptr, Args ...args) {
-    auto entry = mem_mngr_->template
-      AllocateObjs<list_entry<T>>(ptr);
+    auto entry = alloc_->template
+      AllocateObjs<list_entry<T>>(1, ptr);
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      entry->data_ << T(args...);
+      T obj(args...);
+      obj >> entry->data_;
     } else {
       _construct<T,T_Ar>(entry->data_, args...);
     }
