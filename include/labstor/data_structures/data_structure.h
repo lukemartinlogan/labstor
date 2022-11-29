@@ -54,7 +54,12 @@ void _construct(T_Ar &obj_ar, Args ...args) {
 
 template<typename T, typename T_Ar>
 void _destruct(T_Ar &obj_ar) {
-  obj_ar.~T();
+  if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+    T obj;
+    obj << obj_ar;
+    obj.shm_destroy();
+  }
+  obj_ar.~T_Ar();
 }
 
 #define SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS)\

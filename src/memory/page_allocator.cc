@@ -38,6 +38,7 @@ void PageAllocator::Create(allocator_id_t id) {
     free_lists_[i].region_off_ = cur_off;
     free_lists_[i].region_size_ = per_conc_region;
     free_lists_[i].free_size_ = per_conc_region;
+    free_lists_[i].alloc_size_ = 0;
     cur_off += per_conc_region;
   }
 }
@@ -47,6 +48,15 @@ void PageAllocator::Attach() {
   custom_header_ = GetCustomHeader<char>();
   void *free_list_start = GetFreeListStart();
   free_lists_.Attach(free_list_start);
+}
+
+size_t PageAllocator::GetCurrentlyAllocatedSize() {
+  size_t size = 0;
+  for (auto i = 0; i < header_->concurrency_; ++i) {
+    auto &free_list = free_lists_[i];
+    size += free_list.alloc_size_;
+  }
+  return size;
 }
 
 Pointer PageAllocator::Allocate(size_t size) {
@@ -106,6 +116,7 @@ Pointer PageAllocator::_Allocate(PageFreeList &free_list) {
   if (q.size()) {
     size_t off = q.dequeue_off();
     free_list.free_size_ -= header_->page_size_;
+    free_list.alloc_size_ += header_->page_size_;
     return Pointer(GetId(), off);
   }
 
@@ -115,6 +126,7 @@ Pointer PageAllocator::_Allocate(PageFreeList &free_list) {
     free_list.region_size_ -= header_->page_size_;
     free_list.region_off_ += header_->page_size_;
     free_list.free_size_ -= header_->page_size_;
+    free_list.alloc_size_ += header_->page_size_;
     return Pointer(GetId(), off);
   }
 
@@ -144,6 +156,7 @@ void PageAllocator::_Free(PageFreeList *free_list, Pointer &p) {
   q.Attach(&free_list->queue_, slot_.ptr_);
   q.enqueue_off(p.off_);
   free_list->free_size_ += header_->page_size_;
+  free_list->alloc_size_ -= header_->page_size_;
 }
 
 }  // namespace labstor::ipc

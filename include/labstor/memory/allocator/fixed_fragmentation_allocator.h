@@ -43,6 +43,10 @@ class FixedFragmentationAllocator : public Allocator {
   void Attach() override {
   }
 
+  size_t GetCurrentlyAllocatedSize() override {
+    return 0;
+  }
+
   Pointer Allocate(size_t size) override {
     return Pointer();
   }

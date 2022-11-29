@@ -39,6 +39,8 @@ void PageAllocationTest(Allocator *alloc) {
   size_t page_size = KILOBYTES(4);
   auto mem_mngr = LABSTOR_MEMORY_MANAGER;
 
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+
   // Allocate pages
   Pointer ps[count];
   void *ptrs[count];
@@ -68,6 +70,12 @@ void PageAllocationTest(Allocator *alloc) {
     REQUIRE(ps[i].off_ != 0);
     REQUIRE(!ps[i].is_null());
   }
+
+  // Free again
+  for (int i = 0; i < count; ++i) {
+    alloc->Free(ps[i]);
+  }
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
 
 void MultiThreadedPageAllocationTest(Allocator *alloc) {

@@ -70,6 +70,7 @@ class Allocator {
   virtual void Free(Pointer &ptr) = 0;
   virtual size_t GetInternalHeaderSize() = 0;
   virtual allocator_id_t GetId() = 0;
+  virtual size_t GetCurrentlyAllocatedSize() = 0;
 
   slot_id_t GetSlotId() {
     return slot_id_;

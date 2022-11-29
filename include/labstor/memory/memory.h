@@ -55,7 +55,7 @@ template<typename T>
 class ShmSerializeable {
  public:
   // ShmSerializeable(ShmArchive<T> &ar);
-  // virtual void destroy() = 0;
+  // virtual void shm_destroy() = 0;
   // virtual void shm_serialize(ShmArchive<T> &ar) = 0;
   // virtual void shm_deserialize(ShmArchive<T> &ar) = 0;
   // void operator>>(ShmArchive<TYPED_CLASS> &ar);
@@ -75,7 +75,7 @@ class ShmSerializeable {
   }\
  private:\
   void _check_template() {\
-    destroy();\
+    shm_destroy();\
   }
 
 union allocator_id_t {

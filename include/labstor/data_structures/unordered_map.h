@@ -16,12 +16,6 @@ struct unordered_map_bucket {
   lockless::_queue<T> entries_;
 };
 
-struct unordered_map_op {
-  pid_t pid_;
-  tid_t tid_;
-  time_t timestamp_;
-};
-
 template<typename Key, typename T,
   class Hash = std::hash<Key>,
   class KeyEqual = std::equal_to<Key>>

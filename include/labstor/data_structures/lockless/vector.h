@@ -180,9 +180,10 @@ class vector : public ShmDataStructure<vector<T>> {
     reserve(length);
   }
 
-  void destroy() {
+  void shm_destroy() {
     erase(begin(), end());
     alloc_->Free(header_->vec_ptr_);
+    alloc_->Free(header_);
   }
 
   void shm_serialize(ShmArchive<vector<T>> &ar) {

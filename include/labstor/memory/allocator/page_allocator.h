@@ -22,7 +22,7 @@ struct PageFreeList {
   Mutex lock_;
   _queue_header queue_;
   size_t region_off_, region_size_;
-  size_t free_size_;
+  size_t free_size_, alloc_size_;
 };
 
 struct PageAllocatorHeader : public AllocatorHeader {
@@ -73,6 +73,7 @@ class PageAllocator : public Allocator {
   void Attach() override;
   Pointer Allocate(size_t size) override;
   void Free(Pointer &ptr) override;
+  size_t GetCurrentlyAllocatedSize() override;
 
  private:
   void* GetFreeListStart();
