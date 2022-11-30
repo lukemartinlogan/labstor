@@ -66,3 +66,12 @@ add_custom_target(preamble COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/preamble.
 ##################MODULES & TESTS
 enable_testing()
 add_subdirectory(test)
+
+##################Install LabStor
+install(
+        TARGETS labstor_data_structures labstor_client
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install(
+        TARGETS labstor_runtime
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_PREFIX})

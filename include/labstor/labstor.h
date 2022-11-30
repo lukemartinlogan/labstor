@@ -1,0 +1,8 @@
+//
+// Created by lukemartinlogan on 11/29/22.
+//
+
+#ifndef LABSTOR_INCLUDE_LABSTOR_LABSTOR_H_
+#define LABSTOR_INCLUDE_LABSTOR_LABSTOR_H_
+
+#endif //LABSTOR_INCLUDE_LABSTOR_LABSTOR_H_

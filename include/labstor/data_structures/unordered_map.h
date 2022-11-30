@@ -7,41 +7,93 @@
 
 #include <labstor/thread/thread_manager.h>
 #include <labstor/thread/mutex.h>
-#include <labstor/data_structures/lockless/_queue.h>
+#include <labstor/data_structures/lockless/vector.h>
+#include <labstor/data_structures/lockless/list.h>
+#include <labstor/data_structures/data_structure.h>
+
+namespace labstor::ipc {
+template<typename Key, typename T, class Hash>
+class unordered_map;
+}  // namespace labstor::ipc::lockless
 
 namespace labstor::ipc {
 
-template<typename T>
-struct unordered_map_bucket {
-  lockless::_queue<T> entries_;
+template<typename Key, typename T, class Hash>
+struct ShmArchive<unordered_map<Key, T, Hash>> {
+  Pointer head_ptr_;
 };
+
+template<typename Key, typename T, class Hash>
+struct ShmHeader<unordered_map<Key, T, Hash>> {
+  ShmArchive<lockless::vector<T>> buckets_;
+  size_t length_;
+};
+
+}  // namespace labstor::ipc
+
+namespace labstor::ipc {
 
 template<typename Key, typename T,
-  class Hash = std::hash<Key>,
-  class KeyEqual = std::equal_to<Key>>
+  class Hash = std::hash<Key>>
 class unordered_map {
-  /*
- private:
-  vector<unordered_map_bucket> buckets_;
-  array_queue<unordered_map_op> reqs_;
+  // SHM_DATA_STRUCTURE_TEMPLATE(unordered_map, unordered_map<Key, T, Hash>)
 
  public:
-  template<typename ...Args>
-  void emplace(Key key, Args ...args) {
-    auto bkt_id = Hash(key) % buckets_.size();
-    auto bkt = buckets_[bkt_id];
-    auto scoped_lock = ScopedRwLock(bkt.lock_);
-    scoped_lock.WriteLock();
-    bkt.entries_.emplace_back(args...);
+ private:
+  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
+  typedef SHM_T_OR_REF_T(T) T_Ref;
+
+ public:
+  unordered_map() = default;
+
+  explicit unordered_map(Allocator *alloc) :
+    ShmDataStructure<unordered_map<Key, T, Hash>>(alloc) {}
+
+  explicit unordered_map(size_t length) {
   }
 
-  T operator[](Key key) {
-    auto bkt_id = Hash(key) % buckets_.size();
-    auto bkt = buckets_[bkt_id];
-    auto scoped_lock = ScopedRwLock(bkt.lock_);
-  }*/
+  explicit unordered_map(size_t length, Allocator *alloc) :
+    ShmDataStructure<unordered_map<Key, T, Hash>>(alloc) {
+  }
+
+  explicit unordered_map(size_t length, allocator_id_t alloc_id) :
+  ShmDataStructure<unordered_map<Key, T, Hash>>(alloc_id) {
+  }
+
+  void shm_destroy() {
+  }
+
+  void shm_serialize(ShmArchive<unordered_map<Key, T, Hash>> &ar) {
+    ar.header_ptr_ = header_ptr_;
+  }
+
+  void shm_deserialize(ShmArchive<unordered_map<Key, T, Hash>> &ar) {
+    InitDataStructure(ar.header_ptr_);
+  }
+
+  T_Ref operator[](const size_t i) {
+  }
+
+  template<typename ...Args>
+  void emplace(Args&&... args) {
+  }
+
+  void erase(unordered_map_iterator<T, T_Ref> first, unordered_map_iterator<T, T_Ref> last) {
+  }
+
+  void erase(Key &key) {
+  }
+
+  size_t size() const {
+    if (header_ == nullptr) {
+      return 0;
+    }
+    return header_->length_;
+  }
+
+
 };
 
-}
+}  // namespace labstor::ipc
 
 #endif  // LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_UNORDERED_MAP_H_

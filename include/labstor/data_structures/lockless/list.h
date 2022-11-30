@@ -177,12 +177,12 @@ class list : public ShmDataStructure<list<T>> {
   }
 
   template<typename... Args>
-  void emplace_back(Args&&... args) {
+  inline void emplace_back(Args&&... args) {
     emplace(end(), args...);
   }
 
   template<typename... Args>
-  void emplace_front(Args&&... args) {
+  inline void emplace_front(Args&&... args) {
     emplace(begin(), args...);
   }
 
@@ -250,15 +250,15 @@ class list : public ShmDataStructure<list<T>> {
     }
   }
 
-  T_Ref front() {
+  inline T_Ref front() {
     return *begin();
   }
 
-  T_Ref back() {
+  inline T_Ref back() {
     return *end();
   }
 
-  size_t size() const {
+  inline size_t size() const {
     if (header_ == nullptr) {
       return 0;
     }
@@ -269,13 +269,13 @@ class list : public ShmDataStructure<list<T>> {
    * ITERATORS
    * */
 
-  list_iterator<T> begin() {
+  inline list_iterator<T> begin() {
     auto head = alloc_->template
       Convert<list_entry<T>>(header_->head_ptr_);
     return list_iterator<T>(*this, head, header_->head_ptr_);
   }
 
-  list_iterator<T> end() {
+  inline list_iterator<T> end() {
     return list_iterator<T>(*this, nullptr, kNullPointer);
   }
 

@@ -27,7 +27,6 @@ struct ShmHeader<lockless::string> {
 
 }  // namespace labstor::ipc
 
-
 namespace labstor::ipc::lockless {
 
 class string : public ShmDataStructure<string> {
@@ -51,15 +50,21 @@ class string : public ShmDataStructure<string> {
   }
   string(string &text1, string &text2, Allocator *alloc) :
     ShmDataStructure<string>(alloc) {
-    _create_header(text1.size() + text2.size());
+    size_t length = text1.size() + text2.size();
+    _create_header(length);
     memcpy(header_->text_,
            text1.data(), text1.size());
     memcpy(header_->text_ + size(),
            text2.data(), text2.size());
+    header_->text_[length] = 0;
   }
 
   char& operator[](size_t i) const {
     return header_->text_[i];
+  }
+
+  std::string str() {
+    return {header_->text_, header_->length_};
   }
 
   string operator+(string &other) {
@@ -119,12 +124,13 @@ class string : public ShmDataStructure<string> {
   inline void _create_header(size_t length) {
     header_ = alloc_->template
       AllocatePtr<ShmHeader<string>>(
-      sizeof(ShmHeader<string>) + length,
+      sizeof(ShmHeader<string>) + length + 1,
       header_ptr_);
   }
   inline void _create_str(const char *text, size_t length) {
     _create_header(length);
     memcpy(header_->text_, text, length);
+    header_->text_[length] = 0;
     header_->length_ = length;
   }
 };
