@@ -8,7 +8,7 @@ add_executable(test_data_structure_exec
         string.cc
         vector.cc
         list.cc
-        # unordered_map.cc
+        unordered_map.cc
 )
 
 add_dependencies(test_data_structure_exec labstor_client)

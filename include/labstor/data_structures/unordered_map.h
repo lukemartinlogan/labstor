@@ -78,14 +78,6 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     }
   }
 
-  void shm_serialize(ShmArchive<unordered_map<Key, T, Hash>> &ar) {
-    ar.header_ptr_ = header_ptr_;
-  }
-
-  void shm_deserialize(ShmArchive<unordered_map<Key, T, Hash>> &ar) {
-    InitDataStructure(ar.header_ptr_);
-  }
-
   T_Ref operator[](const size_t i) {
     lockless::vector<bucket> buckets(header_->buckets_);
   }
