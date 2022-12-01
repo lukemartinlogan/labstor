@@ -9,47 +9,39 @@
 #include <string>
 
 namespace labstor::ipc::lockless {
+
 class string;
-}  // namespace labstor::ipc::lockless
 
-namespace labstor::ipc {
-
-template<>
-struct ShmArchive<lockless::string> {
-  Pointer header_ptr_;
-};
-
-template<>
-struct ShmHeader<lockless::string> {
+struct string_header {
   size_t length_;
   char text_[];
 };
 
-}  // namespace labstor::ipc
+#define CLASS_NAME string
+#define TYPED_CLASS string
+#define TYPED_HEADER string_header
 
-namespace labstor::ipc::lockless {
-
-class string : public ShmDataStructure<string> {
- SHM_DATA_STRUCTURE_TEMPLATE0(string)
+class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
+ SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
 
  public:
-  string() : ShmDataStructure<string>() {}
+  string() : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>() {}
   string(const char *text) {
     _create_str(text);
   }
   string(const char *text, Allocator *alloc) :
-    ShmDataStructure<string>(alloc) {
+    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     _create_str(text);
   }
   string(const std::string &text) {
     _create_str(text.data(), text.size());
   }
   string(const std::string &text, Allocator *alloc) :
-    ShmDataStructure<string>(alloc) {
+    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     _create_str(text.data(), text.size());
   }
   string(string &text1, string &text2, Allocator *alloc) :
-    ShmDataStructure<string>(alloc) {
+    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     size_t length = text1.size() + text2.size();
     _create_header(length);
     memcpy(header_->text_,
@@ -80,14 +72,6 @@ class string : public ShmDataStructure<string> {
 
   char* data() const {
     return header_->text_;
-  }
-
-  void shm_serialize(ShmArchive<string> &ar) {
-    ar.header_ptr_ = header_ptr_;
-  }
-
-  void shm_deserialize(ShmArchive<string> &ar) {
-    InitDataStructure(ar.header_ptr_);
   }
 
   void shm_init() {}
@@ -125,8 +109,8 @@ class string : public ShmDataStructure<string> {
   }
   inline void _create_header(size_t length) {
     header_ = alloc_->template
-      AllocatePtr<ShmHeader<string>>(
-      sizeof(ShmHeader<string>) + length + 1,
+      AllocatePtr<string_header>(
+      sizeof(string_header) + length + 1,
       header_ptr_);
   }
   inline void _create_str(const char *text, size_t length) {
@@ -138,5 +122,9 @@ class string : public ShmDataStructure<string> {
 };
 
 }
+
+#undef CLASS_NAME
+#undef TYPED_CLASS
+#undef TYPED_HEADER
 
 #endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_STRING_H_

@@ -8,6 +8,7 @@
 #include <labstor/data_structures/data_structure.h>
 
 namespace labstor::ipc::lockless {
+
 template<typename T>
 class list;
 
@@ -31,24 +32,12 @@ struct list_entry {
     }
   }
 };
-}  // namespace labstor::ipc::lockless
-
-namespace labstor::ipc {
 
 template<typename T>
-struct ShmArchive<lockless::list<T>> {
-  Pointer head_ptr_;
-};
-
-template<typename T>
-struct ShmHeader<lockless::list<T>> {
+struct list_header {
   Pointer head_ptr_, tail_ptr_;
   size_t length_;
 };
-
-}  // namespace labstor::ipc
-
-namespace labstor::ipc::lockless {
 
 template<typename T>
 struct list_iterator {
@@ -139,9 +128,13 @@ struct list_iterator {
   }
 };
 
+#define CLASS_NAME list
+#define TYPED_CLASS list<T>
+#define TYPED_HEADER list_header<T>
+
 template<typename T>
-class list : public ShmDataStructure<list<T>> {
- SHM_DATA_STRUCTURE_TEMPLATE(list, T)
+class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
+ SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
  friend list_iterator<T>;
 
  private:
@@ -151,26 +144,19 @@ class list : public ShmDataStructure<list<T>> {
  public:
   list() = default;
 
-  explicit list(Allocator *alloc) : ShmDataStructure<list<T>>(alloc) {}
+  explicit list(Allocator *alloc) :
+    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {}
 
   void shm_init() {
     Pointer head_ptr;
     header_ = alloc_->template
-      AllocateObjs<ShmHeader<list<T>>>(1, header_ptr_);
+      AllocateObjs<list_header<T>>(1, header_ptr_);
     memset(header_, 0, sizeof(header_));
   }
 
   void shm_destroy() {
     erase(begin(), end());
     alloc_->Free(header_ptr_);
-  }
-
-  void shm_serialize(ShmArchive<list<T>> &ar) {
-    ar.header_ptr_ = header_ptr_;
-  }
-
-  void shm_deserialize(ShmArchive<list<T>> &ar) {
-    InitDataStructure(ar.header_ptr_);
   }
 
   template<typename... Args>
@@ -292,5 +278,9 @@ class list : public ShmDataStructure<list<T>> {
 };
 
 }  // namespace labstor::ipc::lockless
+
+#undef CLASS_NAME
+#undef TYPED_CLASS
+#undef TYPED_HEADER
 
 #endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_LIST_H_

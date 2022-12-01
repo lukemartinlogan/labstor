@@ -12,11 +12,11 @@
 
 namespace labstor::ipc {
 
-template<typename TYPED_CLASS>
-class ShmDataStructure : public ShmSerializeable<TYPED_CLASS> {
+template<typename TYPED_CLASS, typename TYPED_HEADER>
+class ShmDataStructure : public ShmSerializeable {
  protected:
   Pointer header_ptr_;
-  ShmHeader<TYPED_CLASS> *header_;
+  TYPED_HEADER *header_;
   Allocator *alloc_;
   LABSTOR_MEMORY_MANAGER_T mem_mngr_;
 
@@ -34,15 +34,38 @@ class ShmDataStructure : public ShmSerializeable<TYPED_CLASS> {
     alloc_ = mem_mngr_->GetAllocator(alloc_id);
   }
 
-  void InitDataStructure(Pointer &header_ptr) {
-    header_ = mem_mngr_->template
-      Convert<ShmHeader<TYPED_CLASS>>(header_ptr_);
-    header_ptr_ = header_ptr;
-    alloc_ = mem_mngr_->GetAllocator(header_ptr.allocator_id_);
+  void shm_serialize(ShmArchive<void> &ar) {
+    ar.header_ptr_ = header_ptr_;
   }
 
-  Allocator* GetAllocator() {
+  void shm_deserialize(ShmArchive<void> &ar) {
+    header_ptr_ = ar.header_ptr_;
+    header_ = mem_mngr_->template
+      Convert<TYPED_HEADER>(header_ptr_);
+    alloc_ = mem_mngr_->GetAllocator(header_ptr_.allocator_id_);
+  }
+
+  Allocator *GetAllocator() {
     return alloc_;
+  }
+
+  void operator>>(ShmArchive<TYPED_CLASS> &ar) {
+    shm_serialize(ar);
+  }
+
+  void operator<<(ShmArchive<TYPED_CLASS> &ar) {
+    shm_deserialize(ar);
+  }
+
+  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) {
+    ar.header_ptr_ = header_ptr_;
+  }
+
+  void shm_deserialize(ShmArchive<TYPED_CLASS> &ar) {
+    header_ptr_ = ar.header_ptr_;
+    header_ = mem_mngr_->template
+      Convert<TYPED_HEADER>(header_ptr_);
+    alloc_ = mem_mngr_->GetAllocator(header_ptr_.allocator_id_);
   }
 };
 
@@ -52,7 +75,7 @@ void _construct(T_Ar &obj_ar, Args ...args) {
     T obj(args...);
     obj >> obj_ar;
   } else {
-    new (&obj_ar) T(args...);
+    new(&obj_ar) T(args...);
   }
 }
 
@@ -66,23 +89,17 @@ void _destruct(T_Ar &obj_ar) {
   obj_ar.~T_Ar();
 }
 
-#define SHM_DATA_STRUCTURE_TEMPLATE0(CLASS_NAME)\
- public:\
-  using ShmDataStructure<CLASS_NAME>::header_;\
-  using ShmDataStructure<CLASS_NAME>::header_ptr_;\
-  using ShmDataStructure<CLASS_NAME>::mem_mngr_;\
-  using ShmDataStructure<CLASS_NAME>::alloc_;\
-  using ShmDataStructure<CLASS_NAME>::InitDataStructure;\
-  SHM_SERIALIZEABLE_TEMPLATE0(CLASS_NAME)
+}  // namespace labstor::ipc
 
-#define SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, ...)\
+#define SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)\
  public:\
-  using ShmDataStructure<CLASS_NAME<__VA_ARGS__>>::header_;\
-  using ShmDataStructure<CLASS_NAME<__VA_ARGS__>>::header_ptr_;\
-  using ShmDataStructure<CLASS_NAME<__VA_ARGS__>>::mem_mngr_;\
-  using ShmDataStructure<CLASS_NAME<__VA_ARGS__>>::alloc_;\
-  using ShmDataStructure<CLASS_NAME<__VA_ARGS__>>::InitDataStructure;\
-  SHM_SERIALIZEABLE_TEMPLATE(CLASS_NAME, __VA_ARGS__)
-}
+  using ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::header_;\
+  using ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::header_ptr_;\
+  using ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::mem_mngr_;\
+  using ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::alloc_;\
+  explicit CLASS_NAME(ShmArchive<TYPED_CLASS> &ar) {\
+    shm_deserialize(ar);\
+  }
+
 
 #endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_DATA_STRUCTURE_H_

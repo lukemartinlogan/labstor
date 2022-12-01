@@ -40,7 +40,6 @@ using labstor::ipc::lockless::string;
 TEST_CASE("String") {
   Allocator *alloc = alloc_g;
 
-  REQUIRE(std::is_base_of<labstor::ipc::ShmDataStructure<string>, string>::value);
   REQUIRE(IS_SHM_SERIALIZEABLE(string));
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 

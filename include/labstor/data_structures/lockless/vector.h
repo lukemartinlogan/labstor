@@ -10,24 +10,12 @@
 namespace labstor::ipc::lockless {
 template<typename T>
 class vector;
-}  // namespace labstor::ipc::lockless
-
-namespace labstor::ipc {
 
 template<typename T>
-struct ShmArchive<lockless::vector<T>> {
-  Pointer header_ptr_;
-};
-
-template<typename T>
-struct ShmHeader<lockless::vector<T>> {
+struct vector_header {
   Pointer vec_ptr_;
   size_t max_length_, length_;
 };
-
-}  // namespace labstor::ipc
-
-namespace labstor::ipc::lockless {
 
 template<typename T, typename T_Ref, bool FORWARD_ITER>
 struct vector_iterator_templ {
@@ -153,9 +141,13 @@ using vector_iterator = vector_iterator_templ<T, T_Ref, true>;
 template<typename T, typename T_Ref>
 using vector_riterator = vector_iterator_templ<T, T_Ref, false>;
 
+#define CLASS_NAME vector
+#define TYPED_CLASS vector<T>
+#define TYPED_HEADER vector_header<T>
+
 template<typename T>
-class vector : public ShmDataStructure<vector<T>> {
- SHM_DATA_STRUCTURE_TEMPLATE(vector, T)
+class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
+ SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
 
  private:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
@@ -164,25 +156,26 @@ class vector : public ShmDataStructure<vector<T>> {
  public:
   vector() = default;
 
-  explicit vector(Allocator *alloc) : ShmDataStructure<vector<T>>(alloc) {}
+  explicit vector(Allocator *alloc) :
+    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {}
 
   explicit vector(size_t length) {
     reserve(length);
   }
 
   explicit vector(size_t length, Allocator *alloc) :
-      ShmDataStructure<vector<T>>(alloc) {
+      ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     reserve(length);
   }
 
   explicit vector(size_t length, allocator_id_t alloc_id) :
-      ShmDataStructure<vector<T>>(alloc_id) {
+      ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc_id) {
     reserve(length);
   }
 
   void shm_init() {
     header_ = alloc_->template
-      AllocateObjs<ShmHeader<vector<T>>>(1, header_ptr_);
+      AllocateObjs<vector_header<T>>(1, header_ptr_);
     header_->length_ = 0;
     header_->max_length_ = 0;
     header_->vec_ptr_ = kNullPointer;
@@ -192,14 +185,6 @@ class vector : public ShmDataStructure<vector<T>> {
     erase(begin(), end());
     alloc_->Free(header_->vec_ptr_);
     alloc_->Free(header_ptr_);
-  }
-
-  void shm_serialize(ShmArchive<vector<T>> &ar) {
-    ar.header_ptr_ = header_ptr_;
-  }
-
-  void shm_deserialize(ShmArchive<vector<T>> &ar) {
-    InitDataStructure(ar.header_ptr_);
   }
 
   void reserve(size_t length) {
@@ -356,5 +341,9 @@ class vector : public ShmDataStructure<vector<T>> {
 };
 
 }  // namespace labstor::ipc::lockless
+
+#undef CLASS_NAME
+#undef TYPED_CLASS
+#undef TYPED_HEADER
 
 #endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_VECTOR_H_

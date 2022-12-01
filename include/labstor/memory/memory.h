@@ -9,87 +9,7 @@
 #include <labstor/constants/singleton_macros.h>
 #include <labstor/introspect/system_info.h>
 
-#define IS_SHM_SERIALIZEABLE(T) \
-  std::is_base_of<labstor::ipc::ShmSerializeable<T>, T>::value
-
-/**
- * SHM_T_OR_ARCHIVE: Determines the type of the internal pointer used
- * to store data in a shared-memory data structure. For example,
- * let's say there are two vectors: vector<int> V1 and vector<vector<int>> V2.
- * V1 should store internally a pointer int *vec_
- * V2 should store internally a pointer ShmArchive<vector<int>> *vec_ and
- * then deserialize this pointer at every index operation.
- * */
-
-#define SHM_T_OR_ARCHIVE(T) \
-  typename std::conditional<         \
-    IS_SHM_SERIALIZEABLE(T), \
-    labstor::ipc::ShmArchive<T>, T>::type
-
-/**
- * SHM_T_OR_REF_T: Determines the return value of an index operation on
- * a shared-memory data structure. For example, let's say there
- * are two vectors: vector<int> V1 and vector<vector<int>> V2.
- * V1[0] should return an int&
- * V2[1] should return a vector<int> (not &)
- * This is because V2 needs to shm_deserialize vector<int> from shared
- * memory.
- *
- * @T: The type being stored in the shmem data structure
- * */
-
-#define SHM_T_OR_REF_T(T) \
-  typename std::conditional<         \
-    IS_SHM_SERIALIZEABLE(T), \
-    T, T&>::type
-
 namespace labstor::ipc {
-
-template<typename T>
-class ShmHeader;
-
-template<typename T>
-class ShmArchive;
-
-template<typename T>
-class ShmSerializeable {
- public:
-  // ShmSerializeable(ShmArchive<T> &ar);
-  // virtual void shm_init(args...) = 0;
-  // virtual void shm_destroy() = 0;
-  // virtual void shm_serialize(ShmArchive<T> &ar) = 0;
-  // virtual void shm_deserialize(ShmArchive<T> &ar) = 0;
-  // void operator>>(ShmArchive<TYPED_CLASS> &ar);
-  // void operator<<(ShmArchive<TYPED_CLASS> &ar)
-};
-
-#define SHM_SERIALIZEABLE_TEMPLATE0(CLASS_NAME)\
- public:\
-  explicit CLASS_NAME(ShmArchive<CLASS_NAME> &ar) {\
-    shm_deserialize(ar);\
-  }\
-  void operator>>(ShmArchive<CLASS_NAME> &ar) {\
-    shm_serialize(ar);\
-  }\
-  void operator<<(ShmArchive<CLASS_NAME> &ar) {\
-    shm_deserialize(ar);\
-  }
-
-#define SHM_SERIALIZEABLE_TEMPLATE(CLASS_NAME, ...)\
- public:\
-  explicit CLASS_NAME(ShmArchive<CLASS_NAME<__VA_ARGS__>> &ar) {\
-    shm_deserialize(ar);\
-  }\
-  void operator>>(ShmArchive<CLASS_NAME<__VA_ARGS__>> &ar) {\
-    shm_serialize(ar);\
-  }\
-  void operator<<(ShmArchive<CLASS_NAME<__VA_ARGS__>> &ar) {\
-    shm_deserialize(ar);\
-  }                                                \
- private:\
-  void _check_template() {\
-    shm_destroy();\
-  }
 
 union allocator_id_t {
   struct {
@@ -131,12 +51,30 @@ struct Pointer {
     return (other.allocator_id_ == allocator_id_ && other.off_ == off_);
   }
 
-  bool operator !=(const Pointer &other) const {
+  bool operator!=(const Pointer &other) const {
     return (other.allocator_id_ != allocator_id_ || other.off_ != off_);
   }
 };
 
 static const Pointer kNullPointer;
+
+template<typename T = void>
+struct ShmArchive {
+  Pointer header_ptr_;
+  inline Pointer& Get() {
+    return header_ptr_;
+  }
+};
+
+class ShmSerializeable {
+ public:
+  // virtual void shm_init(args...) = 0;
+  // virtual void shm_destroy() = 0;
+  // virtual void shm_serialize(ShmArchive &ar) = 0;
+  // virtual void shm_deserialize(ShmArchive &ar) = 0;
+  // void operator>>(ShmArchive &ar);
+  // void operator<<(ShmArchive &r);
+};
 
 }  // namespace labstor::ipc
 
@@ -148,5 +86,44 @@ struct hash<labstor::ipc::allocator_id_t> {
   }
 };
 }  // namespace std
+
+
+/**
+ * Determine whether or not \a T type is a SHM serializeable data structure
+ * */
+
+#define IS_SHM_SERIALIZEABLE(T) \
+  std::is_base_of<labstor::ipc::ShmSerializeable, T>::value
+
+/**
+ * SHM_T_OR_ARCHIVE: Determines the type of the internal pointer used
+ * to store data in a shared-memory data structure. For example,
+ * let's say there are two vectors: vector<int> V1 and vector<vector<int>> V2.
+ * V1 should store internally a pointer int *vec_
+ * V2 should store internally a pointer ShmArchive<vector<int>> *vec_ and
+ * then deserialize this pointer at every index operation.
+ * */
+
+#define SHM_T_OR_ARCHIVE(T) \
+  typename std::conditional<         \
+    IS_SHM_SERIALIZEABLE(T), \
+    ShmArchive<T>, T>::type
+
+/**
+ * SHM_T_OR_REF_T: Determines the return value of an index operation on
+ * a shared-memory data structure. For example, let's say there
+ * are two vectors: vector<int> V1 and vector<vector<int>> V2.
+ * V1[0] should return an int&
+ * V2[1] should return a vector<int> (not &)
+ * This is because V2 needs to shm_deserialize vector<int> from shared
+ * memory.
+ *
+ * @T: The type being stored in the shmem data structure
+ * */
+
+#define SHM_T_OR_REF_T(T) \
+  typename std::conditional<         \
+    IS_SHM_SERIALIZEABLE(T), \
+    T, T&>::type
 
 #endif  // LABSTOR_INCLUDE_LABSTOR_MEMORY_MEMORY_H_
