@@ -109,8 +109,8 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
   inline void _create_header(size_t length) {
     header_ = alloc_->template
-      AllocatePtr<string_header>(
-      sizeof(string_header) + length + 1,
+      AllocatePtr<TYPED_HEADER>(
+      sizeof(TYPED_HEADER) + length + 1,
       header_ptr_);
   }
   inline void _create_str(const char *text, size_t length) {

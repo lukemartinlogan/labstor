@@ -175,7 +175,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   void shm_init() {
     header_ = alloc_->template
-      AllocateObjs<vector_header<T>>(1, header_ptr_);
+      AllocateObjs<TYPED_HEADER>(1, header_ptr_);
     header_->length_ = 0;
     header_->max_length_ = 0;
     header_->vec_ptr_ = kNullPointer;

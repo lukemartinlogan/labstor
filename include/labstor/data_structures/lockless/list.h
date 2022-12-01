@@ -150,7 +150,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   void shm_init() {
     Pointer head_ptr;
     header_ = alloc_->template
-      AllocateObjs<list_header<T>>(1, header_ptr_);
+      AllocateObjs<TYPED_HEADER>(1, header_ptr_);
     memset(header_, 0, sizeof(header_));
   }
 

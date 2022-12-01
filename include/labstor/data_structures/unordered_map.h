@@ -44,8 +44,8 @@ class unordered_map_bucket {
 
 template<typename Key, typename T,
   class Hash = std::hash<Key>>
-class unordered_map : public ShmDataStructure<unordered_map_header<T>> {
-  SHM_DATA_STRUCTURE_TEMPLATE(unordered_map<Key, T, Hash>, )
+class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
+ SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
 
  private:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
@@ -56,14 +56,14 @@ class unordered_map : public ShmDataStructure<unordered_map_header<T>> {
   unordered_map() = default;
 
   explicit unordered_map(Allocator *alloc) :
-    ShmDataStructure<unordered_map<Key, T, Hash>>(alloc) {}
+    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {}
 
   void shm_init() {
   }
 
   void shm_init(int num_buckets, int max_collide, RealNumber growth) {
     header_ = alloc_->template
-      AllocateObjs<ShmHeader<unordered_map<Key, T, Hash>>>(1, header_ptr_);
+      AllocateObjs<TYPED_HEADER>(1, header_ptr_);
     lockless::vector<bucket> buckets(num_buckets, alloc_);
     buckets >> header_->buckets_;
     header_->length_ = 0;
@@ -140,5 +140,9 @@ class unordered_map : public ShmDataStructure<unordered_map_header<T>> {
 };
 
 }  // namespace labstor::ipc
+
+#undef CLASS_NAME
+#undef TYPED_CLASS
+#undef TYPED_HEADER
 
 #endif  // LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_UNORDERED_MAP_H_
