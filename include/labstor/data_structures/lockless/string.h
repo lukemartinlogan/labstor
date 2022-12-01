@@ -30,7 +30,7 @@ struct ShmHeader<lockless::string> {
 namespace labstor::ipc::lockless {
 
 class string : public ShmDataStructure<string> {
-  SHM_DATA_STRUCTURE_TEMPLATE(string, string)
+ SHM_DATA_STRUCTURE_TEMPLATE0(string)
 
  public:
   string() : ShmDataStructure<string>() {}

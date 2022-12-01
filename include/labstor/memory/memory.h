@@ -62,15 +62,31 @@ class ShmSerializeable {
   // void operator<<(ShmArchive<TYPED_CLASS> &ar)
 };
 
-#define SHM_SERIALIZEABLE_TEMPLATE(CLASS_NAME, TYPED_CLASS)\
+#define SHM_SERIALIZEABLE_TEMPLATE0(CLASS_NAME)\
  public:\
-  explicit CLASS_NAME(ShmArchive<TYPED_CLASS> &ar) {\
+  explicit CLASS_NAME(ShmArchive<CLASS_NAME> &ar) {\
     shm_deserialize(ar);\
   }\
-  void operator>>(ShmArchive<TYPED_CLASS> &ar) {\
+  void operator>>(ShmArchive<CLASS_NAME> &ar) {\
     shm_serialize(ar);\
   }\
-  void operator<<(ShmArchive<TYPED_CLASS> &ar) {\
+  void operator<<(ShmArchive<CLASS_NAME> &ar) {\
+    shm_deserialize(ar);\
+  }\
+ private:\
+  void _check_template() {\
+    shm_destroy();\
+  }
+
+#define SHM_SERIALIZEABLE_TEMPLATE(CLASS_NAME, ...)\
+ public:\
+  explicit CLASS_NAME(ShmArchive<CLASS_NAME<__VA_ARGS__>> &ar) {\
+    shm_deserialize(ar);\
+  }\
+  void operator>>(ShmArchive<CLASS_NAME<__VA_ARGS__>> &ar) {\
+    shm_serialize(ar);\
+  }\
+  void operator<<(ShmArchive<CLASS_NAME<__VA_ARGS__>> &ar) {\
     shm_deserialize(ar);\
   }\
  private:\

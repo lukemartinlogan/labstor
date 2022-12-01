@@ -141,7 +141,7 @@ struct list_iterator {
 
 template<typename T>
 class list : public ShmDataStructure<list<T>> {
- SHM_DATA_STRUCTURE_TEMPLATE(list, list<T>)
+ SHM_DATA_STRUCTURE_TEMPLATE(list, T)
  friend list_iterator<T>;
 
  private:

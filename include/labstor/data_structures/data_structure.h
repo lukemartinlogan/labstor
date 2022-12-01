@@ -66,14 +66,23 @@ void _destruct(T_Ar &obj_ar) {
   obj_ar.~T_Ar();
 }
 
-#define SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS)\
+#define SHM_DATA_STRUCTURE_TEMPLATE0(CLASS_NAME)\
  public:\
-  using ShmDataStructure<TYPED_CLASS>::header_;\
-  using ShmDataStructure<TYPED_CLASS>::header_ptr_;\
-  using ShmDataStructure<TYPED_CLASS>::mem_mngr_;\
-  using ShmDataStructure<TYPED_CLASS>::alloc_;\
-  using ShmDataStructure<TYPED_CLASS>::InitDataStructure;\
-  SHM_SERIALIZEABLE_TEMPLATE(CLASS_NAME, TYPED_CLASS)
+  using ShmDataStructure<CLASS_NAME>::header_;\
+  using ShmDataStructure<CLASS_NAME>::header_ptr_;\
+  using ShmDataStructure<CLASS_NAME>::mem_mngr_;\
+  using ShmDataStructure<CLASS_NAME>::alloc_;\
+  using ShmDataStructure<CLASS_NAME>::InitDataStructure;\
+  SHM_SERIALIZEABLE_TEMPLATE0(CLASS_NAME)
+
+#define SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, ...)\
+ public:\
+  using ShmDataStructure<CLASS_NAME<__VA_ARGS__>>::header_;\
+  using ShmDataStructure<CLASS_NAME<__VA_ARGS__>>::header_ptr_;\
+  using ShmDataStructure<CLASS_NAME<__VA_ARGS__>>::mem_mngr_;\
+  using ShmDataStructure<CLASS_NAME<__VA_ARGS__>>::alloc_;\
+  using ShmDataStructure<CLASS_NAME<__VA_ARGS__>>::InitDataStructure;\
+  SHM_SERIALIZEABLE_TEMPLATE(CLASS_NAME, __VA_ARGS__)
 }
 
 #endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_DATA_STRUCTURE_H_

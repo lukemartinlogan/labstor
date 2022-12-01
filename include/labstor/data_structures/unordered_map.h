@@ -36,7 +36,7 @@ namespace labstor::ipc {
 template<typename Key, typename T,
   class Hash = std::hash<Key>>
 class unordered_map {
-  // SHM_DATA_STRUCTURE_TEMPLATE(unordered_map, unordered_map<Key, T, Hash>)
+  SHM_DATA_STRUCTURE_TEMPLATE(unordered_map, Key, T, Hash)
 
  public:
  private:
@@ -48,17 +48,6 @@ class unordered_map {
 
   explicit unordered_map(Allocator *alloc) :
     ShmDataStructure<unordered_map<Key, T, Hash>>(alloc) {}
-
-  explicit unordered_map(size_t length) {
-  }
-
-  explicit unordered_map(size_t length, Allocator *alloc) :
-    ShmDataStructure<unordered_map<Key, T, Hash>>(alloc) {
-  }
-
-  explicit unordered_map(size_t length, allocator_id_t alloc_id) :
-  ShmDataStructure<unordered_map<Key, T, Hash>>(alloc_id) {
-  }
 
   void shm_destroy() {
   }

@@ -155,7 +155,7 @@ using vector_riterator = vector_iterator_templ<T, T_Ref, false>;
 
 template<typename T>
 class vector : public ShmDataStructure<vector<T>> {
- SHM_DATA_STRUCTURE_TEMPLATE(vector, vector<T>)
+ SHM_DATA_STRUCTURE_TEMPLATE(vector, T)
 
  private:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
