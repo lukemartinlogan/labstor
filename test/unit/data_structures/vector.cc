@@ -43,6 +43,7 @@ void VectorTest() {
   Allocator *alloc = alloc_g;
   labstor::ipc::lockless::vector<int> vec(alloc);
 
+  vec.shm_init();
   vec.reserve(10);
 
   for (int i = 0; i < 30; ++i) {
@@ -88,6 +89,7 @@ void VectorOfStringTest() {
   Allocator *alloc = alloc_g;
   vector<string> vec(alloc);
 
+  vec.shm_init();
   vec.reserve(10);
 
   for (int i = 0; i < 30; ++i) {

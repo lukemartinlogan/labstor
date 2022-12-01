@@ -38,7 +38,6 @@ template<typename Key, typename T,
 class unordered_map {
   SHM_DATA_STRUCTURE_TEMPLATE(unordered_map, Key, T, Hash)
 
- public:
  private:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
   typedef SHM_T_OR_REF_T(T) T_Ref;
@@ -65,6 +64,9 @@ class unordered_map {
 
   template<typename ...Args>
   void emplace(Args&&... args) {
+    lockless::vector<T> buckets(header_->buckets_);
+    T obj(args...);
+    size_t bkt_id = Hash(obj) % bucket;
   }
 
   void erase(unordered_map_iterator<T, T_Ref> first, unordered_map_iterator<T, T_Ref> last) {

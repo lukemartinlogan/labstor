@@ -153,14 +153,11 @@ class list : public ShmDataStructure<list<T>> {
 
   explicit list(Allocator *alloc) : ShmDataStructure<list<T>>(alloc) {}
 
-  explicit list(Allocator *alloc, bool init) :
-    ShmDataStructure<list<T>>(alloc) {
-    if (init) {
-      Pointer head_ptr;
-      header_ = alloc_->template
-        AllocateObjs<ShmHeader<list<T>>>(1, header_ptr_);
-      memset(header_, 0, sizeof(header_));
-    }
+  void shm_init() {
+    Pointer head_ptr;
+    header_ = alloc_->template
+      AllocateObjs<ShmHeader<list<T>>>(1, header_ptr_);
+    memset(header_, 0, sizeof(header_));
   }
 
   void shm_destroy() {

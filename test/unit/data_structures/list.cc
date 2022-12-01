@@ -41,7 +41,8 @@ using labstor::ipc::lockless::string;
 
 void ListTest() {
   Allocator *alloc = alloc_g;
-  list<int> lp(alloc, true);
+  list<int> lp(alloc);
+  lp.shm_init();
 
   for (int i = 0; i < 30; ++i) {
     lp.emplace_back(i);
@@ -78,7 +79,8 @@ void ListTest() {
 
 void ListOfStringTest() {
   Allocator *alloc = alloc_g;
-  list<string> lp(alloc, true);
+  list<string> lp(alloc);
+  lp.shm_init();
 
   for (int i = 0; i < 30; ++i) {
     lp.emplace_back(std::to_string(i));

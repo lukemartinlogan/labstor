@@ -180,6 +180,14 @@ class vector : public ShmDataStructure<vector<T>> {
     reserve(length);
   }
 
+  void shm_init() {
+    header_ = alloc_->template
+      AllocateObjs<ShmHeader<vector<T>>>(1, header_ptr_);
+    header_->length_ = 0;
+    header_->max_length_ = 0;
+    header_->vec_ptr_ = kNullPointer;
+  }
+
   void shm_destroy() {
     erase(begin(), end());
     alloc_->Free(header_->vec_ptr_);
@@ -196,11 +204,7 @@ class vector : public ShmDataStructure<vector<T>> {
 
   void reserve(size_t length) {
     if (header_ == nullptr) {
-      header_ = alloc_->template
-        AllocateObjs<ShmHeader<vector<T>>>(1, header_ptr_);
-      header_->length_ = 0;
-      header_->max_length_ = 0;
-      header_->vec_ptr_ = kNullPointer;
+      shm_init();
     }
     grow_vector(_data(), length);
   }

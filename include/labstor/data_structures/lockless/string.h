@@ -90,6 +90,8 @@ class string : public ShmDataStructure<string> {
     InitDataStructure(ar.header_ptr_);
   }
 
+  void shm_init() {}
+
   void shm_destroy() {
     alloc_->Free(header_ptr_);
   }
