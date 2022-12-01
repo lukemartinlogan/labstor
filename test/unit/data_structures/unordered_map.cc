@@ -25,7 +25,7 @@
 
 #include "basic_test.h"
 #include "test_init.h"
-#include <labstor/data_structures/lockless/list.h>
+#include <labstor/data_structures/unordered_map.h>
 #include <labstor/data_structures/lockless/string.h>
 #include <labstor/memory/allocator/page_allocator.h>
 
@@ -36,95 +36,27 @@ using labstor::ipc::AllocatorType;
 using labstor::ipc::Allocator;
 using labstor::ipc::MemoryManager;
 using labstor::ipc::Pointer;
-using labstor::ipc::lockless::list;
+using labstor::ipc::unordered_map;
 using labstor::ipc::lockless::string;
 
-void ListOfIntTest() {
+void UnorderedMapOfIntTest() {
   Allocator *alloc = alloc_g;
-  list<int> lp(alloc);
-  lp.shm_init();
-
-  for (int i = 0; i < 30; ++i) {
-    lp.emplace_back(i);
-  }
-  REQUIRE(lp.size() == 30);
-
-  {
-    int fcur = 0;
-    for (auto num : lp) {
-      REQUIRE(num == fcur);
-      ++fcur;
-    }
-  }
-
-  lp.emplace_front(100);
-  REQUIRE(lp.front() == 100);
-  REQUIRE(lp.size() == 31);
-
-  lp.erase(lp.begin(), lp.begin() + 1);
-
-  {
-    int fcur = 0;
-    for (auto num : lp) {
-      REQUIRE(num == fcur);
-      ++fcur;
-    }
-  }
-
-  lp.erase(lp.begin(), lp.end());
-  REQUIRE(lp.size() == 0);
-
-  lp.shm_destroy();
+  unordered_map<int, int> map(alloc);
 }
 
-void ListOfStringTest() {
-  Allocator *alloc = alloc_g;
-  list<string> lp(alloc);
-  lp.shm_init();
-
-  for (int i = 0; i < 30; ++i) {
-    lp.emplace_back(std::to_string(i));
-  }
-  REQUIRE(lp.size() == 30);
-
-  {
-    int fcur = 0;
-    for (auto num : lp) {
-      REQUIRE(num == std::to_string(fcur));
-      ++fcur;
-    }
-  }
-
-  lp.emplace_front("100");
-  REQUIRE(lp.front() == "100");
-  REQUIRE(lp.size() == 31);
-
-  lp.erase(lp.begin(), lp.begin() + 1);
-
-  {
-    int fcur = 0;
-    for (auto num : lp) {
-      REQUIRE(num == std::to_string(fcur));
-      ++fcur;
-    }
-  }
-
-  lp.erase(lp.begin(), lp.end());
-  REQUIRE(lp.size() == 0);
-
-  lp.shm_destroy();
+void UnorderedMapOfStringTest() {
 }
 
-TEST_CASE("ListOfInt") {
+TEST_CASE("UnorderedMapOfInt") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  ListOfIntTest();
+  UnorderedMapOfIntTest();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
 
-TEST_CASE("ListOfString") {
+TEST_CASE("UnorderedMapOfString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  ListOfStringTest();
+  UnorderedMapOfStringTest();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }

@@ -60,6 +60,15 @@ namespace labstor {
 
 typedef labstor_credentials UserCredentials;
 
+struct RealNumber {
+  int numerator_;
+  unsigned denominator_;
+
+  RealNumber() =  default;
+  RealNumber(int numerator, unsigned denominator = 1) :
+    numerator_(numerator), denominator_(denominator) {}
+};
+
 struct id {
   char key_[MODULE_KEY_SIZE];
   id() = default;

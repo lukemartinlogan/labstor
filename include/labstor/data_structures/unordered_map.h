@@ -14,6 +14,9 @@
 namespace labstor::ipc {
 template<typename Key, typename T, class Hash>
 class unordered_map;
+
+template<typename T>
+class unordered_map_bucket;
 }  // namespace labstor::ipc::lockless
 
 namespace labstor::ipc {
@@ -25,13 +28,27 @@ struct ShmArchive<unordered_map<Key, T, Hash>> {
 
 template<typename Key, typename T, class Hash>
 struct ShmHeader<unordered_map<Key, T, Hash>> {
-  ShmArchive<lockless::vector<T>> buckets_;
-  size_t length_;
+  ShmArchive<lockless::vector<unordered_map_bucket<T>>> buckets_;
+  int max_collide_;
+  RealNumber growth_;
+  std::atomic<size_t> length_;
+  RwLock lock_;
 };
 
 }  // namespace labstor::ipc
 
 namespace labstor::ipc {
+
+template<typename T>
+class unordered_map_bucket {
+ private:
+  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
+  typedef SHM_T_OR_REF_T(T) T_Ref;
+
+ public:
+  RwLock lock_;
+  ShmArchive<lockless::list<T>> entries_;
+};
 
 template<typename Key, typename T,
   class Hash = std::hash<Key>>
@@ -41,6 +58,7 @@ class unordered_map {
  private:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
   typedef SHM_T_OR_REF_T(T) T_Ref;
+  using bucket = unordered_map_bucket<T>;
 
  public:
   unordered_map() = default;
@@ -48,7 +66,24 @@ class unordered_map {
   explicit unordered_map(Allocator *alloc) :
     ShmDataStructure<unordered_map<Key, T, Hash>>(alloc) {}
 
+  void shm_init() {
+  }
+
+  void shm_init(int num_buckets, int max_collide, RealNumber growth) {
+    header_ = alloc_->template
+      AllocateObjs<ShmHeader<unordered_map<Key, T, Hash>>>(1, header_ptr_);
+    lockless::vector<bucket> buckets(num_buckets, alloc_);
+    buckets >> header_->buckets_;
+    header_->length_ = 0;
+  }
+
   void shm_destroy() {
+    lockless::vector<bucket> buckets(header_->buckets_);
+    for (auto bucket : buckets) {
+      bucket.lock_.WriteLock();
+      bucket.collisions_.shm_destroy();
+      bucket.lock_.WriteUnlock();
+    }
   }
 
   void shm_serialize(ShmArchive<unordered_map<Key, T, Hash>> &ar) {
@@ -60,17 +95,26 @@ class unordered_map {
   }
 
   T_Ref operator[](const size_t i) {
+    lockless::vector<bucket> buckets(header_->buckets_);
   }
 
   template<typename ...Args>
   void emplace(Args&&... args) {
-    lockless::vector<T> buckets(header_->buckets_);
+    if (header_ == nullptr) { shm_init(); }
+    lockless::vector<bucket> buckets(header_->buckets_);
     T obj(args...);
-    size_t bkt_id = Hash(obj) % bucket;
+    size_t bkt_id = Hash(obj) % buckets.size();
+    bucket bkt = buckets[bkt_id];
+    bkt.lock_.WriteLock();
+    lockless::list<T> collisions(bkt.collisions_);
+    collisions.emplace_back(std::move(obj));
+    buckets[bkt_id].lock_.WriteUnlock();
   }
 
+  /*
   void erase(unordered_map_iterator<T, T_Ref> first, unordered_map_iterator<T, T_Ref> last) {
   }
+   */
 
   void erase(Key &key) {
   }
@@ -82,7 +126,25 @@ class unordered_map {
     return header_->length_;
   }
 
+ private:
+  void grow_map() {
+    lockless::vector<T> buckets(header_->buckets_);
+    size_t num_buckets = buckets.size();
+    size_t new_num_buckets = get_new_size();
+    buckets.resize(new_num_buckets);
+    for (size_t i = 0; i < buckets.size(); ++i) {
+    }
+  }
 
+  size_t get_new_size(size_t num_buckets) {
+    RealNumber growth = header_->growth_;
+    size_t new_num_buckets =
+      num_buckets * growth.numerator_ / growth.denominator_;
+    if (new_num_buckets - num_buckets < 10) {
+      new_num_buckets = num_buckets + 10;
+    }
+    return new_num_buckets;
+  }
 };
 
 }  // namespace labstor::ipc

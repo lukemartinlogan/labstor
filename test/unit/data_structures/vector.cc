@@ -39,7 +39,7 @@ using labstor::ipc::Pointer;
 using labstor::ipc::lockless::vector;
 using labstor::ipc::lockless::string;
 
-void VectorTest() {
+void VectorOfIntTest() {
   Allocator *alloc = alloc_g;
   labstor::ipc::lockless::vector<int> vec(alloc);
 
@@ -119,14 +119,14 @@ void VectorOfStringTest() {
   vec.shm_destroy();
 }
 
-TEST_CASE("VectorSimple") {
+TEST_CASE("VectorOfInt") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  VectorTest();
+  VectorOfIntTest();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
 
-TEST_CASE("VectorOfStrings") {
+TEST_CASE("VectorOfString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   VectorOfStringTest();

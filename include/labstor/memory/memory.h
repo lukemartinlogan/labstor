@@ -55,6 +55,7 @@ template<typename T>
 class ShmSerializeable {
  public:
   // ShmSerializeable(ShmArchive<T> &ar);
+  // virtual void shm_init(args...) = 0;
   // virtual void shm_destroy() = 0;
   // virtual void shm_serialize(ShmArchive<T> &ar) = 0;
   // virtual void shm_deserialize(ShmArchive<T> &ar) = 0;
@@ -72,10 +73,6 @@ class ShmSerializeable {
   }\
   void operator<<(ShmArchive<CLASS_NAME> &ar) {\
     shm_deserialize(ar);\
-  }\
- private:\
-  void _check_template() {\
-    shm_destroy();\
   }
 
 #define SHM_SERIALIZEABLE_TEMPLATE(CLASS_NAME, ...)\
@@ -88,7 +85,7 @@ class ShmSerializeable {
   }\
   void operator<<(ShmArchive<CLASS_NAME<__VA_ARGS__>> &ar) {\
     shm_deserialize(ar);\
-  }\
+  }                                                \
  private:\
   void _check_template() {\
     shm_destroy();\

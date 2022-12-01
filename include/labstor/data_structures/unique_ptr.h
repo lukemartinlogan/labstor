@@ -18,31 +18,23 @@ namespace labstor::ipc {
 template<typename T>
 class unique_ptr {
  private:
-  T *ptr_;
+  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
+  typedef SHM_T_OR_REF_T(T) T_Ref;
+  T_Ar *obj_;
 
  public:
-  unique_ptr(T *ptr) { ptr_ = ptr; }
-
   template<typename ...Args>
   unique_ptr(Args ...args) {
-    ptr_ = new T(args...);
   }
 
-  T* get() {
-    return ptr_;
-  }
-
-  T& ref() {
-    return *ptr_;
+  T_Ref get() {
   }
 
   void operator=(unique_ptr<T> &&other) = delete;
 
   ~unique_ptr() {
-    if (IS_SHM_SERIALIZEABLE(T)) {
-      ptr_->Destroy();
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
     }
-    delete ptr_;
   }
 };
 

@@ -7,7 +7,8 @@ add_executable(test_data_structure_exec
         main_mpi.cc
         string.cc
         vector.cc
-        list.cc)
+        list.cc
+        unordered_map.cc)
 
 add_dependencies(test_data_structure_exec labstor_client)
 target_link_libraries(test_data_structure_exec
