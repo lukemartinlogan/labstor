@@ -65,7 +65,7 @@ class PosixShmMmap : public MemoryBackend {
  public:
   explicit PosixShmMmap(const std::string &url) :
     MemoryBackend(url), fd_(-1) {}
-  ~PosixShmMmap() { _Detach(); }
+  ~PosixShmMmap() override { _Detach(); }
 
   bool Create() override {
     fd_ = shm_open(url_.c_str(), O_CREAT | O_RDWR, 0666);

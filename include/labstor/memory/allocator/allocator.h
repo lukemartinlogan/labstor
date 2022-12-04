@@ -59,10 +59,11 @@ class Allocator {
   MemorySlot &slot_;
 
  public:
-  explicit Allocator(slot_id_t slot_id, MemoryBackend *backend) :
-    slot_id_(slot_id),
-    backend_(backend),
-    slot_(backend_->GetSlot(slot_id)) {}
+  explicit Allocator(slot_id_t slot_id, MemoryBackend *backend)
+    : slot_id_(slot_id), backend_(backend),
+      slot_(backend_->GetSlot(slot_id)) {}
+
+  virtual ~Allocator() = default;
 
   virtual void Create(allocator_id_t id) = 0;
   virtual void Attach() = 0;
