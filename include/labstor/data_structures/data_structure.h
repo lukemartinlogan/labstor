@@ -93,11 +93,11 @@ void _destruct(T_Ar &obj_ar) {
 
 #define SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)\
  public:\
-  using ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::header_;\
-  using ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::header_ptr_;\
-  using ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::mem_mngr_;\
-  using ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::alloc_;\
-  explicit CLASS_NAME(ShmArchive<TYPED_CLASS> &ar) {\
+  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::header_;\
+  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::header_ptr_;\
+  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::mem_mngr_;\
+  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::alloc_;\
+  explicit CLASS_NAME(labstor::ipc::ShmArchive<TYPED_CLASS> &ar) {\
     shm_deserialize(ar);\
   }
 

@@ -78,7 +78,11 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     }
   }
 
-  T_Ref operator[](const size_t i) {
+  T_Ref operator[](Key &key) {
+    lockless::vector<bucket> buckets(header_->buckets_);
+  }
+
+  T_Ref operator[](Key &&key) {
     lockless::vector<bucket> buckets(header_->buckets_);
   }
 

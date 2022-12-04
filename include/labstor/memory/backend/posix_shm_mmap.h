@@ -65,7 +65,7 @@ class PosixShmMmap : public MemoryBackend {
  public:
   explicit PosixShmMmap(const std::string &url) :
     MemoryBackend(url), fd_(-1) {}
-  ~PosixShmMmap() override = default;
+  ~PosixShmMmap() { _Detach(); }
 
   bool Create() override {
     fd_ = shm_open(url_.c_str(), O_CREAT | O_RDWR, 0666);
@@ -142,6 +142,7 @@ class PosixShmMmap : public MemoryBackend {
     for (auto &slot : slots_) {
       _UnmapSlot(slot);
     }
+    slots_.clear();
     close(fd_);
   }
 

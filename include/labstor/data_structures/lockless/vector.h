@@ -242,6 +242,10 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     header_->length_ -= count;
   }
 
+  void clear() {
+    erase(begin(), end());
+  }
+
   size_t size() const {
     if (header_ == nullptr) {
       return 0;

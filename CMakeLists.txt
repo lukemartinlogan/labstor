@@ -36,12 +36,12 @@ endif()
 add_library(labstor_data_structures
         src/thread/mutex.cc
         src/thread/rwlock.cc
-        src/memory/page_allocator.cc)
+        src/memory/page_allocator.cc
+        src/memory/memory_manager.cc)
 
 add_library(labstor_client
         src/ipc_manager.cc
-        src/singleton.cc
-        src/memory/memory_manager.cc)
+        src/singleton.cc)
 add_dependencies(labstor_client
         labstor_data_structures)
 target_link_libraries(labstor_client
@@ -51,8 +51,7 @@ target_link_libraries(labstor_client yaml-cpp pthread -lrt -ldl)
 add_executable(labstor_runtime
         src/runtime/runtime.cc
         src/ipc_manager.cc
-        src/singleton.cc
-        src/memory/memory_manager.cc)
+        src/singleton.cc)
 add_dependencies(labstor_runtime
         labstor_data_structures)
 target_link_libraries(labstor_runtime
