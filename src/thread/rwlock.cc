@@ -43,6 +43,10 @@ void RwLock::WriteLock() {
       thread_info->Yield();
       continue;
     }
+    if (expected.IsWriteLocked()) {
+      thread_info->Yield();
+      continue;
+    }
     desired = expected;
     desired.bits.w_ += 1;
     ret = payload_.compare_exchange_weak(expected, desired);
