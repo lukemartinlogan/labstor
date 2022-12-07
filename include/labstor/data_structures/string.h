@@ -26,21 +26,21 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
  public:
   string() : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>() {}
-  string(const char *text) {
+  explicit string(const char *text) {
     _create_str(text);
   }
-  string(const char *text, Allocator *alloc) :
+  explicit string(const char *text, Allocator *alloc) :
     ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     _create_str(text);
   }
-  string(const std::string &text) {
+  explicit string(const std::string &text) {
     _create_str(text.data(), text.size());
   }
-  string(const std::string &text, Allocator *alloc) :
+  explicit string(const std::string &text, Allocator *alloc) :
     ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     _create_str(text.data(), text.size());
   }
-  string(string &text1, string &text2, Allocator *alloc) :
+  explicit string(string &text1, string &text2, Allocator *alloc) :
     ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     size_t length = text1.size() + text2.size();
     _create_header(length);
@@ -48,6 +48,15 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
            text1.data(), text1.size());
     memcpy(header_->text_ + size(),
            text2.data(), text2.size());
+    header_->text_[length] = 0;
+  }
+  explicit string(size_t length) {
+    _create_header(length);
+    header_->text_[length] = 0;
+  }
+  explicit string(size_t length, Allocator *alloc) :
+    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
+    _create_header(length);
     header_->text_[length] = 0;
   }
 
@@ -71,6 +80,10 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
   char* data() const {
+    return header_->text_;
+  }
+
+  char* data_mutable() {
     return header_->text_;
   }
 
@@ -121,7 +134,9 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 };
 
-}
+typedef string charbuf;
+
+}  // namespace labstor::ipc
 
 #undef CLASS_NAME
 #undef TYPED_CLASS
