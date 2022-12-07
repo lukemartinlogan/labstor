@@ -29,6 +29,7 @@ struct ScopedMutex {
 
   void Lock();
   bool TryLock();
+  void Unlock();
 };
 
 union RwLockPayload {
@@ -38,11 +39,11 @@ union RwLockPayload {
   } bits;
   uint64_t as_int_;
 
-  inline bool IsWriteLocked() const {
+  bool IsWriteLocked() const {
     return bits.r_ == 0 && bits.w_ > 0;
   }
 
-  inline bool IsReadLocked() const {
+  bool IsReadLocked() const {
     return bits.r_ > 0 && bits.w_ == 0;
   }
 };
@@ -57,8 +58,26 @@ struct RwLock {
   void WriteUnlock();
 };
 
-struct ScopedRwLock {
+struct ScopedRwReadLock {
   RwLock &lock_;
+  bool is_locked_;
+
+  explicit ScopedRwReadLock(RwLock &lock);
+  ~ScopedRwReadLock();
+
+  void Lock();
+  void Unlock();
+};
+
+struct ScopedRwWriteLock {
+  RwLock &lock_;
+  bool is_locked_;
+
+  explicit ScopedRwWriteLock(RwLock &lock);
+  ~ScopedRwWriteLock();
+
+  void Lock();
+  void Unlock();
 };
 
 }  // namespace labstor

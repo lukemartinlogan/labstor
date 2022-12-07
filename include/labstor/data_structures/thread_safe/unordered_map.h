@@ -59,6 +59,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {}
 
   void shm_init() {
+    shm_init(20, 4, RealNumber(5,4));
   }
 
   void shm_init(int num_buckets, int max_collide, RealNumber growth) {
@@ -82,27 +83,30 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     vector<bucket> buckets(header_->buckets_);
   }
 
-  T_Ref operator[](Key &&key) {
-    vector<bucket> buckets(header_->buckets_);
-  }
-
-  template<typename ...Args>
-  void emplace(Args&&... args) {
+  template<typename ...Args, bool growth>
+  void emplace(Key &key, Args&&... args) {
     if (header_ == nullptr) { shm_init(); }
+    ScopedRwReadLock header_lock(header_->lock_);
+    header_lock.Lock();
     vector<bucket> buckets(header_->buckets_);
-    T obj(args...);
-    size_t bkt_id = Hash(obj) % buckets.size();
+    size_t bkt_id = Hash(key) % buckets.size();
     bucket bkt = buckets[bkt_id];
-    bkt.lock_.WriteLock();
+    ScopedRwWriteLock bkt_lock(bkt.lock_);
+    bkt_lock.Lock();
     list<T> collisions(bkt.collisions_);
-    collisions.emplace_back(std::move(obj));
+    collisions.emplace_back(args...);
     buckets[bkt_id].lock_.WriteUnlock();
+    header_lock.Unlock();
+    if constexpr(growth) {
+      if (collisions.size() > header_->max_collisions) {
+      }
+    }
   }
 
   /*
   void erase(unordered_map_iterator<T, T_Ref> first, unordered_map_iterator<T, T_Ref> last) {
   }
-   */
+  */
 
   void erase(Key &key) {
   }
@@ -115,12 +119,21 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
  private:
-  void grow_map() {
+  void grow_map(size_t old_size) {
+    ScopedRwWriteLock scoped_lock(header_->lock);
     vector<T> buckets(header_->buckets_);
     size_t num_buckets = buckets.size();
+    if (num_buckets != old_size) {
+      return;
+    }
     size_t new_num_buckets = get_new_size();
     buckets.resize(new_num_buckets);
-    for (size_t i = 0; i < buckets.size(); ++i) {
+    for (size_t i = 0; i < num_buckets; ++i) {
+      auto bucket = buckets[i];
+      list<T> collisions(bucket);
+      for (auto entry : collisions) {
+        emplace(entry);
+      }
     }
   }
 
