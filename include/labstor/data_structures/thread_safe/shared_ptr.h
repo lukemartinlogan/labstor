@@ -5,8 +5,8 @@
 #ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_SHARED_PTR_H_
 #define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_SHARED_PTR_H_
 
-#include <labstor/memory/memory.h>
-#include "data_structure.h"
+#include "labstor/memory/memory.h"
+#include "labstor/data_structures/data_structure.h"
 
 namespace labstor::ipc {
 

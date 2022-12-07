@@ -25,8 +25,8 @@
 
 #include "basic_test.h"
 #include "test_init.h"
-#include <labstor/data_structures/unordered_map.h>
-#include <labstor/data_structures/lockless/string.h>
+#include "labstor/data_structures/thread_safe/unordered_map.h"
+#include "labstor/data_structures/string.h"
 #include <labstor/memory/allocator/page_allocator.h>
 
 using labstor::ipc::MemoryBackendType;
@@ -37,7 +37,7 @@ using labstor::ipc::Allocator;
 using labstor::ipc::MemoryManager;
 using labstor::ipc::Pointer;
 using labstor::ipc::unordered_map;
-using labstor::ipc::lockless::string;
+using labstor::ipc::string;
 
 void UnorderedMapOfIntTest() {
   Allocator *alloc = alloc_g;

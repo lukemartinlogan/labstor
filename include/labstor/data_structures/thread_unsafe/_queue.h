@@ -7,7 +7,7 @@
 
 #include "labstor/types/basic.h"
 
-namespace labstor::ipc::lockless {
+namespace labstor::ipc {
 
 struct _queue_entry {
   size_t next_;
@@ -76,6 +76,6 @@ class _queue {
   size_t size() { return header_->size_; }
 };
 
-}  // namespace labstor::ipc::lockless
+}  // namespace labstor::ipc
 
 #endif  // LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_SIMPLE_QUEUE_H_

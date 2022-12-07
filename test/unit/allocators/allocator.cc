@@ -4,7 +4,7 @@
 
 #include "basic_test.h"
 #include "omp.h"
-#include <labstor/data_structures/lockless/vector.h>
+#include "labstor/data_structures/thread_unsafe/vector.h"
 #include <labstor/memory/allocator/page_allocator.h>
 
 using labstor::ipc::MemoryBackendType;

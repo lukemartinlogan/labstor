@@ -7,14 +7,9 @@
 
 #include "allocator.h"
 #include <labstor/thread/mutex.h>
-#include "labstor/data_structures/lockless/_queue.h"
+#include "labstor/data_structures/thread_unsafe/_queue.h"
 
 namespace labstor::ipc {
-
-using lockless::_queue;
-using lockless::_queue_entry;
-using lockless::_queue_header;
-using lockless::_array;
 
 typedef _queue_entry Page;
 

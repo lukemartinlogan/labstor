@@ -5,10 +5,10 @@
 #ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_DATA_STRUCTURE_H_
 #define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_DATA_STRUCTURE_H_
 
-#include <labstor/memory/memory.h>
-#include <labstor/memory/allocator/allocator.h>
-#include <labstor/memory/memory_manager.h>
-#include <labstor/constants/singleton_macros.h>
+#include "labstor/memory/memory.h"
+#include "labstor/memory/allocator/allocator.h"
+#include "labstor/memory/memory_manager.h"
+#include "labstor/constants/singleton_macros.h"
 
 namespace labstor::ipc {
 

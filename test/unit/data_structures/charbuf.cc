@@ -25,7 +25,7 @@
 
 #include "basic_test.h"
 #include "test_init.h"
-#include "labstor/data_structures/string.h"
+#include "labstor/data_structures/charbuf.h"
 #include <labstor/memory/allocator/page_allocator.h>
 
 using labstor::ipc::MemoryBackendType;
@@ -35,12 +35,11 @@ using labstor::ipc::AllocatorType;
 using labstor::ipc::Allocator;
 using labstor::ipc::MemoryManager;
 using labstor::ipc::Pointer;
-using labstor::ipc::string;
+using labstor::ipc::charbuf;
 
 TEST_CASE("String") {
   Allocator *alloc = alloc_g;
 
-  REQUIRE(IS_SHM_SERIALIZEABLE(string));
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 
   auto text1 = string("hello1");

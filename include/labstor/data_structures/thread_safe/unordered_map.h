@@ -5,11 +5,11 @@
 #ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_UNORDERED_MAP_H_
 #define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_UNORDERED_MAP_H_
 
-#include <labstor/thread/thread_manager.h>
-#include <labstor/thread/mutex.h>
-#include <labstor/data_structures/lockless/vector.h>
-#include <labstor/data_structures/lockless/list.h>
-#include <labstor/data_structures/data_structure.h>
+#include "labstor/thread/thread_manager.h"
+#include "labstor/thread/mutex.h"
+#include "labstor/data_structures/thread_unsafe/vector.h"
+#include "labstor/data_structures/thread_unsafe/list.h"
+#include "labstor/data_structures/data_structure.h"
 
 namespace labstor::ipc {
 template<typename Key, typename T, class Hash>
@@ -20,7 +20,7 @@ class unordered_map_bucket;
 
 template<typename T>
 struct unordered_map_header {
-  ShmArchive<lockless::vector<unordered_map_bucket<T>>> buckets_;
+  ShmArchive<vector<unordered_map_bucket<T>>> buckets_;
   int max_collide_;
   RealNumber growth_;
   std::atomic<size_t> length_;
@@ -35,7 +35,7 @@ class unordered_map_bucket {
 
  public:
   RwLock lock_;
-  ShmArchive<lockless::list<T>> entries_;
+  ShmArchive<list<T>> entries_;
 };
 
 #define CLASS_NAME unordered_map
@@ -64,13 +64,13 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   void shm_init(int num_buckets, int max_collide, RealNumber growth) {
     header_ = alloc_->template
       AllocateObjs<TYPED_HEADER>(1, header_ptr_);
-    lockless::vector<bucket> buckets(num_buckets, alloc_);
+    vector<bucket> buckets(num_buckets, alloc_);
     buckets >> header_->buckets_;
     header_->length_ = 0;
   }
 
   void shm_destroy() {
-    lockless::vector<bucket> buckets(header_->buckets_);
+    vector<bucket> buckets(header_->buckets_);
     for (auto bucket : buckets) {
       bucket.lock_.WriteLock();
       bucket.collisions_.shm_destroy();
@@ -79,22 +79,22 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
   T_Ref operator[](Key &key) {
-    lockless::vector<bucket> buckets(header_->buckets_);
+    vector<bucket> buckets(header_->buckets_);
   }
 
   T_Ref operator[](Key &&key) {
-    lockless::vector<bucket> buckets(header_->buckets_);
+    vector<bucket> buckets(header_->buckets_);
   }
 
   template<typename ...Args>
   void emplace(Args&&... args) {
     if (header_ == nullptr) { shm_init(); }
-    lockless::vector<bucket> buckets(header_->buckets_);
+    vector<bucket> buckets(header_->buckets_);
     T obj(args...);
     size_t bkt_id = Hash(obj) % buckets.size();
     bucket bkt = buckets[bkt_id];
     bkt.lock_.WriteLock();
-    lockless::list<T> collisions(bkt.collisions_);
+    list<T> collisions(bkt.collisions_);
     collisions.emplace_back(std::move(obj));
     buckets[bkt_id].lock_.WriteUnlock();
   }
@@ -116,7 +116,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
  private:
   void grow_map() {
-    lockless::vector<T> buckets(header_->buckets_);
+    vector<T> buckets(header_->buckets_);
     size_t num_buckets = buckets.size();
     size_t new_num_buckets = get_new_size();
     buckets.resize(new_num_buckets);

@@ -39,12 +39,12 @@
 #include <unistd.h>
 
 #include <labstor/util/errors.h>
-#include "labstor/data_structures/lockless/_array.h"
+#include "labstor/data_structures/thread_unsafe/_array.h"
 #include <labstor/constants/macros.h>
 
 namespace labstor::ipc {
 
-using labstor::ipc::lockless::_array;
+using labstor::ipc::_array;
 
 struct SharedMemorySlot {
   size_t off_;

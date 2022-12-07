@@ -25,8 +25,8 @@
 
 #include "basic_test.h"
 #include "test_init.h"
-#include <labstor/data_structures/lockless/vector.h>
-#include <labstor/data_structures/lockless/string.h>
+#include "labstor/data_structures/thread_unsafe/vector.h"
+#include "labstor/data_structures/string.h"
 #include <labstor/memory/allocator/page_allocator.h>
 
 using labstor::ipc::MemoryBackendType;
@@ -36,12 +36,12 @@ using labstor::ipc::AllocatorType;
 using labstor::ipc::Allocator;
 using labstor::ipc::MemoryManager;
 using labstor::ipc::Pointer;
-using labstor::ipc::lockless::vector;
-using labstor::ipc::lockless::string;
+using labstor::ipc::vector;
+using labstor::ipc::string;
 
 void VectorOfIntTest() {
   Allocator *alloc = alloc_g;
-  labstor::ipc::lockless::vector<int> vec(alloc);
+  labstor::ipc::vector<int> vec(alloc);
 
   vec.shm_init();
   vec.reserve(10);

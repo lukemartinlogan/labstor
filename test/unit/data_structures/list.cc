@@ -25,8 +25,8 @@
 
 #include "basic_test.h"
 #include "test_init.h"
-#include <labstor/data_structures/lockless/list.h>
-#include <labstor/data_structures/lockless/string.h>
+#include "labstor/data_structures/thread_unsafe/list.h"
+#include "labstor/data_structures/string.h"
 #include <labstor/memory/allocator/page_allocator.h>
 
 using labstor::ipc::MemoryBackendType;
@@ -36,8 +36,8 @@ using labstor::ipc::AllocatorType;
 using labstor::ipc::Allocator;
 using labstor::ipc::MemoryManager;
 using labstor::ipc::Pointer;
-using labstor::ipc::lockless::list;
-using labstor::ipc::lockless::string;
+using labstor::ipc::list;
+using labstor::ipc::string;
 
 void ListOfIntTest() {
   Allocator *alloc = alloc_g;

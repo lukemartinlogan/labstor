@@ -1,45 +1,46 @@
 //
-// Created by lukemartinlogan on 12/5/22.
+// Created by lukemartinlogan on 11/29/22.
 //
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_CHARBUF_H_
-#define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_CHARBUF_H_
+#ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_STRING_H_
+#define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_STRING_H_
 
-#include <labstor/data_structures/data_structure.h>
+#include "data_structure.h"
+#include <string>
 
-namespace labstor::ipc::lockless {
+namespace labstor::ipc {
 
-class charbuf;
+class string;
 
-struct charbuf_header {
+struct string_header {
   size_t length_;
   char text_[];
 };
 
-#define CLASS_NAME charbuf
-#define TYPED_CLASS charbuf
-#define TYPED_HEADER charbuf_header
+#define CLASS_NAME string
+#define TYPED_CLASS string
+#define TYPED_HEADER string_header
 
-class charbuf : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
-  SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
+class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
+ SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
 
  public:
-  charbuf() : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>() {}
-  charbuf(const char *text) {
+  string() : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>() {}
+  string(const char *text) {
     _create_str(text);
   }
-  charbuf(const char *text, Allocator *alloc) :
+  string(const char *text, Allocator *alloc) :
     ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     _create_str(text);
   }
-  charbuf(const std::string &text) {
+  string(const std::string &text) {
     _create_str(text.data(), text.size());
   }
-  charbuf(const std::string &text, Allocator *alloc) :
+  string(const std::string &text, Allocator *alloc) :
     ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     _create_str(text.data(), text.size());
   }
-  charbuf(charbuf &text1, charbuf &text2, Allocator *alloc) :
+  string(string &text1, string &text2, Allocator *alloc) :
     ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     size_t length = text1.size() + text2.size();
     _create_header(length);
@@ -58,8 +59,8 @@ class charbuf : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     return {header_->text_, header_->length_};
   }
 
-  charbuf operator+(charbuf &other) {
-    return charbuf(*this, other, other.GetAllocator());
+  string operator+(string &other) {
+    return string(*this, other, other.GetAllocator());
   }
 
   size_t size() const {
@@ -90,7 +91,7 @@ class charbuf : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   bool operator op(const std::string &other) const { \
     return strncmp(data(), other.data(), size()) op 0; \
   } \
-  bool operator op(const charbuf &other) const { \
+  bool operator op(const string &other) const { \
     return strncmp(data(), other.data(), size()) op 0; \
   }
 
@@ -120,10 +121,10 @@ class charbuf : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 };
 
-}  // namespace labstor::ipc::lockless
+}
 
 #undef CLASS_NAME
 #undef TYPED_CLASS
 #undef TYPED_HEADER
 
-#endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_CHARBUF_H_
+#endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_STRING_H_

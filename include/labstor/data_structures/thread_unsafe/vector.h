@@ -5,9 +5,9 @@
 #ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_VECTOR_H_
 #define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_VECTOR_H_
 
-#include <labstor/data_structures/data_structure.h>
+#include "labstor/data_structures/data_structure.h"
 
-namespace labstor::ipc::lockless {
+namespace labstor::ipc {
 template<typename T>
 class vector;
 
@@ -344,7 +344,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 };
 
-}  // namespace labstor::ipc::lockless
+}  // namespace labstor::ipc
 
 #undef CLASS_NAME
 #undef TYPED_CLASS

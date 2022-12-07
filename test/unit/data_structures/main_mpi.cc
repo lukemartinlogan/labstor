@@ -6,7 +6,7 @@
 #include "test_init.h"
 #include <mpi.h>
 
-#include <labstor/data_structures/lockless/vector.h>
+#include "labstor/data_structures/thread_unsafe/vector.h"
 #include <labstor/memory/allocator/page_allocator.h>
 
 using labstor::ipc::MemoryBackendType;
