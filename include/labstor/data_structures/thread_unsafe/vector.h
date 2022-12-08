@@ -176,7 +176,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       AllocateObjs<TYPED_HEADER>(1, header_ptr_);
     header_->length_ = 0;
     header_->max_length_ = 0;
-    header_->vec_ptr_ = kNullPointer;
+    header_->vec_ptr_.set_null();
   }
 
   void shm_destroy() {

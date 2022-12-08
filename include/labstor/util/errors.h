@@ -59,6 +59,8 @@ namespace labstor {
   const Error NOT_ENOUGH_CONCURRENT_SPACE("{}: Failed to divide memory slot {} among {} devices");
   const Error PAGE_SIZE_UNSUPPORTED("Allocator does not support size: {}");
   const Error OUT_OF_MEMORY("{}: could not allocate memory of size {}");
+
+  const Error UNORDERED_MAP_CANT_FIND("Could not find key in unordered_map");
 }  // namespace labstor
 
 #endif

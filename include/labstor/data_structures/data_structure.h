@@ -41,17 +41,6 @@ class ShmDataStructure : public ShmSerializeable {
     }
   }
 
-  void shm_serialize(ShmArchive<void> &ar) {
-    ar.header_ptr_ = header_ptr_;
-  }
-
-  void shm_deserialize(ShmArchive<void> &ar) {
-    header_ptr_ = ar.header_ptr_;
-    header_ = mem_mngr_->template
-      Convert<TYPED_HEADER>(header_ptr_);
-    alloc_ = mem_mngr_->GetAllocator(header_ptr_.allocator_id_);
-  }
-
   Allocator *GetAllocator() {
     return alloc_;
   }

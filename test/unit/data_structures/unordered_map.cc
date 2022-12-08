@@ -44,6 +44,7 @@ void UnorderedMapOfIntTest() {
   unordered_map<int, int> map(alloc);
   int x = 24;
   map.emplace(x, x);
+  std::cout << map[x] << std::endl;
   map.shm_destroy();
 }
 

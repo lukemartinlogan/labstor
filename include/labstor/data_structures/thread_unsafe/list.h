@@ -137,7 +137,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
  SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
  friend list_iterator<T>;
 
- private:
+ public:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
   typedef SHM_T_OR_REF_T(T) T_Ref;
 
@@ -152,8 +152,8 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   void shm_init() {
     header_ = alloc_->template
       ClearAllocateObjs<TYPED_HEADER>(1, header_ptr_);
-    header_->head_ptr_ = kNullPointer;
-    header_->tail_ptr_ = kNullPointer;
+    header_->head_ptr_.set_null();
+    header_->tail_ptr_.set_null();
   }
 
   void shm_destroy() {
@@ -176,12 +176,12 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     Pointer entry_ptr;
     auto entry = _create_entry(entry_ptr, args...);
     if (size() == 0) {
-      entry->prior_ptr_ = kNullPointer;
-      entry->next_ptr_ = kNullPointer;
+      entry->prior_ptr_.set_null();
+      entry->next_ptr_.set_null();
       header_->head_ptr_ = entry_ptr;
       header_->tail_ptr_ = entry_ptr;
     } else if (pos == begin()) {
-      entry->prior_ptr_ = kNullPointer;
+      entry->prior_ptr_.set_null();
       entry->next_ptr_ = header_->head_ptr_;
       auto head = mem_mngr_->template
         Convert<list_entry<T>>(header_->tail_ptr_);
@@ -189,7 +189,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       header_->head_ptr_ = entry_ptr;
     } else if (pos == end()) {
       entry->prior_ptr_ = header_->tail_ptr_;
-      entry->next_ptr_ = kNullPointer;
+      entry->next_ptr_.set_null();
       auto tail = mem_mngr_->template
         Convert<list_entry<T>>(header_->tail_ptr_);
       tail->next_ptr_ = entry_ptr;
