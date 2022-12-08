@@ -145,18 +145,22 @@ class Allocator {
     return AllocatePtr<T>(count * sizeof(T), p);
   }
 
-  template<typename T, typename ...Args>
-  T* ConstructObjs(size_t count, Args ...args) {
+  template<
+    typename T,
+    typename T_Ar = SHM_T_OR_ARCHIVE(T),
+    typename ...Args>
+  T* AllocateConstructObjs(size_t count, Args ...args) {
     Pointer p;
-    return ConstructObjs<T>(count, p, args...);
+    return AllocateConstructObjs<T>(count, p, args...);
   }
 
-  template<typename T, typename ...Args>
-  T* ConstructObjs(size_t count, Pointer &p, Args ...args) {
+  template<
+    typename T,
+    typename T_Ar = SHM_T_OR_ARCHIVE(T),
+    typename ...Args>
+  T* AllocateConstructObjs(size_t count, Pointer &p, Args ...args) {
     T *ptr = AllocateObjs<T>(count, p);
-    for (size_t i = 0; i < count; ++i) {
-      new (ptr + i) T(args...);
-    }
+    ConstructObjs<T, T_Ar>(ptr, 0, count, args...);
     return ptr;
   }
 
@@ -172,13 +176,15 @@ class Allocator {
     return Convert<T>(p);
   }
 
-  template<typename T, typename ...Args>
-  T* ReallocateConstructObjs(Pointer &p,
-                             size_t old_count, size_t new_count, Args ...args) {
-    T *ptr = ReallocatePtr<T>(p, new_count*sizeof(T));
-    for (size_t i = old_count; i < new_count; ++i) {
-      new (ptr + i) T(args...);
-    }
+  template<
+    typename T,
+    typename T_Ar = SHM_T_OR_ARCHIVE(T),
+    typename ...Args>
+  T_Ar* ReallocateConstructObjs(Pointer &p,
+                                size_t old_count,
+                                size_t new_count, Args ...args) {
+    T_Ar *ptr = ReallocatePtr<T_Ar>(p, new_count*sizeof(T_Ar));
+    ConstructObjs<T, T_Ar>(ptr, old_count, new_count, args...);
     return ptr;
   }
 
@@ -188,9 +194,57 @@ class Allocator {
     Free(p);
   }
 
-  template<typename T>
-  T* GetCustomHeader() {
-    return reinterpret_cast<T*>(slot_.ptr_ + GetInternalHeaderSize());
+  template<
+    typename T,
+    typename T_Ar = SHM_T_OR_ARCHIVE(T),
+    typename ...Args>
+  static void ConstructObjs(T_Ar *ptr,
+                            size_t old_count,
+                            size_t new_count, Args ...args) {
+    for (size_t i = old_count; i < new_count; ++i) {
+      ConstructObj<T, T_Ar>(*(ptr + i), args...);
+    }
+  }
+
+  template<
+    typename T,
+    typename T_Ar = SHM_T_OR_ARCHIVE(T),
+    typename ...Args>
+  static void ConstructObj(T_Ar &obj_ar,
+                           Args ...args) {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      T obj(args...);
+      obj >> obj_ar;
+    } else {
+      new(&obj_ar) T(args...);
+    }
+  }
+
+  template<
+    typename T,
+    typename T_Ar = SHM_T_OR_ARCHIVE(T)>
+  static void DestructObjs(T_Ar *ptr,
+                           size_t count) {
+    for (size_t i = 0; i < count; ++i) {
+      DestructObj<T, T_Ar>((ptr + i));
+    }
+  }
+
+  template<
+    typename T,
+    typename T_Ar = SHM_T_OR_ARCHIVE(T)>
+  static void DestructObj(T_Ar &obj_ar) {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      T obj;
+      obj << obj_ar;
+      obj.shm_destroy();
+    }
+    obj_ar.~T_Ar();
+  }
+
+  template<typename HEAD>
+  HEAD* GetCustomHeader() {
+    return reinterpret_cast<HEAD*>(slot_.ptr_ + GetInternalHeaderSize());
   }
 
   template<typename T>
@@ -210,7 +264,7 @@ class Allocator {
     return p;
   }
 
-  template<typename T>
+  template<typename T = void>
   bool ContainsPtr(T *ptr) {
     return  reinterpret_cast<size_t>(ptr) >=
             reinterpret_cast<size_t>(slot_.ptr_);

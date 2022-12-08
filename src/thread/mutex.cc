@@ -44,30 +44,33 @@ void Mutex::Unlock() {
  * Constructor
  * */
 ScopedMutex::ScopedMutex(Mutex &lock)
-: lock_(lock), is_locked_(false) {}
+: lock_(lock), is_locked_(false) {
+}
 
 /**
  * Release the mutex
  * */
 ScopedMutex::~ScopedMutex() {
-  if (is_locked_) {
-    lock_.Unlock();
-  }
+  Unlock();
 }
 
 /**
  * Acquire the mutex
  * */
 void ScopedMutex::Lock() {
-  lock_.Lock();
-  is_locked_ = true;
+  if (!is_locked_) {
+    lock_.Lock();
+    is_locked_ = true;
+  }
 }
 
 /**
  * Attempt to acquire the mutex
  * */
 bool ScopedMutex::TryLock() {
-  is_locked_ = lock_.TryLock();
+  if (!is_locked_) {
+    is_locked_ = lock_.TryLock();
+  }
   return is_locked_;
 }
 
@@ -75,8 +78,10 @@ bool ScopedMutex::TryLock() {
  * Acquire the mutex
  * */
 void ScopedMutex::Unlock() {
-  lock_.Unlock();
-  is_locked_ = false;
+  if (is_locked_) {
+    lock_.Unlock();
+    is_locked_ = false;
+  }
 }
 
 }  // namespace labstor

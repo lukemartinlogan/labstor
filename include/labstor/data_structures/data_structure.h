@@ -69,26 +69,6 @@ class ShmDataStructure : public ShmSerializeable {
   }
 };
 
-template<typename T, typename T_Ar, typename ...Args>
-void _construct(T_Ar &obj_ar, Args ...args) {
-  if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-    T obj(args...);
-    obj >> obj_ar;
-  } else {
-    new(&obj_ar) T(args...);
-  }
-}
-
-template<typename T, typename T_Ar>
-void _destruct(T_Ar &obj_ar) {
-  if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-    T obj;
-    obj << obj_ar;
-    obj.shm_destroy();
-  }
-  obj_ar.~T_Ar();
-}
-
 }  // namespace labstor::ipc
 
 #define SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)\
@@ -97,6 +77,8 @@ void _destruct(T_Ar &obj_ar) {
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::header_ptr_;\
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::mem_mngr_;\
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::alloc_;\
+  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_serialize;\
+  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_deserialize;\
   explicit CLASS_NAME(labstor::ipc::ShmArchive<TYPED_CLASS> &ar) {\
     shm_deserialize(ar);\
   }

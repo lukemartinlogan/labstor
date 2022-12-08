@@ -26,6 +26,7 @@
 #include "basic_test.h"
 #include "test_init.h"
 #include "labstor/data_structures/thread_unsafe/vector.h"
+#include "labstor/data_structures/thread_unsafe/list.h"
 #include "labstor/data_structures/string.h"
 #include <labstor/memory/allocator/page_allocator.h>
 
@@ -37,13 +38,13 @@ using labstor::ipc::Allocator;
 using labstor::ipc::MemoryManager;
 using labstor::ipc::Pointer;
 using labstor::ipc::vector;
+using labstor::ipc::list;
 using labstor::ipc::string;
 
 void VectorOfIntTest() {
   Allocator *alloc = alloc_g;
   labstor::ipc::vector<int> vec(alloc);
 
-  vec.shm_init();
   vec.reserve(10);
 
   for (int i = 0; i < 30; ++i) {
@@ -89,7 +90,6 @@ void VectorOfStringTest() {
   Allocator *alloc = alloc_g;
   vector<string> vec(alloc);
 
-  vec.shm_init();
   vec.reserve(10);
 
   for (int i = 0; i < 30; ++i) {
@@ -119,6 +119,19 @@ void VectorOfStringTest() {
   vec.shm_destroy();
 }
 
+void VectorOfListOfStringTest() {
+  Allocator *alloc = alloc_g;
+  vector<list<string>> vec(alloc);
+
+  vec.resize(10, alloc);
+  for (auto bkt : vec) {
+    bkt.emplace_back("hello");
+  }
+  vec.clear();
+
+  vec.shm_destroy();
+}
+
 TEST_CASE("VectorOfInt") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
@@ -130,5 +143,12 @@ TEST_CASE("VectorOfString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   VectorOfStringTest();
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+}
+
+TEST_CASE("VectorOfListOfString") {
+  Allocator *alloc = alloc_g;
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+  VectorOfListOfStringTest();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }

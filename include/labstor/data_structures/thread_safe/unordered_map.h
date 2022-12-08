@@ -21,7 +21,7 @@ class unordered_map_bucket;
 template<typename T>
 struct unordered_map_header {
   ShmArchive<vector<unordered_map_bucket<T>>> buckets_;
-  int max_collide_;
+  int max_collisions_;
   RealNumber growth_;
   std::atomic<size_t> length_;
   RwLock lock_;
@@ -35,7 +35,7 @@ class unordered_map_bucket {
 
  public:
   RwLock lock_;
-  ShmArchive<list<T>> entries_;
+  ShmArchive<list<T>> collisions_;
 };
 
 #define CLASS_NAME unordered_map
@@ -50,7 +50,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
  private:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
   typedef SHM_T_OR_REF_T(T) T_Ref;
-  using bucket = unordered_map_bucket<T>;
+  using BUCKET = unordered_map_bucket<T>;
 
  public:
   unordered_map() = default;
@@ -62,43 +62,50 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     shm_init(20, 4, RealNumber(5,4));
   }
 
-  void shm_init(int num_buckets, int max_collide, RealNumber growth) {
+  void shm_init(int num_buckets, int max_collisions, RealNumber growth) {
     header_ = alloc_->template
       AllocateObjs<TYPED_HEADER>(1, header_ptr_);
-    vector<bucket> buckets(num_buckets, alloc_);
+    vector<BUCKET> buckets(num_buckets, alloc_);
     buckets >> header_->buckets_;
     header_->length_ = 0;
+    header_->max_collisions_ = max_collisions;
   }
 
   void shm_destroy() {
-    vector<bucket> buckets(header_->buckets_);
-    for (auto bucket : buckets) {
-      bucket.lock_.WriteLock();
-      bucket.collisions_.shm_destroy();
-      bucket.lock_.WriteUnlock();
-    }
+    /* vector<BUCKET> buckets(header_->buckets_);
+    for (auto bkt : buckets) {
+      bkt.lock_.WriteLock();
+      bkt.collisions_.shm_destroy();
+      bkt.lock_.WriteUnlock();
+    } */
   }
 
   T_Ref operator[](Key &key) {
-    vector<bucket> buckets(header_->buckets_);
   }
 
-  template<typename ...Args, bool growth>
-  void emplace(Key &key, Args&&... args) {
+  template<bool growth=true, typename ...Args>
+  void emplace(const Key &key, Args&&... args) {
     if (header_ == nullptr) { shm_init(); }
     ScopedRwReadLock header_lock(header_->lock_);
     header_lock.Lock();
-    vector<bucket> buckets(header_->buckets_);
-    size_t bkt_id = Hash(key) % buckets.size();
-    bucket bkt = buckets[bkt_id];
+    vector<BUCKET> buckets(header_->buckets_);
+    size_t bkt_id = Hash{}(key) % buckets.size();
+    BUCKET &bkt = buckets[bkt_id];
     ScopedRwWriteLock bkt_lock(bkt.lock_);
     bkt_lock.Lock();
     list<T> collisions(bkt.collisions_);
     collisions.emplace_back(args...);
-    buckets[bkt_id].lock_.WriteUnlock();
-    header_lock.Unlock();
+    // Get the number of buckets now to ensure repetitive growths don't happen
+    size_t cur_num_buckets;
     if constexpr(growth) {
-      if (collisions.size() > header_->max_collisions) {
+      cur_num_buckets = buckets.size();
+    }
+    bkt_lock.Unlock();
+    header_lock.Unlock();
+    // Must release RW read locks first
+    if constexpr(growth) {
+      if (collisions.size() > header_->max_collisions_) {
+        grow_map(cur_num_buckets);
       }
     }
   }
@@ -108,7 +115,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
   */
 
-  void erase(Key &key) {
+  void erase(const Key &key) {
   }
 
   size_t size() const {
@@ -120,19 +127,20 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
  private:
   void grow_map(size_t old_size) {
-    ScopedRwWriteLock scoped_lock(header_->lock);
-    vector<T> buckets(header_->buckets_);
+    ScopedRwWriteLock scoped_lock(header_->lock_);
+    scoped_lock.Lock();
+    vector<BUCKET> buckets(header_->buckets_);
     size_t num_buckets = buckets.size();
     if (num_buckets != old_size) {
       return;
     }
-    size_t new_num_buckets = get_new_size();
+    size_t new_num_buckets = get_new_size(num_buckets);
     buckets.resize(new_num_buckets);
     for (size_t i = 0; i < num_buckets; ++i) {
-      auto bucket = buckets[i];
-      list<T> collisions(bucket);
+      auto &bkt = buckets[i];
+      list<T> collisions(bkt.collisions_);
       for (auto entry : collisions) {
-        emplace(entry);
+        emplace<false>(entry);
       }
     }
   }

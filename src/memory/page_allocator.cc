@@ -72,7 +72,7 @@ Pointer PageAllocator::Allocate(size_t size) {
   for (auto i = 0; i < header_->concurrency_; ++i) {
     auto free_list_id = (tid + i) % header_->concurrency_;
     auto &free_list = free_lists_[free_list_id];
-    auto list_lock = ScopedMutex(free_list.lock_);
+    ScopedMutex list_lock(free_list.lock_);
     if (free_list.free_size_ < header_->page_size_) continue;
     if (list_lock.TryLock()) {
       Pointer p = _Allocate(free_list);
@@ -102,7 +102,7 @@ void PageAllocator::Free(Pointer &ptr) {
   for (auto i = 0; i < header_->concurrency_; ++i) {
     auto free_list_id = (tid + i) % header_->concurrency_;
     auto &free_list = free_lists_[free_list_id];
-    auto list_lock = ScopedMutex(free_list.lock_);
+    ScopedMutex list_lock(free_list.lock_);
     if (list_lock.TryLock()) {
       _Free(&free_list, ptr);
       return;
@@ -111,7 +111,7 @@ void PageAllocator::Free(Pointer &ptr) {
 
   auto free_list_id = tid % header_->concurrency_;
   auto &free_list = free_lists_[free_list_id];
-  auto list_lock = ScopedMutex(free_list.lock_);
+  ScopedMutex list_lock(free_list.lock_);
   list_lock.Lock();
   _Free(&free_list, ptr);
 }
@@ -145,7 +145,7 @@ void PageAllocator::_Borrow(PageFreeList *to, tid_t tid, bool append) {
   for (auto i = 0; i < header_->concurrency_; ++i) {
     auto free_list_id = (tid + i) % header_->concurrency_;
     auto &from = free_lists_[free_list_id];
-    auto list_lock = ScopedMutex(from.lock_);
+    ScopedMutex list_lock(from.lock_);
     if (from.free_size_ < header_->min_free_size_) continue;
     list_lock.Lock();
     if (from.free_size_ < header_->min_free_size_) continue;

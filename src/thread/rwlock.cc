@@ -84,31 +84,34 @@ void RwLock::WriteUnlock() {
  * Constructor
  * */
 ScopedRwReadLock::ScopedRwReadLock(RwLock &lock)
-: lock_(lock), is_locked_(false) {}
+: lock_(lock), is_locked_(false) {
+}
 
 /**
  * Release the read lock
  * */
 ScopedRwReadLock::~ScopedRwReadLock() {
-  if (is_locked_) {
-    Unlock();
-  }
+  Unlock();
 }
 
 /**
  * Acquire the read lock
  * */
 void ScopedRwReadLock::Lock() {
-  lock_.ReadLock();
-  is_locked_ = true;
+  if (!is_locked_) {
+    lock_.ReadLock();
+    is_locked_ = true;
+  }
 }
 
 /**
  * Release the read lock
  * */
 void ScopedRwReadLock::Unlock() {
-  lock_.ReadLock();
-  is_locked_ = false;
+  if (is_locked_) {
+    lock_.ReadLock();
+    is_locked_ = false;
+  }
 }
 
 /**
@@ -119,31 +122,34 @@ void ScopedRwReadLock::Unlock() {
  * Constructor
  * */
 ScopedRwWriteLock::ScopedRwWriteLock(RwLock &lock)
-: lock_(lock), is_locked_(false) {}
+: lock_(lock), is_locked_(false) {
+}
 
 /**
  * Release the write lock
  * */
 ScopedRwWriteLock::~ScopedRwWriteLock() {
-  if (is_locked_) {
-    Unlock();
-  }
+  Unlock();
 }
 
 /**
  * Acquire the write lock
  * */
 void ScopedRwWriteLock::Lock() {
-  lock_.WriteLock();
-  is_locked_ = true;
+  if (!is_locked_) {
+    lock_.WriteLock();
+    is_locked_ = true;
+  }
 }
 
 /**
  * Release the write lock
  * */
 void ScopedRwWriteLock::Unlock() {
-  lock_.WriteUnlock();
-  is_locked_ = false;
+  if (is_locked_) {
+    lock_.WriteUnlock();
+    is_locked_ = false;
+  }
 }
 
 }  // namespace labstor

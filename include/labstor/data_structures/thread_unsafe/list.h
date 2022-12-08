@@ -145,7 +145,9 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   list() = default;
 
   explicit list(Allocator *alloc) :
-    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {}
+    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
+    shm_init();
+  }
 
   void shm_init() {
     Pointer head_ptr;
@@ -212,7 +214,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     auto pos = first;
     while (pos != last) {
       auto next = pos + 1;
-      _destruct<T,T_Ar>(pos.entry_->data_);
+      Allocator::DestructObj<T,T_Ar>(pos.entry_->data_);
       alloc_->Free(pos.entry_ptr_);
       --header_->length_;
       pos = next;
@@ -271,7 +273,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       T obj(args...);
       obj >> entry->data_;
     } else {
-      _construct<T,T_Ar>(entry->data_, args...);
+      Allocator::ConstructObj<T,T_Ar>(entry->data_, args...);
     }
     return entry;
   }

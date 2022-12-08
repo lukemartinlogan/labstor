@@ -42,7 +42,6 @@ using labstor::ipc::string;
 void ListOfIntTest() {
   Allocator *alloc = alloc_g;
   list<int> lp(alloc);
-  lp.shm_init();
 
   for (int i = 0; i < 30; ++i) {
     lp.emplace_back(i);
@@ -80,7 +79,6 @@ void ListOfIntTest() {
 void ListOfStringTest() {
   Allocator *alloc = alloc_g;
   list<string> lp(alloc);
-  lp.shm_init();
 
   for (int i = 0; i < 30; ++i) {
     lp.emplace_back(std::to_string(i));
