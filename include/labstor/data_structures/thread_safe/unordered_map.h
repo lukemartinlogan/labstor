@@ -36,6 +36,11 @@ class unordered_map_bucket {
  public:
   RwLock lock_;
   ShmArchive<list<T>> collisions_;
+
+  explicit unordered_map_bucket(Allocator *alloc) {
+    list<T> collisions(alloc);
+    collisions >> collisions_;
+  }
 };
 
 #define CLASS_NAME unordered_map
@@ -56,7 +61,9 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   unordered_map() = default;
 
   explicit unordered_map(Allocator *alloc) :
-    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {}
+    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
+    shm_init();
+  }
 
   void shm_init() {
     shm_init(20, 4, RealNumber(5,4));
@@ -65,7 +72,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   void shm_init(int num_buckets, int max_collisions, RealNumber growth) {
     header_ = alloc_->template
       AllocateObjs<TYPED_HEADER>(1, header_ptr_);
-    vector<BUCKET> buckets(num_buckets, alloc_);
+    vector<BUCKET> buckets(num_buckets, alloc_, alloc_);
     buckets >> header_->buckets_;
     header_->length_ = 0;
     header_->max_collisions_ = max_collisions;
@@ -135,7 +142,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       return;
     }
     size_t new_num_buckets = get_new_size(num_buckets);
-    buckets.resize(new_num_buckets);
+    buckets.resize(new_num_buckets, alloc_);
     for (size_t i = 0; i < num_buckets; ++i) {
       auto &bkt = buckets[i];
       list<T> collisions(bkt.collisions_);

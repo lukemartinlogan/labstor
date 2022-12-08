@@ -160,12 +160,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {}
 
   template<typename ...Args>
-  explicit vector(size_t length, Args ...args) {
-    resize(length, args...);
-  }
-
-  template<typename ...Args>
-  explicit vector(size_t length, Allocator *alloc, Args ...args) :
+  explicit vector(size_t length, Allocator *alloc = nullptr, Args ...args) :
       ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     resize(length, args...);
   }

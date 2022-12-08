@@ -78,6 +78,9 @@ void MemoryManager::RegisterAllocator(std::unique_ptr<Allocator> &alloc) {
 }
 
 Allocator* MemoryManager::GetAllocator(allocator_id_t alloc_id) {
+  if (alloc_id.is_null()) {
+    return nullptr;
+  }
   auto iter = allocators_.find(alloc_id);
   if (iter == allocators_.end()) {
     ScanBackends();

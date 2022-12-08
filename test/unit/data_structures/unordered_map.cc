@@ -42,7 +42,6 @@ using labstor::ipc::string;
 void UnorderedMapOfIntTest() {
   Allocator *alloc = alloc_g;
   unordered_map<int, int> map(alloc);
-  map.shm_init();
   int x = 24;
   map.emplace(x, x);
   map.shm_destroy();

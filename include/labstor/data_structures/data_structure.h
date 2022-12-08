@@ -27,11 +27,18 @@ class ShmDataStructure : public ShmSerializeable {
   }
 
   explicit ShmDataStructure(Allocator *alloc) :
-    header_(nullptr), alloc_(alloc), mem_mngr_(LABSTOR_MEMORY_MANAGER) {}
+    header_(nullptr), alloc_(alloc), mem_mngr_(LABSTOR_MEMORY_MANAGER) {
+    if (alloc_ == nullptr) {
+      alloc_ = mem_mngr_->GetDefaultAllocator();
+    }
+  }
 
   explicit ShmDataStructure(allocator_id_t alloc_id) :
     header_(nullptr), mem_mngr_(LABSTOR_MEMORY_MANAGER) {
     alloc_ = mem_mngr_->GetAllocator(alloc_id);
+    if (alloc_ == nullptr) {
+      alloc_ = mem_mngr_->GetDefaultAllocator();
+    }
   }
 
   void shm_serialize(ShmArchive<void> &ar) {

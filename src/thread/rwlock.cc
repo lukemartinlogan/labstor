@@ -14,14 +14,16 @@ void RwLock::ReadLock() {
   RwLockPayload expected, desired;
   auto thread_info = LABSTOR_THREAD_MANAGER->GetThreadStatic();
   do {
-    expected = payload_.load();
+    expected.as_int_ = payload_.load();
     if (expected.IsWriteLocked()) {
       thread_info->Yield();
       continue;
     }
     desired = expected;
     desired.bits.r_ += 1;
-    ret = payload_.compare_exchange_weak(expected, desired);
+    ret = payload_.compare_exchange_weak(
+      expected.as_int_,
+      desired.as_int_);
   } while(!ret);
 }
 
@@ -32,10 +34,12 @@ void RwLock::ReadUnlock() {
   bool ret;
   RwLockPayload expected, desired;
   do {
-    expected = payload_.load();
+    expected.as_int_ = payload_.load();
     desired = expected;
     desired.bits.r_ -= 1;
-    ret = payload_.compare_exchange_weak(expected, desired);
+    ret = payload_.compare_exchange_weak(
+      expected.as_int_,
+      desired.as_int_);
   } while(!ret);
 }
 
@@ -47,7 +51,7 @@ void RwLock::WriteLock() {
   RwLockPayload expected, desired;
   auto thread_info = LABSTOR_THREAD_MANAGER->GetThreadStatic();
   do {
-    expected = payload_.load();
+    expected.as_int_ = payload_.load();
     if (expected.IsReadLocked()) {
       thread_info->Yield();
       continue;
@@ -58,7 +62,9 @@ void RwLock::WriteLock() {
     }
     desired = expected;
     desired.bits.w_ += 1;
-    ret = payload_.compare_exchange_weak(expected, desired);
+    ret = payload_.compare_exchange_weak(
+      expected.as_int_,
+      desired.as_int_);
   } while(!ret);
 }
 
@@ -69,10 +75,12 @@ void RwLock::WriteUnlock() {
   bool ret;
   RwLockPayload expected, desired;
   do {
-    expected = payload_.load();
+    expected.as_int_ = payload_.load();
     desired = expected;
     desired.bits.w_ -= 1;
-    ret = payload_.compare_exchange_weak(expected, desired);
+    ret = payload_.compare_exchange_weak(
+      expected.as_int_,
+      desired.as_int_);
   } while(!ret);
 }
 

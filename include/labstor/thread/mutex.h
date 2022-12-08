@@ -49,7 +49,9 @@ union RwLockPayload {
 };
 
 struct RwLock {
-  std::atomic<RwLockPayload> payload_;
+  std::atomic<uint64_t> payload_;
+
+  RwLock() : payload_(0) {}
 
   void ReadLock();
   void ReadUnlock();
