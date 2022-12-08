@@ -65,7 +65,15 @@ class Allocator {
 
   virtual ~Allocator() = default;
 
+  /**
+   * Create the shared-memory allocator with \a id unique allocator id over
+   * the particular slot of a memory backend.
+   * */
   virtual void Create(allocator_id_t id) = 0;
+
+  /**
+   * Attach the allocator to the slot and backend passed in the constructor.
+   * */
   virtual void Attach() = 0;
 
   /**
@@ -117,16 +125,26 @@ class Allocator {
    * */
   virtual size_t GetCurrentlyAllocatedSize() = 0;
 
+  /**
+   * Get the slot this allocator is attached to in the memory backend
+   * */
   slot_id_t GetSlotId() {
     return slot_id_;
   }
 
+  /**
+   * Allocate a pointer of \a size size
+   * */
   template<typename T>
   T* AllocatePtr(size_t size) {
     Pointer p;
     return AllocatePtr<T>(size, p);
   }
 
+  /**
+   * Allocate a pointer of \a size size and return \a p process-independent
+   * pointer and a process-specific pointer.
+   * */
   template<typename T>
   T* AllocatePtr(size_t size, Pointer &p) {
     p = Allocate(size);
@@ -134,26 +152,53 @@ class Allocator {
     return reinterpret_cast<T*>(slot_.ptr_ + p.off_);
   }
 
+  /**
+   * Allocate an array of objects (but don't construct).
+   *
+   * @return A process-specific pointer
+   * */
   template<typename T>
   T* AllocateObjs(size_t count) {
     Pointer p;
     return AllocateObjs<T>(count, p);
   }
 
+  /**
+   * Allocate an array of objects (but don't construct).
+   *
+   * @param count the number of objects to allocate
+   * @param p process-independent pointer (output)
+   * @return A process-specific pointer
+   * */
   template<typename T>
   T* AllocateObjs(size_t count, Pointer &p) {
     return AllocatePtr<T>(count * sizeof(T), p);
   }
 
+  /**
+   * Allocate and construct an array of objects
+   *
+   * @param count the number of objects to allocate
+   * @param args parameters to construct object of type T
+   * @return A process-specific pointer
+   * */
   template<
     typename T,
     typename T_Ar = SHM_T_OR_ARCHIVE(T),
     typename ...Args>
   T* AllocateConstructObjs(size_t count, Args ...args) {
     Pointer p;
-    return AllocateConstructObjs<T>(count, p, args...);
+    return AllocateConstructObjs<T, T_Ar>(count, p, args...);
   }
 
+  /**
+   * Allocate and construct an array of objects
+   *
+   * @param count the number of objects to allocate
+   * @param p process-independent pointer (output)
+   * @param args parameters to construct object of type T
+   * @return A process-specific pointer
+   * */
   template<
     typename T,
     typename T_Ar = SHM_T_OR_ARCHIVE(T),
@@ -164,36 +209,77 @@ class Allocator {
     return ptr;
   }
 
+  /**
+   * Reallocate a pointer to a new size
+   *
+   * @param p process-independent pointer (input & output)
+   * @param new_size the new size to allocate
+   * @param modified whether or not p was modified (output)
+   * @return A process-specific pointer
+   * */
   template<typename T>
   T* ReallocatePtr(Pointer &p, size_t new_size, bool &modified) {
     modified = Reallocate(p, new_size);
     return Convert<T>(p);
   }
 
+  /**
+   * Reallocate a pointer to a new size
+   *
+   * @param p process-independent pointer (input & output)
+   * @param new_size the new size to allocate
+   * @return A process-specific pointer
+   * */
   template<typename T>
   T* ReallocatePtr(Pointer &p, size_t new_size) {
     Reallocate(p, new_size);
     return Convert<T>(p);
   }
 
+  /**
+   * Reallocate a pointer of objects to a new size.
+   *
+   * @param p process-independent pointer (input & output)
+   * @param old_count the original number of objects (avoids reconstruction)
+   * @param new_count the new number of objects
+   * @param args parameters to construct object of type T
+   *
+   * @return A process-specific pointer
+   * */
   template<
     typename T,
     typename T_Ar = SHM_T_OR_ARCHIVE(T),
     typename ...Args>
   T_Ar* ReallocateConstructObjs(Pointer &p,
                                 size_t old_count,
-                                size_t new_count, Args ...args) {
+                                size_t new_count,
+                                Args ...args) {
     T_Ar *ptr = ReallocatePtr<T_Ar>(p, new_count*sizeof(T_Ar));
     ConstructObjs<T, T_Ar>(ptr, old_count, new_count, args...);
     return ptr;
   }
 
+  /**
+   * Free a process-specific pointer.
+   *
+   * @param ptr process-specific pointer
+   * @return None
+   * */
   template<typename T>
   void FreePtr(T *ptr) {
     Pointer p = Convert<T>(ptr);
     Free(p);
   }
 
+  /**
+   * Construct each object in an array of objects.
+   *
+   * @param ptr the array of objects (potentially archived)
+   * @param old_count the original size of the ptr
+   * @param new_count the new size of the ptr
+   * @param args parameters to construct object of type T
+   * @return None
+   * */
   template<
     typename T,
     typename T_Ar = SHM_T_OR_ARCHIVE(T),
@@ -206,6 +292,13 @@ class Allocator {
     }
   }
 
+  /**
+   * Construct an object.
+   *
+   * @param ptr the object to construct (potentially archived)
+   * @param args parameters to construct object of type T
+   * @return None
+   * */
   template<
     typename T,
     typename T_Ar = SHM_T_OR_ARCHIVE(T),
@@ -220,6 +313,13 @@ class Allocator {
     }
   }
 
+  /**
+   * Destruct an array of objects
+   *
+   * @param ptr the object to destruct (potentially archived)
+   * @param count the length of the object array
+   * @return None
+   * */
   template<
     typename T,
     typename T_Ar = SHM_T_OR_ARCHIVE(T)>
@@ -230,6 +330,13 @@ class Allocator {
     }
   }
 
+  /**
+   * Destruct an object
+   *
+   * @param ptr the object to destruct (potentially archived)
+   * @param count the length of the object array
+   * @return None
+   * */
   template<
     typename T,
     typename T_Ar = SHM_T_OR_ARCHIVE(T)>
@@ -242,11 +349,22 @@ class Allocator {
     obj_ar.~T_Ar();
   }
 
+  /**
+   * Get the custom header of the shared-memory allocator
+   *
+   * @return Custom header pointer
+   * */
   template<typename HEAD>
   HEAD* GetCustomHeader() {
     return reinterpret_cast<HEAD*>(slot_.ptr_ + GetInternalHeaderSize());
   }
 
+  /**
+   * Convert a process-independent pointer into a process-specific pointer
+   *
+   * @param p process-independent pointer
+   * @return a process-specific pointer
+   * */
   template<typename T>
   T* Convert(Pointer &p) {
     if (p.is_null()) { return nullptr; }
@@ -254,6 +372,12 @@ class Allocator {
     return reinterpret_cast<T*>(slot.ptr_ + p.off_);
   }
 
+  /**
+   * Convert a process-specific pointer into a process-independent pointer
+   *
+   * @param ptr process-specific pointer
+   * @return a process-independent pointer
+   * */
   template<typename T>
   Pointer Convert(T *ptr) {
     Pointer p;
@@ -264,6 +388,13 @@ class Allocator {
     return p;
   }
 
+  /**
+   * Determine whether or not this allocator contains a process-specific
+   * pointer
+   *
+   * @param ptr process-specific pointer
+   * @return True or false
+   * */
   template<typename T = void>
   bool ContainsPtr(T *ptr) {
     return  reinterpret_cast<size_t>(ptr) >=
