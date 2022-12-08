@@ -83,9 +83,9 @@ class Allocator {
 
   /**
    * Reallocate \a pointer to \a new_size new size
+   * If p is kNullPointer, will internally call Allocate.
    *
-   * Returns true if p was modified.
-   * If p.is_null(), will internally call Allocate.
+   * @return true if p was modified.
    * */
   inline bool Reallocate(Pointer &p, size_t new_size) {
     if (p.is_null()) {
@@ -96,10 +96,10 @@ class Allocator {
   }
 
   /**
-   * Reallocate \a pointer to \a new_size new size
-   *
-   * Returns true if p was modified.
+   * Reallocate \a pointer to \a new_size new size.
    * Assumes that p is not kNullPointer.
+   *
+   * @return true if p was modified.
    * */
 
   virtual bool ReallocateNoNullCheck(Pointer &p, size_t new_size) = 0;
@@ -153,6 +153,30 @@ class Allocator {
   }
 
   /**
+   * Allocate a pointer of \a size size
+   * */
+  template<typename T>
+  T* ClearAllocatePtr(size_t size) {
+    Pointer p;
+    return ClearAllocatePtr<T>(size, p);
+  }
+
+  /**
+   * Allocate a pointer of \a size size and return \a p process-independent
+   * pointer and a process-specific pointer.
+   * */
+  template<typename T>
+  T* ClearAllocatePtr(size_t size, Pointer &p) {
+    p = Allocate(size);
+    if (p.is_null()) { return nullptr; }
+    auto ptr = reinterpret_cast<T*>(slot_.ptr_ + p.off_);
+    if (ptr) {
+      memset(ptr, 0, size);
+    }
+    return ptr;
+  }
+
+  /**
    * Allocate an array of objects (but don't construct).
    *
    * @return A process-specific pointer
@@ -173,6 +197,18 @@ class Allocator {
   template<typename T>
   T* AllocateObjs(size_t count, Pointer &p) {
     return AllocatePtr<T>(count * sizeof(T), p);
+  }
+
+  /**
+   * Allocate an array of objects and memset to 0.
+   *
+   * @param count the number of objects to allocate
+   * @param p process-independent pointer (output)
+   * @return A process-specific pointer
+   * */
+  template<typename T>
+  T* ClearAllocateObjs(size_t count, Pointer &p) {
+    return ClearAllocatePtr<T>(count * sizeof(T), p);
   }
 
   /**
@@ -287,6 +323,7 @@ class Allocator {
   static void ConstructObjs(T_Ar *ptr,
                             size_t old_count,
                             size_t new_count, Args ...args) {
+    if (ptr == nullptr) { return; }
     for (size_t i = old_count; i < new_count; ++i) {
       ConstructObj<T, T_Ar>(*(ptr + i), args...);
     }
@@ -325,6 +362,7 @@ class Allocator {
     typename T_Ar = SHM_T_OR_ARCHIVE(T)>
   static void DestructObjs(T_Ar *ptr,
                            size_t count) {
+    if (ptr == nullptr) { return; }
     for (size_t i = 0; i < count; ++i) {
       DestructObj<T, T_Ar>((ptr + i));
     }

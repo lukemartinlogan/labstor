@@ -150,14 +150,14 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
   void shm_init() {
-    Pointer head_ptr;
     header_ = alloc_->template
-      AllocateObjs<TYPED_HEADER>(1, header_ptr_);
-    memset(header_, 0, sizeof(header_));
+      ClearAllocateObjs<TYPED_HEADER>(1, header_ptr_);
+    header_->head_ptr_ = kNullPointer;
+    header_->tail_ptr_ = kNullPointer;
   }
 
   void shm_destroy() {
-    erase(begin(), end());
+    clear();
     alloc_->Free(header_ptr_);
   }
 
@@ -233,6 +233,10 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     } else {
       last.entry_->prior_ptr_ = first_prior_ptr;
     }
+  }
+
+  void clear() {
+    erase(begin(), end());
   }
 
   inline T_Ref front() {

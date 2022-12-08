@@ -79,12 +79,13 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
   void shm_destroy() {
-    /* vector<BUCKET> buckets(header_->buckets_);
-    for (auto bkt : buckets) {
+    vector<BUCKET> buckets(header_->buckets_);
+    for (auto &bkt : buckets) {
       bkt.lock_.WriteLock();
-      bkt.collisions_.shm_destroy();
+      list<T_Ar> collisions(bkt.collisions_);
+      collisions.shm_destroy();
       bkt.lock_.WriteUnlock();
-    } */
+    }
   }
 
   T_Ref operator[](Key &key) {
