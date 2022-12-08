@@ -9,9 +9,11 @@
 
 namespace labstor::ipc {
 
+/** forward pointer for list */
 template<typename T>
 class list;
 
+/** represents an object within a list */
 template<typename T>
 struct list_entry {
  private:
@@ -24,21 +26,25 @@ struct list_entry {
 
   T_Ref data() {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      T obj;
-      obj << data_;
-      return obj;
+      return T(data_);
     } else {
       return data_;
     }
   }
 };
 
+/**
+ * The list shared-memory header
+ * */
 template<typename T>
 struct list_header {
   Pointer head_ptr_, tail_ptr_;
   size_t length_;
 };
 
+/**
+ * The list iterator
+ * */
 template<typename T>
 struct list_iterator {
  private:
@@ -46,14 +52,18 @@ struct list_iterator {
   typedef SHM_T_OR_REF_T(T) T_Ref;
 
  public:
-  list<T> &list_;
+  list<T> *list_;
   list_entry<T> *entry_;
   Pointer entry_ptr_;
 
+  /** Default constructor */
+  list_iterator() = default;
+
+  /** Construct an iterator  */
   explicit list_iterator(list<T> &list,
                          list_entry<T> *entry,
-                         Pointer entry_ptr) :
-    list_(list), entry_(entry), entry_ptr_(std::move(entry_ptr)) {}
+                         Pointer entry_ptr)
+    : list_(&list), entry_(entry), entry_ptr_(std::move(entry_ptr)) {}
 
   T_Ref operator*() const {
     return entry_->data();
@@ -61,7 +71,7 @@ struct list_iterator {
 
   list_iterator& operator++() {
     entry_ptr_ = entry_->next_ptr_;
-    entry_ = list_.alloc_->template
+    entry_ = (*list_).alloc_->template
       Convert<list_entry<T>>(entry_->next_ptr_);
     return *this;
   }
@@ -74,13 +84,13 @@ struct list_iterator {
     if (entry_ == nullptr) { return (*this); }
     auto next_entry = LABSTOR_MEMORY_MANAGER->template
       Convert<list_entry<T>>(entry_->next_ptr_);
-    return list_iterator(list_, next_entry, entry_->next_ptr_);
+    return list_iterator((*list_), next_entry, entry_->next_ptr_);
   }
 
   list_iterator operator--(int) const {
     auto prior_entry = LABSTOR_MEMORY_MANAGER->template
       Convert<list_entry<T>>(entry_->next_ptr_);
-    return list_iterator(list_, prior_entry, entry_->prior_ptr_);
+    return list_iterator((*list_), prior_entry, entry_->prior_ptr_);
   }
 
   list_iterator operator+(size_t count) const {
@@ -144,8 +154,8 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
  public:
   list() = default;
 
-  explicit list(Allocator *alloc) :
-    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
+  explicit list(Allocator *alloc)
+  : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     shm_init();
   }
 
