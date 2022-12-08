@@ -121,10 +121,13 @@ struct list_iterator {
     entry_ptr_ = pos.entry_ptr_;
   }
 
-  void operator=(list_iterator<T> &other) {
-    list_ = other.list_;
-    entry_ = other.entry_;
-    entry_ptr_ = other.entry_ptr_;
+  list_iterator<T>& operator=(const list_iterator<T> &other) {
+    if (this != &other) {
+      list_ = other.list_;
+      entry_ = other.entry_;
+      entry_ptr_ = other.entry_ptr_;
+    }
+    return *this;
   }
 
   friend bool operator==(const list_iterator &a,
@@ -144,8 +147,9 @@ struct list_iterator {
 
 template<typename T>
 class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
- SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
- friend list_iterator<T>;
+ public:
+  SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
+  friend list_iterator<T>;
 
  public:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
@@ -268,12 +272,14 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * ITERATORS
    * */
 
+  /** Forward iterator begin */
   inline list_iterator<T> begin() {
     auto head = alloc_->template
       Convert<list_entry<T>>(header_->head_ptr_);
     return list_iterator<T>(*this, head, header_->head_ptr_);
   }
 
+  /** Forward iterator end */
   inline list_iterator<T> end() {
     return list_iterator<T>(*this, nullptr, kNullPointer);
   }
@@ -284,8 +290,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     auto entry = alloc_->template
       AllocateObjs<list_entry<T>>(1, ptr);
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      T obj(args...);
-      obj >> entry->data_;
+      T(args...) >> entry->data_;
     } else {
       Allocator::ConstructObj<T,T_Ar>(entry->data_, args...);
     }

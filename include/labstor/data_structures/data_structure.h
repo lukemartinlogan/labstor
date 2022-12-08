@@ -68,7 +68,6 @@ class ShmDataStructure : public ShmSerializeable {
 }  // namespace labstor::ipc
 
 #define SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)\
- public:\
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::header_;\
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::header_ptr_;\
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::mem_mngr_;\

@@ -22,7 +22,8 @@ struct string_header {
 #define TYPED_HEADER string_header
 
 class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
- SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
+ public:
+  SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
 
  public:
   string() : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>() {}

@@ -151,6 +151,16 @@ struct vector_iterator_templ {
     }
   }
 
+  /** Assign one iterator into another  */
+  vector_iterator_templ&
+  operator=(const vector_iterator_templ &other) {
+    if (this != &other) {
+      vec_ = other.vec_;
+      i_ = other.i_;
+    }
+    return *this;
+  }
+
   /** Check if two iterators are equal */
   friend bool operator==(const vector_iterator_templ &a,
                          const vector_iterator_templ &b) {
@@ -184,7 +194,8 @@ using vector_riterator = vector_iterator_templ<T, false>;
  * */
 template<typename T>
 class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
- SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
+ public:
+  SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
 
  public:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
