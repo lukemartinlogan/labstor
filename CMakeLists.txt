@@ -9,6 +9,8 @@ option(BUILD_SHARED_LIBS "Build shared libraries (.dll/.so) instead of static on
 option(BUILD_MPI_TESTS "Build tests which depend on MPI" ON)
 option(BUILD_OpenMP_TESTS "Build tests which depend on OpenMP" ON)
 
+set(CMAKE_CXX_FLAGS "-O0")
+
 ##################REQUIRED EXTERNAL LIBRARIES
 
 #YAML-CPP

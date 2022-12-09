@@ -39,6 +39,17 @@ using labstor::ipc::Pointer;
 using labstor::ipc::unordered_map;
 using labstor::ipc::string;
 
+/**
+ * TODO(llogan): Shared-memory data structure iterators take "this" as a
+ * stored parameter. This results in problems in the unordered_map, as
+ * we create vector and list objects for only the scope of the begin()
+ * and end() functions.
+ *
+ * Do we need to load data structure from SHM every single iteration?
+ * What if we store vector + list objects in the iterator itself?
+ * Probably the only solution.
+ * */
+
 void UnorderedMapOfIntTest() {
   Allocator *alloc = alloc_g;
   unordered_map<int, int> map(alloc);
@@ -53,16 +64,26 @@ void UnorderedMapOfIntTest() {
     REQUIRE(map[i] == i);
   }
 
-  // Iterate over the map
-  auto prep = map.iter_prep();
-  prep.Lock();
-  int i = 0;
-  for (auto &entry : map) {
-    REQUIRE((0 <= entry.key_ && entry.key_ < 20));
-    REQUIRE((0 <= entry.obj_ && entry.obj_ < 20));
-    ++i;
+  // Check if 20 entries are findable
+  for (int i = 0; i < 20; ++i) {
+    auto iter = map.find(i);
+    auto &entry = *iter;
+    REQUIRE(entry.obj_ == i);
   }
-  prep.Unlock();
+
+  // Iterate over the map
+  {
+    auto prep = map.iter_prep();
+    prep.Lock();
+    int i = 0;
+    for (auto &entry : map) {
+      std::cout << entry.obj_ << std::endl;
+      REQUIRE((0 <= entry.key_ && entry.key_ < 20));
+      REQUIRE((0 <= entry.obj_ && entry.obj_ < 20));
+      ++i;
+    }
+    REQUIRE(i == 20);
+  }
 
   // Remove 20 entries from the map
   for (int i = 0; i < 20; ++i) {

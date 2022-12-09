@@ -38,117 +38,18 @@ struct vector_iterator_templ {
   /** Default constructor */
   vector_iterator_templ() = default;
 
+  /** Construct an iterator */
+  explicit vector_iterator_templ(vector<T> *vec)
+    : vec_(vec) {}
+
   /** Construct an iterator at \a i offset */
-  explicit vector_iterator_templ(vector<T> &vec, size_t i)
-    : vec_(&vec), i_(static_cast<off64_t>(i)) {}
+  explicit vector_iterator_templ(vector<T> *vec, size_t i)
+    : vec_(vec), i_(static_cast<off64_t>(i)) {}
 
-  /** Dereference the iterator */
-  T_Ref operator*() const { return (*vec_)[i_]; }
-
-  /** Increment iterator in-place */
-  vector_iterator_templ& operator++() {
-    if constexpr(FORWARD_ITER) {
-      ++i_;
-    } else {
-      --i_;
-    }
-    return *this;
-  }
-
-  /** Decrement iterator in-place */
-  vector_iterator_templ& operator--() {
-    if constexpr(FORWARD_ITER) {
-      --i_;
-    } else {
-      ++i_;
-    }
-    return *this;
-  }
-
-  /** Create the next iterator */
-  vector_iterator_templ operator++(int) const {
-    if constexpr(FORWARD_ITER) {
-      return vector_iterator_templ((*vec_), i_ + 1);
-    } else {
-      return vector_iterator_templ((*vec_), i_ - 1);
-    }
-  }
-
-  /** Create the prior iterator */
-  vector_iterator_templ operator--(int) const {
-    if constexpr(FORWARD_ITER) {
-      return vector_iterator_templ((*vec_), i_ - 1);
-    } else {
-      return vector_iterator_templ((*vec_), i_ + 1);
-    }
-  }
-
-  /** Increment iterator by \a count and return */
-  vector_iterator_templ operator+(size_t count) const {
-    if constexpr(FORWARD_ITER) {
-      if (i_ + count > (*vec_).size()) {
-        return vector_iterator_templ((*vec_), (*vec_).size());
-      }
-      return vector_iterator_templ((*vec_), i_ + count);
-    } else {
-      if (i_ < count - 1) {
-        return vector_iterator_templ((*vec_), -1);
-      }
-      return vector_iterator_templ((*vec_), i_ - count);
-    }
-  }
-
-  /** Decrement iterator by \a count and return */
-  vector_iterator_templ operator-(size_t count) const {
-    if constexpr(FORWARD_ITER) {
-      if (i_ < count) {
-        return vector_iterator_templ((*vec_), 0);
-      }
-      return vector_iterator_templ((*vec_), i_ - count);
-    } else {
-      if (i_ + count > (*vec_).size() - 1) {
-        return vector_iterator_templ((*vec_), (*vec_).size() - 1);
-      }
-      return vector_iterator_templ((*vec_), i_ + count);
-    }
-  }
-
-  /** Increment iterator by \a count in-place */
-  void operator+=(size_t count) {
-    if constexpr(FORWARD_ITER) {
-      if (i_ + count > (*vec_).size()) {
-        i_ = (*vec_).size();
-        return;
-      }
-      i_ += count;
-      return;
-    } else {
-      if (i_ < count - 1) {
-        i_ = 0;
-        return;
-      }
-      i_ -= count;
-      return;
-    }
-  }
-
-  /** Decrement iterator by \a count in-place */
-  void operator-=(size_t count) {
-    if constexpr(FORWARD_ITER) {
-      if (i_ < count) {
-        i_ = 0;
-        return;
-      }
-      i_ -= count;
-      return;
-    } else {
-      if (i_ + count > (*vec_).size() - 1) {
-        i_ = (*vec_).size();
-        return;
-      }
-      i_ += count;
-      return;
-    }
+  /** Copy constructor */
+  vector_iterator_templ(const vector_iterator_templ &other) {
+    vec_ = other.vec_;
+    i_ = other.i_;
   }
 
   /** Assign one iterator into another  */
@@ -161,16 +62,187 @@ struct vector_iterator_templ {
     return *this;
   }
 
+  /** Change the vector pointer */
+  void change_pointer(vector<T> *other) {
+    vec_ = other;
+  }
+
+  /** Dereference the iterator */
+  T_Ref operator*() const {
+    return (*vec_)[i_];
+  }
+
+  /** Increment iterator in-place */
+  vector_iterator_templ& operator++() {
+    if (is_end()) { return *this; }
+    if constexpr(FORWARD_ITER) {
+      ++i_;
+      if (i_ >= vec_->size()) {
+        set_end();
+      }
+    } else {
+      if (i_ == 0) {
+        set_end();
+      }
+      --i_;
+    }
+    return *this;
+  }
+
+  /** Decrement iterator in-place */
+  vector_iterator_templ& operator--() {
+    if (is_begin() || is_end()) { return *this; }
+    if constexpr(FORWARD_ITER) {
+      --i_;
+    } else {
+      ++i_;
+    }
+    return *this;
+  }
+
+  /** Create the next iterator */
+  vector_iterator_templ operator++(int) const {
+    vector_iterator_templ next_iter(*this);
+    ++next_iter;
+    return next_iter;
+  }
+
+  /** Create the prior iterator */
+  vector_iterator_templ operator--(int) const {
+    vector_iterator_templ prior_iter(*this);
+    --prior_iter;
+    return prior_iter;
+  }
+
+  /** Increment iterator by \a count and return */
+  vector_iterator_templ operator+(size_t count) const {
+    if (is_end()) { return end(); }
+    if constexpr(FORWARD_ITER) {
+      if (i_ + count > vec_->size()) {
+        return end();
+      }
+      return vector_iterator_templ(vec_, i_ + count);
+    } else {
+      if (i_ < count - 1) {
+        return end();
+      }
+      return vector_iterator_templ(vec_, i_ - count);
+    }
+  }
+
+  /** Decrement iterator by \a count and return */
+  vector_iterator_templ operator-(size_t count) const {
+    if (is_end()) { return end(); }
+    if constexpr(FORWARD_ITER) {
+      if (i_ < count) {
+        return begin();
+      }
+      return vector_iterator_templ(vec_, i_ - count);
+    } else {
+      if (i_ + count > vec_->size() - 1) {
+        return begin();
+      }
+      return vector_iterator_templ(vec_, i_ + count);
+    }
+  }
+
+  /** Increment iterator by \a count in-place */
+  void operator+=(size_t count) {
+    if (is_end()) { return end(); }
+    if constexpr(FORWARD_ITER) {
+      if (i_ + count > vec_->size()) {
+        set_end();
+        return;
+      }
+      i_ += count;
+      return;
+    } else {
+      if (i_ < count - 1) {
+        set_end();
+        return;
+      }
+      i_ -= count;
+      return;
+    }
+  }
+
+  /** Decrement iterator by \a count in-place */
+  void operator-=(size_t count) {
+    if (is_end()) { return end(); }
+    if constexpr(FORWARD_ITER) {
+      if (i_ < count) {
+        set_begin();
+        return;
+      }
+      i_ -= count;
+      return;
+    } else {
+      if (i_ + count > vec_->size() - 1) {
+        set_begin();
+        return;
+      }
+      i_ += count;
+      return;
+    }
+  }
+
   /** Check if two iterators are equal */
   friend bool operator==(const vector_iterator_templ &a,
                          const vector_iterator_templ &b) {
-    return a.i_ == b.i_;
+    return (a.i_ == b.i_);
   }
 
   /** Check if two iterators are inequal */
   friend bool operator!=(const vector_iterator_templ &a,
                          const vector_iterator_templ &b) {
-    return a.i_ != b.i_;
+    return (a.i_ != b.i_);
+  }
+
+  /** Create the begin iterator */
+  vector_iterator_templ const begin() {
+    if constexpr(FORWARD_ITER) {
+      return vector_iterator_templ(vec_, 0);
+    } else {
+      return vector_iterator_templ(vec_, vec_->size() - 1);
+    }
+  }
+
+  /** Create the end iterator */
+  static vector_iterator_templ const end() {
+    static vector_iterator_templ end_iter(nullptr, -1);
+    return end_iter;
+  }
+
+  /** Set this iterator to end */
+  void set_end() {
+    i_ = -1;
+  }
+
+  /** Set this iterator to begin */
+  void set_begin() {
+    if constexpr(FORWARD_ITER) {
+      if (vec_->size() > 0) {
+        i_ = 0;
+      } else {
+        set_end();
+      }
+    } else {
+      i_ = vec_->size() - 1;
+    }
+  }
+
+  /** Determine whether this iterator is the begin iterator */
+  bool is_begin() const {
+    if constexpr(FORWARD_ITER) {
+      return (i_ == 0);
+    } else {
+      return (i_ == vec_->size() - 1);
+    }
+  }
+
+  /** Determine whether this iterator is the end iterator */
+  bool is_end() const {
+    return i_ == -1;
   }
 };
 
@@ -216,7 +288,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @param args the parameters of the elements to construct
    * */
   template<typename ...Args>
-  explicit vector(size_t length, Allocator *alloc = nullptr, Args ...args)
+  explicit vector(size_t length, Allocator *alloc, Args ...args)
   : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     resize(length, args...);
   }
@@ -282,9 +354,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   T_Ref operator[](const size_t i) {
     T_Ar *vec = _data();
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      T obj;
-      obj << vec[i];
-      return obj;
+      return T(vec[i]);
     } else {
       return vec[i];
     }
@@ -304,7 +374,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   /** Construct an element at an arbitrary position in the vector */
   template<typename ...Args>
   void emplace(vector_iterator<T> pos, Args&&... args) {
-    if (pos == end()) {
+    if (pos.is_end()) {
       emplace_back(args...);
       return;
     }
@@ -317,9 +387,23 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     ++header_->length_;
   }
 
+  /** Delete the element at \a pos position */
+  void erase(vector_iterator<T> pos) {
+    if (pos.is_end()) return;
+    shift_left(pos, 1);
+    header_->length_ -= 1;
+  }
+
   /** Delete elements between first and last  */
   void erase(vector_iterator<T> first, vector_iterator<T> last) {
-    size_t count = last.i_ - first.i_;
+    size_t last_i;
+    if (first.is_end()) return;
+    if (last.is_end()) {
+      last_i = size();
+    } else {
+      last_i = last.i_;
+    }
+    size_t count = last_i - first.i_;
     if (count == 0) return;
     shift_left(first, count);
     header_->length_ -= count;
@@ -447,22 +531,28 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   /** Beginning of the forward iterator */
   vector_iterator<T> begin() {
-    return vector_iterator<T>(*this, 0);
+    if (size() == 0) { return end(); }
+    vector_iterator<T> iter(this);
+    iter.set_begin();
+    return iter;
   }
 
   /** End of the forward iterator */
-  vector_iterator<T> end() {
-    return vector_iterator<T>(*this, size());
+  static vector_iterator<T> const end() {
+    return vector_iterator<T>::end();
   }
 
   /** Beginning of the reverse iterator */
   vector_riterator<T> rbegin() {
-    return vector_riterator<T>(*this, size() - 1);
+    if (size() == 0) { return rend(); }
+    vector_riterator<T> iter(this);
+    iter.set_begin();
+    return iter;
   }
 
   /** End of the reverse iterator */
-  vector_riterator<T> rend() {
-    return vector_riterator<T>(*this, -1);
+  static vector_riterator<T> const rend() {
+    return vector_riterator<T>::end();
   }
 };
 

@@ -85,26 +85,42 @@ struct unordered_map_iterator {
 
  public:
   unordered_map<Key, T, Hash> *map_;
+  vector<BUCKET_T> buckets_;
+  list<COLLISION_T> collisions_;
   vector_iterator<BUCKET_T> bucket_;
-  vector_iterator<BUCKET_T> bucket_end_;
   list_iterator<COLLISION_T> collision_;
 
   /** Default constructor */
   unordered_map_iterator() = default;
 
-  /** Construct the end iterator  */
-  explicit unordered_map_iterator(unordered_map<Key, T, Hash> *map,
-                                  vector_iterator<BUCKET_T> &bucket,
-                                  vector_iterator<BUCKET_T> &bucket_end)
-    : map_(map), bucket_(bucket), bucket_end_(bucket_end) {}
+  /** Construct the iterator  */
+  explicit unordered_map_iterator(unordered_map<Key, T, Hash> *map)
+    : map_(map) {
+  }
 
-  /** Construct an iterator  */
-  explicit unordered_map_iterator(unordered_map<Key, T, Hash> *map,
-                                  vector_iterator<BUCKET_T> &bucket,
-                                  list_iterator<COLLISION_T> &collision,
-                                  vector_iterator<BUCKET_T> &bucket_end)
-    : map_(map), bucket_(bucket), collision_(collision),
-    bucket_end_(bucket_end) {}
+  /** Copy an iterator  */
+  unordered_map_iterator(const unordered_map_iterator &other) {
+    map_ = other.map_;
+    bucket_ = other.bucket_;
+    collision_ = other.collision_;
+    bucket_.change_pointer(&buckets_);
+    collision_.change_pointer(&collisions_);
+  }
+
+  /** Assign one iterator into another */
+  unordered_map_iterator<Key, T, Hash>&
+  operator=(const unordered_map_iterator<Key, T, Hash> &other) {
+    if (this != &other) {
+      map_ = other.map_;
+      buckets_ = other.buckets_;
+      collisions_ = other.collisions_;
+      bucket_ = other.bucket_;
+      collision_ = other.collision_;
+      bucket_.change_pointer(&buckets_);
+      collision_.change_pointer(&collisions_);
+    }
+    return *this;
+  }
 
   /** Get the pointed object */
   COLLISION_T& operator*() const {
@@ -113,21 +129,8 @@ struct unordered_map_iterator {
 
   /** Go to the next object */
   unordered_map_iterator& operator++() {
-    do {
-      if (bucket_ == bucket_end_) {
-        break;
-      }
-      list<COLLISION_T> collisions((*bucket_).collisions_);
-      if (collision_ != collisions.end()) {
-        ++collision_;
-      } else if (bucket_ != bucket_end_) {
-        ++bucket_;
-        collision_ = collisions.begin();
-      }
-      if (collision_ != collisions.end()) {
-        break;
-      }
-    } while (true);
+    ++collision_;
+    make_correct();
     return *this;
   }
 
@@ -138,15 +141,25 @@ struct unordered_map_iterator {
     return next;
   }
 
-  /** Assign one iterator into another */
-  unordered_map_iterator<Key, T, Hash>&
-  operator=(const unordered_map_iterator<Key, T, Hash> &other) {
-    if (this != &other) {
-      map_ = other.map_;
-      bucket_ = other.bucket_;
-      collision_ = other.collision_;
-    }
-    return *this;
+  /**
+   * Shifts bucket and collision iterator until there is a valid element.
+   * Returns true if such an element is found, and false otherwise.
+   * */
+  bool make_correct() {
+    do {
+      if (bucket_ == buckets_.end()) {
+        return false;
+      }
+      auto &bkt = (*bucket_);
+      collisions_ << bkt.collisions_;
+      if (collision_ != collisions_.end()) {
+        return true;
+      } else {
+        ++bucket_;
+        collisions_ << (*bucket_).collisions_;
+        collision_ = collisions_.begin();
+      }
+    } while (true);
   }
 
   /** Check if two iterators are equal */
@@ -354,21 +367,18 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * */
   unordered_map_iterator<Key, T, Hash> find(const Key &key) {
     if (header_ == nullptr) { shm_init(); }
+    unordered_map_iterator<Key, T, Hash> iter(this);
     ScopedRwReadLock header_lock(header_->lock_);
     header_lock.Lock();
-    vector<BUCKET_T> buckets(header_->buckets_);
-    size_t bkt_id = Hash{}(key) % buckets.size();
-    auto bkt_iter = buckets.begin() + bkt_id;
-    auto bkt_end = buckets.end();
-    BUCKET_T &bkt = (*bkt_iter);
+    iter.buckets_ << header_->buckets_;
+    size_t bkt_id = Hash{}(key) % iter.buckets_.size();
+    iter.bucket_ = iter.buckets_.begin() + bkt_id;
+    BUCKET_T &bkt = (*iter.bucket_);
     ScopedRwReadLock bkt_lock(bkt.lock_);
     bkt_lock.Lock();
-    list<COLLISION_T> collisions(bkt.collisions_);
-    auto collision_iter = find_collision(key, collisions);
-    return unordered_map_iterator<Key, T, Hash>(this,
-                                                bkt_iter,
-                                                collision_iter,
-                                                bkt_end);
+    iter.collisions_ << bkt.collisions_;
+    iter.collision_ = find_collision(key, iter.collisions_);
+    return iter;
   }
 
   /** The number of entries in the map */
@@ -446,23 +456,25 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   /** Forward iterator begin */
   inline unordered_map_iterator<Key, T, Hash> begin() {
-    vector<BUCKET_T> buckets(header_->buckets_);
-    auto &bkt = buckets[0];
-    list<COLLISION_T> collisions(bkt.collisions_);
-    auto bkt_begin = buckets.begin();
-    auto bkt_end = buckets.end();
-    auto collisions_begin = collisions.begin();
-    return unordered_map_iterator<Key, T, Hash>(this,
-                                                bkt_begin,
-                                                collisions_begin,
-                                                bkt_end);
+    unordered_map_iterator<Key, T, Hash> iter(this);
+    iter.buckets_ << header_->buckets_;
+    if (iter.buckets_.size() == 0) {
+      return iter;
+    }
+    auto &bkt = iter.buckets_[0];
+    iter.collisions_ << bkt.collisions_;
+    iter.bucket_ = iter.buckets_.begin();
+    iter.collision_ = iter.collisions_.begin();
+    iter.make_correct();
+    return iter;
   }
 
   /** Forward iterator end */
   inline unordered_map_iterator<Key, T, Hash> end() {
-    vector<BUCKET_T> buckets(header_->buckets_);
-    auto bkt_end = buckets.end();
-    return unordered_map_iterator<Key, T, Hash>(this, bkt_end, bkt_end);
+    unordered_map_iterator<Key, T, Hash> iter(this);
+    iter.buckets_ << header_->buckets_;
+    iter.bucket_ = iter.buckets_.end();
+    return iter;
   }
 
  private:
@@ -496,9 +508,6 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     }
     return new_num_buckets;
   }
-
- public:
-
 };
 
 }  // namespace labstor::ipc
