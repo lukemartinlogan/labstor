@@ -158,11 +158,13 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
  public:
   list() = default;
 
+  /** Default shared-memory constructor */
   explicit list(Allocator *alloc)
   : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     shm_init();
   }
 
+  /** Initialize list in shared memory */
   void shm_init() {
     header_ = alloc_->template
       ClearAllocateObjs<TYPED_HEADER>(1, header_ptr_);
@@ -170,21 +172,25 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     header_->tail_ptr_.set_null();
   }
 
+  /** Destroy all shared memory allocated by the list */
   void shm_destroy() {
     clear();
     alloc_->Free(header_ptr_);
   }
 
+  /** Construct an element at the back of the list */
   template<typename... Args>
   inline void emplace_back(Args&&... args) {
     emplace(end(), args...);
   }
 
+  /** Construct an element at the beginning of the list */
   template<typename... Args>
   inline void emplace_front(Args&&... args) {
     emplace(begin(), args...);
   }
 
+  /** Construct an element at \a pos position in the list */
   template<typename ...Args>
   void emplace(list_iterator<T> pos, Args&&... args) {
     Pointer entry_ptr;
@@ -221,6 +227,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     ++header_->length_;
   }
 
+  /** Erase all elements between first and last */
   void erase(list_iterator<T> first,
              list_iterator<T> last) {
     if (first == end()) { return; }
@@ -249,18 +256,22 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     }
   }
 
+  /** Destroy all elements in the list */
   void clear() {
     erase(begin(), end());
   }
 
+  /** Get the object at the front of the list */
   inline T_Ref front() {
     return *begin();
   }
 
+  /** Get the object at the back of the list */
   inline T_Ref back() {
     return *end();
   }
 
+  /** Get the number of elements in the list */
   inline size_t size() const {
     if (header_ == nullptr) {
       return 0;

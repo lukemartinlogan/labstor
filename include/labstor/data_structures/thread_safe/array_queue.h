@@ -5,10 +5,14 @@
 #ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_ARRAY_QUEUE_H_
 #define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_ARRAY_QUEUE_H_
 
-namespace labstor {
+#include <labstor/data_structures/thread_unsafe/vector.h>
+
+namespace labstor::ipc {
 
 template<typename T>
-class array_queue {
+class array_queue : public vector<T> {
+ public:
+
 };
 
 }

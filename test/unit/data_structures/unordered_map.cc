@@ -42,9 +42,32 @@ using labstor::ipc::string;
 void UnorderedMapOfIntTest() {
   Allocator *alloc = alloc_g;
   unordered_map<int, int> map(alloc);
-  int x = 24;
-  map.emplace(x, x);
-  std::cout << map[x] << std::endl;
+
+  // Insert 20 entries into the map (no growth trigger)
+  for (int i = 0; i < 20; ++i) {
+    map.emplace(i, i);
+  }
+
+  // Check if the 20 entries are indexable
+  for (int i = 0; i < 20; ++i) {
+    REQUIRE(map[i] == i);
+  }
+
+  // Iterate over the map
+  auto prep = map.iter_prep();
+  prep.Lock();
+  int i = 0;
+  for (auto &entry : map) {
+    REQUIRE((0 <= entry.key_ && entry.key_ < 20));
+    REQUIRE((0 <= entry.obj_ && entry.obj_ < 20));
+    ++i;
+  }
+  prep.Unlock();
+
+  // Remove 20 entries from the map
+  for (int i = 0; i < 20; ++i) {
+  }
+
   map.shm_destroy();
 }
 

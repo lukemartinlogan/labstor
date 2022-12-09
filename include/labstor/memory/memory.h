@@ -112,10 +112,9 @@ class ShmSerializeable {
   // void operator<<(ShmArchive &r);
 };
 
-
 /**
  * A wrapper around a process-independent pointer for storing
- * shared memory data structures
+ * a single complex shared-memory data structure
  * */
 template<typename T>
 struct ShmArchive {
@@ -142,6 +141,23 @@ struct ShmArchive {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       T(args...) >> (*this);
     }
+  }
+};
+
+/**
+ * A wrapper around a process-independent pointer for
+ * storing a C-style array of a simple type
+ * */
+template<typename T>
+struct ShmPointer {
+  Pointer ptr_;
+
+  /** Default constructor */
+  ShmPointer() = default;
+
+  /** Get the process-independent pointer */
+  inline Pointer& Get() {
+    return ptr_;
   }
 };
 

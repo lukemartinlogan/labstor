@@ -204,21 +204,37 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
  public:
   vector() = default;
 
+  /** Default shared-memory constructor */
   explicit vector(Allocator *alloc)
   : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {}
 
+  /**
+   * Construct a vector of a certain length in shared memory
+   *
+   * @param length the size the vector should be
+   * @param alloc the allocator to reserve memory from
+   * @param args the parameters of the elements to construct
+   * */
   template<typename ...Args>
   explicit vector(size_t length, Allocator *alloc = nullptr, Args ...args)
   : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     resize(length, args...);
   }
 
+  /**
+   * Construct a vector of a certain length in shared memory
+   *
+   * @param length the size the vector should be
+   * @param alloc_id the id of the allocator to reserve memory from
+   * @param args the parameters of the elements to construct
+   * */
   template<typename ...Args>
   explicit vector(size_t length, allocator_id_t alloc_id, Args ...args)
   : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc_id) {
     resize(length, args...);
   }
 
+  /** Construct the vector in shared memory */
   void shm_init() {
     header_ = alloc_->template
       AllocateObjs<TYPED_HEADER>(1, header_ptr_);
@@ -227,12 +243,20 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     header_->vec_ptr_.set_null();
   }
 
+  /** Destroy all shared memory allocated by the vector */
   void shm_destroy() {
     erase(begin(), end());
     alloc_->Free(header_->vec_ptr_);
     alloc_->Free(header_ptr_);
   }
 
+  /**
+   * Reserve space in the vector to emplace elements. Does not
+   * change the size of the list.
+   *
+   * @param length the maximum size the vector can get before a growth occurs
+   * @param args the arguments to construct
+   * */
   template<typename ...Args>
   void reserve(size_t length, Args ...args) {
     if (header_ == nullptr) {
@@ -241,12 +265,20 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     grow_vector(_data(), length, args...);
   }
 
+  /**
+   * Reserve space in the vector to emplace elements. Changes the
+   * size of the list.
+   *
+   * @param length the maximum size the vector can get before a growth occurs
+   * @param args the arguments used to construct the vector elements
+   * */
   template<typename ...Args>
   void resize(size_t length, Args ...args) {
     reserve(length, args...);
     header_->length_ = length;
   }
 
+  /** Index the vector at position i */
   T_Ref operator[](const size_t i) {
     T_Ar *vec = _data();
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
@@ -258,6 +290,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     }
   }
 
+  /** Construct an element at the back of the vector */
   template<typename... Args>
   void emplace_back(Args&&... args) {
     T_Ar *vec = _data();
@@ -268,6 +301,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     ++header_->length_;
   }
 
+  /** Construct an element at an arbitrary position in the vector */
   template<typename ...Args>
   void emplace(vector_iterator<T> pos, Args&&... args) {
     if (pos == end()) {
@@ -283,6 +317,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     ++header_->length_;
   }
 
+  /** Delete elements between first and last  */
   void erase(vector_iterator<T> first, vector_iterator<T> last) {
     size_t count = last.i_ - first.i_;
     if (count == 0) return;
@@ -290,10 +325,12 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     header_->length_ -= count;
   }
 
+  /** Delete all elements from the vector */
   void clear() {
     erase(begin(), end());
   }
 
+  /** Get the size of the vector */
   size_t size() const {
     if (header_ == nullptr) {
       return 0;
@@ -301,6 +338,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     return header_->length_;
   }
 
+  /** Get the data in the vector */
   void* data() {
     if (header_ == nullptr) {
       return nullptr;
@@ -310,6 +348,15 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
  private:
+
+  /**
+   * Grow a vector to a new size.
+   *
+   * @param vec the C-style array of elements to grow
+   * @param max_length the new length of the vector. If 0, the current size
+   * of the vector will be multiplied by a constant.
+   * @param args the arguments used to construct the elements of the vector
+   * */
   template<typename ...Args>
   T_Ar* grow_vector(T_Ar *vec, size_t max_length, Args ...args) {
     // Grow vector by 25%
@@ -344,6 +391,13 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     return new_vec;
   }
 
+  /**
+   * Shift every element starting at "pos" to the left by count. Any element
+   * who would be shifted before "pos" will be deleted.
+   *
+   * @param pos the starting position
+   * @param count the amount to shift left by
+   * */
   void shift_left(const vector_iterator<T> pos, int count = 1) {
     T_Ar *vec = _data();
     for (int i = 0; i < count; ++i) {
@@ -357,6 +411,14 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     }
   }
 
+  /**
+   * Shift every element starting at "pos" to the right by count. Increases
+   * the total number of elements of the vector by "count". Does not modify
+   * the size parameter of the vector, this is done elsewhere.
+   *
+   * @param pos the starting position
+   * @param count the amount to shift right by
+   * */
   void shift_right(const vector_iterator<T> pos, int count = 1) {
     auto src = _data() + size() - 1;
     auto dst = src + count;
@@ -367,8 +429,12 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     }
   }
 
+
+  /**
+   * Retreives a pointer to the array from the process-independent pointer.
+   * */
   T_Ar* _data() {
-    return mem_mngr_->template
+    return alloc_->template
       Convert<T_Ar>(header_->vec_ptr_);
   }
 
@@ -378,18 +444,23 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * */
 
  public:
+
+  /** Beginning of the forward iterator */
   vector_iterator<T> begin() {
     return vector_iterator<T>(*this, 0);
   }
 
+  /** End of the forward iterator */
   vector_iterator<T> end() {
     return vector_iterator<T>(*this, size());
   }
 
+  /** Beginning of the reverse iterator */
   vector_riterator<T> rbegin() {
     return vector_riterator<T>(*this, size() - 1);
   }
 
+  /** End of the reverse iterator */
   vector_riterator<T> rend() {
     return vector_riterator<T>(*this, -1);
   }
