@@ -33,8 +33,8 @@ TEST_CASE("MemoryManager") {
     mem_mngr->CreateBackend(MemoryBackendType::kPosixShmMmap,
                             shm_url);
     mem_mngr->CreateAllocator(AllocatorType::kPageAllocator,
-                              shm_url,
-                              alloc_id);
+                              shm_url, alloc_id,
+                              0, MemoryManager::kDefaultSlotSize);
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank != 0) {

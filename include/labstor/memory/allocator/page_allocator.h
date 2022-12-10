@@ -24,16 +24,17 @@ struct PageAllocatorHeader : public AllocatorHeader {
   size_t page_size_, min_free_count_, min_free_size_;
   int concurrency_;
   size_t thread_table_size_;
-  Mutex lock_;
 
-  explicit PageAllocatorHeader(size_t custom_header_size) :
-    page_size_(KILOBYTES(4)), thread_table_size_(KILOBYTES(4)),
-    concurrency_(4), min_free_count_(16),
-    min_free_size_(page_size_ * min_free_count_),
-    AllocatorHeader(AllocatorType::kPageAllocator, custom_header_size) {}
+  PageAllocatorHeader() = default;
 
-  void Configure(size_t page_size, size_t thread_table_size,
-                 int concurrency, size_t min_free_count) {
+  void Configure(allocator_id_t alloc_id,
+                 size_t custom_header_size,
+                 size_t page_size,
+                 size_t thread_table_size,
+                 int concurrency,
+                 size_t min_free_count) {
+    AllocatorHeader::Configure(alloc_id, AllocatorType::kPageAllocator,
+                               custom_header_size);
     page_size_ = page_size;
     thread_table_size_ = thread_table_size;
     concurrency_ = concurrency;
@@ -44,31 +45,69 @@ struct PageAllocatorHeader : public AllocatorHeader {
 
 class PageAllocator : public Allocator {
  private:
-  PageAllocatorHeader params_;
   PageAllocatorHeader *header_;
   char *custom_header_;
   _array<PageFreeList> free_lists_;
 
  public:
-  explicit PageAllocator(slot_id_t slot_id, MemoryBackend *backend,
-                         size_t custom_header_size) :
-    params_(custom_header_size), header_(nullptr), custom_header_(nullptr),
-    Allocator(slot_id, backend) {}
+  /**
+   * Allocator constructor
+   * */
+  explicit PageAllocator(slot_id_t slot_id, MemoryBackend *backend) :
+    header_(nullptr), custom_header_(nullptr), Allocator(slot_id, backend) {
+  }
 
+  /**
+   * Determine the size of the shared-memory header
+   * */
   size_t GetInternalHeaderSize() override {
     return sizeof(PageAllocatorHeader);
   }
+
+  /**
+   * Get the ID of this allocator from shared memory
+   * */
   allocator_id_t GetId() override {
     return header_->allocator_id_;
   }
 
-  void Configure(size_t page_size, size_t thread_table_size,
-                 int concurrency, size_t min_free_count);
-  void Create(allocator_id_t id) override;
+  /**
+   * Initialize the allocator in shared memory
+   * */
+  void Create(allocator_id_t id,
+              size_t custom_header_size = 0,
+              size_t page_size = KILOBYTES(4),
+              size_t thread_table_size = KILOBYTES(4),
+              int concurrency = 8,
+              size_t min_free_count = 16);
+
+  /**
+   * Attach an existing allocator from shared memory
+   * */
   void Attach() override;
+
+  /**
+   * Allocate a memory of a \size size. The page allocator cannot allocate
+   * memory larger than the page size.
+   * */
   Pointer Allocate(size_t size) override;
+
+  /**
+   * Reallocate \a p pointer to \a new_size new size.
+   *
+   * @return whether or not the pointer p was changed
+   * */
   bool ReallocateNoNullCheck(Pointer &p, size_t new_size) override;
+
+  /**
+   * Free \a ptr pointer. Null check is performed elsewhere.
+   * */
   void FreeNoNullCheck(Pointer &ptr) override;
+
+  /**
+   * Get the current amount of data allocated. Can be used for leak
+   * checking.
+   * */
   size_t GetCurrentlyAllocatedSize() override;
 
  private:

@@ -6,20 +6,20 @@
 
 namespace labstor::ipc {
 
-void PageAllocator::Configure(size_t page_size, size_t thread_table_size,
-                              int concurrency, size_t min_free_count) {
-  params_.Configure(page_size, thread_table_size, concurrency, min_free_count);
-}
-
 void* PageAllocator::GetFreeListStart() {
   return reinterpret_cast<void*>(
     custom_header_ + header_->custom_header_size_);;
 }
 
-void PageAllocator::Create(allocator_id_t id) {
+void PageAllocator::Create(allocator_id_t id,
+                           size_t custom_header_size,
+                           size_t page_size,
+                           size_t thread_table_size,
+                           int concurrency,
+                           size_t min_free_count) {
   header_ = reinterpret_cast<PageAllocatorHeader*>(slot_.ptr_);
-  params_.allocator_id_ = id;
-  memcpy(header_, &params_, sizeof(params_));
+  header_->Configure(id, custom_header_size, page_size,
+                     thread_table_size, concurrency, min_free_count);
   custom_header_ = GetCustomHeader<char>();
   void *free_list_start = GetFreeListStart();
   free_lists_.Create(free_list_start, header_->thread_table_size_);

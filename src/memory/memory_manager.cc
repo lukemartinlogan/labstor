@@ -43,31 +43,10 @@ void MemoryManager::ScanBackends() {
       auto &slot = backend->GetSlot(slot_id);
       auto header = reinterpret_cast<AllocatorHeader*>(slot.ptr_);
       auto type = static_cast<AllocatorType>(header->allocator_type_);
-      auto alloc = AllocatorFactory::Get(
-        type, slot_id, backend.get());
-      alloc->Attach();
+      auto alloc = AllocatorFactory::Attach(type, slot_id, backend.get());
       RegisterAllocator(alloc);
     }
   }
-}
-
-Allocator* MemoryManager::CreateAllocator(AllocatorType type,
-                                          const std::string &url,
-                                          allocator_id_t alloc_id,
-                                          size_t slot_size,
-                                          size_t custom_header_size) {
-  auto backend = GetBackend(url);
-  auto slot = backend->CreateSlot(slot_size);
-  auto alloc = AllocatorFactory::Get(type,
-                                     slot.slot_id_, backend,
-                                     custom_header_size);
-  if (alloc_id.is_null()) {
-    alloc_id = allocator_id_t(LABSTOR_SYSTEM_INFO->pid_,
-                              allocators_.size());
-  }
-  alloc->Create(alloc_id);
-  RegisterAllocator(alloc);
-  return GetAllocator(alloc_id);
 }
 
 void MemoryManager::RegisterAllocator(std::unique_ptr<Allocator> &alloc) {
@@ -75,21 +54,6 @@ void MemoryManager::RegisterAllocator(std::unique_ptr<Allocator> &alloc) {
     default_allocator_ = alloc.get();
   }
   allocators_.emplace(alloc->GetId(), std::move(alloc));
-}
-
-Allocator* MemoryManager::GetAllocator(allocator_id_t alloc_id) {
-  if (alloc_id.is_null()) {
-    return nullptr;
-  }
-  auto iter = allocators_.find(alloc_id);
-  if (iter == allocators_.end()) {
-    ScanBackends();
-  }
-  return allocators_[alloc_id].get();
-}
-
-Allocator* MemoryManager::GetDefaultAllocator() {
-  return default_allocator_;
 }
 
 }

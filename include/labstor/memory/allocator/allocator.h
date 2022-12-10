@@ -33,11 +33,19 @@
 
 namespace labstor::ipc {
 
+/**
+ * The allocator type.
+ * Used to reconstruct allocator from shared memory
+ * */
 enum class AllocatorType {
   kPageAllocator,
   kFixedFragmentationAllocator
 };
 
+/**
+ * The basic shared-memory allocator header.
+ * Allocators inherit from this.
+ * */
 struct AllocatorHeader {
   int allocator_type_;
   allocator_id_t allocator_id_;
@@ -45,13 +53,18 @@ struct AllocatorHeader {
 
   AllocatorHeader() = default;
 
-  // NOTE(llogan): allocator_id_ is set after construction
-  explicit AllocatorHeader(AllocatorType type,
-                           size_t custom_header_size) :
-    allocator_type_(static_cast<int>(type)),
-    custom_header_size_(custom_header_size) {}
+  void Configure(allocator_id_t allocator_id,
+                 AllocatorType type,
+                 size_t custom_header_size) {
+    allocator_type_ = static_cast<int>(type);
+    allocator_id_ = allocator_id;
+    custom_header_size_ = custom_header_size;
+  }
 };
 
+/**
+ * The allocator base class.
+ * */
 class Allocator {
  protected:
   slot_id_t slot_id_;
@@ -59,17 +72,28 @@ class Allocator {
   MemorySlot &slot_;
 
  public:
+
+  /**
+   * Constructor
+   * */
   explicit Allocator(slot_id_t slot_id, MemoryBackend *backend)
     : slot_id_(slot_id), backend_(backend),
       slot_(backend_->GetSlot(slot_id)) {}
 
+  /**
+   * Destructor
+   * */
   virtual ~Allocator() = default;
 
   /**
    * Create the shared-memory allocator with \a id unique allocator id over
    * the particular slot of a memory backend.
+   *
+   * The Create function is required, but it cannot be marked virtual as
+   * each allocator has its own arguments to this method. Though each
+   * allocator must have "id" as its firt argument.
    * */
-  virtual void Create(allocator_id_t id) = 0;
+  // virtual void Create(allocator_id_t id, Args ...args) = 0;
 
   /**
    * Attach the allocator to the slot and backend passed in the constructor.
