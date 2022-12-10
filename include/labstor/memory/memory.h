@@ -158,7 +158,7 @@ struct ShmArchive {
   }
 
   /** Moves the data from one archive into another */
-  ShmArchive(ShmArchive&& source)
+  ShmArchive(ShmArchive&& source) noexcept
   : header_ptr_(source.header_ptr_) {
     source.header_ptr_.set_null();
   }

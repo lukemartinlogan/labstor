@@ -39,17 +39,6 @@ using labstor::ipc::Pointer;
 using labstor::ipc::unordered_map;
 using labstor::ipc::string;
 
-/**
- * TODO(llogan): Shared-memory data structure iterators take "this" as a
- * stored parameter. This results in problems in the unordered_map, as
- * we create vector and list objects for only the scope of the begin()
- * and end() functions.
- *
- * Do we need to load data structure from SHM every single iteration?
- * What if we store vector + list objects in the iterator itself?
- * Probably the only solution.
- * */
-
 void UnorderedMapOfIntTest() {
   Allocator *alloc = alloc_g;
   unordered_map<int, int> map(alloc);
@@ -107,10 +96,13 @@ void UnorderedMapOfIntTest() {
     REQUIRE(map.size() == 0);
   }
 
-  // Add 1000 entries to the map (should force a growth)
+  // Add 100 entries to the map (should force a growth)
   {
     for (int i = 0; i < 100; ++i) {
-      map.emplace(i);
+      map.emplace(i, i);
+    }
+    for (int i = 0; i < 100; ++i) {
+      REQUIRE(map.find(i) != map.end());
     }
   }
 
@@ -118,6 +110,101 @@ void UnorderedMapOfIntTest() {
 }
 
 void UnorderedMapOfStringTest() {
+  Allocator *alloc = alloc_g;
+  unordered_map<string, string> map(alloc);
+
+  // Insert 20 entries into the map (no growth trigger)
+  {
+    for (int i = 0; i < 20; ++i) {
+      auto t1 = string(std::to_string(i));
+      auto t2 = string(std::to_string(i + 1));
+      map.emplace(t1, t2);
+      t1.shm_destroy();
+      t2.shm_destroy();
+    }
+  }
+
+  map.shm_destroy();
+  return;
+
+  // Check if the 20 entries are indexable
+  {
+    for (int i = 0; i < 20; ++i) {
+      string t1(std::to_string(i));
+      string t2(std::to_string(i + 1));
+      auto t3 = map[t1];
+      REQUIRE(t3 == t2);
+      t1.shm_destroy();
+      t2.shm_destroy();
+    }
+  }
+
+  // Check if 20 entries are findable
+  {
+    for (int i = 0; i < 20; ++i) {
+      string t1(std::to_string(i));
+      string t2(std::to_string(i + 1));
+      auto iter = map.find(t1);
+      auto entry = *iter;
+      REQUIRE(entry.val_ == t2);
+      t1.shm_destroy();
+      t2.shm_destroy();
+    }
+  }
+
+  // Iterate over the map
+  {
+    auto prep = map.iter_prep();
+    prep.Lock();
+    int i = 0;
+    for (auto entry : map) {
+      int key;
+      int val;
+      std::stringstream(entry.key_.str()) >> key;
+      std::stringstream(entry.val_.str()) >> val;
+      REQUIRE((0 <= key && key < 20));
+      REQUIRE((1 <= val && val < 21));
+      ++i;
+    }
+    REQUIRE(i == 20);
+  }
+
+  // Remove 15 entries from the map
+  {
+    for (int i = 0; i < 15; ++i) {
+      string i_text(std::to_string(i));
+      map.erase(i_text);
+      i_text.shm_destroy();
+    }
+    REQUIRE(map.size() == 5);
+    for (int i = 0; i < 15; ++i) {
+      string i_text(std::to_string(i));
+      REQUIRE(map.find(i_text) == map.end());
+      i_text.shm_destroy();
+    }
+  }
+
+  // Erase the entire map
+  {
+    map.clear();
+    REQUIRE(map.size() == 0);
+  }
+
+  // Add 1000 entries to the map (should force a growth)
+  {
+    for (int i = 0; i < 100; ++i) {
+      string i_text(std::to_string(i));
+      map.emplace(i_text);
+      i_text.shm_destroy();
+    }
+    for (int i = 0; i < 100; ++i) {
+      string i_text(std::to_string(i));
+      REQUIRE(map.find(i_text) != map.end());
+      i_text.shm_destroy();
+    }
+  }
+
+  map.shm_destroy();
 }
 
 TEST_CASE("UnorderedMapOfInt") {

@@ -46,17 +46,20 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
   /** Construct for an std::string with allocator in shared-memory */
-  explicit string(const std::string &text, Allocator *alloc) :
-    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
+  explicit string(const std::string &text, Allocator *alloc)
+  : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     _create_str(text.data(), text.size());
   }
 
-  /** Disable implicit copy */
-  explicit string(const string &other) = delete;
+  /** Enable implicit copy */
+  string(const string &other)
+  : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(other.alloc_) {
+    _create_str(other.data(), other.size());
+  }
 
   /** Construct by concatenating two string in shared-memory */
-  explicit string(string &text1, string &text2, Allocator *alloc) :
-    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
+  explicit string(string &text1, string &text2, Allocator *alloc)
+  : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     size_t length = text1.size() + text2.size();
     _create_header(length);
     memcpy(header_->text_,
@@ -142,13 +145,13 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
 #define LABSTOR_STR_CMP_OPERATOR(op) \
   bool operator op(const char *other) const { \
-    return strncmp(data(), other, size()) op 0; \
+    return strncmp(data(), other, std::max(size(), strlen(other))) op 0; \
   } \
   bool operator op(const std::string &other) const { \
-    return strncmp(data(), other.data(), size()) op 0; \
+    return strncmp(data(), other.data(), std::max(size(), other.size())) op 0; \
   } \
   bool operator op(const string &other) const { \
-    return strncmp(data(), other.data(), size()) op 0; \
+    return strncmp(data(), other.data(), std::max(size(), other.size())) op 0; \
   }
 
   LABSTOR_STR_CMP_OPERATOR(==)
@@ -181,6 +184,24 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 typedef string charbuf;
 
 }  // namespace labstor::ipc
+
+namespace std {
+
+/** Hash function */
+template<>
+struct hash<labstor::ipc::string> {
+  size_t operator()(const labstor::ipc::string &text) const {
+    size_t sum = 0;
+    for (size_t i = 0; i < text.size(); ++i) {
+      auto shift = static_cast<size_t>(i % sizeof(size_t));
+      auto c = static_cast<size_t>((unsigned char)text[i]);
+      sum = 31*sum + (c << shift);
+    }
+    return sum;
+  }
+};
+
+}  // namespace std
 
 #undef CLASS_NAME
 #undef TYPED_CLASS

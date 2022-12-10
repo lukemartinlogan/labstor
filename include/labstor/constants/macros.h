@@ -30,4 +30,6 @@
 #define MEGABYTES(n) ((size_t)(n) * (1<<20))
 #define GIGABYTES(n) ((size_t)(n) * (1<<30))
 
+#define TYPE_BITS(type) ((sizeof(type)*8))
+
 #endif  // LABSTOR_MACROS_H

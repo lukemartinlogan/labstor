@@ -45,7 +45,7 @@ class ShmDataStructure : public ShmSerializeable {
     return alloc_;
   }
 
-  void operator>>(ShmArchive<TYPED_CLASS> &ar) {
+  void operator>>(ShmArchive<TYPED_CLASS> &ar) const {
     shm_serialize(ar);
   }
 
@@ -53,7 +53,7 @@ class ShmDataStructure : public ShmSerializeable {
     shm_deserialize(ar);
   }
 
-  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) {
+  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
     ar.header_ptr_ = header_ptr_;
   }
 

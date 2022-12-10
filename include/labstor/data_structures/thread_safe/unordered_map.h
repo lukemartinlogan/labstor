@@ -27,7 +27,10 @@ class unordered_map_bucket;
  * */
 template<typename Key, typename T>
 struct unordered_map_header {
-  ShmArchive<vector<unordered_map_bucket<Key, T>>> buckets_;
+ public:
+  using BUCKET_T = unordered_map_bucket<Key, T>;
+ public:
+  ShmArchive<vector<BUCKET_T>> buckets_;
   int max_collisions_;
   RealNumber growth_;
   std::atomic<size_t> length_;
@@ -50,10 +53,15 @@ struct unordered_map_pair {
  public:
   /** Constructor */
   template<typename ...Args>
-  unordered_map_pair(const Key &key, Args&& ...args)
-    : key_(key), val_(std::forward<Args>(args)...) {
+  unordered_map_pair(const Key key, Args&& ...args)
+  : key_(std::move(key)), val_(std::forward<Args>(args)...) {
   }
 
+  /** Move constructor */
+  unordered_map_pair(unordered_map_pair&& other)
+  : key_(std::move(other.key_)), val_(std::move(other.val_)) {}
+
+  /** Destructor */
   ~unordered_map_pair() {
     if constexpr(IS_SHM_SERIALIZEABLE(Key)) {
       Key key(key_);
@@ -74,6 +82,7 @@ struct unordered_map_pair_ret {
  public:
   typedef SHM_T_OR_REF_T(T) T_Ref;
   typedef SHM_T_OR_REF_T(Key) Key_Ref;
+  using COLLISION_T = unordered_map_pair<Key, T>;
 
  public:
   Key_Ref key_;
@@ -81,7 +90,7 @@ struct unordered_map_pair_ret {
 
  public:
   /** Constructor */
-  explicit unordered_map_pair_ret(unordered_map_pair<Key, T> &pair)
+  explicit unordered_map_pair_ret(COLLISION_T &pair)
     : key_(pair.key_), val_(pair.val_) {
   }
 };
@@ -248,6 +257,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
  public:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
   typedef SHM_T_OR_REF_T(T) T_Ref;
+  typedef SHM_T_OR_ARCHIVE(Key) Key_Ar;
+  typedef SHM_T_OR_REF_T(Key) Key_Ref;
   using BUCKET_T = unordered_map_bucket<Key, T>;
   using COLLISION_T = unordered_map_pair<Key, T>;
   using COLLISION_RET_T = unordered_map_pair_ret<Key, T>;
@@ -320,8 +331,35 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @return None
    * */
   template<bool growth=true, typename ...Args>
-  void emplace(const Key &key, Args&&... args) {
+  void emplace(Args&&... args) {
+    COLLISION_T entry_shm(std::forward<Args>(args)...);
+    insert(entry_shm);
+  }
+
+  /**
+   * Emplace a serialized (key, value) pair in the map
+   *
+   * @param entry_shm the (key,value) pair shared-memory serialized
+   * @return None
+   * */
+  template<bool growth=true, typename ...Args>
+  void insert(COLLISION_T &&entry_shm) {
+    insert(entry_shm);
+  }
+
+  /**
+   * Emplace a serialized (key, value) pair in the map
+   *
+   * @param entry_shm the (key,value) pair shared-memory serialized
+   * @return None
+   * */
+  template<bool growth=true, typename ...Args>
+  void insert(COLLISION_T &entry_shm) {
     if (header_ == nullptr) { shm_init(); }
+    COLLISION_RET_T entry(entry_shm);
+    auto &key = entry.key_;
+    auto &val = entry.val_;
+
     // Acquire the header lock for a read (not modifying bucket vec)
     ScopedRwReadLock header_lock(header_->lock_);
     header_lock.Lock();
@@ -337,7 +375,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
     // Create the unordered_map pair
     list<COLLISION_T> collisions(bkt.collisions_);
-    collisions.emplace_back(key, std::forward<Args>(args)...);
+    collisions.emplace_back(std::move(entry_shm));
 
     // Get the number of buckets now to ensure repetitive growths don't happen
     size_t cur_num_buckets;
@@ -427,7 +465,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @return the object pointed by key
    * @exception UNORDERED_MAP_CANT_FIND the key was not in the map
    * */
-  T_Ref operator[](Key &key) {
+  T_Ref operator[](const Key &key) {
     auto iter = find(key);
     if (iter != end()) {
       return (*iter).val_;
@@ -572,8 +610,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       auto &bkt = buckets[i];
       list<COLLISION_T> collisions(bkt.collisions_);
       for (auto& entry : collisions) {
-        new_map.emplace<false>(std::move(entry.key_),
-                               std::move(entry.val_));
+        new_map.insert<false>(std::move(entry));
       }
     }
     shm_destroy();
