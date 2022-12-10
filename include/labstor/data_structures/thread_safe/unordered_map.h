@@ -41,16 +41,48 @@ template<typename Key, typename T>
 struct unordered_map_pair {
  public:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
+  typedef SHM_T_OR_ARCHIVE(Key) Key_Ar;
 
  public:
-  Key key_;
-  T_Ar obj_;
+  Key_Ar key_;
+  T_Ar val_;
 
  public:
   /** Constructor */
   template<typename ...Args>
   unordered_map_pair(const Key &key, Args ...args)
-    : key_(key), obj_(args...) {
+    : key_(key), val_(args...) {
+  }
+
+  ~unordered_map_pair() {
+    if constexpr(IS_SHM_SERIALIZEABLE(Key)) {
+      Key key(key_);
+      key.shm_destroy();
+    }
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      T val(val_);
+      val.shm_destroy();
+    }
+  }
+};
+
+/**
+ * The return value of a "Get" operation
+ * */
+template<typename Key, typename T>
+struct unordered_map_pair_ret {
+ public:
+  typedef SHM_T_OR_REF_T(T) T_Ref;
+  typedef SHM_T_OR_REF_T(Key) Key_Ref;
+
+ public:
+  Key_Ref key_;
+  T_Ref val_;
+
+ public:
+  /** Constructor */
+  explicit unordered_map_pair_ret(unordered_map_pair<Key, T> &pair)
+    : key_(pair.key_), val_(pair.val_) {
   }
 };
 
@@ -66,10 +98,15 @@ class unordered_map_bucket {
 
  public:
   RwLock lock_;
-  ShmArchive<list<unordered_map_pair<Key, T>>> collisions_;
+  ShmArchive<list<COLLISION_T>> collisions_;
 
   /** Constructs the collision list in shared memory */
   explicit unordered_map_bucket(Allocator *alloc) : collisions_(alloc) {}
+
+  ~unordered_map_bucket() {
+    list<COLLISION_T> collisions(collisions_);
+    collisions.shm_destroy();
+  }
 };
 
 /**
@@ -82,6 +119,7 @@ struct unordered_map_iterator {
   typedef SHM_T_OR_REF_T(T) T_Ref;
   using BUCKET_T = unordered_map_bucket<Key, T>;
   using COLLISION_T = unordered_map_pair<Key, T>;
+  using COLLISION_RET_T = unordered_map_pair_ret<Key, T>;
 
  public:
   unordered_map<Key, T, Hash> *map_;
@@ -123,8 +161,8 @@ struct unordered_map_iterator {
   }
 
   /** Get the pointed object */
-  COLLISION_T& operator*() const {
-    return (*collision_);
+  COLLISION_RET_T operator*() const {
+    return COLLISION_RET_T(*collision_);
   }
 
   /** Go to the next object */
@@ -165,13 +203,24 @@ struct unordered_map_iterator {
   /** Check if two iterators are equal */
   friend bool operator==(const unordered_map_iterator &a,
                          const unordered_map_iterator &b) {
+    if (a.is_end() && b.is_end()) {
+      return true;
+    }
     return (a.bucket_ == b.bucket_) && (a.collision_ == b.collision_);
   }
 
   /** Check if two iterators are inequal */
   friend bool operator!=(const unordered_map_iterator &a,
                          const unordered_map_iterator &b) {
+    if (a.is_end() && b.is_end()) {
+      return false;
+    }
     return (a.bucket_ != b.bucket_) || (a.collision_ != b.collision_);
+  }
+
+  /** Determine whether this iterator is the end iterator */
+  bool is_end() const {
+    return bucket_.is_end();
   }
 };
 
@@ -196,6 +245,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   typedef SHM_T_OR_REF_T(T) T_Ref;
   using BUCKET_T = unordered_map_bucket<Key, T>;
   using COLLISION_T = unordered_map_pair<Key, T>;
+  using COLLISION_RET_T = unordered_map_pair_ret<Key, T>;
 
  public:
   /** Default constructor */
@@ -342,9 +392,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * Erase the entire map
    * */
   void clear() {
-    ScopedRwWriteLock header_lock(header_->lock_);
     vector<BUCKET_T> buckets(header_->buckets_);
-    buckets.erase();
+    buckets.clear();
     header_->length_ = 0;
   }
 
@@ -357,7 +406,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   T_Ref operator[](Key &key) {
     auto iter = find(key);
     if (iter != end()) {
-      return (*iter).obj_;
+      return (*iter).val_;
     }
     throw UNORDERED_MAP_CANT_FIND.format();
   }
@@ -399,7 +448,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     auto iter = collisions.begin();
     auto iter_end = collisions.end();
     for (; iter != iter_end; ++iter) {
-      if ((*iter).key_ == key) {
+      COLLISION_RET_T entry(*iter);
+      if (entry.key_ == key) {
         return iter;
       }
     }
@@ -493,7 +543,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       auto &bkt = buckets[i];
       list<COLLISION_T> collisions(bkt.collisions_);
       for (auto& entry : collisions) {
-        emplace<false>(entry.key_, std::move(entry.obj_));
+        emplace<false>(entry.key_, std::move(entry.val_));
       }
     }
   }

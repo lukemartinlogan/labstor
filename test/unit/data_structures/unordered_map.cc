@@ -67,8 +67,8 @@ void UnorderedMapOfIntTest() {
   // Check if 20 entries are findable
   for (int i = 0; i < 20; ++i) {
     auto iter = map.find(i);
-    auto &entry = *iter;
-    REQUIRE(entry.obj_ == i);
+    auto entry = *iter;
+    REQUIRE(entry.val_ == i);
   }
 
   // Iterate over the map
@@ -76,10 +76,9 @@ void UnorderedMapOfIntTest() {
     auto prep = map.iter_prep();
     prep.Lock();
     int i = 0;
-    for (auto &entry : map) {
-      std::cout << entry.obj_ << std::endl;
+    for (auto entry : map) {
       REQUIRE((0 <= entry.key_ && entry.key_ < 20));
-      REQUIRE((0 <= entry.obj_ && entry.obj_ < 20));
+      REQUIRE((0 <= entry.val_ && entry.val_ < 20));
       ++i;
     }
     REQUIRE(i == 20);
