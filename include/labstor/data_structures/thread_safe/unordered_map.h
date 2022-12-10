@@ -50,8 +50,8 @@ struct unordered_map_pair {
  public:
   /** Constructor */
   template<typename ...Args>
-  unordered_map_pair(const Key &key, Args ...args)
-    : key_(key), val_(args...) {
+  unordered_map_pair(const Key &key, Args&& ...args)
+    : key_(key), val_(std::forward<Args>(args)...) {
   }
 
   ~unordered_map_pair() {
@@ -222,6 +222,11 @@ struct unordered_map_iterator {
   bool is_end() const {
     return bucket_.is_end();
   }
+
+  /** Set this iterator to the end iterator */
+  void set_end() {
+    bucket_.set_end();
+  }
 };
 
 /**
@@ -251,18 +256,31 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   /** Default constructor */
   unordered_map() = default;
 
-  /** Default shared-memory constructor */
-  explicit unordered_map(Allocator *alloc) :
+  /** Construct the unordered_map in shared-memory */
+  template<typename ...Args>
+  explicit unordered_map(Allocator *alloc, Args&& ...args) :
     ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
-    shm_init();
+    shm_init(std::forward<Args>(args)...);
   }
 
-  /**
-   * Initialize unordered map to a default number of buckets and collisions
-   * per-bucket.
-   * */
-  void shm_init() {
-    shm_init(20, 4, RealNumber(5,4));
+  /** Moves one unordered_map into another */
+  unordered_map(unordered_map&& source) {
+    header_ptr_ = source.header_ptr_;
+    header_ = source.header_;
+    source.header_ptr_.set_null();
+  }
+
+  /** Disable copying  */
+  unordered_map(const unordered_map &other) = delete;
+
+  /** Assign one map into another */
+  unordered_map&
+  operator=(const unordered_map &other) {
+    if (this != &other) {
+      header_ptr_ = other.header_ptr_;
+      header_ = other.header_;
+    }
+    return *this;
   }
 
   /**
@@ -273,17 +291,21 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * a growth is triggered
    * @param growth the multiplier to grow the bucket vector size
    * */
-  void shm_init(int num_buckets, int max_collisions, RealNumber growth) {
+  void shm_init(int num_buckets = 20,
+                int max_collisions = 4,
+                RealNumber growth = RealNumber(5,4)) {
     header_ = alloc_->template
       AllocateObjs<TYPED_HEADER>(1, header_ptr_);
     vector<BUCKET_T> buckets(num_buckets, alloc_, alloc_);
-    buckets >> header_->buckets_;
+    buckets >>  header_->buckets_;
     header_->length_ = 0;
     header_->max_collisions_ = max_collisions;
+    header_->growth_ = growth;
   }
 
   /** Destroy the unordered_map buckets */
   void shm_destroy() {
+    if (header_ptr_.is_null()) { return; }
     vector<BUCKET_T> buckets(header_->buckets_);
     buckets.shm_destroy();
     alloc_->template
@@ -315,7 +337,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
     // Create the unordered_map pair
     list<COLLISION_T> collisions(bkt.collisions_);
-    collisions.emplace_back(key, args...);
+    collisions.emplace_back(key, std::forward<Args>(args)...);
 
     // Get the number of buckets now to ensure repetitive growths don't happen
     size_t cur_num_buckets;
@@ -356,11 +378,11 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
     // Find and remove key from collision list
     list<COLLISION_T> collisions(bkt.collisions_);
-    auto collision_iter = find_collision(key, collisions);
-    if (collision_iter == end()) {
+    auto iter = find_collision(key, collisions);
+    if (iter.is_end()) {
       return;
     }
-    collisions.erase(collision_iter);
+    collisions.erase(iter);
 
     // Decrement the size of the map
     --header_->length_;
@@ -382,7 +404,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
     // Erase the element from the collision list
     list<COLLISION_T> collisions(bkt.collisions_);
-    collisions.erase(iter);
+    collisions.erase(iter.collision_);
 
     // Decrement the size of the map
     --header_->length_;
@@ -393,7 +415,9 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * */
   void clear() {
     vector<BUCKET_T> buckets(header_->buckets_);
+    size_t num_buckets = buckets.size();
     buckets.clear();
+    buckets.resize(num_buckets, alloc_);
     header_->length_ = 0;
   }
 
@@ -427,6 +451,9 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     bkt_lock.Lock();
     iter.collisions_ << bkt.collisions_;
     iter.collision_ = find_collision(key, iter.collisions_);
+    if (iter.collision_.is_end()) {
+      iter.set_end();
+    }
     return iter;
   }
 
@@ -538,14 +565,19 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       return;
     }
     size_t new_num_buckets = get_new_size(num_buckets);
-    buckets.resize(new_num_buckets, alloc_);
+    unordered_map new_map(alloc_,
+                          new_num_buckets,
+                          header_->max_collisions_, header_->growth_);
     for (size_t i = 0; i < num_buckets; ++i) {
       auto &bkt = buckets[i];
       list<COLLISION_T> collisions(bkt.collisions_);
       for (auto& entry : collisions) {
-        emplace<false>(entry.key_, std::move(entry.val_));
+        new_map.emplace<false>(std::move(entry.key_),
+                               std::move(entry.val_));
       }
     }
+    shm_destroy();
+    (*this) = new_map;
   }
 
   /** Calculate the new number of buckets based on growth rate */

@@ -55,9 +55,9 @@ class Error {
   ~Error() = default;
 
   template<typename ...Args>
-  std::shared_ptr<Error> format(Args ...args) const {
+  std::shared_ptr<Error> format(Args&& ...args) const {
     std::shared_ptr<Error> err = std::make_shared<Error>(fmt_);
-    err->msg_ = Formatter::format(fmt_, args...);
+    err->msg_ = Formatter::format(fmt_, std::forward<Args>(args)...);
     return err;
   }
 

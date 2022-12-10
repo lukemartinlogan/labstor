@@ -55,7 +55,7 @@ class FixedFragmentationAllocator : public Allocator {
     return false;
   }
 
-  void Free(Pointer &ptr) override {
+  void FreeNoNullCheck(Pointer &ptr) override {
   }
   
 };

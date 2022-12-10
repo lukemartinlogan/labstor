@@ -55,20 +55,26 @@ void UnorderedMapOfIntTest() {
   unordered_map<int, int> map(alloc);
 
   // Insert 20 entries into the map (no growth trigger)
-  for (int i = 0; i < 20; ++i) {
-    map.emplace(i, i);
+  {
+    for (int i = 0; i < 20; ++i) {
+      map.emplace(i, i);
+    }
   }
 
   // Check if the 20 entries are indexable
-  for (int i = 0; i < 20; ++i) {
-    REQUIRE(map[i] == i);
+  {
+    for (int i = 0; i < 20; ++i) {
+      REQUIRE(map[i] == i);
+    }
   }
 
   // Check if 20 entries are findable
-  for (int i = 0; i < 20; ++i) {
-    auto iter = map.find(i);
-    auto entry = *iter;
-    REQUIRE(entry.val_ == i);
+  {
+    for (int i = 0; i < 20; ++i) {
+      auto iter = map.find(i);
+      auto entry = *iter;
+      REQUIRE(entry.val_ == i);
+    }
   }
 
   // Iterate over the map
@@ -84,8 +90,28 @@ void UnorderedMapOfIntTest() {
     REQUIRE(i == 20);
   }
 
-  // Remove 20 entries from the map
-  for (int i = 0; i < 20; ++i) {
+  // Remove 15 entries from the map
+  {
+    for (int i = 0; i < 15; ++i) {
+      map.erase(i);
+    }
+    REQUIRE(map.size() == 5);
+    for (int i = 0; i < 15; ++i) {
+      REQUIRE(map.find(i) == map.end());
+    }
+  }
+
+  // Erase the entire map
+  {
+    map.clear();
+    REQUIRE(map.size() == 0);
+  }
+
+  // Add 1000 entries to the map (should force a growth)
+  {
+    for (int i = 0; i < 100; ++i) {
+      map.emplace(i);
+    }
   }
 
   map.shm_destroy();

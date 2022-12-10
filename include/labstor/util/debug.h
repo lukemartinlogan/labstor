@@ -58,8 +58,8 @@ class AutoTrace {
 
  public:
   template<typename ...Args>
-  AutoTrace(bool tracepoint, Args ...args) : tracepoint_(tracepoint) {
-    labstor::ArgPacker params(args...);
+  AutoTrace(bool tracepoint, Args&& ...args) : tracepoint_(tracepoint) {
+    labstor::ArgPacker params(std::forward<Args>(args)...);
     std::stringstream ss;
     for (auto &param : params) {
       ss << param.ToString();

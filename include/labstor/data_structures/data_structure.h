@@ -59,6 +59,7 @@ class ShmDataStructure : public ShmSerializeable {
 
   void shm_deserialize(ShmArchive<TYPED_CLASS> &ar) {
     header_ptr_ = ar.header_ptr_;
+    if (ar.header_ptr_.is_null()) { return; }
     header_ = mem_mngr_->template
       Convert<TYPED_HEADER>(header_ptr_);
     alloc_ = mem_mngr_->GetAllocator(header_ptr_.allocator_id_);

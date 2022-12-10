@@ -24,7 +24,7 @@ class unique_ptr {
 
  public:
   template<typename ...Args>
-  unique_ptr(Args ...args) {
+  unique_ptr(Args&& ...args) {
   }
 
   T_Ref get() {

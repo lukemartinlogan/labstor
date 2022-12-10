@@ -215,6 +215,26 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     shm_init();
   }
 
+  /** Moves one list into another */
+  list(list&& source) {
+    header_ptr_ = source.header_ptr_;
+    header_ = source.header_;
+    source.header_ptr_.set_null();
+  }
+
+  /** Disable copying  */
+  list(const list &other) = delete;
+
+  /** Assign one list into another */
+  list&
+  operator=(const list &other) {
+    if (this != &other) {
+      header_ptr_ = other.header_ptr_;
+      header_ = other.header_;
+    }
+    return *this;
+  }
+
   /** Initialize list in shared memory */
   void shm_init() {
     header_ = alloc_->template
@@ -225,6 +245,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   /** Destroy all shared memory allocated by the list */
   void shm_destroy() {
+    if (header_ptr_.is_null()) { return; }
     clear();
     alloc_->Free(header_ptr_);
   }
@@ -232,20 +253,20 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   /** Construct an element at the back of the list */
   template<typename... Args>
   inline void emplace_back(Args&&... args) {
-    emplace(end(), args...);
+    emplace(end(), std::forward<Args>(args)...);
   }
 
   /** Construct an element at the beginning of the list */
   template<typename... Args>
   inline void emplace_front(Args&&... args) {
-    emplace(begin(), args...);
+    emplace(begin(), std::forward<Args>(args)...);
   }
 
   /** Construct an element at \a pos position in the list */
   template<typename ...Args>
   void emplace(list_iterator<T> pos, Args&&... args) {
     Pointer entry_ptr;
-    auto entry = _create_entry(entry_ptr, args...);
+    auto entry = _create_entry(entry_ptr, std::forward<Args>(args)...);
     if (size() == 0) {
       entry->prior_ptr_.set_null();
       entry->next_ptr_.set_null();
@@ -276,6 +297,11 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       prior->next_ptr_ = entry_ptr;
     }
     ++header_->length_;
+  }
+
+  /** Erase the element at pos */
+  void erase(list_iterator<T> pos) {
+    erase(pos, pos+1);
   }
 
   /** Erase all elements between first and last */
@@ -349,13 +375,13 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
  private:
   template<typename ...Args>
-  inline list_entry<T>* _create_entry(Pointer &ptr, Args ...args) {
+  inline list_entry<T>* _create_entry(Pointer &ptr, Args&& ...args) {
     auto entry = alloc_->template
       AllocateObjs<list_entry<T>>(1, ptr);
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      T(args...) >> entry->data_;
+      T(std::forward<Args>(args)...) >> entry->data_;
     } else {
-      Allocator::ConstructObj<T,T_Ar>(entry->data_, args...);
+      Allocator::ConstructObj<T,T_Ar>(entry->data_, std::forward<Args>(args)...);
     }
     return entry;
   }

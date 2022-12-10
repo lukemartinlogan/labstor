@@ -117,7 +117,7 @@ class _array {
     if (header_->length_ == header_->max_length_) {
       throw ARRAY_OUT_OF_BOUNDS.format("array::emplace_back");
     }
-    array_[header_->length_++] = std::move(T(args...));
+    array_[header_->length_++] = std::move(T(std::forward<Args>(args)...));
   }
 
   size_t size() {

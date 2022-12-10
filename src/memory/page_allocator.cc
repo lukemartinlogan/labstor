@@ -30,7 +30,7 @@ void PageAllocator::Create(allocator_id_t id) {
   size_t cur_off = free_lists_.After() - slot_.ptr_;
   size_t cur_size = slot_.size_ - cur_off;
   size_t per_conc_region = cur_size / header_->concurrency_;
-  if (per_conc_region == 0) {
+  if (per_conc_region < header_->page_size_) {
     throw NOT_ENOUGH_CONCURRENT_SPACE.format(
       "PageAllocator", slot_.size_, header_->concurrency_);
   }
@@ -96,7 +96,7 @@ bool PageAllocator::ReallocateNoNullCheck(Pointer &ptr, size_t new_size) {
   return false;
 }
 
-void PageAllocator::Free(Pointer &ptr) {
+void PageAllocator::FreeNoNullCheck(Pointer &ptr) {
   auto thread_info = LABSTOR_THREAD_MANAGER->GetThreadStatic();
   auto tid = thread_info->GetTid();
   for (auto i = 0; i < header_->concurrency_; ++i) {

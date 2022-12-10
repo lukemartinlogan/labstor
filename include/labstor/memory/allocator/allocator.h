@@ -107,7 +107,18 @@ class Allocator {
   /**
    * Free the memory pointed to by \a ptr Pointer
    * */
-  virtual void Free(Pointer &ptr) = 0;
+
+  void Free(Pointer &ptr) {
+    if (ptr.is_null()) {
+      throw INVALID_FREE.format();
+    }
+    FreeNoNullCheck(ptr);
+  }
+
+  /**
+   * Free the memory pointed to by \a ptr Pointer
+   * */
+  virtual void FreeNoNullCheck(Pointer &ptr) = 0;
 
   /**
    * Get the size of the user-defined custom header
@@ -222,9 +233,9 @@ class Allocator {
     typename T,
     typename T_Ar = SHM_T_OR_ARCHIVE(T),
     typename ...Args>
-  T* AllocateConstructObjs(size_t count, Args ...args) {
+  T* AllocateConstructObjs(size_t count, Args&& ...args) {
     Pointer p;
-    return AllocateConstructObjs<T, T_Ar>(count, p, args...);
+    return AllocateConstructObjs<T, T_Ar>(count, p, std::forward<Args>(args)...);
   }
 
   /**
@@ -239,9 +250,9 @@ class Allocator {
     typename T,
     typename T_Ar = SHM_T_OR_ARCHIVE(T),
     typename ...Args>
-  T* AllocateConstructObjs(size_t count, Pointer &p, Args ...args) {
+  T* AllocateConstructObjs(size_t count, Pointer &p, Args&& ...args) {
     T *ptr = AllocateObjs<T>(count, p);
-    ConstructObjs<T, T_Ar>(ptr, 0, count, args...);
+    ConstructObjs<T, T_Ar>(ptr, 0, count, std::forward<Args>(args)...);
     return ptr;
   }
 
@@ -278,6 +289,25 @@ class Allocator {
    * @param p process-independent pointer (input & output)
    * @param old_count the original number of objects (avoids reconstruction)
    * @param new_count the new number of objects
+   *
+   * @return A process-specific pointer
+   * */
+  template<
+    typename T,
+    typename T_Ar = SHM_T_OR_ARCHIVE(T)>
+  T_Ar* ReallocateObjs(Pointer &p,
+                       size_t new_count) {
+    T_Ar *ptr = ReallocatePtr<T_Ar>(p, new_count*sizeof(T_Ar));
+    return ptr;
+  }
+
+  /**
+   * Reallocate a pointer of objects to a new size and construct the
+   * new elements in-place.
+   *
+   * @param p process-independent pointer (input & output)
+   * @param old_count the original number of objects (avoids reconstruction)
+   * @param new_count the new number of objects
    * @param args parameters to construct object of type T
    *
    * @return A process-specific pointer
@@ -289,9 +319,9 @@ class Allocator {
   T_Ar* ReallocateConstructObjs(Pointer &p,
                                 size_t old_count,
                                 size_t new_count,
-                                Args ...args) {
+                                Args&& ...args) {
     T_Ar *ptr = ReallocatePtr<T_Ar>(p, new_count*sizeof(T_Ar));
-    ConstructObjs<T, T_Ar>(ptr, old_count, new_count, args...);
+    ConstructObjs<T, T_Ar>(ptr, old_count, new_count, std::forward<Args>(args)...);
     return ptr;
   }
 
@@ -322,10 +352,10 @@ class Allocator {
     typename ...Args>
   static void ConstructObjs(T_Ar *ptr,
                             size_t old_count,
-                            size_t new_count, Args ...args) {
+                            size_t new_count, Args&& ...args) {
     if (ptr == nullptr) { return; }
     for (size_t i = old_count; i < new_count; ++i) {
-      ConstructObj<T, T_Ar>(*(ptr + i), args...);
+      ConstructObj<T, T_Ar>(*(ptr + i), std::forward<Args>(args)...);
     }
   }
 
@@ -341,12 +371,12 @@ class Allocator {
     typename T_Ar = SHM_T_OR_ARCHIVE(T),
     typename ...Args>
   static void ConstructObj(T_Ar &obj_ar,
-                           Args ...args) {
+                           Args&& ...args) {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      T obj(args...);
+      T obj(std::forward<Args>(args)...);
       obj >> obj_ar;
     } else {
-      new(&obj_ar) T(args...);
+      new(&obj_ar) T(std::forward<Args>(args)...);
     }
   }
 

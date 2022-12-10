@@ -288,9 +288,9 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @param args the parameters of the elements to construct
    * */
   template<typename ...Args>
-  explicit vector(size_t length, Allocator *alloc, Args ...args)
+  explicit vector(size_t length, Allocator *alloc, Args&& ...args)
   : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
-    resize(length, args...);
+    resize(length, std::forward<Args>(args)...);
   }
 
   /**
@@ -301,9 +301,29 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @param args the parameters of the elements to construct
    * */
   template<typename ...Args>
-  explicit vector(size_t length, allocator_id_t alloc_id, Args ...args)
+  explicit vector(size_t length, allocator_id_t alloc_id, Args&& ...args)
   : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc_id) {
-    resize(length, args...);
+    resize(length, std::forward<Args>(args)...);
+  }
+
+  /** Moves one vector into another */
+  vector(vector&& source) {
+    header_ptr_ = source.header_ptr_;
+    header_ = source.header_;
+    source.header_ptr_.set_null();
+  }
+
+  /** Disable copying  */
+  vector(const vector &other) = delete;
+
+  /** Assign one vector into another */
+  vector&
+  operator=(const vector &other) {
+    if (this != &other) {
+      header_ptr_ = other.header_ptr_;
+      header_ = other.header_;
+    }
+    return *this;
   }
 
   /** Construct the vector in shared memory */
@@ -317,6 +337,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   /** Destroy all shared memory allocated by the vector */
   void shm_destroy() {
+    if (header_ptr_.is_null()) { return; }
     erase(begin(), end());
     alloc_->Free(header_->vec_ptr_);
     alloc_->Free(header_ptr_);
@@ -330,11 +351,11 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @param args the arguments to construct
    * */
   template<typename ...Args>
-  void reserve(size_t length, Args ...args) {
+  void reserve(size_t length, Args&& ...args) {
     if (header_ == nullptr) {
       shm_init();
     }
-    grow_vector(_data(), length, args...);
+    grow_vector(_data(), length, false, std::forward<Args>(args)...);
   }
 
   /**
@@ -345,8 +366,11 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @param args the arguments used to construct the vector elements
    * */
   template<typename ...Args>
-  void resize(size_t length, Args ...args) {
-    reserve(length, args...);
+  void resize(size_t length, Args&& ...args) {
+    if (header_ == nullptr) {
+      shm_init();
+    }
+    grow_vector(_data(), length, true, std::forward<Args>(args)...);
     header_->length_ = length;
   }
 
@@ -365,9 +389,9 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   void emplace_back(Args&&... args) {
     T_Ar *vec = _data();
     if (header_->length_ == header_->max_length_) {
-      vec = grow_vector(vec, 0);
+      vec = grow_vector(vec, 0, false);
     }
-    Allocator::ConstructObj<T>(*(vec + header_->length_), args...);
+    Allocator::ConstructObj<T>(*(vec + header_->length_), std::forward<Args>(args)...);
     ++header_->length_;
   }
 
@@ -375,15 +399,15 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   template<typename ...Args>
   void emplace(vector_iterator<T> pos, Args&&... args) {
     if (pos.is_end()) {
-      emplace_back(args...);
+      emplace_back(std::forward<Args>(args)...);
       return;
     }
     T_Ar *vec = _data();
     if (header_->length_ == header_->max_length_) {
-      vec = grow_vector(vec, 0);
+      vec = grow_vector(vec, 0, false);
     }
     shift_right(pos);
-    Allocator::ConstructObj<T, T_Ar>(*(vec + pos.i_), args...);
+    Allocator::ConstructObj<T, T_Ar>(*(vec + pos.i_), std::forward<Args>(args)...);
     ++header_->length_;
   }
 
@@ -442,7 +466,8 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @param args the arguments used to construct the elements of the vector
    * */
   template<typename ...Args>
-  T_Ar* grow_vector(T_Ar *vec, size_t max_length, Args ...args) {
+  T_Ar* grow_vector(T_Ar *vec, size_t max_length,
+                    bool resize, Args&& ...args) {
     // Grow vector by 25%
     if (max_length == 0) {
       max_length = 5 * header_->max_length_ / 4;
@@ -455,11 +480,18 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     }
 
     // Allocate new shared-memory vec
-    T_Ar *new_vec = alloc_->template
-      ReallocateConstructObjs<T, T_Ar>(header_->vec_ptr_,
-                              header_->max_length_,
-                              max_length,
-                              args...);
+    T_Ar *new_vec;
+    if (resize) {
+      new_vec = alloc_->template
+        ReallocateConstructObjs<T>(header_->vec_ptr_,
+                                   header_->length_,
+                                   max_length,
+                                   std::forward<Args>(args)...);
+    } else {
+      new_vec = alloc_->template
+        ReallocateObjs<T>(header_->vec_ptr_,
+                          max_length);
+    }
     if (new_vec == nullptr) {
       throw OUT_OF_MEMORY.format("vector::emplace_back",
                                  max_length*sizeof(T_Ar));

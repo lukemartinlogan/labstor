@@ -196,8 +196,8 @@ class ArgPacker {
   std::vector<Arg> args_;
  public:
   template<typename ...Args>
-  explicit ArgPacker(Args ...args) {
-    args_ = {args...};
+  explicit ArgPacker(Args&& ...args) {
+    args_ = {std::forward<Args>(args)...};
   }
   Arg& operator[](int pos) { return args_[pos]; }
 
@@ -210,8 +210,8 @@ class ArgPacker {
 class Formatter {
  public:
   template<typename ...Args>
-  static std::string format(std::string fmt, Args ...args) {
-    ArgPacker params(args...);
+  static std::string format(std::string fmt, Args&& ...args) {
+    ArgPacker params(std::forward<Args>(args)...);
     std::stringstream ss;
     int arg = 0;
     for (size_t i = 0; i < fmt.size(); ++i) {

@@ -34,9 +34,9 @@ class MemoryManager {
   Allocator* GetDefaultAllocator();
 
   template<typename T, typename ...Args>
-  Allocator* ConfigureAllocator(allocator_id_t allocator_id, Args ...args) {
+  Allocator* ConfigureAllocator(allocator_id_t allocator_id, Args&& ...args) {
     T *allocator = dynamic_cast<T*>(GetAllocator(allocator_id));
-    allocator->Configure(args...);
+    allocator->Configure(std::forward<Args>(args)...);
     return allocator;
   }
 

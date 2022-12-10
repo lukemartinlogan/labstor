@@ -19,8 +19,8 @@ class shared_ptr : public ShmDataStructure<shared_ptr<T>> {
   shared_ptr(T *ptr) { ptr_ = ptr; }
 
   template<typename ...Args>
-  shared_ptr(Args ...args) {
-    ptr_ = new T(args...);
+  shared_ptr(Args&& ...args) {
+    ptr_ = new T(std::forward<Args>(args)...);
   }
 
   T* get() {

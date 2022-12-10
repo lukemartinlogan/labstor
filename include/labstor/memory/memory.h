@@ -56,6 +56,13 @@ union allocator_id_t {
   bool operator!=(const allocator_id_t &other) const {
     return other.int_ != int_;
   }
+
+  /** Get the null allocator */
+  static allocator_id_t null() {
+    allocator_id_t alloc;
+    alloc.set_null();
+    return alloc;
+  }
 };
 
 typedef uint32_t slot_id_t;  // Uniquely ids a MemoryBackend slot
@@ -68,7 +75,7 @@ struct Pointer {
   size_t off_;                    // Offset within the allocator's slot
 
   /** Default constructor */
-  Pointer() : off_(0), allocator_id_() {}
+  Pointer() = default;
 
   /** Full constructor */
   explicit Pointer(allocator_id_t id, size_t off) :
@@ -84,6 +91,13 @@ struct Pointer {
     return allocator_id_.is_null();
   }
 
+  /** Get the null pointer */
+  static Pointer null() {
+    Pointer p;
+    p.set_null();
+    return p;
+  }
+
   /** Equality check */
   bool operator==(const Pointer &other) const {
     return (other.allocator_id_ == allocator_id_ && other.off_ == off_);
@@ -96,7 +110,7 @@ struct Pointer {
 };
 
 /** The null process-indepent pointer */
-static const Pointer kNullPointer;
+static const Pointer kNullPointer = Pointer::null();
 
 /**
  * Indicates that a data structure supports shared-memory storage by
@@ -104,7 +118,7 @@ static const Pointer kNullPointer;
  * */
 class ShmSerializeable {
  public:
-  // virtual void shm_init(args...) = 0;
+  // virtual void shm_init(std::forward<Args>(args)...) = 0;
   // virtual void shm_destroy() = 0;
   // virtual void shm_serialize(ShmArchive &ar) = 0;
   // virtual void shm_deserialize(ShmArchive &ar) = 0;
@@ -137,10 +151,16 @@ struct ShmArchive {
 
   /** Constructs and archives a shm-serializeable object */
   template<typename ...Args>
-  explicit ShmArchive(Args ...args) {
+  explicit ShmArchive(Args&& ...args) {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      T(args...) >> (*this);
+      T(std::forward<Args>(args)...) >> (*this);
     }
+  }
+
+  /** Moves the data from one archive into another */
+  ShmArchive(ShmArchive&& source)
+  : header_ptr_(source.header_ptr_) {
+    source.header_ptr_.set_null();
   }
 };
 
