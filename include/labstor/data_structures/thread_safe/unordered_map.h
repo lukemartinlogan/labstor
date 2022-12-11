@@ -53,7 +53,7 @@ struct unordered_map_pair {
  public:
   /** Constructor */
   template<typename ...Args>
-  unordered_map_pair(const Key key, Args&& ...args)
+  unordered_map_pair(const Key &key, Args&& ...args)
   : key_(std::move(key)), val_(std::forward<Args>(args)...) {
   }
 
@@ -331,8 +331,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @return None
    * */
   template<bool growth=true, typename ...Args>
-  void emplace(Args&&... args) {
-    COLLISION_T entry_shm(std::forward<Args>(args)...);
+  void emplace(const Key &key, Args&&... args) {
+    COLLISION_T entry_shm(key, std::forward<Args>(args)...);
     insert(entry_shm);
   }
 

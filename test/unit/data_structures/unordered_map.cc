@@ -124,9 +124,6 @@ void UnorderedMapOfStringTest() {
     }
   }
 
-  map.shm_destroy();
-  return;
-
   // Check if the 20 entries are indexable
   {
     for (int i = 0; i < 20; ++i) {
