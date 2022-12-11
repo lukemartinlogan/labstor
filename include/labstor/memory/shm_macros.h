@@ -43,4 +43,16 @@
     IS_SHM_SERIALIZEABLE(T), \
     T, T&>::type
 
+/**
+ * SHM_T_PTR_OR_ARCHIVE: Whether or not to store a T* pointer or a
+ * ShmArchive.
+ *
+ * Used for unique_ptr and shared_ptr.
+ * */
+
+#define SHM_T_PTR_OR_ARCHIVE(T) \
+  typename std::conditional<         \
+    IS_SHM_SERIALIZEABLE(T), \
+    ShmArchive<T>, T*>::type
+
 #endif //LABSTOR_INCLUDE_LABSTOR_MEMORY_SHM_MACROS_H_

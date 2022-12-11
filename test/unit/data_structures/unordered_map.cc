@@ -187,7 +187,7 @@ void UnorderedMapOfStringTest() {
     REQUIRE(map.size() == 0);
   }
 
-  // Add 1000 entries to the map (should force a growth)
+  // Add 100 entries to the map (will force a growth)
   {
     for (int i = 0; i < 100; ++i) {
       string i_text(std::to_string(i));
