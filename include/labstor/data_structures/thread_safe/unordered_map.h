@@ -307,7 +307,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
                 RealNumber growth = RealNumber(5,4)) {
     header_ = alloc_->template
       AllocateObjs<TYPED_HEADER>(1, header_ptr_);
-    vector<BUCKET_T> buckets(num_buckets, alloc_, alloc_);
+    vector<BUCKET_T> buckets(alloc_, num_buckets,
+                             alloc_);
     buckets >>  header_->buckets_;
     header_->length_ = 0;
     header_->max_collisions_ = max_collisions;

@@ -288,7 +288,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @param args the parameters of the elements to construct
    * */
   template<typename ...Args>
-  explicit vector(size_t length, Allocator *alloc, Args&& ...args)
+  explicit vector(Allocator *alloc, size_t length, Args&& ...args)
   : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     resize(length, std::forward<Args>(args)...);
   }
@@ -301,7 +301,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @param args the parameters of the elements to construct
    * */
   template<typename ...Args>
-  explicit vector(size_t length, allocator_id_t alloc_id, Args&& ...args)
+  explicit vector(allocator_id_t alloc_id, size_t length, Args&& ...args)
   : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc_id) {
     resize(length, std::forward<Args>(args)...);
   }

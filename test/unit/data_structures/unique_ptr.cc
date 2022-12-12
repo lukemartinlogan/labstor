@@ -11,14 +11,26 @@
 using labstor::ipc::string;
 using labstor::ipc::unique_ptr;
 
+void CopyConstructorShouldFail(unique_ptr<int> num) {
+  std::cout << "Probably shouldn't work" << std::endl;
+}
+
 void UniquePtrOfInt() {
   Allocator *alloc = alloc_g;
-  unique_ptr<int> hello(alloc, 25);
+  unique_ptr<int> data(alloc, 25);
+  REQUIRE(data.get() == 25);
+  REQUIRE(*data == 25);
+  // TestCopy(hello);
+
+  unique_ptr<int> data2 = std::move(data);
 }
 
 void UniquePtrOfString() {
   Allocator *alloc = alloc_g;
-  unique_ptr<string> text(alloc, "there", alloc);
+  unique_ptr<string> data(alloc, "there", alloc);
+  REQUIRE(data.get().str() == "there");
+  REQUIRE((*data).str() == "there");
+  unique_ptr<string> data2 = std::move(data);
 }
 
 TEST_CASE("UniquePtrOfInt") {

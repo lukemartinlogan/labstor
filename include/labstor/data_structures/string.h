@@ -51,7 +51,7 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     _create_str(text.data(), text.size());
   }
 
-  /** Enable implicit copy */
+  /** Copy constructor */
   string(const string &other)
   : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(other.alloc_) {
     _create_str(other.data(), other.size());
@@ -61,7 +61,7 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   explicit string(string &text1, string &text2, Allocator *alloc)
   : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
     size_t length = text1.size() + text2.size();
-    _create_header(length);
+    shm_init(length);
     memcpy(header_->text_,
            text1.data(), text1.size());
     memcpy(header_->text_ + size(),
@@ -71,14 +71,14 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   /** Construct a string of a specific length in shared memory */
   explicit string(size_t length) {
-    _create_header(length);
+    shm_init(length);
     header_->text_[length] = 0;
   }
 
   /** Construct a string of specific length and allocator in shared memory */
   explicit string(size_t length, Allocator *alloc) :
     ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
-    _create_header(length);
+    shm_init(length);
     header_->text_[length] = 0;
   }
 
@@ -126,10 +126,15 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
   /**
-   * Initialize shared-memory, does nothing as it is always handled in
-   * constructors
+   * Initialize shared-memory header. Requires the length of
+   * the string before-hand.
    * */
-  void shm_init() {}
+  void shm_init(size_t length) {
+    header_ = alloc_->template
+      AllocatePtr<TYPED_HEADER>(
+      sizeof(TYPED_HEADER) + length + 1,
+      header_ptr_);
+  }
 
   /**
    * Destroy the shared-memory data.
@@ -166,14 +171,8 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     size_t length = strlen(text);
     _create_str(text, length);
   }
-  inline void _create_header(size_t length) {
-    header_ = alloc_->template
-      AllocatePtr<TYPED_HEADER>(
-      sizeof(TYPED_HEADER) + length + 1,
-      header_ptr_);
-  }
   inline void _create_str(const char *text, size_t length) {
-    _create_header(length);
+    shm_init(length);
     memcpy(header_->text_, text, length);
     header_->text_[length] = 0;
     header_->length_ = length;
