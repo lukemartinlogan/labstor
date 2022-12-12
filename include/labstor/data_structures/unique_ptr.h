@@ -68,6 +68,15 @@ public:
     }
   }
 
+  /** Gets a reference to the internal object */
+  T_Ref get_const() const {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      return T(header_->obj_);
+    } else {
+      return header_->obj_;
+    }
+  }
+
   /** Gets a reference to the internal object using * */
   T_Ref operator*() {
     return get();
@@ -123,5 +132,17 @@ public:
 #undef CLASS_NAME
 #undef TYPED_CLASS
 #undef TYPED_HEADER
+
+namespace std {
+
+/** Hash function for unique_ptr */
+template<typename T>
+struct hash<labstor::ipc::unique_ptr<T>> {
+  size_t operator()(const labstor::ipc::unique_ptr<T> &obj) const {
+    return std::hash<T>{}(obj.get_const());
+  }
+};
+
+}  // namespace std
 
 #endif  // LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_UNIQUE_PTR_H_

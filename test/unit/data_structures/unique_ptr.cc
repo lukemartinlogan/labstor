@@ -23,6 +23,8 @@ void UniquePtrOfInt() {
   // TestCopy(hello);
 
   unique_ptr<int> data2 = std::move(data);
+
+  REQUIRE(std::hash<unique_ptr<int>>{}(data2) == std::hash<int>{}(25));
 }
 
 void UniquePtrOfString() {

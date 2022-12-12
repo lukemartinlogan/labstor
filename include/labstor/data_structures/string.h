@@ -186,7 +186,7 @@ typedef string charbuf;
 
 namespace std {
 
-/** Hash function */
+/** Hash function for string */
 template<>
 struct hash<labstor::ipc::string> {
   size_t operator()(const labstor::ipc::string &text) const {
