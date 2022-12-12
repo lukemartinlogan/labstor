@@ -90,6 +90,16 @@ void UnorderedMapOfIntTest() {
     }
   }
 
+  // Attempt to replace an existing key
+  {
+    for (int i = 15; i < 20; ++i) {
+      REQUIRE(map.try_emplace(i, 100) == false);
+    }
+    for (int i = 15; i < 20; ++i) {
+      REQUIRE(map[i] != 100);
+    }
+  }
+
   // Erase the entire map
   {
     map.clear();
