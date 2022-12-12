@@ -132,6 +132,7 @@ class ShmSerializeable {
  * */
 template<typename T>
 struct ShmArchive {
+ public:
   Pointer header_ptr_;
 
   /** Default constructor */
@@ -143,9 +144,23 @@ struct ShmArchive {
   }
 
   /** Archives a shm-serializeable object */
-  explicit ShmArchive(const T &obj) {
+  void Archive(const T &obj) {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       obj >> (*this);
+    }
+  }
+
+  /** Archives a shm-serializeable object */
+  explicit ShmArchive(T &obj) {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      Archive(obj);
+    }
+  }
+
+  /** Archives a shm-serializeable object */
+  explicit ShmArchive(const T &obj) {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      Archive(obj);
     }
   }
 

@@ -46,7 +46,7 @@ class unique_ptr : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 public:
   SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
 
- private:
+ public:
   typedef SHM_T_OR_REF_T(T) T_Ref;
   bool owner_;
 
