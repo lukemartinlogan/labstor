@@ -9,7 +9,7 @@ add_executable(test_data_structure_exec
         vector.cc
         list.cc
         unordered_map.cc
-        unique_ptr.cc
+        #unique_ptr.cc
 )
 
 add_dependencies(test_data_structure_exec labstor_client)

@@ -324,78 +324,29 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
   /**
-   * Construct an object directly in the map
+   * Construct an object directly in the map. Overrides the object if
+   * key already exists.
    *
    * @param key the key to future index the map
    * @param args the arguments to construct the object
    * @return None
    * */
-  template<bool growth=true, typename ...Args>
-  void emplace(const Key &key, Args&&... args) {
-    COLLISION_T entry_shm(key, std::forward<Args>(args)...);
-    insert(entry_shm);
+  template<typename ...Args>
+  bool emplace(const Key &key, Args&&... args) {
+    return emplace_templ<true, true>(key, std::forward<Args>(args)...);
   }
 
   /**
-   * Emplace a serialized (key, value) pair in the map
+   * Construct an object directly in the map. Does not modify the key
+   * if it already exists.
    *
-   * @param entry_shm the (key,value) pair shared-memory serialized
+   * @param key the key to future index the map
+   * @param args the arguments to construct the object
    * @return None
    * */
-  template<bool growth=true, typename ...Args>
-  void insert(COLLISION_T &&entry_shm) {
-    insert(entry_shm);
-  }
-
-  /**
-   * Emplace a serialized (key, value) pair in the map
-   *
-   * @param entry_shm the (key,value) pair shared-memory serialized
-   * @return None
-   * */
-  template<bool growth=true, typename ...Args>
-  void insert(COLLISION_T &entry_shm) {
-    if (header_ == nullptr) { shm_init(); }
-    COLLISION_RET_T entry(entry_shm);
-    auto &key = entry.key_;
-    auto &val = entry.val_;
-
-    // Acquire the header lock for a read (not modifying bucket vec)
-    ScopedRwReadLock header_lock(header_->lock_);
-    header_lock.Lock();
-
-    // Hash the key to a bucket
-    vector<BUCKET_T> buckets(header_->buckets_);
-    size_t bkt_id = Hash{}(key) % buckets.size();
-    BUCKET_T &bkt = buckets[bkt_id];
-
-    // Prepare bucket for write
-    ScopedRwWriteLock bkt_lock(bkt.lock_);
-    bkt_lock.Lock();
-
-    // Create the unordered_map pair
-    list<COLLISION_T> collisions(bkt.collisions_);
-    collisions.emplace_back(std::move(entry_shm));
-
-    // Get the number of buckets now to ensure repetitive growths don't happen
-    size_t cur_num_buckets;
-    if constexpr(growth) {
-      cur_num_buckets = buckets.size();
-    }
-
-    // Release the bucket + unordered_map locks
-    bkt_lock.Unlock();
-    header_lock.Unlock();
-
-    // Grow vector if necessary
-    if constexpr(growth) {
-      if (collisions.size() > header_->max_collisions_) {
-        grow_map(cur_num_buckets);
-      }
-    }
-
-    // Increment the size of the map
-    ++header_->length_;
+  template<typename ...Args>
+  bool try_emplace(const Key &key, Args&&... args) {
+    return emplace_templ<true, false>(key, std::forward<Args>(args)...);
   }
 
   /**
@@ -521,6 +472,91 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     return iter_end;
   }
 
+  /**
+   * Construct an object directly in the map
+   *
+   * @param key the key to future index the map
+   * @param args the arguments to construct the object
+   * @return None
+   * */
+  template<bool growth, bool modify_existing, typename ...Args>
+  bool emplace_templ(const Key &key, Args&&... args) {
+    COLLISION_T entry_shm(key, std::forward<Args>(args)...);
+    return insert_templ<growth, modify_existing>(entry_shm);
+  }
+
+  /**
+   * Emplace a serialized (key, value) pair in the map
+   *
+   * @param entry_shm the (key,value) pair shared-memory serialized
+   * @return None
+   * */
+  template<bool growth, bool modify_existing, typename ...Args>
+  bool insert_templ(COLLISION_T &&entry_shm) {
+    return insert_templ<growth, modify_existing>(entry_shm);
+  }
+
+  /**
+   * Emplace a serialized (key, value) pair in the map
+   *
+   * @param growth whether or not to grow the unordered map on collision
+   * @param modify_existing whether or not to override an existing entry
+   * @param entry_shm the (key,value) pair shared-memory serialized
+   * @return None
+   * */
+  template<bool growth, bool modify_existing, typename ...Args>
+  bool insert_templ(COLLISION_T &entry_shm) {
+    if (header_ == nullptr) { shm_init(); }
+    COLLISION_RET_T entry(entry_shm);
+    auto &key = entry.key_;
+    auto &val = entry.val_;
+
+    // Acquire the header lock for a read (not modifying bucket vec)
+    ScopedRwReadLock header_lock(header_->lock_);
+    header_lock.Lock();
+
+    // Hash the key to a bucket
+    vector<BUCKET_T> buckets(header_->buckets_);
+    size_t bkt_id = Hash{}(key) % buckets.size();
+    BUCKET_T &bkt = buckets[bkt_id];
+
+    // Prepare bucket for write
+    ScopedRwWriteLock bkt_lock(bkt.lock_);
+    bkt_lock.Lock();
+
+    // Insert into the map
+    list<COLLISION_T> collisions(bkt.collisions_);
+    if constexpr(!modify_existing) {
+      auto has_key = find_collision(entry.key_, collisions);
+      if (has_key != collisions.end()) {
+        return false;
+      }
+    }
+    collisions.emplace_back(std::move(entry_shm));
+
+    // Get the number of buckets now to ensure repetitive growths don't happen
+    size_t cur_num_buckets;
+    if constexpr(growth) {
+      cur_num_buckets = buckets.size();
+    }
+
+    // Release the bucket + unordered_map locks
+    bkt_lock.Unlock();
+    header_lock.Unlock();
+
+    // Grow vector if necessary
+    if constexpr(growth) {
+      if (collisions.size() > header_->max_collisions_) {
+        grow_map(cur_num_buckets);
+      }
+    }
+
+    // Increment the size of the map
+    ++header_->length_;
+    return true;
+  }
+
+
  public:
 
   /**
@@ -610,7 +646,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       auto &bkt = buckets[i];
       list<COLLISION_T> collisions(bkt.collisions_);
       for (auto& entry : collisions) {
-        new_map.insert<false>(std::move(entry));
+        new_map.insert_templ<false, true>(std::move(entry));
       }
     }
     shm_destroy();

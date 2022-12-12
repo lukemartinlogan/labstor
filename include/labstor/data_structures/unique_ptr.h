@@ -21,9 +21,20 @@ namespace labstor::ipc {
 template<typename T>
 struct unique_ptr_header {
  public:
-  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
+  typedef SHM_T_OR_HEADER(T) T_Hdr;
  public:
-  ShmArchive<T> obj_;
+  T_Hdr obj_;
+
+
+
+  template<typename ...Args>
+  unique_ptr_header(Args&& ...args) {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+
+    } else {
+      obj_(std::forward<Args>(args)...);
+    }
+  }
 };
 
 /**
@@ -43,11 +54,8 @@ public:
   SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
 
  private:
-  typedef SHM_T_PTR_OR_ARCHIVE(T) T_PAr;
   typedef SHM_T_OR_REF_T(T) T_Ref;
   bool owner_;
-  T_PAr obj_;
-  Pointer obj_ptr_;
 
  public:
   template<typename ...Args>

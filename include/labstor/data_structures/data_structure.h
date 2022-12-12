@@ -14,6 +14,9 @@ namespace labstor::ipc {
 
 template<typename TYPED_CLASS, typename TYPED_HEADER>
 class ShmDataStructure : public ShmSerializeable {
+ public:
+  typedef TYPED_HEADER header_t;
+
  protected:
   Pointer header_ptr_;
   TYPED_HEADER *header_;
