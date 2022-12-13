@@ -126,6 +126,12 @@ class ShmSerializeable {
   // void operator<<(ShmArchive &r);
 };
 
+
+/**
+ * A wrapper which can be used to construct an object
+ * within a ShmArchive
+ * */
+
 /**
  * A wrapper around a process-independent pointer for storing
  * a single complex shared-memory data structure
@@ -141,27 +147,6 @@ struct ShmArchive {
   /** Get the process-independent pointer */
   inline Pointer& Get() {
     return header_ptr_;
-  }
-
-  /** Archives a shm-serializeable object */
-  void Archive(const T &obj) {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj >> (*this);
-    }
-  }
-
-  /** Archives a shm-serializeable object */
-  explicit ShmArchive(T &obj) {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      Archive(obj);
-    }
-  }
-
-  /** Archives a shm-serializeable object */
-  explicit ShmArchive(const T &obj) {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      Archive(obj);
-    }
   }
 
   /** Constructs and archives a shm-serializeable object */

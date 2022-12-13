@@ -27,7 +27,8 @@ struct unique_ptr_header {
 
   template<typename ...Args>
   unique_ptr_header(Args&& ...args)
-  : obj_(std::forward<Args>(args)...) {}
+  : obj_(std::forward<Args>(args)...) {
+  }
 };
 
 /**
@@ -97,9 +98,15 @@ public:
   /** Initializes shared memory header */
   template<typename ...Args>
   void shm_init(Args ...args) {
-    header_ = alloc_->template
-      AllocateConstructObjs<TYPED_HEADER>(1, header_ptr_,
-                                          std::forward<Args>(args)...);
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      header_ = alloc_->template
+        AllocateConstructObjs<TYPED_HEADER >(1, header_ptr_,
+                                             std::forward<Args>(args)...);
+    } else {
+      header_ = alloc_->template
+        AllocateConstructObjs<TYPED_HEADER >(1, header_ptr_,
+                                             std::forward<Args>(args)...);
+    }
     owner_ = true;
   }
 
