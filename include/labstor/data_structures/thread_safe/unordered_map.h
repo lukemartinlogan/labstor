@@ -6,7 +6,7 @@
 #define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_UNORDERED_MAP_H_
 
 #include "labstor/thread/thread_manager.h"
-#include "labstor/thread/mutex.h"
+#include "labstor/thread/lock.h"
 #include "labstor/data_structures/thread_unsafe/vector.h"
 #include "labstor/data_structures/thread_unsafe/list.h"
 #include "labstor/data_structures/data_structure.h"

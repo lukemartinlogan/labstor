@@ -4,7 +4,7 @@
 
 #include "basic_test.h"
 #include "omp.h"
-#include "labstor/thread/mutex.h"
+#include "labstor/thread/lock.h"
 
 using labstor::Mutex;
 using labstor::RwLock;

@@ -1,36 +1,14 @@
 //
-// Created by lukemartinlogan on 11/3/22.
+// Created by lukemartinlogan on 12/13/22.
 //
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_THREAD_MUTEX_H_
-#define LABSTOR_INCLUDE_LABSTOR_THREAD_MUTEX_H_
+#ifndef LABSTOR_INCLUDE_LABSTOR_THREAD_RWLOCK_H_
+#define LABSTOR_INCLUDE_LABSTOR_THREAD_RWLOCK_H_
 
 #include <atomic>
-#include "thread_manager.h"
+#include "labstor/thread/thread_manager.h"
 
 namespace labstor {
-
-struct Mutex {
-  std::atomic<uint32_t> lock_;
-
-  Mutex() : lock_(0) {}
-
-  void Lock();
-  bool TryLock();
-  void Unlock();
-};
-
-struct ScopedMutex {
-  Mutex &lock_;
-  bool is_locked_;
-
-  explicit ScopedMutex(Mutex &lock);
-  ~ScopedMutex();
-
-  void Lock();
-  bool TryLock();
-  void Unlock();
-};
 
 union RwLockPayload {
   struct {
@@ -84,4 +62,4 @@ struct ScopedRwWriteLock {
 
 }  // namespace labstor
 
-#endif  // LABSTOR_INCLUDE_LABSTOR_THREAD_MUTEX_H_
+#endif //LABSTOR_INCLUDE_LABSTOR_THREAD_RWLOCK_H_

@@ -6,7 +6,7 @@
 #define LABSTOR_INCLUDE_LABSTOR_MEMORY_ALLOCATOR_PAGE_ALLOCATOR_H_
 
 #include "allocator.h"
-#include <labstor/thread/mutex.h>
+#include "labstor/thread/lock.h"
 #include "labstor/data_structures/thread_unsafe/_queue.h"
 
 namespace labstor::ipc {

@@ -2,7 +2,7 @@
 // Created by lukemartinlogan on 11/4/22.
 //
 
-#include <labstor/thread/mutex.h>
+#include "labstor/thread/lock.h"
 
 namespace labstor {
 
