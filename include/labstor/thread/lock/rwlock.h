@@ -18,11 +18,11 @@ union RwLockPayload {
   uint64_t as_int_;
 
   bool IsWriteLocked() const {
-    return bits.r_ == 0 && bits.w_ > 0;
+    return bits.w_ > 0;
   }
 
   bool IsReadLocked() const {
-    return bits.r_ > 0 && bits.w_ == 0;
+    return bits.r_ > 0;
   }
 };
 

@@ -47,7 +47,7 @@ void RwLock::ReadUnlock() {
  * Acquire the write lock
  * */
 void RwLock::WriteLock() {
-  bool ret;
+  bool ret = false;
   RwLockPayload expected, desired;
   auto thread_info = LABSTOR_THREAD_MANAGER->GetThreadStatic();
   do {
