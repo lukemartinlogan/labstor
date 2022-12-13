@@ -38,8 +38,6 @@ void PageAllocationTest(Allocator *alloc) {
   size_t page_size = KILOBYTES(4);
   auto mem_mngr = LABSTOR_MEMORY_MANAGER;
 
-  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-
   // Allocate pages
   Pointer ps[count];
   void *ptrs[count];
@@ -74,28 +72,33 @@ void PageAllocationTest(Allocator *alloc) {
   for (int i = 0; i < count; ++i) {
     alloc->Free(ps[i]);
   }
-  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
 
 void MultiThreadedPageAllocationTest(Allocator *alloc) {
-  int nthreads = 4;
+  int nthreads = 8;
+  LABSTOR_THREAD_MANAGER->GetThreadStatic();
 
   omp_set_dynamic(0);
 #pragma omp parallel shared(alloc) num_threads(nthreads)
   {
 #pragma omp barrier
     PageAllocationTest(alloc);
+#pragma omp barrier
   }
 }
 
 TEST_CASE("PageAllocator") {
   auto alloc = Pretest(AllocatorType::kPageAllocator);
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   PageAllocationTest(alloc);
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   Posttest();
 }
 
 TEST_CASE("PageAllocatorMultithreaded") {
   auto alloc = Pretest(AllocatorType::kPageAllocator);
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   MultiThreadedPageAllocationTest(alloc);
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   Posttest();
 }

@@ -14,10 +14,12 @@ namespace labstor::ipc {
 typedef _queue_entry Page;
 
 struct PageFreeList {
-  Mutex lock_;
-  _queue_header queue_;
-  size_t region_off_, region_size_;
-  size_t free_size_, alloc_size_;
+  Mutex lock_;                       /**< Always locks the list */
+  _queue_header queue_;              /**< Singly linked list header */
+  size_t region_off_, region_size_;  /**< Stack allocator */
+  size_t free_size_;      /**< The number of bytes free in this list */
+  size_t total_alloced_;  /**< Total number of bytes alloc'd from this list */
+  size_t total_freed_;    /**< Total number of bytes freed to this list */
 };
 
 struct PageAllocatorHeader : public AllocatorHeader {

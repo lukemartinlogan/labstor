@@ -5,7 +5,7 @@
 #ifndef LABSTOR_TEST_UNIT_DATA_STRUCTURES_TEST_INIT_H_
 #define LABSTOR_TEST_UNIT_DATA_STRUCTURES_TEST_INIT_H_
 
-#include <labstor/memory/allocator/page_allocator.h>
+#include "labstor/memory/allocator/page_allocator.h"
 
 using labstor::ipc::MemoryBackendType;
 using labstor::ipc::MemoryBackend;
