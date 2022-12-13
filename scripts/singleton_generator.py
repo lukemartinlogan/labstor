@@ -45,14 +45,14 @@ class SingletonGenerator:
         ))
 
     def Generate(self, cc_file, h_file):
-        self._GenerateCC(cc_file)
+        self._GenerateCC(cc_file, h_file)
         self._GenerateH(h_file)
 
-    def _GenerateCC(self, path):
+    def _GenerateCC(self, path, h_file):
         lines = []
         lines.append("#include <labstor/constants/macros.h>")
         lines.append("#include <labstor/util/singleton.h>")
-        lines.append("#include <labstor/constants/singleton_macros.h>")
+        lines.append(f"#include <{h_file.replace('include/', '')}>")
         lines.append("")
         for defn in self.defs:
             lines.append(f"#include <{defn.include}>")
@@ -61,8 +61,9 @@ class SingletonGenerator:
 
     def _GenerateH(self, path):
         lines = []
-        lines.append("#ifndef LABSTOR_SINGLETON_MACROS_H")
-        lines.append("#define LABSTOR_SINGLETON_MACROS_H")
+        guard = ToSnakeCase(path).replace('/', '_')
+        lines.append(f"#ifndef LABSTOR_{guard.upper()}_H")
+        lines.append(f"#define LABSTOR_{guard.upper()}_H")
         lines.append("")
         lines.append("#include <labstor/util/singleton.h>")
         lines.append("")
@@ -70,7 +71,7 @@ class SingletonGenerator:
             lines.append(f"#define {defn.macro_name} scs::Singleton<{defn.class_name}>::GetInstance()")
             lines.append(f"#define {defn.type_name} {defn.class_name}*")
             lines.append("")
-        lines.append("#endif  // LABSTOR_SINGLETON_MACROS_H")
+        lines.append(f"#endif  // {guard}")
         self._SaveLines(lines, path)
 
     def _SaveLines(self, lines, path):
@@ -82,11 +83,14 @@ class SingletonGenerator:
             fp.write(text)
 
 gen = SingletonGenerator()
-
 gen.Add("labstor", "IpcManager", "labstor/ipc_manager/ipc_manager.h")
 gen.Add("labstor", "ConfigurationManager", "labstor/runtime/configuration_manager.h")
+gen.Generate("src/singleton.cc",
+             "include/labstor/constants/singleton_macros.h")
+
+gen = SingletonGenerator()
 gen.Add("labstor", "SystemInfo", "labstor/introspect/system_info.h")
 gen.Add("labstor::ipc", "MemoryManager", "labstor/memory/memory_manager.h")
 gen.Add("labstor", "ThreadManager", "labstor/thread/thread_manager.h")
-
-gen.Generate("src/singleton.cc", "include/labstor/constants/singleton_macros.h")
+gen.Generate("src/data_structure_singleton.cc",
+             "include/labstor/constants/data_structure_singleton_macros.h")

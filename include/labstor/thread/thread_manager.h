@@ -7,7 +7,7 @@
 
 #include "thread.h"
 #include "thread_factory.h"
-#include <labstor/constants/singleton_macros.h>
+#include <labstor/constants/data_structure_singleton_macros.h>
 
 namespace labstor {
 

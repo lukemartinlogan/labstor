@@ -12,9 +12,9 @@ add_executable(test_data_structure_exec
         unique_ptr.cc
 )
 
-add_dependencies(test_data_structure_exec labstor_client)
+add_dependencies(test_data_structure_exec labstor_data_structures)
 target_link_libraries(test_data_structure_exec
-        labstor_client Catch2::Catch2 MPI::MPI_CXX)
+        labstor_data_structures Catch2::Catch2 MPI::MPI_CXX)
 
 # 1p - 1 process, 1t - 1 thread
 add_test(NAME test_vector_1p1t COMMAND

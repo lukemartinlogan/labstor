@@ -8,7 +8,7 @@
 #include "labstor/memory/memory.h"
 #include "labstor/memory/allocator/allocator.h"
 #include "labstor/memory/memory_manager.h"
-#include "labstor/constants/singleton_macros.h"
+#include <labstor/constants/data_structure_singleton_macros.h>
 
 namespace labstor::ipc {
 

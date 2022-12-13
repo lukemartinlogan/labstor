@@ -35,30 +35,7 @@ endif()
 
 ##################Build LabStor main packages
 
-add_library(labstor_data_structures
-        src/thread/mutex.cc
-        src/thread/rwlock.cc
-        src/memory/page_allocator.cc
-        src/memory/memory_manager.cc)
-
-add_library(labstor_client
-        src/ipc_manager.cc
-        src/singleton.cc)
-add_dependencies(labstor_client
-        labstor_data_structures)
-target_link_libraries(labstor_client
-        labstor_data_structures)
-target_link_libraries(labstor_client yaml-cpp pthread -lrt -ldl)
-
-add_executable(labstor_runtime
-        src/runtime/runtime.cc
-        src/ipc_manager.cc
-        src/singleton.cc)
-add_dependencies(labstor_runtime
-        labstor_data_structures)
-target_link_libraries(labstor_runtime
-        labstor_data_structures)
-target_link_libraries(labstor_runtime yaml-cpp pthread -lrt -ldl)
+add_subdirectory(src)
 
 add_custom_target(lint COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/lint.sh ${CMAKE_SOURCE_DIR})
 

@@ -6,9 +6,9 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(test_allocator_exec
         main_thread.cc
         allocator.cc)
-add_dependencies(test_allocator_exec labstor_client)
+add_dependencies(test_allocator_exec labstor_data_structures)
 target_link_libraries(test_allocator_exec
-        labstor_client Catch2::Catch2 MPI::MPI_CXX OpenMP::OpenMP_CXX)
+        labstor_data_structures Catch2::Catch2 MPI::MPI_CXX OpenMP::OpenMP_CXX)
 
 add_test(NAME test_page_allocator COMMAND
         ${CMAKE_CURRENT_BINARY_DIR}/test_allocator_exec "PageAllocator")
