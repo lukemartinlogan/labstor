@@ -26,7 +26,7 @@ namespace labstor::ipc {
  * and deletes eventually.
  * */
 template<typename T>
-class unique_ptr : public ShmSerializeable {
+class unique_ptr : public ShmDataStructurePointer<T> {
  public:
   typedef SHM_T_OR_PTR_T(T) T_Ptr;
   T_Ptr obj_;
@@ -76,32 +76,8 @@ class unique_ptr : public ShmSerializeable {
   /** Serialize the unique_ptr into a ShmArchive */
   void shm_serialize(ShmArchive<TYPED_CLASS> ar) const {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      auto cast = static_cast<ShmArchive<T>>(ar);
-      obj_ >> cast;
+      obj_ >> ShmArchive<T>(ar.Get());
     }
-  }
-
-  /** Gets a reference to the internal object */
-  T& get() {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      return obj_;
-    } else {
-      return *obj_;
-    }
-  }
-
-  /** Gets a reference to the internal object */
-  T& get_const() const {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      return obj_;
-    } else {
-      return *obj_;
-    }
-  }
-
-  /** Gets a reference to the internal object using * */
-  T& operator*() {
-    return get();
   }
 
   /** Disables the assignment operator */
@@ -122,7 +98,7 @@ namespace std {
 template<typename T>
 struct hash<labstor::ipc::unique_ptr<T>> {
   size_t operator()(const labstor::ipc::unique_ptr<T> &obj) const {
-    return std::hash<T>{}(obj.get_const());
+    return std::hash<T>{}(obj.get_ref_const());
   }
 };
 

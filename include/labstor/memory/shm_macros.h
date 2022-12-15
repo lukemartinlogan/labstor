@@ -13,6 +13,13 @@
   std::is_base_of<labstor::ipc::ShmSerializeable, T>::value
 
 /**
+ * Determine whether or not \a T type is a SHM smart pointer
+ * */
+
+#define IS_SHM_SMART_POINTER(T) \
+  std::is_base_of<labstor::ipc::ShmSmartPointer, T>::value
+
+/**
  * SHM_T_OR_ARCHIVE: Determines the type of the internal pointer used
  * to store data in a shared-memory data structure. For example,
  * let's say there are two vectors: vector<int> V1 and vector<vector<int>> V2.

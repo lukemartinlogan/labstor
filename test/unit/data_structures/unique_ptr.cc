@@ -22,11 +22,13 @@ void CopyConstructorShouldFail(unique_ptr<int> num) {
 void UniquePtrOfInt() {
   Allocator *alloc = alloc_g;
   uptr<int> data(25);
-  REQUIRE(data.get() == 25);
+  REQUIRE(data.get_ref() == 25);
+  REQUIRE(data.get_ref_const() == 25);
   REQUIRE(*data == 25);
   // TestCopy(hello);
 
   uptr<int> data2 = std::move(data);
+  REQUIRE(data2.IsNull());
   REQUIRE(std::hash<uptr<int>>{}(data2) == std::hash<int>{}(25));
 
   ShmArchive<uptr<int>> ar;
@@ -38,7 +40,7 @@ void UniquePtrOfInt() {
 void UniquePtrOfString() {
   Allocator *alloc = alloc_g;
   unique_ptr<string> data(alloc, "there");
-  REQUIRE(data.get().str() == "there");
+  REQUIRE(data->str() == "there");
   REQUIRE((*data).str() == "there");
   unique_ptr<string> data2 = std::move(data);
 

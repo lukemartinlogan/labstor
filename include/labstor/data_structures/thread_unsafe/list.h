@@ -393,11 +393,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   inline list_entry<T>* _create_entry(Pointer &ptr, Args&& ...args) {
     auto entry = alloc_->template
       AllocateObjs<list_entry<T>>(1, ptr);
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      T(std::forward<Args>(args)...) >> entry->data_;
-    } else {
-      Allocator::ConstructObj<T,T_Ar>(entry->data_, std::forward<Args>(args)...);
-    }
+    Allocator::ConstructObj<T, T_Ar>(entry->data_, std::forward<Args>(args)...);
     return entry;
   }
 };

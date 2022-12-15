@@ -12,6 +12,82 @@
 
 namespace labstor::ipc {
 
+template<typename T>
+class ShmDataStructurePointer : public ShmSmartPointer {
+ public:
+  typedef SHM_T_OR_PTR_T(T) T_Ptr;
+  T_Ptr obj_;
+
+ public:
+  /** Sets this pointer to NULL */
+  void SetNull() {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      obj_.SetNull();
+    } else {
+      obj_ = nullptr;
+    }
+  }
+
+  /** Checks if this pointer is null */
+  bool IsNull() {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      return obj_.IsNull();
+    } else {
+      return obj_ == nullptr;
+    }
+  }
+
+  /** Gets a pointer to the internal object */
+  T* get() {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      return &obj_;
+    } else {
+      return obj_;
+    }
+  }
+
+  /** Gets a pointer to the internal object */
+  T* get_const() const {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      return &obj_;
+    } else {
+      return obj_;
+    }
+  }
+
+  /** Gets a reference to the internal object */
+  T& get_ref() {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      return obj_;
+    } else {
+      return *obj_;
+    }
+  }
+
+  /** Gets a reference to the internal object */
+  T& get_ref_const() const {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      return obj_;
+    } else {
+      return *obj_;
+    }
+  }
+
+  /** Gets a reference to the internal object using * */
+  T& operator*() {
+    return get_ref();
+  }
+
+  /** Gets a pointer to the internal object */
+  T* operator->() {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      return &obj_;
+    } else {
+      return obj_;
+    }
+  }
+};
+
 /**
  * The general base class of a shared-memory data structure
  * */
@@ -87,22 +163,22 @@ class ShmDataStructure : public ShmSerializeable {
   }
 
   /** Serialize the data structure into a ShmArchive */
-  void operator>>(ShmArchive<TYPED_CLASS> &ar) const {
+  void operator>>(ShmArchive<TYPED_CLASS> ar) const {
     shm_serialize(ar);
   }
 
   /** Deserialize the data structure from a ShmArchive */
-  void operator<<(ShmArchive<TYPED_CLASS> &ar) {
+  void operator<<(ShmArchive<TYPED_CLASS> ar) {
     shm_deserialize(ar);
   }
 
   /** Serialize the data structure into a ShmArchive */
-  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
+  void shm_serialize(ShmArchive<TYPED_CLASS> ar) const {
     ar.header_ptr_ = header_ptr_;
   }
 
   /** Deserialize the data structure from a ShmArchive */
-  void shm_deserialize(ShmArchive<TYPED_CLASS> &ar) {
+  void shm_deserialize(ShmArchive<TYPED_CLASS> ar) {
     header_ptr_ = ar.header_ptr_;
     if (ar.header_ptr_.is_null()) { return; }
     header_ = mem_mngr_->template
@@ -125,7 +201,9 @@ class ShmDataStructure : public ShmSerializeable {
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_serialize;\
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_deserialize;\
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::IsNull;\
-  explicit CLASS_NAME(labstor::ipc::ShmArchive<TYPED_CLASS> &ar) {\
+  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::SetDestructable;\
+  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::UnsetDestructable;\
+  explicit CLASS_NAME(labstor::ipc::ShmArchive<TYPED_CLASS> ar) {\
     shm_deserialize(ar);\
   }
 

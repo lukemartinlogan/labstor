@@ -10,6 +10,7 @@
 #include "labstor/data_structures/thread_unsafe/vector.h"
 #include "labstor/data_structures/thread_unsafe/list.h"
 #include "labstor/data_structures/data_structure.h"
+#include "labstor/data_structures/manual_ptr.h"
 
 
 namespace labstor::ipc {
@@ -30,7 +31,7 @@ struct unordered_map_header {
  public:
   using BUCKET_T = unordered_map_bucket<Key, T>;
  public:
-  ShmArchive<vector<BUCKET_T>> buckets_;
+  ShmArchive<mptr<vector<BUCKET_T>>> buckets_;
   int max_collisions_;
   RealNumber growth_;
   std::atomic<size_t> length_;
@@ -107,14 +108,14 @@ class unordered_map_bucket {
 
  public:
   RwLock lock_;
-  ShmArchive<list<COLLISION_T>> collisions_;
+  ShmArchive<mptr<list<COLLISION_T>>> collisions_;
 
   /** Constructs the collision list in shared memory */
   explicit unordered_map_bucket(Allocator *alloc) : collisions_(alloc) {}
 
   ~unordered_map_bucket() {
-    list<COLLISION_T> collisions(collisions_);
-    collisions.shm_destroy();
+    mptr<list<COLLISION_T>> collisions(collisions_);
+    collisions->shm_destroy();
   }
 };
 
@@ -131,9 +132,9 @@ struct unordered_map_iterator {
   using COLLISION_RET_T = unordered_map_pair_ret<Key, T>;
 
  public:
-  unordered_map<Key, T, Hash> *map_;
-  vector<BUCKET_T> buckets_;
-  list<COLLISION_T> collisions_;
+  const unordered_map<Key, T, Hash> *map_;
+  mptr<vector<BUCKET_T>> buckets_;
+  mptr<list<COLLISION_T>> collisions_;
   vector_iterator<BUCKET_T> bucket_;
   list_iterator<COLLISION_T> collision_;
 
@@ -141,7 +142,7 @@ struct unordered_map_iterator {
   unordered_map_iterator() = default;
 
   /** Construct the iterator  */
-  explicit unordered_map_iterator(unordered_map<Key, T, Hash> *map)
+  explicit unordered_map_iterator(const unordered_map<Key, T, Hash> *map)
     : map_(map) {
   }
 
@@ -150,8 +151,8 @@ struct unordered_map_iterator {
     map_ = other.map_;
     bucket_ = other.bucket_;
     collision_ = other.collision_;
-    bucket_.change_pointer(&buckets_);
-    collision_.change_pointer(&collisions_);
+    bucket_.change_pointer(buckets_.get());
+    collision_.change_pointer(collisions_.get());
   }
 
   /** Assign one iterator into another */
@@ -194,17 +195,17 @@ struct unordered_map_iterator {
    * */
   bool make_correct() {
     do {
-      if (bucket_ == buckets_.end()) {
+      if (bucket_ == buckets_->end()) {
         return false;
       }
       auto &bkt = (*bucket_);
       collisions_ << bkt.collisions_;
-      if (collision_ != collisions_.end()) {
+      if (collision_ != collisions_->end()) {
         return true;
       } else {
         ++bucket_;
         collisions_ << (*bucket_).collisions_;
-        collision_ = collisions_.begin();
+        collision_ = collisions_->begin();
       }
     } while (true);
   }
@@ -308,7 +309,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     auto alloc = other.alloc_;
     shm_init(alloc, num_buckets, max_collisions, growth);
     for (auto entry : other) {
-      insert(entry);
+      emplace(std::move(entry.key_),
+              std::move(entry.val_));
     }
   }
 
@@ -328,9 +330,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
     header_ = alloc_->template
       AllocateObjs<TYPED_HEADER>(1, header_ptr_);
-    vector<BUCKET_T> buckets(alloc_, num_buckets,
-                             alloc_);
-    buckets >>  header_->buckets_;
+    mptr<vector<BUCKET_T>> buckets(alloc_, num_buckets, alloc_);
+    buckets >> header_->buckets_;
     header_->length_ = 0;
     header_->max_collisions_ = max_collisions;
     header_->growth_ = growth;
@@ -339,8 +340,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   /** Destroy the unordered_map buckets */
   void shm_destroy() {
     if (IsNull()) { return; }
-    vector<BUCKET_T> buckets(header_->buckets_);
-    buckets.shm_destroy();
+    mptr<vector<BUCKET_T>> buckets(header_->buckets_);
+    buckets->shm_destroy();
     alloc_->template
       Free(header_ptr_);
   }
@@ -381,19 +382,19 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     header_lock.Lock();
 
     // Get the bucket the key belongs to
-    vector<BUCKET_T> buckets(header_->buckets_);
-    size_t bkt_id = Hash{}(key) % buckets.size();
-    BUCKET_T &bkt = buckets[bkt_id];
+    mptr<vector<BUCKET_T>> buckets(header_->buckets_);
+    size_t bkt_id = Hash{}(key) % buckets->size();
+    BUCKET_T &bkt = (*buckets)[bkt_id];
     ScopedRwWriteLock bkt_lock(bkt.lock_);
     bkt_lock.Lock();
 
     // Find and remove key from collision list
-    list<COLLISION_T> collisions(bkt.collisions_);
+    mptr<list<COLLISION_T>> collisions(bkt.collisions_);
     auto iter = find_collision(key, collisions);
     if (iter.is_end()) {
       return;
     }
-    collisions.erase(iter);
+    collisions->erase(iter);
 
     // Decrement the size of the map
     --header_->length_;
@@ -414,8 +415,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     bkt_lock.Lock();
 
     // Erase the element from the collision list
-    list<COLLISION_T> collisions(bkt.collisions_);
-    collisions.erase(iter.collision_);
+    mptr<list<COLLISION_T>> collisions(bkt.collisions_);
+    collisions->erase(iter.collision_);
 
     // Decrement the size of the map
     --header_->length_;
@@ -425,10 +426,10 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * Erase the entire map
    * */
   void clear() {
-    vector<BUCKET_T> buckets(header_->buckets_);
-    size_t num_buckets = buckets.size();
-    buckets.clear();
-    buckets.resize(num_buckets, alloc_);
+    mptr<vector<BUCKET_T>> buckets(header_->buckets_);
+    size_t num_buckets = buckets->size();
+    buckets->clear();
+    buckets->resize(num_buckets, alloc_);
     header_->length_ = 0;
   }
 
@@ -455,8 +456,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     ScopedRwReadLock header_lock(header_->lock_);
     header_lock.Lock();
     iter.buckets_ << header_->buckets_;
-    size_t bkt_id = Hash{}(key) % iter.buckets_.size();
-    iter.bucket_ = iter.buckets_.begin() + bkt_id;
+    size_t bkt_id = Hash{}(key) % iter.buckets_->size();
+    iter.bucket_ = iter.buckets_->begin() + bkt_id;
     BUCKET_T &bkt = (*iter.bucket_);
     ScopedRwReadLock bkt_lock(bkt.lock_);
     bkt_lock.Lock();
@@ -477,9 +478,9 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
   /** The number of buckets in the map */
-  size_t get_num_buckets() {
-    vector<BUCKET_T> buckets(header_->buckets_);
-    return buckets.size();
+  size_t get_num_buckets() const {
+    mptr<vector<BUCKET_T>> buckets(header_->buckets_);
+    return buckets->size();
   }
 
  private:
@@ -488,9 +489,9 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * Find a key in the collision list
    * */
   list_iterator<COLLISION_T>
-  find_collision(const Key &key, list<COLLISION_T> &collisions) {
-    auto iter = collisions.begin();
-    auto iter_end = collisions.end();
+  find_collision(const Key &key, mptr<list<COLLISION_T>> &collisions) {
+    auto iter = collisions->begin();
+    auto iter_end = collisions->end();
     for (; iter != iter_end; ++iter) {
       COLLISION_RET_T entry(*iter);
       if (entry.key_ == key) {
@@ -544,28 +545,28 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     header_lock.Lock();
 
     // Hash the key to a bucket
-    vector<BUCKET_T> buckets(header_->buckets_);
-    size_t bkt_id = Hash{}(key) % buckets.size();
-    BUCKET_T &bkt = buckets[bkt_id];
+    mptr<vector<BUCKET_T>> buckets(header_->buckets_);
+    size_t bkt_id = Hash{}(key) % buckets->size();
+    BUCKET_T &bkt = (*buckets)[bkt_id];
 
     // Prepare bucket for write
     ScopedRwWriteLock bkt_lock(bkt.lock_);
     bkt_lock.Lock();
 
     // Insert into the map
-    list<COLLISION_T> collisions(bkt.collisions_);
+    mptr<list<COLLISION_T>> collisions(bkt.collisions_);
     if constexpr(!modify_existing) {
       auto has_key = find_collision(entry.key_, collisions);
-      if (has_key != collisions.end()) {
+      if (has_key != collisions->end()) {
         return false;
       }
     }
-    collisions.emplace_back(std::move(entry_shm));
+    collisions->emplace_back(std::move(entry_shm));
 
     // Get the number of buckets now to ensure repetitive growths don't happen
     size_t cur_num_buckets;
     if constexpr(growth) {
-      cur_num_buckets = buckets.size();
+      cur_num_buckets = buckets->size();
     }
 
     // Release the bucket + unordered_map locks
@@ -574,7 +575,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
     // Grow vector if necessary
     if constexpr(growth) {
-      if (collisions.size() > header_->max_collisions_) {
+      if (collisions->size() > header_->max_collisions_) {
         grow_map(cur_num_buckets);
       }
     }
@@ -607,8 +608,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     void Lock() {
       if (!is_locked_) {
         map_.header_->lock_.ReadLock();
-        vector<BUCKET_T> buckets(map_.header_->buckets_);
-        for (auto &bkt : buckets) {
+        mptr<vector<BUCKET_T>> buckets(map_.header_->buckets_);
+        for (auto &bkt : *buckets) {
           bkt.lock_.ReadLock();
         }
         is_locked_ = true;
@@ -619,8 +620,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     void Unlock() {
       if (is_locked_) {
         map_.header_->lock_.ReadUnlock();
-        vector<BUCKET_T> buckets(map_.header_->buckets_);
-        for (auto &bkt : buckets) {
+        mptr<vector<BUCKET_T>> buckets(map_.header_->buckets_);
+        for (auto &bkt : *buckets) {
           bkt.lock_.ReadUnlock();
         }
         is_locked_ = false;
@@ -634,25 +635,25 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
   /** Forward iterator begin */
-  inline unordered_map_iterator<Key, T, Hash> begin() {
+  inline unordered_map_iterator<Key, T, Hash> begin() const {
     unordered_map_iterator<Key, T, Hash> iter(this);
     iter.buckets_ << header_->buckets_;
-    if (iter.buckets_.size() == 0) {
+    if (iter.buckets_->size() == 0) {
       return iter;
     }
-    auto &bkt = iter.buckets_[0];
+    auto &bkt = (*iter.buckets_)[0];
     iter.collisions_ << bkt.collisions_;
-    iter.bucket_ = iter.buckets_.begin();
-    iter.collision_ = iter.collisions_.begin();
+    iter.bucket_ = iter.buckets_->begin();
+    iter.collision_ = iter.collisions_->begin();
     iter.make_correct();
     return iter;
   }
 
   /** Forward iterator end */
-  inline unordered_map_iterator<Key, T, Hash> end() {
+  inline unordered_map_iterator<Key, T, Hash> end() const {
     unordered_map_iterator<Key, T, Hash> iter(this);
     iter.buckets_ << header_->buckets_;
-    iter.bucket_ = iter.buckets_.end();
+    iter.bucket_ = iter.buckets_->end();
     return iter;
   }
 
@@ -661,8 +662,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   void grow_map(size_t old_size) {
     ScopedRwWriteLock scoped_lock(header_->lock_);
     scoped_lock.Lock();
-    vector<BUCKET_T> buckets(header_->buckets_);
-    size_t num_buckets = buckets.size();
+    mptr<vector<BUCKET_T>> buckets(header_->buckets_);
+    size_t num_buckets = buckets->size();
     if (num_buckets != old_size) {
       return;
     }
@@ -671,9 +672,9 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
                           new_num_buckets,
                           header_->max_collisions_, header_->growth_);
     for (size_t i = 0; i < num_buckets; ++i) {
-      auto &bkt = buckets[i];
-      list<COLLISION_T> collisions(bkt.collisions_);
-      for (auto& entry : collisions) {
+      auto &bkt = (*buckets)[i];
+      mptr<list<COLLISION_T>> collisions(bkt.collisions_);
+      for (auto& entry : *collisions) {
         new_map.insert_templ<false, true>(std::move(entry));
       }
     }

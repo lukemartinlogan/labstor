@@ -22,7 +22,7 @@ namespace labstor::ipc {
  * and deletes eventually.
  * */
 template<typename T>
-class manual_ptr : public ShmSerializeable {
+class manual_ptr : public ShmDataStructurePointer<T> {
  public:
   typedef SHM_T_OR_PTR_T(T) T_Ptr;
   T_Ptr obj_;
@@ -93,7 +93,7 @@ class manual_ptr : public ShmSerializeable {
   /** Serialize the ptr into a ShmArchive<mptr> */
   void shm_serialize(ShmArchive<TYPED_CLASS> ar) const {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_ >> static_cast<ShmArchive<T>>(ar);
+      obj_ >> ShmArchive<T>(ar.Get());
     }
   }
 
@@ -105,7 +105,7 @@ class manual_ptr : public ShmSerializeable {
   /** Deserialize the ptr from a ShmArchive<mptr> */
   void shm_deserialize(ShmArchive<TYPED_CLASS> ar) {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_ << static_cast<ShmArchive<T>>(ar);
+      obj_ << ShmArchive<T>(ar.Get());
       obj_.UnsetDestructable();
     }
   }
@@ -117,30 +117,7 @@ class manual_ptr : public ShmSerializeable {
 
   /** Deserialize the ptr from a ShmArchive<uptr> */
   void shm_deserialize(ShmArchive<uptr<T>> ar) {
-    shm_deserialize(static_cast<ShmArchive<TYPED_CLASS>>(ar));
-  }
-
-  /** Gets a reference to the internal object */
-  T& get() {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      return obj_;
-    } else {
-      return *obj_;
-    }
-  }
-
-  /** Gets a reference to the internal object */
-  T& get_const() const {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      return obj_;
-    } else {
-      return *obj_;
-    }
-  }
-
-  /** Gets a reference to the internal object using * */
-  T& operator*() {
-    return get();
+    shm_deserialize(ShmArchive<TYPED_CLASS>(ar.Get()));
   }
 
   /** Disables the assignment operator */
@@ -161,7 +138,7 @@ namespace std {
 template<typename T>
 struct hash<labstor::ipc::manual_ptr<T>> {
   size_t operator()(const labstor::ipc::manual_ptr<T> &obj) const {
-    return std::hash<T>{}(obj.get_const());
+    return std::hash<T>{}(obj.get_ref_const());
   }
 };
 

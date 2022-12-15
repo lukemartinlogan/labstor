@@ -120,11 +120,18 @@ class ShmSerializeable {
  public:
   // virtual void shm_init(std::forward<Args>(args)...) = 0;
   // virtual void shm_destroy() = 0;
-  // virtual void shm_serialize(ShmArchive &ar) = 0;
-  // virtual void shm_deserialize(ShmArchive &ar) = 0;
-  // void operator>>(ShmArchive &ar);
-  // void operator<<(ShmArchive &r);
+  // virtual void shm_serialize(ShmArchive ar) = 0;
+  // virtual void shm_deserialize(ShmArchive ar) = 0;
+  // void operator>>(ShmArchive ar);
+  // void operator<<(ShmArchive r);
 };
+
+/**
+ * Indicates a data structure represents a memory paradigm for Shm.
+ * Needed because these data structures automatically determine
+ * how to set
+ * */
+class ShmSmartPointer : public ShmSerializeable {};
 
 /**
  * A wrapper around a process-independent pointer for storing
@@ -148,9 +155,16 @@ struct ShmArchive {
   explicit ShmArchive(Args&& ...args) {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       T obj(std::forward<Args>(args)...);
-      obj.UnsetDestructable(obj);
+      if constexpr(!IS_SHM_SMART_POINTER(T)) {
+        obj.UnsetDestructable();
+      }
       obj >> (*this);
     }
+  }
+
+  /** Creates a ShmArchive from a header pointer */
+  explicit ShmArchive(Pointer &ptr)
+  : header_ptr_(ptr) {
   }
 
   /** Copies a ShmArchive into another */
