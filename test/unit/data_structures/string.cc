@@ -37,11 +37,8 @@ using labstor::ipc::MemoryManager;
 using labstor::ipc::Pointer;
 using labstor::ipc::string;
 
-TEST_CASE("String") {
+void TestString() {
   Allocator *alloc = alloc_g;
-
-  REQUIRE(IS_SHM_SERIALIZEABLE(string));
-  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 
   auto text1 = string("hello1");
   REQUIRE(text1 == "hello1");
@@ -51,11 +48,17 @@ TEST_CASE("String") {
   auto text2 = string("hello2");
   REQUIRE(text2 == "hello2");
 
-  auto text3 = text1 + text2;
+  string text3 = text1 + text2;
   REQUIRE(text3 == "hello1hello2");
 
   string text4(6);
   memcpy(text4.data_mutable(), "hello4", 6);
+}
 
+TEST_CASE("String") {
+  Allocator *alloc = alloc_g;
+  REQUIRE(IS_SHM_SERIALIZEABLE(string));
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+  TestString();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }

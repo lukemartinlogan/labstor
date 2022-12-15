@@ -82,7 +82,7 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     shm_init(alloc, length);
     memcpy(header_->text_,
            text1.data(), text1.size());
-    memcpy(header_->text_ + size(),
+    memcpy(header_->text_ + text1.size(),
            text2.data(), text2.size());
     header_->text_[length] = 0;
   }
@@ -114,6 +114,7 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       AllocatePtr<TYPED_HEADER>(
       sizeof(TYPED_HEADER) + length + 1,
       header_ptr_);
+    header_->length_ = length;
   }
 
   /**
@@ -186,7 +187,6 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   inline void _create_str(const char *text, size_t length) {
     memcpy(header_->text_, text, length);
     header_->text_[length] = 0;
-    header_->length_ = length;
   }
 };
 
