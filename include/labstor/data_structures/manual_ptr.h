@@ -50,13 +50,11 @@ class manual_ptr : public ShmDataStructurePointer<T> {
   }
 
   /** Loads an object from a ShmArchive<mptr> */
-  template<typename ...Args>
   explicit manual_ptr(ShmArchive<TYPED_CLASS> ar) {
     shm_deserialize(ar);
   }
 
   /** Loads an object from a ShmArchive<uptr> */
-  template<typename ...Args>
   explicit manual_ptr(ShmArchive<uptr<T>> ar) {
     shm_deserialize(ar);
   }
@@ -92,24 +90,25 @@ class manual_ptr : public ShmDataStructurePointer<T> {
   }
 
   /** Serialize the ptr into a ShmArchive<mptr> */
-  void operator>>(ShmArchive<TYPED_CLASS> ar) const {
+  void operator>>(ShmArchive<TYPED_CLASS> &ar) const {
     shm_serialize(ar);
   }
 
   /** Serialize the ptr into a ShmArchive<mptr> */
-  void shm_serialize(ShmArchive<TYPED_CLASS> ar) const {
+  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_ >> ShmArchive<T>(ar.Get());
+      auto cast = ShmArchive<T>(ar.Get());
+      obj_ >> cast;
     }
   }
 
   /** Deserialize the ptr from a ShmArchive<T> */
-  void operator<<(ShmArchive<T> ar) {
+  void operator<<(ShmArchive<T> &ar) {
     shm_deserialize(ar);
   }
 
   /** Deserialize the ptr from a ShmArchive<mptr> */
-  void shm_deserialize(ShmArchive<T> ar) {
+  void shm_deserialize(ShmArchive<T> &ar) {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       obj_ << ar;
       obj_.UnsetDestructable();
@@ -117,23 +116,25 @@ class manual_ptr : public ShmDataStructurePointer<T> {
   }
 
   /** Deserialize the ptr from a ShmArchive<mptr> */
-  void operator<<(ShmArchive<TYPED_CLASS> ar) {
+  void operator<<(ShmArchive<TYPED_CLASS> &ar) {
     shm_deserialize(ar);
   }
 
   /** Deserialize the ptr from a ShmArchive<mptr> */
-  void shm_deserialize(ShmArchive<TYPED_CLASS> ar) {
-    shm_deserialize(ShmArchive<T>(ar.Get()));
+  void shm_deserialize(ShmArchive<TYPED_CLASS> &ar) {
+    auto cast = ShmArchive<T>(ar.GetConst());
+    shm_deserialize(cast);
   }
 
   /** Deserialize the ptr from a ShmArchive<uptr> */
-  void operator<<(ShmArchive<uptr<T>> ar) {
+  void operator<<(ShmArchive<uptr<T>> &ar) {
     shm_deserialize(ar);
   }
 
   /** Deserialize the ptr from a ShmArchive<uptr> */
-  void shm_deserialize(ShmArchive<uptr<T>> ar) {
-    shm_deserialize(ShmArchive<T>(ar.Get()));
+  void shm_deserialize(ShmArchive<uptr<T>> &ar) {
+    auto cast = ShmArchive<T>(ar.GetConst());
+    shm_deserialize(cast);
   }
 
   /** Disables the assignment operator */

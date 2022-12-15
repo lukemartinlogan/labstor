@@ -69,14 +69,15 @@ class unique_ptr : public ShmDataStructurePointer<T> {
   }
 
   /** Serialize the unique_ptr into a ShmArchive */
-  void operator>>(ShmArchive<TYPED_CLASS> ar) const {
+  void operator>>(ShmArchive<TYPED_CLASS> &ar) const {
     shm_serialize(ar);
   }
 
   /** Serialize the unique_ptr into a ShmArchive */
-  void shm_serialize(ShmArchive<TYPED_CLASS> ar) const {
+  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_ >> ShmArchive<T>(ar.Get());
+      auto cast = ShmArchive<T>(ar.Get());
+      obj_ >> cast;
     }
   }
 

@@ -87,7 +87,7 @@ struct Pointer {
   }
 
   /** Check if null */
-  bool is_null() {
+  bool is_null() const {
     return allocator_id_.is_null();
   }
 
@@ -150,6 +150,11 @@ struct ShmArchive {
     return header_ptr_;
   }
 
+  /** Get the process-independent pointer */
+  inline const Pointer& GetConst() {
+    return header_ptr_;
+  }
+
   /** Constructs and archives a shm-serializeable object */
   template<typename ...Args>
   explicit ShmArchive(Args&& ...args) {
@@ -165,6 +170,11 @@ struct ShmArchive {
   /** Creates a ShmArchive from a header pointer */
   explicit ShmArchive(Pointer &ptr)
   : header_ptr_(ptr) {
+  }
+
+  /** Creates a ShmArchive from a header pointer */
+  explicit ShmArchive(const Pointer &ptr)
+    : header_ptr_(ptr) {
   }
 
   /** Copies a ShmArchive into another */

@@ -68,7 +68,7 @@ class shm_ref : public ShmDataStructurePointer<T> {
   }
 
   /** Deserialize the ptr from a ShmArchive<mptr> */
-  void shm_deserialize(ShmArchive<T> ar) {
+  void shm_deserialize(ShmArchive<T> &ar) {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       obj_ << ar;
       obj_.UnsetDestructable();
@@ -76,7 +76,7 @@ class shm_ref : public ShmDataStructurePointer<T> {
   }
 
   /** Deserialize the ptr from a ShmArchive<mptr> */
-  void operator<<(ShmArchive<T> ar) {
+  void operator<<(ShmArchive<T> &ar) {
     shm_deserialize(ar);
   }
 

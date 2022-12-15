@@ -7,6 +7,7 @@
 
 #include "labstor/data_structures/data_structure.h"
 #include "labstor/data_structures/manual_ptr.h"
+#include "labstor/data_structures/shm_ref.h"
 
 namespace labstor::ipc {
 
@@ -396,7 +397,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   T_Ref operator[](const size_t i) {
     T_Ar *vec = _data();
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      mptr<T> entry(vec[i]);
+      shm_ref<T> entry(vec[i]);
       return entry.get_ref();
     } else {
       return vec[i];
@@ -412,7 +413,6 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     }
     Allocator::ConstructObj<T>(*(vec + header_->length_),
                                std::forward<Args>(args)...);
-    mptr<T> entry(vec[size()]);
     ++header_->length_;
   }
 

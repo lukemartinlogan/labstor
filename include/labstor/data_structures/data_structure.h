@@ -163,22 +163,22 @@ class ShmDataStructure : public ShmSerializeable {
   }
 
   /** Serialize the data structure into a ShmArchive */
-  void operator>>(ShmArchive<TYPED_CLASS> ar) const {
+  void operator>>(ShmArchive<TYPED_CLASS> &ar) const {
     shm_serialize(ar);
   }
 
   /** Deserialize the data structure from a ShmArchive */
-  void operator<<(ShmArchive<TYPED_CLASS> ar) {
+  void operator<<(const ShmArchive<TYPED_CLASS> &ar) {
     shm_deserialize(ar);
   }
 
   /** Serialize the data structure into a ShmArchive */
-  void shm_serialize(ShmArchive<TYPED_CLASS> ar) const {
+  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
     ar.header_ptr_ = header_ptr_;
   }
 
   /** Deserialize the data structure from a ShmArchive */
-  void shm_deserialize(ShmArchive<TYPED_CLASS> ar) {
+  void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
     header_ptr_ = ar.header_ptr_;
     if (ar.header_ptr_.is_null()) { return; }
     header_ = mem_mngr_->template

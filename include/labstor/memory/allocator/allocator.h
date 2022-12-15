@@ -452,9 +452,10 @@ class Allocator {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       T obj;
       obj << obj_ar;
-      obj.shm_destroy();
+      obj.SetDestructable();
+    } else {
+      RawDestructObj(obj_ar);
     }
-    RawDestructObj(obj_ar);
   }
 
   /**
