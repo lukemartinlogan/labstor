@@ -32,6 +32,7 @@
 #include <labstor/memory/memory.h>
 #include "labstor/constants/macros.h"
 #include <limits>
+#include <labstor/memory/shm_types_.h>
 
 namespace labstor::ipc {
 

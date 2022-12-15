@@ -5,7 +5,7 @@
 #ifndef LABSTOR_INCLUDE_LABSTOR_MEMORY_MEMORY_MANAGER_H_
 #define LABSTOR_INCLUDE_LABSTOR_MEMORY_MEMORY_MANAGER_H_
 
-#include "allocator/allocator.h"
+#include "labstor/memory/allocator/allocator.h"
 #include "backend/memory_backend.h"
 #include "labstor/memory/allocator/allocator_factory.h"
 #include <labstor/constants/data_structure_singleton_macros.h>

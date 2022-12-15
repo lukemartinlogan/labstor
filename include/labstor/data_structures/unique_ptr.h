@@ -28,44 +28,26 @@ namespace labstor::ipc {
 template<typename T>
 class unique_ptr : public ShmDataStructurePointer<T> {
  public:
-  typedef SHM_T_OR_PTR_T(T) T_Ptr;
-  T_Ptr obj_;
+  SHM_DATA_STRUCTURE_POINTER_TEMPLATE(T);
 
  public:
-
   /** Allocates + constructs an object in shared memory */
   template<typename ...Args>
   explicit unique_ptr(Args&& ...args) {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      Allocator::RawConstructObj(obj_, std::forward<Args>(args)...);
-    } else {
-      obj_ = new T(std::forward<Args>(args)...);
-    }
+    obj_.shm_init(std::forward<Args>(args)...);
   }
 
   /** Disable the copy constructor */
   unique_ptr(const unique_ptr &other) = delete;
 
   /** Move constructor */
-  unique_ptr(unique_ptr&& source) {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_.WeakMove(source.obj_);
-    } else {
-      obj_ = source.obj_;
-      source.obj_ = nullptr;
-    }
+  unique_ptr(unique_ptr&& source) noexcept {
+    obj_.WeakMove(source.obj_);
   }
 
   /** Destroys all allocated memory */
   ~unique_ptr() {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      if (obj_.IsNull()) {
-        return;
-      }
-      obj_.SetDestructable();
-    } else {
-      delete obj_;
-    }
+    shm_destroy();
   }
 
   /** Serialize the unique_ptr into a ShmArchive */
@@ -75,10 +57,8 @@ class unique_ptr : public ShmDataStructurePointer<T> {
 
   /** Serialize the unique_ptr into a ShmArchive */
   void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      auto cast = ShmArchive<T>(ar.Get());
-      obj_ >> cast;
-    }
+    auto cast = ShmArchive<T>(ar.Get());
+    obj_ >> cast;
   }
 
   /** Disables the assignment operator */

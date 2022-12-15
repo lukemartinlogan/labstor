@@ -6,7 +6,7 @@
 #define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_LIST_H_
 
 #include "labstor/data_structures/data_structure.h"
-#include "labstor/data_structures/shm_ref.h"
+#include "labstor/data_structures/manual_ptr.h"
 
 namespace labstor::ipc {
 
@@ -27,7 +27,7 @@ struct list_entry {
 
   T_Ref data() {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      return shm_ref<T>(data_).get_ref();
+      return mptr<T>(data_).get_ref();
     } else {
       return data_;
     }
@@ -243,21 +243,9 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     StrongCopy(other);
   }
 
-  /** Assign one list into another */
-  list&
-  operator=(const list &other) {
-    if (this != &other) {
-      StrongCopy(other);
-    }
-    return *this;
-  }
-
-  /** Copy a list */
-  void StrongCopy(const list &other) {
-    shm_init(other.alloc_);
-    for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
-      emplace_back(*iter);
-    }
+  /** Initialize list in shared memory (default allocator) */
+  void shm_init() {
+    shm_init(nullptr);
   }
 
   /** Initialize list in shared memory */
@@ -274,6 +262,22 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     if (IsNull()) { return; }
     clear();
     alloc_->Free(header_ptr_);
+  }
+
+  /** Assign one list into another */
+  list& operator=(const list &other) {
+    if (this != &other) {
+      StrongCopy(other);
+    }
+    return *this;
+  }
+
+  /** Copy a list */
+  void StrongCopy(const list &other) {
+    shm_init(other.alloc_);
+    for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
+      emplace_back(*iter);
+    }
   }
 
   /** Construct an element at the back of the list */

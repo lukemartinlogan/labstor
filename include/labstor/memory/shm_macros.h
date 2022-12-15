@@ -51,8 +51,7 @@
     T, T&>::type
 
 /**
- * SHM_T_OR_REF_T: Used by unique_ptr and shared_ptr to determine how to
- * best store the underlying object.
+ * SHM_T_OR_PTR_T: Used by shm_ref.
  *
  * @T: The type being stored in the shmem data structure
  * */
@@ -61,6 +60,19 @@
   typename std::conditional<         \
     IS_SHM_SERIALIZEABLE(T), \
     T, T*>::type
+
+
+/**
+ * SHM_T_OR_PTR_T: Used by unique_ptr and shared_ptr to determine how to
+ * best store the underlying object.
+ *
+ * @T: The type being stored in the shmem data structure
+ * */
+
+#define SHM_T_OR_SHM_PTR_T(T) \
+  typename std::conditional<         \
+    IS_SHM_SERIALIZEABLE(T), \
+    T, ShmPointer<T>>::type
 
 /**
  * SHM_T_OR_CONST_T: Determines whether or not an object should be

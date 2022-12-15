@@ -271,6 +271,39 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     shm_init(alloc, std::forward<Args>(args)...);
   }
 
+  /**
+   * Initialize unordered map
+   *
+   * @param alloc the shared-memory allocator
+   * @param num_buckets the number of buckets to create
+   * @param max_collisions the maximum number of collisions per-bucket before
+   * a growth is triggered
+   * @param growth the multiplier to grow the bucket vector size
+   * */
+  void shm_init(Allocator *alloc = nullptr,
+                int num_buckets = 20,
+                int max_collisions = 4,
+                RealNumber growth = RealNumber(5,4)) {
+    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
+    header_ = alloc_->template
+      AllocateObjs<TYPED_HEADER>(1, header_ptr_);
+    mptr<vector<BUCKET_T>> buckets(alloc_, num_buckets,
+                                   alloc_);
+    buckets >> header_->buckets_;
+    header_->length_ = 0;
+    header_->max_collisions_ = max_collisions;
+    header_->growth_ = growth;
+  }
+
+  /** Destroy the unordered_map buckets */
+  void shm_destroy() {
+    if (IsNull()) { return; }
+    mptr<vector<BUCKET_T>> buckets(header_->buckets_);
+    buckets->shm_destroy();
+    alloc_->template
+      Free(header_ptr_);
+  }
+
   /** Moves one unordered_map into another */
   unordered_map(unordered_map&& source) noexcept {
     WeakMove(source);
@@ -302,38 +335,6 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       emplace(std::move(*entry.key_),
               std::move(*entry.val_));
     }
-  }
-
-  /**
-   * Initialize unordered map
-   *
-   * @param alloc the shared-memory allocator
-   * @param num_buckets the number of buckets to create
-   * @param max_collisions the maximum number of collisions per-bucket before
-   * a growth is triggered
-   * @param growth the multiplier to grow the bucket vector size
-   * */
-  void shm_init(Allocator *alloc = nullptr,
-                int num_buckets = 20,
-                int max_collisions = 4,
-                RealNumber growth = RealNumber(5,4)) {
-    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
-    header_ = alloc_->template
-      AllocateObjs<TYPED_HEADER>(1, header_ptr_);
-    mptr<vector<BUCKET_T>> buckets(alloc_, num_buckets, alloc_);
-    buckets >> header_->buckets_;
-    header_->length_ = 0;
-    header_->max_collisions_ = max_collisions;
-    header_->growth_ = growth;
-  }
-
-  /** Destroy the unordered_map buckets */
-  void shm_destroy() {
-    if (IsNull()) { return; }
-    mptr<vector<BUCKET_T>> buckets(header_->buckets_);
-    buckets->shm_destroy();
-    alloc_->template
-      Free(header_ptr_);
   }
 
   /**

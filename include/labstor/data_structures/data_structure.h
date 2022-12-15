@@ -8,33 +8,32 @@
 #include "labstor/memory/memory.h"
 #include "labstor/memory/allocator/allocator.h"
 #include "labstor/memory/memory_manager.h"
+#include "labstor/memory/shm_types.h"
+#include "labstor/memory/shm_macros.h"
 #include <labstor/constants/data_structure_singleton_macros.h>
+#include <labstor/memory/shm_types.h>
 
 namespace labstor::ipc {
 
+/**
+ * A base class used for creating shared-memory pointer management
+ * classes (manual_ptr, unique_ptr, shared_ptr).
+ * */
 template<typename T>
 class ShmDataStructurePointer : public ShmSmartPointer {
  public:
-  typedef SHM_T_OR_PTR_T(T) T_Ptr;
+  typedef SHM_T_OR_SHM_PTR_T(T) T_Ptr;
   T_Ptr obj_;
 
  public:
   /** Sets this pointer to NULL */
   void SetNull() {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_.SetNull();
-    } else {
-      obj_ = nullptr;
-    }
+    obj_.SetNull();
   }
 
   /** Checks if this pointer is null */
   bool IsNull() {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      return obj_.IsNull();
-    } else {
-      return obj_ == nullptr;
-    }
+    return obj_.IsNull();
   }
 
   /** Gets a pointer to the internal object */
@@ -42,16 +41,16 @@ class ShmDataStructurePointer : public ShmSmartPointer {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       return &obj_;
     } else {
-      return obj_;
+      return obj_.get();
     }
   }
 
   /** Gets a pointer to the internal object */
-  T* get_const() const {
+  const T* get_const() const {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       return &obj_;
     } else {
-      return obj_;
+      return obj_.get_const();
     }
   }
 
@@ -60,16 +59,16 @@ class ShmDataStructurePointer : public ShmSmartPointer {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       return obj_;
     } else {
-      return *obj_;
+      return obj_.get_ref();
     }
   }
 
   /** Gets a reference to the internal object */
-  T& get_ref_const() const {
+  const T& get_ref_const() const {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       return obj_;
     } else {
-      return *obj_;
+      return obj_.get_ref_const();
     }
   }
 
@@ -80,10 +79,15 @@ class ShmDataStructurePointer : public ShmSmartPointer {
 
   /** Gets a pointer to the internal object */
   T* operator->() {
+    return get();
+  }
+
+  /** Destroy the data allocated by this pointer */
+  void shm_destroy() {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      return &obj_;
+      obj_.SetDestructable();
     } else {
-      return obj_;
+      obj_.shm_destroy();
     }
   }
 };
@@ -193,6 +197,19 @@ class ShmDataStructure : public ShmSerializeable {
 };
 
 }  // namespace labstor::ipc
+
+/**
+ * Namespace simplification for a SHM data structure pointer
+ * */
+#define SHM_DATA_STRUCTURE_POINTER_TEMPLATE(T) \
+  using ShmDataStructurePointer<T>::obj_;\
+  using ShmDataStructurePointer<T>::get;\
+  using ShmDataStructurePointer<T>::get_ref;\
+  using ShmDataStructurePointer<T>::get_const;\
+  using ShmDataStructurePointer<T>::get_ref_const;\
+  using ShmDataStructurePointer<T>::SetNull;\
+  using ShmDataStructurePointer<T>::IsNull;\
+  using ShmDataStructurePointer<T>::shm_destroy;
 
 /**
  * Namespace simplification for a SHM data structure

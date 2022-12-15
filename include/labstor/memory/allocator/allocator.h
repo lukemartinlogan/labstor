@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <labstor/memory/backend/memory_backend_factory.h>
 #include <labstor/memory/memory.h>
+#include <labstor/memory/shm_types_.h>
 
 namespace labstor::ipc {
 

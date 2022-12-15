@@ -46,38 +46,78 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   /** Construct for a C-style string in shared memory */
   explicit string(const char *text) {
+    shm_init(text);
+  }
+
+  /** Construct from a C-style string with allocator in shared memory */
+  explicit string(Allocator *alloc, const char *text) {
+    shm_init(alloc, text);
+  }
+
+  /** Construct for a std::string in shared-memory */
+  explicit string(const std::string &text) {
+    shm_init(text);
+  }
+
+  /** Construct for an std::string with allocator in shared-memory */
+  explicit string(Allocator *alloc, const std::string &text) {
+    shm_init(alloc, text);
+  }
+
+  /** Copy constructor */
+  string(const string &other) : ShmDataStructure(other) {
+    shm_init(other);
+  }
+
+  /** Construct by concatenating two string in shared-memory */
+  explicit string(Allocator *alloc, string &text1, string &text2) {
+    shm_init(alloc, text1, text2);
+  }
+
+  /** Construct a string of a specific length in shared memory */
+  explicit string(size_t length) {
+    shm_init(length);
+  }
+
+  /** Construct a string of specific length and allocator in shared memory */
+  explicit string(Allocator *alloc, size_t length) {
+    shm_init(alloc, length);
+  }
+
+  /** Construct for a C-style string in shared memory */
+  void shm_init(const char *text) {
     size_t length = strlen(text);
     shm_init(nullptr, length);
     _create_str(text, length);
   }
 
   /** Construct from a C-style string with allocator in shared memory */
-  explicit string(Allocator *alloc, const char *text) {
+  void shm_init(Allocator *alloc, const char *text) {
     size_t length = strlen(text);
     shm_init(alloc, length);
     _create_str(text, length);
   }
 
   /** Construct for a std::string in shared-memory */
-  explicit string(const std::string &text) {
+  void shm_init(const std::string &text) {
     shm_init(nullptr, text.size());
     _create_str(text.data(), text.size());
   }
 
   /** Construct for an std::string with allocator in shared-memory */
-  explicit string(Allocator *alloc, const std::string &text) {
+  void shm_init(Allocator *alloc, const std::string &text) {
     shm_init(alloc, text.size());
     _create_str(text.data(), text.size());
   }
 
   /** Copy constructor */
-  string(const string &other) : ShmDataStructure(other) {
+  void shm_init(const string &other) {
     shm_init(other.alloc_, other.size());
     _create_str(other.data(), other.size());
   }
 
   /** Construct by concatenating two string in shared-memory */
-  explicit string(Allocator *alloc, string &text1, string &text2) {
+  void shm_init(Allocator *alloc, string &text1, string &text2) {
     size_t length = text1.size() + text2.size();
     shm_init(alloc, length);
     memcpy(header_->text_,
@@ -88,25 +128,13 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
   /** Construct a string of a specific length in shared memory */
-  explicit string(size_t length) {
+  void shm_init(size_t length) {
     shm_init(nullptr, length);
     header_->text_[length] = 0;
   }
 
-  /** Construct a string of specific length and allocator in shared memory */
-  explicit string(Allocator *alloc, size_t length) {
-    shm_init(alloc, length);
-    header_->text_[length] = 0;
-  }
-
-  /** Moves one string into another */
-  string(string&& source) noexcept {
-    WeakMove(source);
-  }
-
   /**
-   * Initialize shared-memory header. Requires the length of
-   * the string before-hand.
+   * Construct a string of specific length and allocator in shared memory
    * */
   void shm_init(Allocator *alloc, size_t length) {
     ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
@@ -115,6 +143,7 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       sizeof(TYPED_HEADER) + length + 1,
       header_ptr_);
     header_->length_ = length;
+    header_->text_[length] = 0;
   }
 
   /**
@@ -123,6 +152,11 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   void shm_destroy() {
     if (IsNull()) { return; }
     alloc_->Free(header_ptr_);
+  }
+
+  /** Moves one string into another */
+  string(string&& source) noexcept {
+    WeakMove(source);
   }
 
   /** Disable assignment (avoids copies) */

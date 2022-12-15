@@ -24,19 +24,16 @@ namespace labstor::ipc {
 template<typename T>
 class manual_ptr : public ShmDataStructurePointer<T> {
  public:
-  typedef SHM_T_OR_PTR_T(T) T_Ptr;
-  T_Ptr obj_;
+  SHM_DATA_STRUCTURE_POINTER_TEMPLATE(T);
 
  public:
 
   /** Allocates + constructs an object in shared memory */
   template<typename ...Args>
   explicit manual_ptr(Args&& ...args) {
+    obj_.shm_init(std::forward<Args>(args)...);
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      Allocator::RawConstructObj(obj_, std::forward<Args>(args)...);
       obj_.UnsetDestructable();
-    } else {
-      obj_ = new T(std::forward<Args>(args)...);
     }
   }
 
@@ -45,47 +42,33 @@ class manual_ptr : public ShmDataStructurePointer<T> {
 
   /** Loads an object from a ShmArchive<T> */
   template<typename ...Args>
-  explicit manual_ptr(ShmArchive<T> ar) {
+  explicit manual_ptr(ShmArchive<T> &ar) {
     shm_deserialize(ar);
   }
 
   /** Loads an object from a ShmArchive<mptr> */
-  explicit manual_ptr(ShmArchive<TYPED_CLASS> ar) {
+  explicit manual_ptr(ShmArchive<TYPED_CLASS> &ar) {
     shm_deserialize(ar);
   }
 
   /** Loads an object from a ShmArchive<uptr> */
-  explicit manual_ptr(ShmArchive<uptr<T>> ar) {
+  explicit manual_ptr(ShmArchive<uptr<T>> &ar) {
     shm_deserialize(ar);
   }
 
   /** Copy constructor */
   manual_ptr(const manual_ptr &other) {
+    obj_.WeakCopy(other);
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_.WeakCopy(other);
       obj_.UnsetDestructable();
-    } else {
-      obj_ = other.obj_;
     }
   }
 
   /** Move constructor */
   manual_ptr(manual_ptr&& source) noexcept {
+    obj_.WeakMove(source.obj_);
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_.WeakMove(source);
       obj_.UnsetDestructable();
-    } else {
-      obj_ = source.obj_;
-      source.obj_ = nullptr;
-    }
-  }
-
-  /** Destroy memory */
-  void shm_destroy() {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_.SetDestructable();
-    } else {
-      delete obj_;
     }
   }
 
@@ -96,10 +79,8 @@ class manual_ptr : public ShmDataStructurePointer<T> {
 
   /** Serialize the ptr into a ShmArchive<mptr> */
   void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      auto cast = ShmArchive<T>(ar.Get());
-      obj_ >> cast;
-    }
+    auto cast = ShmArchive<T>(ar.Get());
+    obj_ >> cast;
   }
 
   /** Deserialize the ptr from a ShmArchive<T> */
@@ -109,8 +90,8 @@ class manual_ptr : public ShmDataStructurePointer<T> {
 
   /** Deserialize the ptr from a ShmArchive<mptr> */
   void shm_deserialize(ShmArchive<T> &ar) {
+    obj_ << ar;
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_ << ar;
       obj_.UnsetDestructable();
     }
   }

@@ -12,8 +12,7 @@
 namespace labstor::ipc {
 
 /**
- * Creates a unique instance of a shared-memory data structure
- * and deletes eventually.
+ * Create a reference to a shared-memory data structure
  * */
 template<typename T>
 class shm_ref : public ShmDataStructurePointer<T> {

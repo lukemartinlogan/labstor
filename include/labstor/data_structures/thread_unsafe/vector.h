@@ -7,7 +7,6 @@
 
 #include "labstor/data_structures/data_structure.h"
 #include "labstor/data_structures/manual_ptr.h"
-#include "labstor/data_structures/shm_ref.h"
 
 namespace labstor::ipc {
 
@@ -313,8 +312,37 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * */
   template<typename ...Args>
   explicit vector(Allocator *alloc, size_t length, Args&& ...args) {
+    shm_init(alloc, length, std::forward<Args>(args)...);
+  }
+
+  /** Initialize list in shared memory (default allocator) */
+  void shm_init() {
+    shm_init(nullptr);
+  }
+
+  /** Construct the vector in shared memory */
+  template<typename ...Args>
+  void shm_init(Allocator *alloc, size_t length, Args&& ...args) {
     shm_init(alloc);
     resize(length, std::forward<Args>(args)...);
+  }
+
+  /** Construct the vector in shared memory */
+  void shm_init(Allocator *alloc) {
+    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
+    header_ = alloc_->template
+      AllocateObjs<TYPED_HEADER>(1, header_ptr_);
+    header_->length_ = 0;
+    header_->max_length_ = 0;
+    header_->vec_ptr_.set_null();
+  }
+
+  /** Destroy all shared memory allocated by the vector */
+  void shm_destroy() {
+    if (IsNull()) { return; }
+    erase(begin(), end());
+    alloc_->Free(header_->vec_ptr_);
+    alloc_->Free(header_ptr_);
   }
 
   /** Moves one vector into another */
@@ -342,24 +370,6 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     for (auto &obj : other) {
       emplace_back(obj);
     }
-  }
-
-  /** Construct the vector in shared memory */
-  void shm_init(Allocator *alloc) {
-    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
-    header_ = alloc_->template
-      AllocateObjs<TYPED_HEADER>(1, header_ptr_);
-    header_->length_ = 0;
-    header_->max_length_ = 0;
-    header_->vec_ptr_.set_null();
-  }
-
-  /** Destroy all shared memory allocated by the vector */
-  void shm_destroy() {
-    if (IsNull()) { return; }
-    erase(begin(), end());
-    alloc_->Free(header_->vec_ptr_);
-    alloc_->Free(header_ptr_);
   }
 
   /**
@@ -397,7 +407,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   T_Ref operator[](const size_t i) {
     T_Ar *vec = _data();
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      shm_ref<T> entry(vec[i]);
+      mptr<T> entry(vec[i]);
       return entry.get_ref();
     } else {
       return vec[i];
