@@ -12,54 +12,96 @@
 
 namespace labstor::ipc {
 
+/**
+ * The general base class of a shared-memory data structure
+ * */
 template<typename TYPED_CLASS, typename TYPED_HEADER>
 class ShmDataStructure : public ShmSerializeable {
  public:
   typedef TYPED_HEADER header_t;
 
  protected:
-  Pointer header_ptr_;
-  TYPED_HEADER *header_;
-  Allocator *alloc_;
-  LABSTOR_MEMORY_MANAGER_T mem_mngr_;
+  Pointer header_ptr_;    /**< Independent pointer of typed header */
+  TYPED_HEADER *header_;  /**< The typed shm header */
+  Allocator *alloc_;      /**< The allocator */
+  LABSTOR_MEMORY_MANAGER_T mem_mngr_;  /**< Memory manager */
+  bool destructable_;  /**< Whether or not to call shm_destroy in destructor */
 
  public:
-  ShmDataStructure() :
-    header_(nullptr), mem_mngr_(LABSTOR_MEMORY_MANAGER) {
-    alloc_ = mem_mngr_->GetDefaultAllocator();
+  /** Default constructor */
+  ShmDataStructure()
+  : header_(nullptr), mem_mngr_(LABSTOR_MEMORY_MANAGER),
+  alloc_(nullptr), destructable_(true) {
   }
 
-  explicit ShmDataStructure(Allocator *alloc) :
-    header_(nullptr), alloc_(alloc), mem_mngr_(LABSTOR_MEMORY_MANAGER) {
-    if (alloc_ == nullptr) {
+  /** Initialize shared-memory data structure */
+  void shm_init(Allocator *alloc) {
+    if (alloc == nullptr) {
       alloc_ = mem_mngr_->GetDefaultAllocator();
+    } else {
+      alloc_ = alloc;
     }
   }
 
-  explicit ShmDataStructure(allocator_id_t alloc_id) :
-    header_(nullptr), mem_mngr_(LABSTOR_MEMORY_MANAGER) {
-    alloc_ = mem_mngr_->GetAllocator(alloc_id);
-    if (alloc_ == nullptr) {
-      alloc_ = mem_mngr_->GetDefaultAllocator();
-    }
+  /** Only copy pointers, not entire data structures */
+  void WeakCopy(const TYPED_CLASS &other) {
+    header_ptr_ = other.header_ptr_;
+    header_ = other.header_;
+    alloc_ = other.alloc_;
   }
 
-  Allocator *GetAllocator() {
+  /** Only copy pointers, not entire data structures */
+  void WeakMove(TYPED_CLASS &other) {
+    WeakCopy(other);
+    other.Nullify();
+  }
+
+  /** Nullifies data structure (for move) */
+  void Nullify() {
+    header_ptr_.set_null();
+  }
+
+  /** Checks if this data structure is null */
+  bool IsNull() {
+    return header_ptr_.is_null();
+  }
+
+  /** Sets this object as destructable */
+  void SetDestructable() {
+    destructable_ = true;
+  }
+
+  /** Sets this object as nondestructable */
+  void UnsetDestructable() {
+    destructable_ = false;
+  }
+
+  /** Get the shared-memory allocator */
+  Allocator* GetAllocator() {
     return alloc_;
   }
 
+  /** Get the shared-memory allocator id */
+  allocator_id_t GetAllocatorId() const {
+    return alloc_->GetId();
+  }
+
+  /** Serialize the data structure into a ShmArchive */
   void operator>>(ShmArchive<TYPED_CLASS> &ar) const {
     shm_serialize(ar);
   }
 
+  /** Deserialize the data structure from a ShmArchive */
   void operator<<(ShmArchive<TYPED_CLASS> &ar) {
     shm_deserialize(ar);
   }
 
+  /** Serialize the data structure into a ShmArchive */
   void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
     ar.header_ptr_ = header_ptr_;
   }
 
+  /** Deserialize the data structure from a ShmArchive */
   void shm_deserialize(ShmArchive<TYPED_CLASS> &ar) {
     header_ptr_ = ar.header_ptr_;
     if (ar.header_ptr_.is_null()) { return; }
@@ -71,13 +113,18 @@ class ShmDataStructure : public ShmSerializeable {
 
 }  // namespace labstor::ipc
 
+/**
+ * Namespace simplification for a SHM data structure
+ * */
 #define SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)\
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::header_;\
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::header_ptr_;\
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::mem_mngr_;\
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::alloc_;\
+  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::destructable_;\
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_serialize;\
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_deserialize;\
+  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::IsNull;\
   explicit CLASS_NAME(labstor::ipc::ShmArchive<TYPED_CLASS> &ar) {\
     shm_deserialize(ar);\
   }

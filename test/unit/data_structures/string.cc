@@ -57,10 +57,5 @@ TEST_CASE("String") {
   string text4(6);
   memcpy(text4.data_mutable(), "hello4", 6);
 
-  text1.shm_destroy();
-  text2.shm_destroy();
-  text3.shm_destroy();
-  text4.shm_destroy();
-
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }

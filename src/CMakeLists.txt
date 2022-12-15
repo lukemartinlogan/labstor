@@ -40,4 +40,3 @@ install(
 install(
         TARGETS labstor_runtime
         DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
-install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_PREFIX})

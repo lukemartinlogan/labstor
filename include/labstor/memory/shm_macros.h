@@ -43,4 +43,16 @@
     IS_SHM_SERIALIZEABLE(T), \
     T, T&>::type
 
+/**
+ * SHM_T_OR_REF_T: Used by unique_ptr and shared_ptr to determine how to
+ * best store the underlying object.
+ *
+ * @T: The type being stored in the shmem data structure
+ * */
+
+#define SHM_T_OR_PTR_T(T) \
+  typename std::conditional<         \
+    IS_SHM_SERIALIZEABLE(T), \
+    T, T*>::type
+
 #endif //LABSTOR_INCLUDE_LABSTOR_MEMORY_SHM_MACROS_H_

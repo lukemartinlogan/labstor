@@ -274,11 +274,20 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   typedef SHM_T_OR_REF_T(T) T_Ref;
 
  public:
+  /** Default constructor */
   vector() = default;
 
+  /** Destructor */
+  ~vector() {
+    if (destructable_) {
+      shm_destroy();
+    }
+  }
+
   /** Default shared-memory constructor */
-  explicit vector(Allocator *alloc)
-  : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {}
+  explicit vector(Allocator *alloc) {
+    shm_init(alloc);
+  }
 
   /**
    * Construct a vector of a certain length in shared memory
@@ -288,46 +297,41 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @param args the parameters of the elements to construct
    * */
   template<typename ...Args>
-  explicit vector(Allocator *alloc, size_t length, Args&& ...args)
-  : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
-    resize(length, std::forward<Args>(args)...);
-  }
-
-  /**
-   * Construct a vector of a certain length in shared memory
-   *
-   * @param length the size the vector should be
-   * @param alloc_id the id of the allocator to reserve memory from
-   * @param args the parameters of the elements to construct
-   * */
-  template<typename ...Args>
-  explicit vector(allocator_id_t alloc_id, size_t length, Args&& ...args)
-  : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc_id) {
+  explicit vector(Allocator *alloc, size_t length, Args&& ...args) {
+    shm_init(alloc);
     resize(length, std::forward<Args>(args)...);
   }
 
   /** Moves one vector into another */
-  vector(vector&& source) {
-    header_ptr_ = source.header_ptr_;
-    header_ = source.header_;
-    source.header_ptr_.set_null();
+  vector(vector&& source) noexcept {
+    WeakMove(source);
   }
 
-  /** Disable copying  */
-  vector(const vector &other) = delete;
+  /** Copy constructor  */
+  vector(const vector &other) {
+    StrongCopy();
+  }
 
   /** Assign one vector into another */
   vector&
   operator=(const vector &other) {
     if (this != &other) {
-      header_ptr_ = other.header_ptr_;
-      header_ = other.header_;
+      StrongCopy(other);
     }
     return *this;
   }
 
+  /** Copy a vector */
+  void StrongCopy(const vector &other) {
+    shm_init(other.alloc_);
+    for (auto &obj : other) {
+      emplace_back(obj);
+    }
+  }
+
   /** Construct the vector in shared memory */
-  void shm_init() {
+  void shm_init(Allocator *alloc) {
+    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
     header_ = alloc_->template
       AllocateObjs<TYPED_HEADER>(1, header_ptr_);
     header_->length_ = 0;
@@ -337,7 +341,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   /** Destroy all shared memory allocated by the vector */
   void shm_destroy() {
-    if (header_ptr_.is_null()) { return; }
+    if (IsNull()) { return; }
     erase(begin(), end());
     alloc_->Free(header_->vec_ptr_);
     alloc_->Free(header_ptr_);
@@ -353,7 +357,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   template<typename ...Args>
   void reserve(size_t length, Args&& ...args) {
     if (header_ == nullptr) {
-      shm_init();
+      shm_init(nullptr);
     }
     grow_vector(_data(), length, false, std::forward<Args>(args)...);
   }
@@ -368,7 +372,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   template<typename ...Args>
   void resize(size_t length, Args&& ...args) {
     if (header_ == nullptr) {
-      shm_init();
+      shm_init(nullptr);
     }
     grow_vector(_data(), length, true, std::forward<Args>(args)...);
     header_->length_ = length;

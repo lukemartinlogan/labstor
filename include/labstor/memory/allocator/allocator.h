@@ -398,10 +398,26 @@ class Allocator {
                            Args&& ...args) {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       T obj(std::forward<Args>(args)...);
+      obj.UnsetDestructable();
       obj >> obj_ar;
     } else {
-      new(&obj_ar) T(std::forward<Args>(args)...);
+      RawConstructObj(obj_ar, std::forward<Args>(args)...);
     }
+  }
+
+  /**
+   * Construct an object, regardless of type.
+   *
+   * @param ptr the object to construct (potentially archived)
+   * @param args parameters to construct object of type T
+   * @return None
+   * */
+  template<
+    typename T,
+    typename ...Args>
+  static void RawConstructObj(T &obj,
+                              Args&& ...args) {
+    new(&obj) T(std::forward<Args>(args)...);
   }
 
   /**
@@ -438,7 +454,19 @@ class Allocator {
       obj << obj_ar;
       obj.shm_destroy();
     }
-    obj_ar.~T_Ar();
+    RawDestructObj(obj_ar);
+  }
+
+  /**
+   * Destruct an object, regardless of type.
+   *
+   * @param ptr the object to destruct (potentially archived)
+   * @param count the length of the object array
+   * @return None
+   * */
+  template<typename T>
+  static void RawDestructObj(T &obj_ar) {
+    obj_ar.~T();
   }
 
   /**

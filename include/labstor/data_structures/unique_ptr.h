@@ -16,129 +16,105 @@
 namespace labstor::ipc {
 
 /**
- * The unique_pointer shared-memory header
- * */
-template<typename T>
-struct unique_ptr_header {
- public:
-  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
- public:
-  T_Ar obj_;
-
-  template<typename ...Args>
-  unique_ptr_header(Args&& ...args)
-  : obj_(std::forward<Args>(args)...) {
-  }
-};
-
-/**
- * MACROS to simplify the unordered_map namespace
+ * MACROS to simplify the unique_ptr namespace
  * */
 #define CLASS_NAME unique_ptr
 #define TYPED_CLASS unique_ptr<T>
-#define TYPED_HEADER unique_ptr_header<T>
 
 /**
  * Creates a unique instance of a shared-memory data structure
  * and deletes eventually.
  * */
 template<typename T>
-class unique_ptr : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
-public:
-  SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
-
+class unique_ptr : public ShmSerializeable {
  public:
-  typedef SHM_T_OR_REF_T(T) T_Ref;
-  bool owner_;
+  typedef SHM_T_OR_PTR_T(T) T_Ptr;
+  T_Ptr obj_;
 
  public:
 
   /** Allocates + constructs an object in shared memory */
   template<typename ...Args>
-  explicit unique_ptr(Allocator *alloc, Args&& ...args)
-  : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
-    shm_init(std::forward<Args>(args)...);
-  }
-
-  /** Gets a reference to the internal object */
-  T_Ref get() {
+  explicit unique_ptr(Args&& ...args) {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      return T(header_->obj_);
+      Allocator::RawConstructObj(obj_, std::forward<Args>(args)...);
     } else {
-      return header_->obj_;
+      obj_ = new T(std::forward<Args>(args)...);
     }
   }
 
-  /** Gets a reference to the internal object */
-  T_Ref get_const() const {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      return T(header_->obj_);
-    } else {
-      return header_->obj_;
-    }
-  }
-
-  /** Gets a reference to the internal object using * */
-  T_Ref operator*() {
-    return get();
-  }
-
-  /** Disable the copy constructure */
+  /** Disable the copy constructor */
   unique_ptr(const unique_ptr &other) = delete;
 
   /** Move constructor */
   unique_ptr(unique_ptr&& source) {
-    header_ptr_ = source.header_ptr_;
-    header_ = source.header_;
-    owner_ = source.owner_;
-    source.header_ptr_.set_null();
-    source.owner_ = false;
-  }
-
-  /** Initializes shared memory header */
-  template<typename ...Args>
-  void shm_init(Args ...args) {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      header_ = alloc_->template
-        AllocateConstructObjs<TYPED_HEADER >(1, header_ptr_,
-                                             std::forward<Args>(args)...);
+      obj_.WeakMove(source.obj_);
     } else {
-      header_ = alloc_->template
-        AllocateConstructObjs<TYPED_HEADER >(1, header_ptr_,
-                                             std::forward<Args>(args)...);
+      obj_ = source.obj_;
+      source.obj_ = nullptr;
     }
-    owner_ = true;
   }
 
-  /** Destroys shared memory allocated by data structure */
-  void shm_destroy() {
+  /** Destroys all allocated memory */
+  ~unique_ptr() {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      T(header_->obj_).shm_destroy();
+      if (obj_.IsNull()) {
+        return;
+      }
+      obj_.SetDestructable();
+    } else {
+      delete obj_;
     }
-    alloc_->Free(header_ptr_);
   }
 
-  /** Deserializes a unique_ptr from shared memory */
-  void shm_deserialize(ShmArchive<TYPED_CLASS> &ar) {
-    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_deserialize(ar);
-    owner_ = false;
+  /** Serialize the unique_ptr into a ShmArchive */
+  void operator>>(ShmArchive<TYPED_CLASS> ar) const {
+    shm_serialize(ar);
+  }
+
+  /** Serialize the unique_ptr into a ShmArchive */
+  void shm_serialize(ShmArchive<TYPED_CLASS> ar) const {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      auto cast = static_cast<ShmArchive<T>>(ar);
+      obj_ >> cast;
+    }
+  }
+
+  /** Gets a reference to the internal object */
+  T& get() {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      return obj_;
+    } else {
+      return *obj_;
+    }
+  }
+
+  /** Gets a reference to the internal object */
+  T& get_const() const {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      return obj_;
+    } else {
+      return *obj_;
+    }
+  }
+
+  /** Gets a reference to the internal object using * */
+  T& operator*() {
+    return get();
   }
 
   /** Disables the assignment operator */
   void operator=(unique_ptr<T> &&other) = delete;
-
-  /** Destroys all allocated memory */
-  ~unique_ptr() {
-    if (!owner_) { return; }
-    shm_destroy();
-  }
 };
+
+template<typename T>
+using uptr = unique_ptr<T>;
 
 }  // namespace labstor::ipc
 
 #undef CLASS_NAME
 #undef TYPED_CLASS
-#undef TYPED_HEADER
 
 namespace std {
 

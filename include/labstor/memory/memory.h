@@ -126,12 +126,6 @@ class ShmSerializeable {
   // void operator<<(ShmArchive &r);
 };
 
-
-/**
- * A wrapper which can be used to construct an object
- * within a ShmArchive
- * */
-
 /**
  * A wrapper around a process-independent pointer for storing
  * a single complex shared-memory data structure
@@ -153,31 +147,21 @@ struct ShmArchive {
   template<typename ...Args>
   explicit ShmArchive(Args&& ...args) {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      T(std::forward<Args>(args)...) >> (*this);
+      T obj(std::forward<Args>(args)...);
+      obj.UnsetDestructable(obj);
+      obj >> (*this);
     }
+  }
+
+  /** Copies a ShmArchive into another */
+  ShmArchive(const ShmArchive &other)
+  : header_ptr_(other.header_ptr_) {
   }
 
   /** Moves the data from one archive into another */
   ShmArchive(ShmArchive&& source) noexcept
   : header_ptr_(source.header_ptr_) {
     source.header_ptr_.set_null();
-  }
-};
-
-/**
- * A wrapper around a process-independent pointer for
- * storing a C-style array of a simple type
- * */
-template<typename T>
-struct ShmPointer {
-  Pointer ptr_;
-
-  /** Default constructor */
-  ShmPointer() = default;
-
-  /** Get the process-independent pointer */
-  inline Pointer& Get() {
-    return ptr_;
   }
 };
 

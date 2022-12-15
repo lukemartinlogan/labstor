@@ -82,8 +82,6 @@ void VectorOfIntTest() {
 
   vec.erase(vec.begin(), vec.end());
   REQUIRE(vec.size() == 0);
-
-  vec.shm_destroy();
 }
 
 void VectorOfStringTest() {
@@ -115,8 +113,6 @@ void VectorOfStringTest() {
 
   vec.erase(vec.begin(), vec.end());
   REQUIRE(vec.size() == 0);
-
-  vec.shm_destroy();
 }
 
 void VectorOfListOfStringTest() {
@@ -128,8 +124,6 @@ void VectorOfListOfStringTest() {
     bkt.emplace_back("hello");
   }
   vec.clear();
-
-  vec.shm_destroy();
 }
 
 TEST_CASE("VectorOfInt") {

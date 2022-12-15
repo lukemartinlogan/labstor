@@ -10,58 +10,76 @@
 
 namespace labstor::ipc {
 
+/** forward declaration for string */
 class string;
 
+/** string shared-memory header */
 struct string_header {
   size_t length_;
   char text_[];
 };
 
+/**
+ * MACROS to simplify the string namespace
+ * */
 #define CLASS_NAME string
 #define TYPED_CLASS string
 #define TYPED_HEADER string_header
 
+/**
+ * A string of characters.
+ * */
 class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
  public:
   SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
 
  public:
   /** Default constructor */
-  string() : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>() {}
+  string() = default;
+
+  /** Destructor */
+  ~string() {
+    if (destructable_) {
+      shm_destroy();
+    }
+  }
 
   /** Construct for a C-style string in shared memory */
   explicit string(const char *text) {
-    _create_str(text);
+    size_t length = strlen(text);
+    shm_init(nullptr, length);
+    _create_str(text, length);
   }
 
   /** Construct from a C-style string with allocator in shared memory */
-  explicit string(const char *text, Allocator *alloc) :
-    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
-    _create_str(text);
+  explicit string(Allocator *alloc, const char *text) {
+    size_t length = strlen(text);
+    shm_init(alloc, length);
+    _create_str(text, length);
   }
 
   /** Construct for a std::string in shared-memory */
   explicit string(const std::string &text) {
+    shm_init(nullptr, text.size());
     _create_str(text.data(), text.size());
   }
 
   /** Construct for an std::string with allocator in shared-memory */
-  explicit string(const std::string &text, Allocator *alloc)
-  : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
+  explicit string(Allocator *alloc, const std::string &text) {
+    shm_init(alloc, text.size());
     _create_str(text.data(), text.size());
   }
 
   /** Copy constructor */
-  string(const string &other)
-  : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(other.alloc_) {
+  string(const string &other) : ShmDataStructure(other) {
+    shm_init(other.alloc_, other.size());
     _create_str(other.data(), other.size());
   }
 
   /** Construct by concatenating two string in shared-memory */
-  explicit string(string &text1, string &text2, Allocator *alloc)
-  : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
+  explicit string(Allocator *alloc, string &text1, string &text2) {
     size_t length = text1.size() + text2.size();
-    shm_init(length);
+    shm_init(alloc, length);
     memcpy(header_->text_,
            text1.data(), text1.size());
     memcpy(header_->text_ + size(),
@@ -71,22 +89,39 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   /** Construct a string of a specific length in shared memory */
   explicit string(size_t length) {
-    shm_init(length);
+    shm_init(nullptr, length);
     header_->text_[length] = 0;
   }
 
   /** Construct a string of specific length and allocator in shared memory */
-  explicit string(size_t length, Allocator *alloc) :
-    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
-    shm_init(length);
+  explicit string(Allocator *alloc, size_t length) {
+    shm_init(alloc, length);
     header_->text_[length] = 0;
   }
 
   /** Moves one string into another */
-  string(string&& source) {
-    header_ptr_ = source.header_ptr_;
-    header_ = source.header_;
-    source.header_ptr_.set_null();
+  string(string&& source) noexcept {
+    WeakMove(source);
+  }
+
+  /**
+   * Initialize shared-memory header. Requires the length of
+   * the string before-hand.
+   * */
+  void shm_init(Allocator *alloc, size_t length) {
+    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
+    header_ = alloc_->template
+      AllocatePtr<TYPED_HEADER>(
+      sizeof(TYPED_HEADER) + length + 1,
+      header_ptr_);
+  }
+
+  /**
+   * Destroy the shared-memory data.
+   * */
+  void shm_destroy() {
+    if (IsNull()) { return; }
+    alloc_->Free(header_ptr_);
   }
 
   /** Disable assignment (avoids copies) */
@@ -104,7 +139,7 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   /** Add two strings together */
   string operator+(string &other) {
-    return string(*this, other, other.GetAllocator());
+    return string(GetAllocator(), *this, other);
   }
 
   /** Get the size of the current string */
@@ -123,25 +158,6 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   /** Get a mutable reference to the C-style string */
   char* data_mutable() {
     return header_->text_;
-  }
-
-  /**
-   * Initialize shared-memory header. Requires the length of
-   * the string before-hand.
-   * */
-  void shm_init(size_t length) {
-    header_ = alloc_->template
-      AllocatePtr<TYPED_HEADER>(
-      sizeof(TYPED_HEADER) + length + 1,
-      header_ptr_);
-  }
-
-  /**
-   * Destroy the shared-memory data.
-   * */
-  void shm_destroy() {
-    if (header_ptr_.is_null()) { return; }
-    alloc_->Free(header_ptr_);
   }
 
   /**
@@ -167,12 +183,7 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   LABSTOR_STR_CMP_OPERATOR(>=)
 
  private:
-  inline void _create_str(const char *text) {
-    size_t length = strlen(text);
-    _create_str(text, length);
-  }
   inline void _create_str(const char *text, size_t length) {
-    shm_init(length);
     memcpy(header_->text_, text, length);
     header_->text_[length] = 0;
     header_->length_ = length;

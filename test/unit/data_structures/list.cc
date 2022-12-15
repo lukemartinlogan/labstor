@@ -72,8 +72,6 @@ void ListOfIntTest() {
 
   lp.erase(lp.begin(), lp.end());
   REQUIRE(lp.size() == 0);
-
-  lp.shm_destroy();
 }
 
 void ListOfStringTest() {
@@ -109,8 +107,6 @@ void ListOfStringTest() {
 
   lp.erase(lp.begin(), lp.end());
   REQUIRE(lp.size() == 0);
-
-  lp.shm_destroy();
 }
 
 TEST_CASE("ListOfInt") {

@@ -203,8 +203,6 @@ void UnorderedMapOfStringIntTest() {
       i_text.shm_destroy();
     }
   }
-
-  map.shm_destroy();
 }
 
 void UnorderedMapOfIntStringTest() {
@@ -284,8 +282,6 @@ void UnorderedMapOfIntStringTest() {
       REQUIRE(map.find(i) != map.end());
     }
   }
-
-  map.shm_destroy();
 }
 
 void UnorderedMapOfStringTest() {
@@ -379,8 +375,6 @@ void UnorderedMapOfStringTest() {
       i_text.shm_destroy();
     }
   }
-
-  map.shm_destroy();
 }
 
 TEST_CASE("UnorderedMapOfInt") {

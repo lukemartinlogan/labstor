@@ -207,36 +207,51 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   typedef SHM_T_OR_REF_T(T) T_Ref;
 
  public:
+  /** Default constructor */
   list() = default;
 
+  /** Destructor */
+  ~list() {
+    if (destructable_) {
+      shm_destroy();
+    }
+  }
+
   /** Default shared-memory constructor */
-  explicit list(Allocator *alloc)
-  : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
-    shm_init();
+  explicit list(Allocator *alloc) {
+    shm_init(alloc);
   }
 
   /** Moves one list into another */
-  list(list&& source) {
-    header_ptr_ = source.header_ptr_;
-    header_ = source.header_;
-    source.header_ptr_.set_null();
+  list(list&& source) noexcept {
+    WeakMove(source);
   }
 
-  /** Disable copying  */
-  list(const list &other) = delete;
+  /** Copy constructor  */
+  list(const list &other) {
+    StrongCopy(other);
+  }
 
   /** Assign one list into another */
   list&
   operator=(const list &other) {
     if (this != &other) {
-      header_ptr_ = other.header_ptr_;
-      header_ = other.header_;
+      StrongCopy(other);
     }
     return *this;
   }
 
+  /** Copy a list */
+  void StrongCopy(const list &other) {
+    shm_init(other.alloc_);
+    for (auto &obj : other) {
+      emplace_back(obj);
+    }
+  }
+
   /** Initialize list in shared memory */
-  void shm_init() {
+  void shm_init(Allocator *alloc) {
+    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
     header_ = alloc_->template
       ClearAllocateObjs<TYPED_HEADER>(1, header_ptr_);
     header_->head_ptr_.set_null();
@@ -245,7 +260,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   /** Destroy all shared memory allocated by the list */
   void shm_destroy() {
-    if (header_ptr_.is_null()) { return; }
+    if (IsNull()) { return; }
     clear();
     alloc_->Free(header_ptr_);
   }
