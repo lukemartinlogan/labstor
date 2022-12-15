@@ -6,7 +6,7 @@
 #define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_LIST_H_
 
 #include "labstor/data_structures/data_structure.h"
-#include "labstor/data_structures/manual_ptr.h"
+#include "labstor/data_structures/shm_ref.h"
 
 namespace labstor::ipc {
 
@@ -27,7 +27,7 @@ struct list_entry {
 
   T_Ref data() {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      return mptr<T>(data_).get_ref();
+      return shm_ref<T>(data_).get_ref();
     } else {
       return data_;
     }
