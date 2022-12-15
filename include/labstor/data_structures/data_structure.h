@@ -110,6 +110,11 @@ class ShmDataStructure : public ShmSerializeable {
   alloc_(nullptr), destructable_(true) {
   }
 
+  /** Copy constructor */
+  ShmDataStructure(const ShmDataStructure &other) {
+    destructable_ = true;
+  }
+
   /** Initialize shared-memory data structure */
   void shm_init(Allocator *alloc) {
     if (alloc == nullptr) {
