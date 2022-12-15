@@ -11,6 +11,7 @@
 #include "labstor/data_structures/thread_unsafe/list.h"
 #include "labstor/data_structures/data_structure.h"
 #include "labstor/data_structures/manual_ptr.h"
+#include "labstor/data_structures/shm_ref.h"
 
 
 namespace labstor::ipc {
@@ -63,16 +64,7 @@ struct unordered_map_pair {
   : key_(std::move(other.key_)), val_(std::move(other.val_)) {}
 
   /** Destructor */
-  ~unordered_map_pair() {
-    if constexpr(IS_SHM_SERIALIZEABLE(Key)) {
-      Key key(key_);
-      key.shm_destroy();
-    }
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      T val(val_);
-      val.shm_destroy();
-    }
-  }
+  ~unordered_map_pair() = default;
 };
 
 /**
@@ -81,13 +73,11 @@ struct unordered_map_pair {
 template<typename Key, typename T>
 struct unordered_map_pair_ret {
  public:
-  typedef SHM_T_OR_REF_T(T) T_Ref;
-  typedef SHM_T_OR_REF_T(Key) Key_Ref;
   using COLLISION_T = unordered_map_pair<Key, T>;
 
  public:
-  Key_Ref key_;
-  T_Ref val_;
+  shm_ref<Key> key_;
+  shm_ref<T> val_;
 
  public:
   /** Constructor */
@@ -309,8 +299,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     auto alloc = other.alloc_;
     shm_init(alloc, num_buckets, max_collisions, growth);
     for (auto entry : other) {
-      emplace(std::move(entry.key_),
-              std::move(entry.val_));
+      emplace(std::move(*entry.key_),
+              std::move(*entry.val_));
     }
   }
 
@@ -442,7 +432,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   T_Ref operator[](const Key &key) {
     auto iter = find(key);
     if (iter != end()) {
-      return (*iter).val_;
+      return (*iter).val_.get_ref();
     }
     throw UNORDERED_MAP_CANT_FIND.format();
   }
@@ -494,7 +484,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     auto iter_end = collisions->end();
     for (; iter != iter_end; ++iter) {
       COLLISION_RET_T entry(*iter);
-      if (entry.key_ == key) {
+      if (*entry.key_ == key) {
         return iter;
       }
     }
@@ -537,8 +527,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   bool insert_templ(COLLISION_T &entry_shm) {
     if (header_ == nullptr) { shm_init(); }
     COLLISION_RET_T entry(entry_shm);
-    auto &key = entry.key_;
-    auto &val = entry.val_;
+    auto &key = *entry.key_;
+    auto &val = *entry.val_;
 
     // Acquire the header lock for a read (not modifying bucket vec)
     ScopedRwReadLock header_lock(header_->lock_);
@@ -556,7 +546,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     // Insert into the map
     mptr<list<COLLISION_T>> collisions(bkt.collisions_);
     if constexpr(!modify_existing) {
-      auto has_key = find_collision(entry.key_, collisions);
+      auto has_key = find_collision(*entry.key_, collisions);
       if (has_key != collisions->end()) {
         return false;
       }

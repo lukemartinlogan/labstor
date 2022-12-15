@@ -43,15 +43,21 @@ class manual_ptr : public ShmDataStructurePointer<T> {
   /** Destructor. Does nothing -- must manually call shm_destroy */
   ~manual_ptr() = default;
 
+  /** Loads an object from a ShmArchive<T> */
+  template<typename ...Args>
+  explicit manual_ptr(ShmArchive<T> ar) {
+    shm_deserialize(ar);
+  }
+
   /** Loads an object from a ShmArchive<mptr> */
   template<typename ...Args>
-  explicit manual_ptr(ShmArchive<TYPED_CLASS> &ar) {
+  explicit manual_ptr(ShmArchive<TYPED_CLASS> ar) {
     shm_deserialize(ar);
   }
 
   /** Loads an object from a ShmArchive<uptr> */
   template<typename ...Args>
-  explicit manual_ptr(ShmArchive<uptr<T>> &ar) {
+  explicit manual_ptr(ShmArchive<uptr<T>> ar) {
     shm_deserialize(ar);
   }
 
@@ -97,6 +103,19 @@ class manual_ptr : public ShmDataStructurePointer<T> {
     }
   }
 
+  /** Deserialize the ptr from a ShmArchive<T> */
+  void operator<<(ShmArchive<T> ar) {
+    shm_deserialize(ar);
+  }
+
+  /** Deserialize the ptr from a ShmArchive<mptr> */
+  void shm_deserialize(ShmArchive<T> ar) {
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      obj_ << ar;
+      obj_.UnsetDestructable();
+    }
+  }
+
   /** Deserialize the ptr from a ShmArchive<mptr> */
   void operator<<(ShmArchive<TYPED_CLASS> ar) {
     shm_deserialize(ar);
@@ -104,10 +123,7 @@ class manual_ptr : public ShmDataStructurePointer<T> {
 
   /** Deserialize the ptr from a ShmArchive<mptr> */
   void shm_deserialize(ShmArchive<TYPED_CLASS> ar) {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_ << ShmArchive<T>(ar.Get());
-      obj_.UnsetDestructable();
-    }
+    shm_deserialize(ShmArchive<T>(ar.Get()));
   }
 
   /** Deserialize the ptr from a ShmArchive<uptr> */
@@ -117,7 +133,7 @@ class manual_ptr : public ShmDataStructurePointer<T> {
 
   /** Deserialize the ptr from a ShmArchive<uptr> */
   void shm_deserialize(ShmArchive<uptr<T>> ar) {
-    shm_deserialize(ShmArchive<TYPED_CLASS>(ar.Get()));
+    shm_deserialize(ShmArchive<T>(ar.Get()));
   }
 
   /** Disables the assignment operator */

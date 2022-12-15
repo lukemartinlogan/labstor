@@ -133,7 +133,7 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
   /** Convert into a std::string */
-  std::string str() {
+  std::string str() const {
     return {header_->text_, header_->length_};
   }
 

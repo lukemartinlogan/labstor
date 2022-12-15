@@ -62,7 +62,7 @@ void UnorderedMapOfIntTest() {
     for (int i = 0; i < 20; ++i) {
       auto iter = map.find(i);
       auto entry = *iter;
-      REQUIRE(entry.val_ == i);
+      REQUIRE(*entry.val_ == i);
     }
   }
 
@@ -72,8 +72,8 @@ void UnorderedMapOfIntTest() {
     prep.Lock();
     int i = 0;
     for (auto entry : map) {
-      REQUIRE((0 <= entry.key_ && entry.key_ < 20));
-      REQUIRE((0 <= entry.val_ && entry.val_ < 20));
+      REQUIRE((0 <= *entry.key_ && *entry.key_ < 20));
+      REQUIRE((0 <= *entry.val_ && *entry.val_ < 20));
       ++i;
     }
     REQUIRE(i == 20);
@@ -115,8 +115,6 @@ void UnorderedMapOfIntTest() {
       REQUIRE(map.find(i) != map.end());
     }
   }
-
-  map.shm_destroy();
 }
 
 void UnorderedMapOfStringIntTest() {
@@ -128,7 +126,6 @@ void UnorderedMapOfStringIntTest() {
     for (int i = 0; i < 20; ++i) {
       auto t1 = string(std::to_string(i));
       map.emplace(t1, i+1);
-      t1.shm_destroy();
     }
   }
 
@@ -138,7 +135,6 @@ void UnorderedMapOfStringIntTest() {
       string t1(std::to_string(i));
       auto t3 = map[t1];
       REQUIRE(t3 == i+1);
-      t1.shm_destroy();
     }
   }
 
@@ -148,8 +144,7 @@ void UnorderedMapOfStringIntTest() {
       string t1(std::to_string(i));
       auto iter = map.find(t1);
       auto entry = *iter;
-      REQUIRE(entry.val_ == i+1);
-      t1.shm_destroy();
+      REQUIRE(*entry.val_ == i+1);
     }
   }
 
@@ -161,9 +156,9 @@ void UnorderedMapOfStringIntTest() {
     for (auto entry : map) {
       int key;
       int val;
-      std::stringstream(entry.key_.str()) >> key;
+      std::stringstream((*entry.key_).str()) >> key;
       REQUIRE((0 <= key && key < 20));
-      REQUIRE((1 <= entry.val_ && entry.val_ < 21));
+      REQUIRE((1 <= *entry.val_ && *entry.val_ < 21));
       ++i;
     }
     REQUIRE(i == 20);
@@ -174,13 +169,11 @@ void UnorderedMapOfStringIntTest() {
     for (int i = 0; i < 15; ++i) {
       string i_text(std::to_string(i));
       map.erase(i_text);
-      i_text.shm_destroy();
     }
     REQUIRE(map.size() == 5);
     for (int i = 0; i < 15; ++i) {
       string i_text(std::to_string(i));
       REQUIRE(map.find(i_text) == map.end());
-      i_text.shm_destroy();
     }
   }
 
@@ -195,12 +188,10 @@ void UnorderedMapOfStringIntTest() {
     for (int i = 0; i < 100; ++i) {
       string i_text(std::to_string(i));
       map.emplace(i_text);
-      i_text.shm_destroy();
     }
     for (int i = 0; i < 100; ++i) {
       string i_text(std::to_string(i));
       REQUIRE(map.find(i_text) != map.end());
-      i_text.shm_destroy();
     }
   }
 }
@@ -215,7 +206,6 @@ void UnorderedMapOfIntStringTest() {
       int t1 = i;
       auto t2 = string(std::to_string(i+1));
       map.emplace(t1, t2);
-      t2.shm_destroy();
     }
   }
 
@@ -226,7 +216,6 @@ void UnorderedMapOfIntStringTest() {
       string t2(std::to_string(i+1));
       auto t3 = map[t1];
       REQUIRE(t3.str() == std::to_string(i+1));
-      t2.shm_destroy();
     }
   }
 
@@ -236,7 +225,7 @@ void UnorderedMapOfIntStringTest() {
       int t1 = i;
       auto iter = map.find(t1);
       auto entry = *iter;
-      REQUIRE(entry.val_ == std::to_string(i+1));
+      REQUIRE(*entry.val_ == std::to_string(i+1));
     }
   }
 
@@ -246,9 +235,9 @@ void UnorderedMapOfIntStringTest() {
     prep.Lock();
     int i = 0;
     for (auto entry : map) {
-      int key = entry.key_;
+      int key = *entry.key_;
       int val;
-      std::stringstream(entry.val_.str()) >> val;
+      std::stringstream((*entry.val_).str()) >> val;
       REQUIRE((0 <= key && key < 20));
       REQUIRE((1 <= val && val < 21));
       ++i;
@@ -294,8 +283,6 @@ void UnorderedMapOfStringTest() {
       auto t1 = string(std::to_string(i));
       auto t2 = string(std::to_string(i + 1));
       map.emplace(t1, t2);
-      t1.shm_destroy();
-      t2.shm_destroy();
     }
   }
 
@@ -306,8 +293,6 @@ void UnorderedMapOfStringTest() {
       string t2(std::to_string(i + 1));
       auto t3 = map[t1];
       REQUIRE(t3 == t2);
-      t1.shm_destroy();
-      t2.shm_destroy();
     }
   }
 
@@ -318,9 +303,7 @@ void UnorderedMapOfStringTest() {
       string t2(std::to_string(i + 1));
       auto iter = map.find(t1);
       auto entry = *iter;
-      REQUIRE(entry.val_ == t2);
-      t1.shm_destroy();
-      t2.shm_destroy();
+      REQUIRE(*entry.val_ == t2);
     }
   }
 
@@ -332,8 +315,8 @@ void UnorderedMapOfStringTest() {
     for (auto entry : map) {
       int key;
       int val;
-      std::stringstream(entry.key_.str()) >> key;
-      std::stringstream(entry.val_.str()) >> val;
+      std::stringstream((*entry.key_).str()) >> key;
+      std::stringstream((*entry.val_).str()) >> val;
       REQUIRE((0 <= key && key < 20));
       REQUIRE((1 <= val && val < 21));
       ++i;
@@ -346,13 +329,11 @@ void UnorderedMapOfStringTest() {
     for (int i = 0; i < 15; ++i) {
       string i_text(std::to_string(i));
       map.erase(i_text);
-      i_text.shm_destroy();
     }
     REQUIRE(map.size() == 5);
     for (int i = 0; i < 15; ++i) {
       string i_text(std::to_string(i));
       REQUIRE(map.find(i_text) == map.end());
-      i_text.shm_destroy();
     }
   }
 
@@ -367,12 +348,10 @@ void UnorderedMapOfStringTest() {
     for (int i = 0; i < 100; ++i) {
       string i_text(std::to_string(i));
       map.emplace(i_text);
-      i_text.shm_destroy();
     }
     for (int i = 0; i < 100; ++i) {
       string i_text(std::to_string(i));
       REQUIRE(map.find(i_text) != map.end());
-      i_text.shm_destroy();
     }
   }
 }

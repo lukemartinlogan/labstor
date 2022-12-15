@@ -45,74 +45,114 @@ void VectorOfIntTest() {
   Allocator *alloc = alloc_g;
   labstor::ipc::vector<int> vec(alloc);
 
-  vec.reserve(10);
-
-  for (int i = 0; i < 30; ++i) {
-    vec.emplace_back(i);
-  }
-  REQUIRE(vec.size() == 30);
-  for (int i = 0; i < 30; ++i) {
-    REQUIRE(vec[i] == i);
+  // Reserve 10 slots in shared memory
+  {
+    vec.reserve(10);
+    REQUIRE(vec.size() == 0);
   }
 
-  int fcur = 0;
-  for (auto num : vec) {
-    REQUIRE(num == fcur);
-    ++fcur;
+  // Emplace 30 elements into the vector (forces growth)
+  {
+    for (int i = 0; i < 30; ++i) {
+      vec.emplace_back(i);
+    }
+    REQUIRE(vec.size() == 30);
+    for (int i = 0; i < 30; ++i) {
+      REQUIRE(vec[i] == i);
+    }
   }
 
-  int rcur = (int)vec.size() - 1;
-  for (auto num_iter = vec.rbegin(); num_iter != vec.rend(); ++num_iter) {
-    REQUIRE((*num_iter) == rcur);
-    --rcur;
+  // Forward iterator test
+  {
+    int fcur = 0;
+    for (auto num : vec) {
+      REQUIRE(num == fcur);
+      ++fcur;
+    }
+    REQUIRE(fcur == vec.size());
   }
 
-  vec.emplace(vec.begin(), 100);
-  REQUIRE(vec[0] == 100);
-  REQUIRE(vec.size() == 31);
-  for (int i = 1; i < vec.size(); ++i) {
-    REQUIRE(vec[i] == i - 1);
+  // Reverse iterator test
+  {
+    int rcur = (int) vec.size() - 1;
+    for (auto num_iter = vec.rbegin(); num_iter != vec.rend(); ++num_iter) {
+      REQUIRE((*num_iter) == rcur);
+      --rcur;
+    }
+    REQUIRE(rcur == -1);
   }
 
-  vec.erase(vec.begin(), vec.begin() + 1);
-  REQUIRE(vec.size() == 30);
-  for (int i = 0; i < vec.size(); ++i) {
-    REQUIRE(vec[i] == i);
+  // Emplace at front of vector
+  {
+    vec.emplace(vec.begin(), 100);
+    REQUIRE(vec[0] == 100);
+    REQUIRE(vec.size() == 31);
+    for (int i = 1; i < vec.size(); ++i) {
+      REQUIRE(vec[i] == i - 1);
+    }
   }
 
-  vec.erase(vec.begin(), vec.end());
-  REQUIRE(vec.size() == 0);
+  // Erase first element
+  {
+    vec.erase(vec.begin(), vec.begin() + 1);
+    REQUIRE(vec.size() == 30);
+    for (int i = 0; i < vec.size(); ++i) {
+      REQUIRE(vec[i] == i);
+    }
+  }
+
+  // Erase entire vector
+  {
+    vec.erase(vec.begin(), vec.end());
+    REQUIRE(vec.size() == 0);
+  }
 }
 
 void VectorOfStringTest() {
   Allocator *alloc = alloc_g;
   vector<string> vec(alloc);
 
-  vec.reserve(10);
-
-  for (int i = 0; i < 30; ++i) {
-    vec.emplace_back(std::to_string(i));
-  }
-  REQUIRE(vec.size() == 30);
-  for (int i = 0; i < 30; ++i) {
-    REQUIRE(vec[i] == std::to_string(i));
+  // Reserve 10 slots in shared memory
+  {
+    vec.reserve(10);
+    REQUIRE(vec.size() == 0);
   }
 
-  vec.emplace(vec.begin(), "100");
-  REQUIRE(vec[0] == "100");
-  REQUIRE(vec.size() == 31);
-  for (int i = 1; i < vec.size(); ++i) {
-    REQUIRE(vec[i] == std::to_string(i - 1));
+  // Emplace 30 elements into the vector (forces growth)
+  {
+    for (int i = 0; i < 30; ++i) {
+      vec.emplace_back(std::to_string(i));
+    }
+    REQUIRE(vec.size() == 30);
+    for (int i = 0; i < 30; ++i) {
+      REQUIRE(vec[i] == std::to_string(i));
+    }
   }
 
-  vec.erase(vec.begin(), vec.begin() + 1);
-  REQUIRE(vec.size() == 30);
-  for (int i = 0; i < vec.size(); ++i) {
-    REQUIRE(vec[i] == std::to_string(i));
+  // Forward iterator test
+  {
+    vec.emplace(vec.begin(), "100");
+    REQUIRE(vec[0] == "100");
+    REQUIRE(vec.size() == 31);
+    for (int i = 1; i < vec.size(); ++i) {
+      REQUIRE(vec[i] == std::to_string(i - 1));
+    }
   }
 
-  vec.erase(vec.begin(), vec.end());
-  REQUIRE(vec.size() == 0);
+  // Reverse iterator test
+  {
+    vec.erase(vec.begin(), vec.begin() + 1);
+    REQUIRE(vec.size() == 30);
+    for (int i = 0; i < vec.size(); ++i) {
+      REQUIRE(vec[i] == std::to_string(i));
+    }
+  }
+
+  // Erase entire vector
+  {
+    vec.erase(vec.begin(), vec.end());
+    REQUIRE(vec.size() == 0);
+  }
 }
 
 void VectorOfListOfStringTest() {

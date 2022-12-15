@@ -6,6 +6,7 @@
 #define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_VECTOR_H_
 
 #include "labstor/data_structures/data_structure.h"
+#include "labstor/data_structures/manual_ptr.h"
 
 namespace labstor::ipc {
 
@@ -25,25 +26,29 @@ struct vector_header {
 /**
  * The vector iterator implementation
  * */
-template<typename T, bool FORWARD_ITER>
+template<typename T, bool FORWARD_ITER, bool CONST_ITER>
 struct vector_iterator_templ {
  public:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
   typedef SHM_T_OR_REF_T(T) T_Ref;
 
+  typedef SHM_CONST_T_OR_T(T_Ar, CONST_ITER) T_Ar_Const;
+  typedef SHM_CONST_T_OR_T(T_Ref, CONST_ITER) T_Ref_Const;
+  typedef SHM_CONST_T_OR_T(vector<T>, CONST_ITER) VecT_Const;
+
  public:
-  vector<T> *vec_;
+  VecT_Const *vec_;
   off64_t i_;
 
   /** Default constructor */
   vector_iterator_templ() = default;
 
   /** Construct an iterator */
-  explicit vector_iterator_templ(vector<T> *vec)
+  explicit vector_iterator_templ(VecT_Const *vec)
     : vec_(vec) {}
 
   /** Construct an iterator at \a i offset */
-  explicit vector_iterator_templ(vector<T> *vec, size_t i)
+  explicit vector_iterator_templ(VecT_Const *vec, size_t i)
     : vec_(vec), i_(static_cast<off64_t>(i)) {}
 
   /** Copy constructor */
@@ -63,12 +68,12 @@ struct vector_iterator_templ {
   }
 
   /** Change the vector pointer */
-  void change_pointer(vector<T> *other) {
+  void change_pointer(VecT_Const *other) {
     vec_ = other;
   }
 
   /** Dereference the iterator */
-  T_Ref operator*() const {
+  T_Ref_Const operator*() const {
     return (*vec_)[i_];
   }
 
@@ -83,8 +88,9 @@ struct vector_iterator_templ {
     } else {
       if (i_ == 0) {
         set_end();
+      } else {
+        --i_;
       }
-      --i_;
     }
     return *this;
   }
@@ -242,17 +248,25 @@ struct vector_iterator_templ {
 
   /** Determine whether this iterator is the end iterator */
   bool is_end() const {
-    return i_ == -1;
+    return i_ < 0;
   }
 };
 
 /** Forward iterator typedef */
 template<typename T>
-using vector_iterator = vector_iterator_templ<T, true>;
+using vector_iterator = vector_iterator_templ<T, true, false>;
 
 /** Backward iterator typedef */
 template<typename T>
-using vector_riterator = vector_iterator_templ<T, false>;
+using vector_riterator = vector_iterator_templ<T, false, false>;
+
+/** Constant forward iterator typedef */
+template<typename T>
+using vector_citerator = vector_iterator_templ<T, true, true>;
+
+/** Backward iterator typedef */
+template<typename T>
+using vector_criterator = vector_iterator_templ<T, false, true>;
 
 /**
  * MACROS to simplify the vector namespace
@@ -382,7 +396,8 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   T_Ref operator[](const size_t i) {
     T_Ar *vec = _data();
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      return T(vec[i]);
+      mptr<T> entry(vec[i]);
+      return entry.get_ref();
     } else {
       return vec[i];
     }
@@ -395,7 +410,9 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     if (header_->length_ == header_->max_length_) {
       vec = grow_vector(vec, 0, false);
     }
-    Allocator::ConstructObj<T>(*(vec + header_->length_), std::forward<Args>(args)...);
+    Allocator::ConstructObj<T>(*(vec + header_->length_),
+                               std::forward<Args>(args)...);
+    mptr<T> entry(vec[size()]);
     ++header_->length_;
   }
 
@@ -578,6 +595,19 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     return vector_iterator<T>::end();
   }
 
+  /** Beginning of the constant forward iterator */
+  vector_citerator<T> cbegin() {
+    if (size() == 0) { return end(); }
+    vector_citerator<T> iter(this);
+    iter.set_begin();
+    return iter;
+  }
+
+  /** End of the forward iterator */
+  static vector_citerator<T> const cend() {
+    return vector_citerator<T>::end();
+  }
+
   /** Beginning of the reverse iterator */
   vector_riterator<T> rbegin() {
     if (size() == 0) { return rend(); }
@@ -589,6 +619,19 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   /** End of the reverse iterator */
   static vector_riterator<T> const rend() {
     return vector_riterator<T>::end();
+  }
+
+  /** Beginning of the constant reverse iterator */
+  vector_criterator<T> crbegin() {
+    if (size() == 0) { return rend(); }
+    vector_criterator<T> iter(this);
+    iter.set_begin();
+    return iter;
+  }
+
+  /** End of the constant reverse iterator */
+  static vector_criterator<T> const crend() {
+    return vector_criterator<T>::end();
   }
 };
 

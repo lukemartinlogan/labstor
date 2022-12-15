@@ -6,6 +6,7 @@
 #define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_LIST_H_
 
 #include "labstor/data_structures/data_structure.h"
+#include "labstor/data_structures/manual_ptr.h"
 
 namespace labstor::ipc {
 
@@ -26,7 +27,7 @@ struct list_entry {
 
   T_Ref data() {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      return T(data_);
+      return mptr<T>(data_).get_ref();
     } else {
       return data_;
     }
@@ -45,38 +46,41 @@ struct list_header {
 /**
  * The list iterator
  * */
-template<typename T>
-struct list_iterator {
- private:
+template<typename T, bool CONST_ITER>
+struct list_iterator_templ {
+ public:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
   typedef SHM_T_OR_REF_T(T) T_Ref;
+  typedef SHM_CONST_T_OR_T(T_Ar, CONST_ITER) T_Ar_Const;
+  typedef SHM_CONST_T_OR_T(T_Ref, CONST_ITER) T_Ref_Const;
+  typedef SHM_CONST_T_OR_T(list<T>, CONST_ITER) ListT_Const;
 
  public:
-  list<T> *list_;
+  ListT_Const *list_;
   list_entry<T> *entry_;
   Pointer entry_ptr_;
 
   /** Default constructor */
-  list_iterator() = default;
+  list_iterator_templ() = default;
 
   /** Construct an iterator  */
-  explicit list_iterator(list<T> *list) : list_(list) {}
+  explicit list_iterator_templ(ListT_Const *list) : list_(list) {}
 
   /** Construct an iterator  */
-  explicit list_iterator(list<T> *list,
-                         list_entry<T> *entry,
-                         Pointer entry_ptr)
+  explicit list_iterator_templ(ListT_Const *list,
+                               list_entry<T> *entry,
+                               Pointer entry_ptr)
     : list_(list), entry_(entry), entry_ptr_(entry_ptr) {}
 
   /** Copy constructor */
-  list_iterator(const list_iterator &other) {
+  list_iterator_templ(const list_iterator_templ &other) {
     list_ = other.list_;
     entry_ = other.entry_;
     entry_ptr_ = other.entry_ptr_;
   }
 
   /** Assign this iterator from another iterator */
-  list_iterator<T>& operator=(const list_iterator<T> &other) {
+  list_iterator_templ& operator=(const list_iterator_templ &other) {
     if (this != &other) {
       list_ = other.list_;
       entry_ = other.entry_;
@@ -86,17 +90,17 @@ struct list_iterator {
   }
 
   /** Change the list pointer */
-  void change_pointer(list<T> *other) {
+  void change_pointer(ListT_Const *other) {
     list_ = other;
   }
 
   /** Get the object the iterator points to */
-  T_Ref operator*() const {
+  T_Ref_Const operator*() const {
     return entry_->data();
   }
 
   /** Get the next iterator (in place) */
-  list_iterator& operator++() {
+  list_iterator_templ& operator++() {
     if (is_end()) { return *this; }
     entry_ptr_ = entry_->next_ptr_;
     entry_ = list_->alloc_->template
@@ -105,7 +109,7 @@ struct list_iterator {
   }
 
   /** Get the prior iterator (in place) */
-  list_iterator& operator--() {
+  list_iterator_templ& operator--() {
     if (is_end() || is_begin()) { return *this; }
     entry_ptr_ = entry_->prior_ptr_;
     entry_ = list_->alloc_->template
@@ -114,22 +118,22 @@ struct list_iterator {
   }
 
   /** Return the next iterator */
-  list_iterator operator++(int) const {
-    list_iterator next_iter(*this);
+  list_iterator_templ operator++(int) const {
+    list_iterator_templ next_iter(*this);
     ++next_iter;
     return next_iter;
   }
 
   /** Return the prior iterator */
-  list_iterator operator--(int) const {
-    list_iterator prior_iter(*this);
+  list_iterator_templ operator--(int) const {
+    list_iterator_templ prior_iter(*this);
     --prior_iter;
     return prior_iter;
   }
 
   /** Return the iterator at count after this one */
-  list_iterator operator+(size_t count) const {
-    list_iterator pos(*this);
+  list_iterator_templ operator+(size_t count) const {
+    list_iterator_templ pos(*this);
     for (size_t i = 0; i < count; ++i) {
       ++pos;
     }
@@ -137,8 +141,8 @@ struct list_iterator {
   }
 
   /** Return the iterator at count before this one */
-  list_iterator operator-(size_t count) const {
-    list_iterator pos(*this);
+  list_iterator_templ operator-(size_t count) const {
+    list_iterator_templ pos(*this);
     for (size_t i = 0; i < count; ++i) {
       --pos;
     }
@@ -147,33 +151,33 @@ struct list_iterator {
 
   /** Get the iterator at count after this one (in-place) */
   void operator+=(size_t count) {
-    list_iterator pos = (*this) + count;
+    list_iterator_templ pos = (*this) + count;
     entry_ = pos.entry_;
     entry_ptr_ = pos.entry_ptr_;
   }
 
   /** Get the iterator at count before this one (in-place) */
   void operator-=(size_t count) {
-    list_iterator pos = (*this) - count;
+    list_iterator_templ pos = (*this) - count;
     entry_ = pos.entry_;
     entry_ptr_ = pos.entry_ptr_;
   }
 
   /** Determine if two iterators are equal */
-  friend bool operator==(const list_iterator &a,
-                         const list_iterator &b) {
+  friend bool operator==(const list_iterator_templ &a,
+                         const list_iterator_templ &b) {
     return (a.is_end() && b.is_end()) || (a.entry_ == b.entry_);
   }
 
   /** Determine if two iterators are inequal */
-  friend bool operator!=(const list_iterator &a,
-                         const list_iterator &b) {
+  friend bool operator!=(const list_iterator_templ &a,
+                         const list_iterator_templ &b) {
     return !(a.is_end() && b.is_end()) && (a.entry_ != b.entry_);
   }
 
   /** Create the end iterator */
-  static list_iterator const end() {
-    static list_iterator end_iter(nullptr);
+  static list_iterator_templ const end() {
+    static list_iterator_templ end_iter(nullptr);
     return end_iter;
   }
 
@@ -192,6 +196,14 @@ struct list_iterator {
   }
 };
 
+/** forward iterator typedef */
+template<typename T>
+using list_iterator = list_iterator_templ<T, false>;
+
+/** const forward iterator typedef */
+template<typename T>
+using list_citerator = list_iterator_templ<T, true>;
+
 #define CLASS_NAME list
 #define TYPED_CLASS list<T>
 #define TYPED_HEADER list_header<T>
@@ -200,7 +212,6 @@ template<typename T>
 class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
  public:
   SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
-  friend list_iterator<T>;
 
  public:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
@@ -244,8 +255,8 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   /** Copy a list */
   void StrongCopy(const list &other) {
     shm_init(other.alloc_);
-    for (auto &obj : other) {
-      emplace_back(obj);
+    for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
+      emplace_back(*iter);
     }
   }
 
@@ -386,6 +397,19 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   /** Forward iterator end */
   static list_iterator<T> const end() {
     return list_iterator<T>::end();
+  }
+
+  /** Constant forward iterator begin */
+  inline list_citerator<T> cbegin() const {
+    if (size() == 0) { return cend(); }
+    auto head = alloc_->template
+      Convert<list_entry<T>>(header_->head_ptr_);
+    return list_citerator<T>(this, head, header_->head_ptr_);
+  }
+
+  /** Constant forward iterator end */
+  static list_citerator<T> const cend() {
+    return list_citerator<T>::end();
   }
 
  private:

@@ -62,4 +62,14 @@
     IS_SHM_SERIALIZEABLE(T), \
     T, T*>::type
 
+/**
+ * SHM_T_OR_CONST_T: Determines whether or not an object should be
+ * a constant or not.
+ * */
+
+#define SHM_CONST_T_OR_T(T, IS_CONST) \
+  typename std::conditional<         \
+    IS_CONST, \
+    const T, T>::type
+
 #endif //LABSTOR_INCLUDE_LABSTOR_MEMORY_SHM_MACROS_H_
