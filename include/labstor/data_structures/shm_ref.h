@@ -12,10 +12,10 @@
 namespace labstor::ipc {
 
 /**
- * Create a reference to a shared-memory data structure
+ * Stores either
  * */
 template<typename T>
-class shm_ref : public ShmDataStructurePointer<T> {
+class shm_ref : public ShmSmartPointer {
  public:
   typedef SHM_T_OR_PTR_T(T) T_Ptr;
   T_Ptr obj_;

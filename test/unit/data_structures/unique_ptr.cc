@@ -12,6 +12,7 @@
 
 using labstor::ipc::string;
 using labstor::ipc::unique_ptr;
+using labstor::ipc::make_uptr;
 using labstor::ipc::uptr;
 using labstor::ipc::mptr;
 using labstor::ipc::ShmArchive;
@@ -22,7 +23,7 @@ void CopyConstructorShouldFail(unique_ptr<int> num) {
 
 void UniquePtrOfInt() {
   Allocator *alloc = alloc_g;
-  uptr<int> data(25);
+  uptr<int> data = make_uptr<int>(25);
   REQUIRE(data.get_ref() == 25);
   REQUIRE(data.get_ref_const() == 25);
   REQUIRE(*data == 25);
@@ -40,7 +41,7 @@ void UniquePtrOfInt() {
 
 void UniquePtrOfString() {
   Allocator *alloc = alloc_g;
-  unique_ptr<string> data(alloc, "there");
+  unique_ptr<string> data = make_uptr<string>(alloc, "there");
   REQUIRE(data->str() == "there");
   REQUIRE((*data).str() == "there");
   unique_ptr<string> data2 = std::move(data);

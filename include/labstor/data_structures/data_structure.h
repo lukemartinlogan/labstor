@@ -137,7 +137,7 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
   /** Copy constructor */
   ShmDataStructure(const ShmDataStructure &other) {
     WeakCopy(other);
-    destructable_ = true;
+    SetDestructable();
   }
 
   /** Initialize shared-memory data structure */

@@ -117,7 +117,7 @@ void ScopedRwReadLock::Lock() {
  * */
 void ScopedRwReadLock::Unlock() {
   if (is_locked_) {
-    lock_.ReadLock();
+    lock_.ReadUnlock();
     is_locked_ = false;
   }
 }

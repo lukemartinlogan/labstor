@@ -58,13 +58,16 @@ template<typename T>
 template<typename ...Args>
 ShmArchive<T>::ShmArchive(Args&& ...args) {
   if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-    T obj(std::forward<Args>(args)...);
+    T obj;
+    obj.shm_init(std::forward<Args>(args)...);
     if constexpr(!IS_SHM_SMART_POINTER(T)) {
       obj.UnsetDestructable();
     }
     obj >> (*this);
   } else {
-    ShmPointer<T>(std::forward<Args>(args)...) >> (*this);
+    ShmPointer<T> obj;
+    obj.shm_init(std::forward<Args>(args)...);
+    obj >> (*this);
   }
 }
 

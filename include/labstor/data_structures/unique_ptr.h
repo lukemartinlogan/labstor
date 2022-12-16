@@ -31,11 +31,8 @@ class unique_ptr : public ShmDataStructurePointer<T> {
   SHM_DATA_STRUCTURE_POINTER_TEMPLATE(T);
 
  public:
-  /** Allocates + constructs an object in shared memory */
-  template<typename ...Args>
-  explicit unique_ptr(Args&& ...args) {
-    shm_init(std::forward<Args>(args)...);
-  }
+  /** Default constructor */
+  unique_ptr() = default;
 
   /** Destroys all allocated memory */
   ~unique_ptr() {
@@ -65,6 +62,13 @@ class unique_ptr : public ShmDataStructurePointer<T> {
 
 template<typename T>
 using uptr = unique_ptr<T>;
+
+template<typename T, typename ...Args>
+static uptr<T> make_uptr(Args&& ...args) {
+  uptr<T> ptr;
+  ptr.shm_init(std::forward<Args>(args)...);
+  return ptr;
+}
 
 }  // namespace labstor::ipc
 

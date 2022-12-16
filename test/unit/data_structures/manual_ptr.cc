@@ -12,11 +12,12 @@ using labstor::ipc::string;
 using labstor::ipc::mptr;
 using labstor::ipc::uptr;
 using labstor::ipc::mptr;
+using labstor::ipc::make_mptr;
 using labstor::ipc::ShmArchive;
 
 void ManualPtrOfInt() {
   Allocator *alloc = alloc_g;
-  mptr<int> data(25);
+  mptr<int> data = make_mptr<int>(25);
   int x = data.get_ref();
   REQUIRE(data.get_ref() == 25);
   REQUIRE(data.get_ref_const() == 25);
@@ -48,7 +49,7 @@ void ManualPtrOfInt() {
 
 void ManualPtrOfString() {
   Allocator *alloc = alloc_g;
-  mptr<string> data(alloc, "there");
+  mptr<string> data = make_mptr<string>(alloc, "there");
   REQUIRE(data->str() == "there");
   REQUIRE((*data).str() == "there");
   mptr<string> data2 = std::move(data);

@@ -27,11 +27,8 @@ class manual_ptr : public ShmDataStructurePointer<T> {
   SHM_DATA_STRUCTURE_POINTER_TEMPLATE(T);
 
  public:
-  /** Allocates + constructs an object in shared memory */
-  template<typename ...Args>
-  explicit manual_ptr(Args&& ...args) {
-    shm_init(std::forward<Args>(args)...);
-  }
+  /** Default constructor does nothing */
+  manual_ptr() = default;
 
   /** Allocates + constructs an object in shared memory */
   template<typename ...Args>
@@ -105,6 +102,13 @@ class manual_ptr : public ShmDataStructurePointer<T> {
 
 template<typename T>
 using mptr = manual_ptr<T>;
+
+template<typename T, typename ...Args>
+static mptr<T> make_mptr(Args&& ...args) {
+  mptr<T> ptr;
+  ptr.shm_init(std::forward<Args>(args)...);
+  return ptr;
+}
 
 }  // namespace labstor::ipc
 

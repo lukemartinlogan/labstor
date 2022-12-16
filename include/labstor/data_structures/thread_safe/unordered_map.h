@@ -82,7 +82,7 @@ struct unordered_map_pair_ret {
  public:
   /** Constructor */
   explicit unordered_map_pair_ret(COLLISION_T &pair)
-    : key_(pair.key_), val_(pair.val_) {
+  : key_(pair.key_), val_(pair.val_) {
   }
 };
 
@@ -288,8 +288,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
     header_ = alloc_->template
       AllocateObjs<TYPED_HEADER>(1, header_ptr_);
-    mptr<vector<BUCKET_T>> buckets(alloc_, num_buckets,
-                                   alloc_);
+    auto buckets = make_mptr<vector<BUCKET_T>>(alloc_, num_buckets, alloc_);
     buckets >> header_->buckets_;
     header_->length_ = 0;
     header_->max_collisions_ = max_collisions;
@@ -671,7 +670,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       }
     }
     shm_destroy();
-    (*this) = new_map;
+    (*this) = std::move(new_map);
   }
 
   /** Calculate the new number of buckets based on growth rate */
