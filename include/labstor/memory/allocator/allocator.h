@@ -30,7 +30,6 @@
 #include <cstdint>
 #include <labstor/memory/backend/memory_backend_factory.h>
 #include <labstor/memory/memory.h>
-#include <labstor/memory/shm_types_.h>
 
 namespace labstor::ipc {
 
@@ -256,11 +255,10 @@ class Allocator {
    * */
   template<
     typename T,
-    typename T_Ar = SHM_T_OR_ARCHIVE(T),
     typename ...Args>
   T* AllocateConstructObjs(size_t count, Args&& ...args) {
     Pointer p;
-    return AllocateConstructObjs<T, T_Ar>(count, p, std::forward<Args>(args)...);
+    return AllocateConstructObjs<T>(count, p, std::forward<Args>(args)...);
   }
 
   /**
@@ -273,11 +271,10 @@ class Allocator {
    * */
   template<
     typename T,
-    typename T_Ar = SHM_T_OR_ARCHIVE(T),
     typename ...Args>
   T* AllocateConstructObjs(size_t count, Pointer &p, Args&& ...args) {
     T *ptr = AllocateObjs<T>(count, p);
-    ConstructObjs<T, T_Ar>(ptr, 0, count, std::forward<Args>(args)...);
+    ConstructObjs<T>(ptr, 0, count, std::forward<Args>(args)...);
     return ptr;
   }
 
@@ -339,14 +336,13 @@ class Allocator {
    * */
   template<
     typename T,
-    typename T_Ar = SHM_T_OR_ARCHIVE(T),
     typename ...Args>
-  T_Ar* ReallocateConstructObjs(Pointer &p,
+  T* ReallocateConstructObjs(Pointer &p,
                                 size_t old_count,
                                 size_t new_count,
                                 Args&& ...args) {
-    T_Ar *ptr = ReallocatePtr<T_Ar>(p, new_count*sizeof(T_Ar));
-    ConstructObjs<T, T_Ar>(ptr, old_count, new_count, std::forward<Args>(args)...);
+    T *ptr = ReallocatePtr<T>(p, new_count*sizeof(T));
+    ConstructObjs<T>(ptr, old_count, new_count, std::forward<Args>(args)...);
     return ptr;
   }
 
@@ -373,14 +369,13 @@ class Allocator {
    * */
   template<
     typename T,
-    typename T_Ar = SHM_T_OR_ARCHIVE(T),
     typename ...Args>
-  static void ConstructObjs(T_Ar *ptr,
+  static void ConstructObjs(T *ptr,
                             size_t old_count,
                             size_t new_count, Args&& ...args) {
     if (ptr == nullptr) { return; }
     for (size_t i = old_count; i < new_count; ++i) {
-      ConstructObj<T, T_Ar>(*(ptr + i), std::forward<Args>(args)...);
+      ConstructObj<T>(*(ptr + i), std::forward<Args>(args)...);
     }
   }
 
@@ -393,31 +388,9 @@ class Allocator {
    * */
   template<
     typename T,
-    typename T_Ar = SHM_T_OR_ARCHIVE(T),
     typename ...Args>
-  static void ConstructObj(T_Ar &obj_ar,
+  static void ConstructObj(T &obj,
                            Args&& ...args) {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      T obj(std::forward<Args>(args)...);
-      obj.UnsetDestructable();
-      obj >> obj_ar;
-    } else {
-      RawConstructObj(obj_ar, std::forward<Args>(args)...);
-    }
-  }
-
-  /**
-   * Construct an object, regardless of type.
-   *
-   * @param ptr the object to construct (potentially archived)
-   * @param args parameters to construct object of type T
-   * @return None
-   * */
-  template<
-    typename T,
-    typename ...Args>
-  static void RawConstructObj(T &obj,
-                              Args&& ...args) {
     new(&obj) T(std::forward<Args>(args)...);
   }
 
@@ -428,14 +401,11 @@ class Allocator {
    * @param count the length of the object array
    * @return None
    * */
-  template<
-    typename T,
-    typename T_Ar = SHM_T_OR_ARCHIVE(T)>
-  static void DestructObjs(T_Ar *ptr,
-                           size_t count) {
+  template<typename T>
+  static void DestructObjs(T *ptr, size_t count) {
     if (ptr == nullptr) { return; }
     for (size_t i = 0; i < count; ++i) {
-      DestructObj<T, T_Ar>((ptr + i));
+      DestructObj<T>((ptr + i));
     }
   }
 
@@ -446,29 +416,9 @@ class Allocator {
    * @param count the length of the object array
    * @return None
    * */
-  template<
-    typename T,
-    typename T_Ar = SHM_T_OR_ARCHIVE(T)>
-  static void DestructObj(T_Ar &obj_ar) {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      T obj;
-      obj << obj_ar;
-      obj.SetDestructable();
-    } else {
-      RawDestructObj(obj_ar);
-    }
-  }
-
-  /**
-   * Destruct an object, regardless of type.
-   *
-   * @param ptr the object to destruct (potentially archived)
-   * @param count the length of the object array
-   * @return None
-   * */
   template<typename T>
-  static void RawDestructObj(T &obj_ar) {
-    obj_ar.~T();
+  static void DestructObj(T &obj) {
+    obj.~T();
   }
 
   /**

@@ -7,6 +7,7 @@
 
 #include "labstor/data_structures/data_structure.h"
 #include "labstor/data_structures/smart_ptr/manual_ptr.h"
+#include "labstor/data_structures/smart_ptr/shm_ar.h"
 
 namespace labstor::ipc {
 
@@ -29,10 +30,8 @@ struct vector_header {
 template<typename T, bool FORWARD_ITER, bool CONST_ITER>
 struct vector_iterator_templ {
  public:
-  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
   typedef SHM_T_OR_REF_T(T) T_Ref;
 
-  typedef SHM_CONST_T_OR_T(T_Ar, CONST_ITER) T_Ar_Const;
   typedef SHM_CONST_T_OR_T(T_Ref, CONST_ITER) T_Ref_Const;
   typedef SHM_CONST_T_OR_T(vector<T>, CONST_ITER) VecT_Const;
 
@@ -284,7 +283,6 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
 
  public:
-  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
   typedef SHM_T_OR_REF_T(T) T_Ref;
 
  public:
@@ -405,24 +403,20 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   /** Index the vector at position i */
   T_Ref operator[](const size_t i) {
-    T_Ar *vec = _data();
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      mptr<T> entry(vec[i]);
-      return entry.get_ref();
-    } else {
-      return vec[i];
-    }
+    shm_ar<T> *vec = _data();
+    return vec[i].data();
   }
 
   /** Construct an element at the back of the vector */
   template<typename... Args>
   void emplace_back(Args&&... args) {
-    T_Ar *vec = _data();
+    shm_ar<T> *vec = _data();
     if (header_->length_ == header_->max_length_) {
       vec = grow_vector(vec, 0, false);
     }
-    Allocator::ConstructObj<T>(*(vec + header_->length_),
-                               std::forward<Args>(args)...);
+    Allocator::ConstructObj<shm_ar<T>>(
+      *(vec + header_->length_),
+      std::forward<Args>(args)...);
     ++header_->length_;
   }
 
@@ -433,12 +427,14 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       emplace_back(std::forward<Args>(args)...);
       return;
     }
-    T_Ar *vec = _data();
+    shm_ar<T> *vec = _data();
     if (header_->length_ == header_->max_length_) {
       vec = grow_vector(vec, 0, false);
     }
     shift_right(pos);
-    Allocator::ConstructObj<T, T_Ar>(*(vec + pos.i_), std::forward<Args>(args)...);
+    Allocator::ConstructObj<shm_ar<T>>(
+      *(vec + pos.i_),
+      std::forward<Args>(args)...);
     ++header_->length_;
   }
 
@@ -497,7 +493,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @param args the arguments used to construct the elements of the vector
    * */
   template<typename ...Args>
-  T_Ar* grow_vector(T_Ar *vec, size_t max_length,
+  shm_ar<T>* grow_vector(shm_ar<T> *vec, size_t max_length,
                     bool resize, Args&& ...args) {
     // Grow vector by 25%
     if (max_length == 0) {
@@ -511,26 +507,26 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     }
 
     // Allocate new shared-memory vec
-    T_Ar *new_vec;
+    shm_ar<T> *new_vec;
     if (resize) {
       new_vec = alloc_->template
-        ReallocateConstructObjs<T>(header_->vec_ptr_,
-                                   header_->length_,
-                                   max_length,
-                                   std::forward<Args>(args)...);
+        ReallocateConstructObjs<shm_ar<T>>(
+          header_->vec_ptr_,
+          header_->length_,
+          max_length,
+          std::forward<Args>(args)...);
     } else {
       new_vec = alloc_->template
-        ReallocateObjs<T>(header_->vec_ptr_,
-                          max_length);
+        ReallocateObjs<shm_ar<T>>(header_->vec_ptr_, max_length);
     }
     if (new_vec == nullptr) {
       throw OUT_OF_MEMORY.format("vector::emplace_back",
-                                 max_length*sizeof(T_Ar));
+                                 max_length*sizeof(shm_ar<T>));
     }
 
     // Copy contents of old vector into new
     memcpy(new_vec, vec,
-           header_->length_*sizeof(T_Ar));
+           header_->length_*sizeof(shm_ar<T>));
 
     // Update vector header
     header_->max_length_ = max_length;
@@ -546,14 +542,14 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @param count the amount to shift left by
    * */
   void shift_left(const vector_iterator<T> pos, int count = 1) {
-    T_Ar *vec = _data();
+    shm_ar<T> *vec = _data();
     for (int i = 0; i < count; ++i) {
-      Allocator::DestructObj<T, T_Ar>(*(vec + pos.i_ + i));
+      Allocator::DestructObj<shm_ar<T>>(*(vec + pos.i_ + i));
     }
     auto dst = vec + pos.i_;
     auto src = dst + count;
     for (auto i = pos.i_ + count; i < size(); ++i) {
-      memcpy(dst, src, sizeof(T_Ar));
+      memcpy(dst, src, sizeof(shm_ar<T>));
       dst += 1; src += 1;
     }
   }
@@ -571,7 +567,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     auto dst = src + count;
     auto sz = static_cast<off64_t>(size());
     for (auto i = sz - 1; i >= pos.i_; --i) {
-      memcpy(dst, src, sizeof(T_Ar));
+      memcpy(dst, src, sizeof(shm_ar<T>));
       dst -= 1; src -= 1;
     }
   }
@@ -580,9 +576,9 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   /**
    * Retreives a pointer to the array from the process-independent pointer.
    * */
-  T_Ar* _data() {
+  shm_ar<T>* _data() {
     return alloc_->template
-      Convert<T_Ar>(header_->vec_ptr_);
+      Convert<shm_ar<T>>(header_->vec_ptr_);
   }
 
 

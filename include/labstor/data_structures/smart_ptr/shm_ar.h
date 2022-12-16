@@ -116,8 +116,10 @@ class shm_ar {
   explicit shm_ar(Args&& ...args)
   : obj_(std::forward<Args>(args)...) {}
 
-  /** Destruct. Does nothing. */
-  ~shm_ar() = default;
+  /** Destruct. */
+  ~shm_ar() {
+    shm_destroy();
+  }
 
   /** Destroys memory allocated by this object */
   void shm_destroy() {

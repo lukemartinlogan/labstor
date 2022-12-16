@@ -84,6 +84,9 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     shm_init(alloc, length);
   }
 
+  /** Default constructor */
+  void shm_init() {}
+
   /** Construct for a C-style string in shared memory */
   void shm_init(const char *text) {
     size_t length = strlen(text);
