@@ -45,6 +45,38 @@ class manual_ptr : public ShmDataStructurePointer<T> {
   /** Destructor. Does nothing -- must manually call shm_destroy */
   ~manual_ptr() = default;
 
+  /** Copy constructor */
+  manual_ptr(const manual_ptr &other) {
+    WeakCopy(other);
+  }
+
+  /** Move constructor */
+  manual_ptr(manual_ptr&& source) noexcept {
+    WeakMove(source);
+  }
+
+  /** Assignment operator */
+  manual_ptr<T>& operator=(const manual_ptr<T> &other) {
+    WeakCopy(other);
+    return *this;
+  }
+
+  /** Mve a manual_ptr */
+  void WeakMove(manual_ptr &other) {
+    obj_.WeakMove(other.obj_);
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      obj_.UnsetDestructable();
+    }
+  }
+
+  /** Copy a manual_ptr */
+  void WeakCopy(const manual_ptr &other) {
+    obj_.WeakCopy(other.obj_);
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      obj_.UnsetDestructable();
+    }
+  }
+
   /** Loads an object from a ShmArchive<T> */
   template<typename ...Args>
   explicit manual_ptr(ShmArchive<T> &ar) {
@@ -61,22 +93,6 @@ class manual_ptr : public ShmDataStructurePointer<T> {
     shm_deserialize(ar);
   }
 
-  /** Copy constructor */
-  manual_ptr(const manual_ptr &other) {
-    obj_.WeakCopy(other);
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_.UnsetDestructable();
-    }
-  }
-
-  /** Move constructor */
-  manual_ptr(manual_ptr&& source) noexcept {
-    obj_.WeakMove(source.obj_);
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_.UnsetDestructable();
-    }
-  }
-
   /** (De)serialize the obj from a ShmArchive<T> */
   SHM_SERIALIZE_DESERIALIZE_WRAPPER(T);
 
@@ -85,9 +101,6 @@ class manual_ptr : public ShmDataStructurePointer<T> {
 
   /** Deserialize the obj from a ShmArchive<uptr<T>> */
   SHM_DESERIALIZE_WRAPPER(uptr<T>);
-
-  /** Disables the assignment operator */
-  void operator=(manual_ptr<T> &&other) = delete;
 };
 
 template<typename T>

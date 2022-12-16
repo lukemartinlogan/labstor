@@ -136,28 +136,29 @@ struct unordered_map_iterator {
     : map_(map) {
   }
 
-  /** Copy an iterator  */
+  /** Copy constructor  */
   unordered_map_iterator(const unordered_map_iterator &other) {
-    map_ = other.map_;
-    bucket_ = other.bucket_;
-    collision_ = other.collision_;
-    bucket_.change_pointer(buckets_.get());
-    collision_.change_pointer(collisions_.get());
+    StrongCopy(other);
   }
 
   /** Assign one iterator into another */
   unordered_map_iterator<Key, T, Hash>&
   operator=(const unordered_map_iterator<Key, T, Hash> &other) {
     if (this != &other) {
-      map_ = other.map_;
-      buckets_ = other.buckets_;
-      collisions_ = other.collisions_;
-      bucket_ = other.bucket_;
-      collision_ = other.collision_;
-      bucket_.change_pointer(&buckets_);
-      collision_.change_pointer(&collisions_);
+      StrongCopy(other);
     }
     return *this;
+  }
+
+  /** Copy an iterator */
+  void StrongCopy(const unordered_map_iterator<Key, T, Hash> &other) {
+    map_ = other.map_;
+    buckets_ = other.buckets_;
+    collisions_ = other.collisions_;
+    bucket_ = other.bucket_;
+    collision_ = other.collision_;
+    bucket_.change_pointer(buckets_.get());
+    collision_.change_pointer(collisions_.get());
   }
 
   /** Get the pointed object */

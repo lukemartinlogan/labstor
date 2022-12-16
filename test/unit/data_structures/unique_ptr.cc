@@ -4,6 +4,7 @@
 
 #include "labstor/data_structures/unique_ptr.h"
 #include "labstor/data_structures/manual_ptr.h"
+#include "labstor/data_structures/shm_ref.h"
 #include "basic_test.h"
 #include "test_init.h"
 #include "labstor/data_structures/string.h"

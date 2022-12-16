@@ -66,7 +66,7 @@ class shm_ref : public ShmDataStructurePointer<T> {
     return get();
   }
 
-  /** Deserialize the ptr from a ShmArchive<mptr> */
+  /** Deserialize the ptr from a ShmArchive<T> */
   void shm_deserialize(ShmArchive<T> &ar) {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       obj_ << ar;
@@ -74,7 +74,7 @@ class shm_ref : public ShmDataStructurePointer<T> {
     }
   }
 
-  /** Deserialize the ptr from a ShmArchive<mptr> */
+  /** Deserialize the ptr from a ShmArchive<T> */
   void operator<<(ShmArchive<T> &ar) {
     shm_deserialize(ar);
   }
