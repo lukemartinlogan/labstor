@@ -2,7 +2,7 @@
 // Created by lukemartinlogan on 12/11/22.
 //
 
-#include "labstor/data_structures/manual_ptr.h"
+#include "labstor/data_structures/smart_ptr/manual_ptr.h"
 #include "basic_test.h"
 #include "test_init.h"
 #include "labstor/data_structures/string.h"

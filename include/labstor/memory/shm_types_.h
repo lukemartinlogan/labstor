@@ -140,10 +140,6 @@ struct ShmArchive {
   /** Get the process-independent pointer */
   inline const Pointer& GetConst();
 
-  /** Constructs and archives a shm-serializeable object */
-  template<typename ...Args>
-  explicit ShmArchive(Args&& ...args);
-
   /** Creates a ShmArchive from a header pointer */
   explicit ShmArchive(Pointer &ptr);
 
@@ -170,12 +166,6 @@ struct ShmPointer : public ShmSerializer<T> {
 
   /** Default constructor -- Does nothing */
   ShmPointer() = default;
-
-  /** Construct pointer in-place (explicit allocator) */
-  template<typename ...Args>
-  explicit ShmPointer(Allocator *alloc, Args&& ...args) {
-    shm_init(alloc, std::forward<Args>(args)...);
-  }
 
   /** Construct pointer in-place (find allocator) */
   template<typename ...Args>

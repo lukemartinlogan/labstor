@@ -6,7 +6,7 @@
 #define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_LIST_H_
 
 #include "labstor/data_structures/data_structure.h"
-#include "labstor/data_structures/manual_ptr.h"
+#include "labstor/data_structures/smart_ptr/manual_ptr.h"
 
 namespace labstor::ipc {
 

@@ -20,6 +20,15 @@
   std::is_base_of<labstor::ipc::ShmSmartPointer, T>::value
 
 /**
+ * SHM_X_OR_Y: X if T is SHM_SERIALIZEABLE, Y otherwise
+ * */
+
+#define SHM_X_OR_Y(T, X, Y) \
+  typename std::conditional<         \
+    IS_SHM_SERIALIZEABLE(T), \
+    X, Y>::type
+
+/**
  * SHM_T_OR_ARCHIVE: Determines the type of the internal pointer used
  * to store data in a shared-memory data structure. For example,
  * let's say there are two vectors: vector<int> V1 and vector<vector<int>> V2.
@@ -29,9 +38,7 @@
  * */
 
 #define SHM_T_OR_ARCHIVE(T) \
-  typename std::conditional<         \
-    IS_SHM_SERIALIZEABLE(T), \
-    ShmArchive<T>, T>::type
+  SHM_X_OR_Y(T, ShmArchive<T>, T)
 
 /**
  * SHM_T_OR_REF_T: Determines the return value of an index operation on
@@ -46,10 +53,7 @@
  * */
 
 #define SHM_T_OR_REF_T(T) \
-  typename std::conditional<         \
-    IS_SHM_SERIALIZEABLE(T), \
-    T, T&>::type
-
+  SHM_X_OR_Y(T, T, T&)
 /**
  * SHM_T_OR_PTR_T: Used by shm_ref.
  *
@@ -57,10 +61,7 @@
  * */
 
 #define SHM_T_OR_PTR_T(T) \
-  typename std::conditional<         \
-    IS_SHM_SERIALIZEABLE(T), \
-    T, T*>::type
-
+  SHM_X_OR_Y(T, T, T*)
 
 /**
  * SHM_T_OR_PTR_T: Used by unique_ptr and shared_ptr to determine how to
@@ -70,9 +71,7 @@
  * */
 
 #define SHM_T_OR_SHM_PTR_T(T) \
-  typename std::conditional<         \
-    IS_SHM_SERIALIZEABLE(T), \
-    T, ShmPointer<T>>::type
+  SHM_X_OR_Y(T, T, ShmPointer<T>)
 
 /**
  * SHM_T_OR_CONST_T: Determines whether or not an object should be

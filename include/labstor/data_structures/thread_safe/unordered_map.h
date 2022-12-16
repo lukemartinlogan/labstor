@@ -10,8 +10,8 @@
 #include "labstor/data_structures/thread_unsafe/vector.h"
 #include "labstor/data_structures/thread_unsafe/list.h"
 #include "labstor/data_structures/data_structure.h"
-#include "labstor/data_structures/manual_ptr.h"
-#include "labstor/data_structures/shm_ref.h"
+#include "labstor/data_structures/smart_ptr/manual_ptr.h"
+#include "labstor/data_structures/smart_ptr/shm_ref.h"
 
 
 namespace labstor::ipc {
@@ -56,7 +56,8 @@ struct unordered_map_pair {
   /** Constructor */
   template<typename ...Args>
   unordered_map_pair(const Key &key, Args&& ...args)
-  : key_(std::move(key)), val_(std::forward<Args>(args)...) {
+  : key_(make_shm_ar(key)),
+    val_(make_shm_ar(std::forward<Args>(args)...)) {
   }
 
   /** Move constructor */

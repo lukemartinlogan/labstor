@@ -53,24 +53,6 @@ const Pointer& ShmArchive<T>::GetConst() {
   return header_ptr_;
 }
 
-/** Constructs and archives an object */
-template<typename T>
-template<typename ...Args>
-ShmArchive<T>::ShmArchive(Args&& ...args) {
-  if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-    T obj;
-    obj.shm_init(std::forward<Args>(args)...);
-    if constexpr(!IS_SHM_SMART_POINTER(T)) {
-      obj.UnsetDestructable();
-    }
-    obj >> (*this);
-  } else {
-    ShmPointer<T> obj;
-    obj.shm_init(std::forward<Args>(args)...);
-    obj >> (*this);
-  }
-}
-
 /** Creates a ShmArchive from a header pointer */
 template<typename T>
 ShmArchive<T>::ShmArchive(Pointer &ptr)
@@ -94,6 +76,25 @@ template<typename T>
 ShmArchive<T>::ShmArchive(ShmArchive&& source) noexcept
 : header_ptr_(source.header_ptr_) {
   source.header_ptr_.set_null();
+}
+
+/** Constructs and archives an object */
+template<typename T, typename ...Args>
+static ShmArchive<T> make_shm_ar(Args&& ...args) {
+  ShmArchive<T> ar;
+  if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+    T obj;
+    obj.shm_init(std::forward<Args>(args)...);
+    if constexpr(!IS_SHM_SMART_POINTER(T)) {
+      obj.UnsetDestructable();
+    }
+    obj >> ar;
+  } else {
+    ShmPointer<T> obj;
+    obj.shm_init(std::forward<Args>(args)...);
+    obj >> ar;
+  }
+  return ar;
 }
 
 /**

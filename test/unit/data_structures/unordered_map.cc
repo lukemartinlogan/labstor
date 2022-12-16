@@ -347,7 +347,7 @@ void UnorderedMapOfStringTest() {
   {
     for (int i = 0; i < 100; ++i) {
       string i_text(std::to_string(i));
-      map.emplace(i_text);
+      map.emplace(i_text, i_text);
     }
     for (int i = 0; i < 100; ++i) {
       string i_text(std::to_string(i));
