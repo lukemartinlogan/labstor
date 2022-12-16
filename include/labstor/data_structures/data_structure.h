@@ -8,10 +8,12 @@
 #include "labstor/memory/memory.h"
 #include "labstor/memory/allocator/allocator.h"
 #include "labstor/memory/memory_manager.h"
-#include "labstor/memory/shm_types.h"
-#include "labstor/memory/shm_macros.h"
+#include "shm_macros.h"
 #include <labstor/constants/data_structure_singleton_macros.h>
-#include <labstor/memory/shm_types.h>
+
+#include "shm_archive.h"
+#include "shm_pointer.h"
+#include "shm_construct.h"
 
 namespace labstor::ipc {
 

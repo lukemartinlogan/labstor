@@ -8,7 +8,6 @@
 #include <labstor/types/basic.h>
 #include <labstor/constants/data_structure_singleton_macros.h>
 #include <labstor/introspect/system_info.h>
-#include "shm_macros.h"
 
 namespace labstor::ipc {
 

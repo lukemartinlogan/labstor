@@ -314,12 +314,9 @@ class Allocator {
    *
    * @return A process-specific pointer
    * */
-  template<
-    typename T,
-    typename T_Ar = SHM_T_OR_ARCHIVE(T)>
-  T_Ar* ReallocateObjs(Pointer &p,
-                       size_t new_count) {
-    T_Ar *ptr = ReallocatePtr<T_Ar>(p, new_count*sizeof(T_Ar));
+  template<typename T>
+  T* ReallocateObjs(Pointer &p, size_t new_count) {
+    T *ptr = ReallocatePtr<T>(p, new_count*sizeof(T));
     return ptr;
   }
 
