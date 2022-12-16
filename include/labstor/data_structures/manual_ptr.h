@@ -27,10 +27,15 @@ class manual_ptr : public ShmDataStructurePointer<T> {
   SHM_DATA_STRUCTURE_POINTER_TEMPLATE(T);
 
  public:
-
   /** Allocates + constructs an object in shared memory */
   template<typename ...Args>
   explicit manual_ptr(Args&& ...args) {
+    shm_init(std::forward<Args>(args)...);
+  }
+
+  /** Allocates + constructs an object in shared memory */
+  template<typename ...Args>
+  void shm_init(Args&& ...args) {
     obj_.shm_init(std::forward<Args>(args)...);
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       obj_.UnsetDestructable();
@@ -72,51 +77,14 @@ class manual_ptr : public ShmDataStructurePointer<T> {
     }
   }
 
-  /** Serialize the ptr into a ShmArchive<mptr> */
-  void operator>>(ShmArchive<TYPED_CLASS> &ar) const {
-    shm_serialize(ar);
-  }
+  /** (De)serialize the obj from a ShmArchive<T> */
+  SHM_SERIALIZE_DESERIALIZE_WRAPPER(T);
 
-  /** Serialize the ptr into a ShmArchive<mptr> */
-  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
-    auto cast = ShmArchive<T>(ar.Get());
-    obj_ >> cast;
-  }
+  /** (De)serialize the obj from a ShmArchive<mptr<T>> */
+  SHM_SERIALIZE_DESERIALIZE_WRAPPER(manual_ptr<T>);
 
-  /** Deserialize the ptr from a ShmArchive<T> */
-  void operator<<(ShmArchive<T> &ar) {
-    shm_deserialize(ar);
-  }
-
-  /** Deserialize the ptr from a ShmArchive<mptr> */
-  void shm_deserialize(ShmArchive<T> &ar) {
-    obj_ << ar;
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_.UnsetDestructable();
-    }
-  }
-
-  /** Deserialize the ptr from a ShmArchive<mptr> */
-  void operator<<(ShmArchive<TYPED_CLASS> &ar) {
-    shm_deserialize(ar);
-  }
-
-  /** Deserialize the ptr from a ShmArchive<mptr> */
-  void shm_deserialize(ShmArchive<TYPED_CLASS> &ar) {
-    auto cast = ShmArchive<T>(ar.GetConst());
-    shm_deserialize(cast);
-  }
-
-  /** Deserialize the ptr from a ShmArchive<uptr> */
-  void operator<<(ShmArchive<uptr<T>> &ar) {
-    shm_deserialize(ar);
-  }
-
-  /** Deserialize the ptr from a ShmArchive<uptr> */
-  void shm_deserialize(ShmArchive<uptr<T>> &ar) {
-    auto cast = ShmArchive<T>(ar.GetConst());
-    shm_deserialize(cast);
-  }
+  /** Deserialize the obj from a ShmArchive<uptr<T>> */
+  SHM_DESERIALIZE_WRAPPER(uptr<T>);
 
   /** Disables the assignment operator */
   void operator=(manual_ptr<T> &&other) = delete;

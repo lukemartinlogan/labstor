@@ -16,21 +16,104 @@ class Pointer;
 /** Forward declaration of allocator */
 class Allocator;
 
-/** Forward  */
-
 /**
- * Indicates that a data structure supports shared-memory storage by
- * implementing the interfaces shown in the comments
+ * Indicates that a data structure supports shared-memory storage.
+ * Must implement the interfaces in the below comments.
  * */
 class ShmSerializeable {
- public:
+  /**
+   * Every ShmSerializeable data structure must be initialized using
+   * shm_init. Constructors may wrap around these.
+   *
+   * This is not a virtual function, as each data structure
+   * will have different parameters to this. Templates are used
+   * to compensate for differences between data structures
+   * */
   // virtual void shm_init(std::forward<Args>(args)...) = 0;
+
+  /**
+   * Every ShmSerializeable data structure must be destroyed using
+   * shm_destroy. Destructors may wrap around this.
+   * */
   // virtual void shm_destroy() = 0;
-  // virtual void shm_serialize(ShmArchive ar) = 0;
-  // virtual void shm_deserialize(ShmArchive ar) = 0;
-  // void operator>>(ShmArchive ar);
-  // void operator<<(ShmArchive r);
 };
+
+/**
+ * Implements generic shm_serialize and deserialize methods to use
+ * in subsequent data structures.
+ * */
+template<typename TYPED_HEADER>
+class ShmSerializer : public ShmSerializeable {
+ protected:
+  Pointer header_ptr_;
+  Allocator *alloc_;
+  TYPED_HEADER *header_;
+
+ public:
+  /** Default constructor */
+  ShmSerializer()
+  : header_ptr_(kNullPointer), alloc_(nullptr), header_(nullptr) {};
+
+  /** Serialize an object into a raw pointer */
+  void shm_serialize(Pointer &header_ptr) const;
+
+  /** Deserialize object from a raw pointer */
+  void operator>>(Pointer &header_ptr) const {
+    shm_serialize(header_ptr);
+  }
+
+  /** Deserialize object from a raw pointer */
+  void shm_deserialize(const Pointer &header_ptr);
+
+  /** Deserialize object from a raw pointer */
+  void operator<<(const Pointer &header_ptr) {
+    shm_deserialize(header_ptr);
+  }
+
+  /** Set to null */
+  void SetNull() {
+    header_ptr_.set_null();
+  }
+
+  /** Check if null */
+  bool IsNull() {
+    return header_ptr_.is_null();
+  }
+
+  /** Move all pointers to another */
+  void WeakCopy(const ShmSerializer &other) {
+    header_ptr_ = other.header_ptr_;
+    alloc_ = other.alloc_;
+    header_ = other.header_;
+  }
+
+  /** Move all pointers to another */
+  void WeakMove(ShmSerializer &other) {
+    if (this != &other) {
+      WeakCopy(other);
+      other.SetNull();
+    }
+  }
+
+  /** Get the allocator for this pointer */
+  Allocator* GetAllocator() {
+    return alloc_;
+  }
+
+  /** Get the shared-memory allocator id */
+  allocator_id_t GetAllocatorId() const;
+};
+
+#define SHM_SERIALIZER_TEMPLATE(TYPED_HEADER)\
+using labstor::ipc::ShmSerializer<TYPED_HEADER>::header_ptr_;\
+using labstor::ipc::ShmSerializer<TYPED_HEADER>::alloc_;\
+using labstor::ipc::ShmSerializer<TYPED_HEADER>::header_;\
+using labstor::ipc::ShmSerializer<TYPED_HEADER>::shm_serialize;\
+using labstor::ipc::ShmSerializer<TYPED_HEADER>::shm_deserialize;\
+using labstor::ipc::ShmSerializer<TYPED_HEADER>::IsNull;\
+using labstor::ipc::ShmSerializer<TYPED_HEADER>::SetNull;\
+using labstor::ipc::ShmSerializer<TYPED_HEADER>::WeakCopy;\
+using labstor::ipc::ShmSerializer<TYPED_HEADER>::WeakMove;
 
 /**
  * Indicates a data structure represents a memory paradigm for Shm.
@@ -82,10 +165,8 @@ struct ShmArchive {
  * Called internally by manual_ptr, unique_ptr, and shared_ptr
  * */
 template<typename T>
-struct ShmPointer {
-  Pointer header_ptr_;
-  Allocator *alloc_;
-  T *header_;
+struct ShmPointer : public ShmSerializer<T> {
+  SHM_SERIALIZER_TEMPLATE(T)
 
   /** Default constructor -- Does nothing */
   ShmPointer() = default;
@@ -114,45 +195,8 @@ struct ShmPointer {
   /** Destroy the contents of the ShmPointer */
   void shm_destroy();
 
-  /** Set to null */
-  void SetNull();
-
-  /** Check if null */
-  bool IsNull();
-
-  /** Move all pointers to another */
-  void WeakCopy(ShmPointer &other) {
-    header_ptr_ = other.header_ptr_;
-    alloc_ = other.alloc_;
-    header_ = other.header_;
-  }
-
-  /** Move all pointers to another */
-  void WeakMove(ShmPointer &other) {
-    if (this != &other) {
-      WeakCopy(other);
-      other.SetNull();
-    }
-  }
-
-  /** Serialize ShmPointer into archive */
-  void shm_serialize(ShmArchive<T> &ar) const;
-
-  /** Deserialize ShmPointer from archive */
-  void shm_deserialize(ShmArchive<T> &ar);
-
-  /** Serialize (>>) */
-  void operator>>(ShmArchive<T> &ar) const {
-    shm_serialize(ar);
-  }
-
-  /** Deserialize (<<) */
-  void operator<<(ShmArchive<T> &ar) {
-    shm_deserialize(ar);
-  }
-
-  /** Get the allocator for this pointer */
-  Allocator* GetAllocator();
+  /** (De)serialize ShmPointer into ShmArchive<T> */
+  SHM_SERIALIZE_DESERIALIZE_WRAPPER(T)
 
   /** Convert the pointer to a pointer */
   T* get();

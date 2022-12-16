@@ -27,10 +27,23 @@ void ManualPtrOfInt() {
   REQUIRE(data.IsNull());
   REQUIRE(std::hash<mptr<int>>{}(data2) == std::hash<int>{}(25));
 
-  /*ShmArchive<mptr<int>> ar;
-  data2 >> ar;
-  mptr<int> from_ar(ar);
-  REQUIRE(*from_ar == 25);*/
+  {
+    ShmArchive<int> ar;
+    data2 >> ar;
+    REQUIRE(ar.header_ptr_ == data2.obj_.header_ptr_);
+    mptr<int> from_ar(ar);
+    REQUIRE(*from_ar == 25);
+  }
+
+  {
+    ShmArchive<mptr<int>> ar;
+    data2 >> ar;
+    REQUIRE(ar.header_ptr_ == data2.obj_.header_ptr_);
+    mptr<int> from_ar(ar);
+    REQUIRE(*from_ar == 25);
+  }
+
+  data2.shm_destroy();
 }
 
 void ManualPtrOfString() {
@@ -45,7 +58,7 @@ void ManualPtrOfString() {
   mptr<string> from_ar(ar);
   REQUIRE(*from_ar == "there");
 
-  data.shm_destroy();
+  data2.shm_destroy();
 }
 
 TEST_CASE("ManualPtrOfInt") {

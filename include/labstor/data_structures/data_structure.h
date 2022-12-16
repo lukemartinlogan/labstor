@@ -90,32 +90,50 @@ class ShmDataStructurePointer : public ShmSmartPointer {
       obj_.shm_destroy();
     }
   }
+
+  /** Serialize into a raw pointer */
+  void shm_serialize(Pointer &header_ptr) const {
+    obj_ >> header_ptr;
+  }
+
+  /** Serialize into a raw pointer */
+  void operator>>(Pointer &header_ptr) const {
+    obj_ >> header_ptr;
+  }
+
+  /** Deserialize from a raw pointer */
+  void shm_deserialize(const Pointer &header_ptr) {
+    obj_ << header_ptr;
+  }
+
+  /** Deserialize from a raw pointer */
+  void operator<<(const Pointer &header_ptr) {
+    obj_ << header_ptr;
+  }
 };
 
 /**
  * The general base class of a shared-memory data structure
  * */
 template<typename TYPED_CLASS, typename TYPED_HEADER>
-class ShmDataStructure : public ShmSerializeable {
+class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
  public:
+  SHM_SERIALIZER_TEMPLATE(TYPED_HEADER)
   typedef TYPED_HEADER header_t;
 
  protected:
-  Pointer header_ptr_;    /**< Independent pointer of typed header */
-  TYPED_HEADER *header_;  /**< The typed shm header */
-  Allocator *alloc_;      /**< The allocator */
   LABSTOR_MEMORY_MANAGER_T mem_mngr_;  /**< Memory manager */
   bool destructable_;  /**< Whether or not to call shm_destroy in destructor */
 
  public:
   /** Default constructor */
   ShmDataStructure()
-  : header_(nullptr), mem_mngr_(LABSTOR_MEMORY_MANAGER),
-  alloc_(nullptr), destructable_(true) {
+  : mem_mngr_(LABSTOR_MEMORY_MANAGER), destructable_(true) {
   }
 
   /** Copy constructor */
   ShmDataStructure(const ShmDataStructure &other) {
+    WeakCopy(other);
     destructable_ = true;
   }
 
@@ -128,29 +146,6 @@ class ShmDataStructure : public ShmSerializeable {
     }
   }
 
-  /** Only copy pointers, not entire data structures */
-  void WeakCopy(const TYPED_CLASS &other) {
-    header_ptr_ = other.header_ptr_;
-    header_ = other.header_;
-    alloc_ = other.alloc_;
-  }
-
-  /** Only copy pointers, not entire data structures */
-  void WeakMove(TYPED_CLASS &other) {
-    WeakCopy(other);
-    other.Nullify();
-  }
-
-  /** Nullifies data structure (for move) */
-  void Nullify() {
-    header_ptr_.set_null();
-  }
-
-  /** Checks if this data structure is null */
-  bool IsNull() {
-    return header_ptr_.is_null();
-  }
-
   /** Sets this object as destructable */
   void SetDestructable() {
     destructable_ = true;
@@ -161,39 +156,8 @@ class ShmDataStructure : public ShmSerializeable {
     destructable_ = false;
   }
 
-  /** Get the shared-memory allocator */
-  Allocator* GetAllocator() {
-    return alloc_;
-  }
-
-  /** Get the shared-memory allocator id */
-  allocator_id_t GetAllocatorId() const {
-    return alloc_->GetId();
-  }
-
   /** Serialize the data structure into a ShmArchive */
-  void operator>>(ShmArchive<TYPED_CLASS> &ar) const {
-    shm_serialize(ar);
-  }
-
-  /** Deserialize the data structure from a ShmArchive */
-  void operator<<(const ShmArchive<TYPED_CLASS> &ar) {
-    shm_deserialize(ar);
-  }
-
-  /** Serialize the data structure into a ShmArchive */
-  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
-    ar.header_ptr_ = header_ptr_;
-  }
-
-  /** Deserialize the data structure from a ShmArchive */
-  void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
-    header_ptr_ = ar.header_ptr_;
-    if (ar.header_ptr_.is_null()) { return; }
-    header_ = mem_mngr_->template
-      Convert<TYPED_HEADER>(header_ptr_);
-    alloc_ = mem_mngr_->GetAllocator(header_ptr_.allocator_id_);
-  }
+  SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
 };
 
 }  // namespace labstor::ipc
@@ -209,7 +173,9 @@ class ShmDataStructure : public ShmSerializeable {
   using ShmDataStructurePointer<T>::get_ref_const;\
   using ShmDataStructurePointer<T>::SetNull;\
   using ShmDataStructurePointer<T>::IsNull;\
-  using ShmDataStructurePointer<T>::shm_destroy;
+  using ShmDataStructurePointer<T>::shm_destroy;\
+  using ShmDataStructurePointer<T>::shm_serialize;\
+  using ShmDataStructurePointer<T>::shm_deserialize;
 
 /**
  * Namespace simplification for a SHM data structure

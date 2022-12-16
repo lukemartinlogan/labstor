@@ -34,6 +34,17 @@ class unique_ptr : public ShmDataStructurePointer<T> {
   /** Allocates + constructs an object in shared memory */
   template<typename ...Args>
   explicit unique_ptr(Args&& ...args) {
+    shm_init(std::forward<Args>(args)...);
+  }
+
+  /** Destroys all allocated memory */
+  ~unique_ptr() {
+    shm_destroy();
+  }
+
+  /** Allocates + constructs an object in shared memory */
+  template<typename ...Args>
+  void shm_init(Args&& ...args) {
     obj_.shm_init(std::forward<Args>(args)...);
   }
 
@@ -45,21 +56,8 @@ class unique_ptr : public ShmDataStructurePointer<T> {
     obj_.WeakMove(source.obj_);
   }
 
-  /** Destroys all allocated memory */
-  ~unique_ptr() {
-    shm_destroy();
-  }
-
-  /** Serialize the unique_ptr into a ShmArchive */
-  void operator>>(ShmArchive<TYPED_CLASS> &ar) const {
-    shm_serialize(ar);
-  }
-
-  /** Serialize the unique_ptr into a ShmArchive */
-  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
-    auto cast = ShmArchive<T>(ar.Get());
-    obj_ >> cast;
-  }
+  /** Serialize into a ShmArchive<unique_ptr> */
+  SHM_SERIALIZE_WRAPPER(unique_ptr)
 
   /** Disables the assignment operator */
   void operator=(unique_ptr<T> &&other) = delete;

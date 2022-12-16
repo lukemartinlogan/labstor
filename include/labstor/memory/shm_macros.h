@@ -84,4 +84,42 @@
     IS_CONST, \
     const T, T>::type
 
+/**
+ * Enables generic serialization of a class
+ * */
+#define SHM_GENERIC_SERIALIZE()
+
+/**
+ * Enables generic deserialization of a class
+ * */
+#define SHM_GENERIC_DESERIALIZE()
+
+
+/**
+ * Enables a specific ShmArchive type to be serialized
+ * */
+#define SHM_SERIALIZE_WRAPPER(AR_TYPE)\
+  void shm_serialize(ShmArchive<AR_TYPE> &ar) const {\
+    shm_serialize(ar.header_ptr_);\
+  }\
+  void operator>>(ShmArchive<AR_TYPE> &ar) const {\
+    shm_serialize(ar.header_ptr_);\
+  }
+
+/**
+ * Enables a specific ShmArchive type to be deserialized
+ * */
+#define SHM_DESERIALIZE_WRAPPER(AR_TYPE)\
+  void shm_deserialize(const ShmArchive<AR_TYPE> &ar) {\
+    shm_deserialize(ar.header_ptr_);\
+  }\
+  void operator<<(const ShmArchive<AR_TYPE> &ar) {\
+    shm_deserialize(ar.header_ptr_);\
+  }
+
+/** Enables serialization + deserialization for data structures */
+#define SHM_SERIALIZE_DESERIALIZE_WRAPPER(AR_TYPE)\
+  SHM_SERIALIZE_WRAPPER(AR_TYPE)\
+  SHM_DESERIALIZE_WRAPPER(AR_TYPE)
+
 #endif //LABSTOR_INCLUDE_LABSTOR_MEMORY_SHM_MACROS_H_

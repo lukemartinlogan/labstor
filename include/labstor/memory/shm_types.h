@@ -12,6 +12,32 @@
 namespace labstor::ipc {
 
 /**
+ * ShmSerializeable Implementation
+ * */
+
+/** Serialize an object into a raw pointer */
+template<typename T_Hdr>
+void ShmSerializer<T_Hdr>::shm_serialize(Pointer &header_ptr) const {
+  header_ptr = header_ptr_;
+}
+
+/** Deserialize object from a raw pointer */
+template<typename T_Hdr>
+void ShmSerializer<T_Hdr>::shm_deserialize(const Pointer &header_ptr) {
+  header_ptr_ = header_ptr;
+  if (header_ptr_.is_null()) { return; }
+  alloc_ = LABSTOR_MEMORY_MANAGER->GetAllocator(header_ptr_.allocator_id_);
+  header_ = LABSTOR_MEMORY_MANAGER->Convert<T_Hdr>(header_ptr_);
+}
+
+/** Get allocator ID */
+template<typename T_Hdr>
+allocator_id_t ShmSerializer<T_Hdr>::GetAllocatorId() const {
+  return alloc_->GetId();
+}
+
+
+/**
  * SHMArchive Implementation
  * */
 
@@ -83,8 +109,8 @@ void ShmPointer<T>::shm_init(Allocator *alloc, Args&& ...args) {
   if (alloc_ == nullptr) {
     alloc_ = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
   }
-  header_ = alloc_->AllocateConstructObjs<T>(1, header_ptr_,
-                                             std::forward<Args>(args)...);
+  header_ = alloc_->template
+    AllocateConstructObjs<T>(1, header_ptr_, std::forward<Args>(args)...);
 }
 
 /** Destroy the contents of the ShmPointer */
@@ -92,43 +118,6 @@ template<typename T>
 void ShmPointer<T>::shm_destroy() {
   if (IsNull()) { return; }
   alloc_->Free(header_ptr_);
-}
-
-/**
- * Store the ShmPointer in shared memory
- * */
-template<typename T>
-void ShmPointer<T>::shm_serialize(ShmArchive<T> &ar) const {
-  ar.header_ptr_ = header_ptr_;
-}
-
-/**
- * Retrieve the ShmPointer from shared memory
- * */
-template<typename T>
-void ShmPointer<T>::shm_deserialize(ShmArchive<T> &ar) {
-  header_ptr_ = ar.header_ptr_;
-  if (header_ptr_.is_null()) { return; }
-  alloc_ = LABSTOR_MEMORY_MANAGER->GetAllocator(header_ptr_.allocator_id_);
-  header_ = LABSTOR_MEMORY_MANAGER->Convert<T>(header_ptr_);
-}
-
-/** Set to null */
-template<typename T>
-void ShmPointer<T>::SetNull() {
-  header_ptr_.set_null();
-}
-
-/** Check if null */
-template<typename T>
-bool ShmPointer<T>::IsNull() {
-  return header_ptr_.is_null();
-}
-
-/** Get the allocator for this pointer */
-template<typename T>
-Allocator* ShmPointer<T>::GetAllocator() {
-  return alloc_;
 }
 
 /** Convert the pointer to an object */
