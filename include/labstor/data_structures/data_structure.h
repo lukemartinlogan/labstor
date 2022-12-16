@@ -93,22 +93,25 @@ class ShmDataStructurePointer : public ShmSmartPointer {
 
   /** Serialize into a raw pointer */
   void shm_serialize(Pointer &header_ptr) const {
-    obj_ >> header_ptr;
+    obj_.shm_serialize(header_ptr);
   }
 
   /** Serialize into a raw pointer */
   void operator>>(Pointer &header_ptr) const {
-    obj_ >> header_ptr;
+    shm_serialize(header_ptr);
   }
 
   /** Deserialize from a raw pointer */
   void shm_deserialize(const Pointer &header_ptr) {
-    obj_ << header_ptr;
+    obj_.shm_deserialize(header_ptr);
+    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+      obj_.UnsetDestructable();
+    }
   }
 
   /** Deserialize from a raw pointer */
   void operator<<(const Pointer &header_ptr) {
-    obj_ << header_ptr;
+    shm_deserialize(header_ptr);
   }
 };
 

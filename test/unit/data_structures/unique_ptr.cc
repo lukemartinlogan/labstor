@@ -28,7 +28,7 @@ void UniquePtrOfInt() {
   // TestCopy(hello);
 
   uptr<int> data2 = std::move(data);
-  REQUIRE(data2.IsNull());
+  REQUIRE(data.IsNull());
   REQUIRE(std::hash<uptr<int>>{}(data2) == std::hash<int>{}(25));
 
   ShmArchive<uptr<int>> ar;
