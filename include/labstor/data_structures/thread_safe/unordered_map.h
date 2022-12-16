@@ -547,7 +547,6 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
     // Acquire the header lock for a read (not modifying bucket vec)
     ScopedRwReadLock header_lock(header_->lock_);
-    header_lock.lock_.assert_r_refcnt(0);
     header_lock.Lock();
 
     // Hash the key to a bucket
@@ -667,8 +666,6 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   /** Grow a map from \a old_size to a new size */
   void grow_map(size_t old_size) {
     ScopedRwWriteLock header_lock(header_->lock_);
-    header_lock.lock_.assert_r_refcnt(0);
-    header_lock.lock_.assert_w_refcnt(0);
     header_lock.Lock();
     mptr<vector<BUCKET_T>> buckets(header_->buckets_);
     size_t num_buckets = buckets->size();
