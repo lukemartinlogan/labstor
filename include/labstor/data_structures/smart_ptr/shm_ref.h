@@ -17,7 +17,7 @@ namespace labstor::ipc {
 template<typename T>
 class _shm_ref_shm {
  public:
-  T obj_;
+  mptr<T> obj_;
 
   /** Deserializes shared-memory data structure an archive */
   explicit _shm_ref_shm(ShmArchive<T> &obj_ar) {
@@ -26,12 +26,12 @@ class _shm_ref_shm {
 
   /** Return a pointer to the internal object */
   T* get() {
-    return &obj_;
+    return obj_.get();
   }
 
   /** Return a reference to the internal object */
   T& get_ref() {
-    return obj_;
+    return obj_.get_ref();
   }
 
   /** Return a reference to the internal object */

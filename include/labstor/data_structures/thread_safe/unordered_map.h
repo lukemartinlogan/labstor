@@ -49,15 +49,15 @@ struct unordered_map_pair {
   typedef SHM_T_OR_ARCHIVE(Key) Key_Ar;
 
  public:
-  Key_Ar key_;
-  T_Ar val_;
+  shm_ar<Key> key_;
+  shm_ar<T> val_;
 
  public:
   /** Constructor */
   template<typename ...Args>
-  unordered_map_pair(const Key &key, Args&& ...args)
-  : key_(make_shm_ar(key)),
-    val_(make_shm_ar(std::forward<Args>(args)...)) {
+  explicit unordered_map_pair(const Key &key, Args&& ...args)
+  : key_(key),
+    val_(std::forward<Args>(args)...) {
   }
 
   /** Move constructor */
@@ -65,7 +65,10 @@ struct unordered_map_pair {
   : key_(std::move(other.key_)), val_(std::move(other.val_)) {}
 
   /** Destructor */
-  ~unordered_map_pair() = default;
+  ~unordered_map_pair() {
+    key_.shm_destroy();
+    val_.shm_destroy();
+  }
 };
 
 /**
@@ -83,7 +86,7 @@ struct unordered_map_pair_ret {
  public:
   /** Constructor */
   explicit unordered_map_pair_ret(COLLISION_T &pair)
-  : key_(pair.key_), val_(pair.val_) {
+  : key_(pair.key_.internal_ref()), val_(pair.val_.internal_ref()) {
   }
 };
 
@@ -102,7 +105,8 @@ class unordered_map_bucket {
   ShmArchive<mptr<list<COLLISION_T>>> collisions_;
 
   /** Constructs the collision list in shared memory */
-  explicit unordered_map_bucket(Allocator *alloc) : collisions_(alloc) {}
+  explicit unordered_map_bucket(Allocator *alloc)
+  : collisions_(make_shm_ar<mptr<list<COLLISION_T>>>(alloc)) {}
 
   ~unordered_map_bucket() {
     mptr<list<COLLISION_T>> collisions(collisions_);

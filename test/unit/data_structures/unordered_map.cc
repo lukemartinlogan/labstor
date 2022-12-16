@@ -273,7 +273,7 @@ void UnorderedMapOfIntStringTest() {
   }
 }
 
-void UnorderedMapOfStringTest() {
+void UnorderedMapOfStringStringTest() {
   Allocator *alloc = alloc_g;
   unordered_map<string, string> map(alloc);
 
@@ -377,9 +377,9 @@ TEST_CASE("UnorderedMapOfIntString") {
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
 
-TEST_CASE("UnorderedMapOfString") {
+TEST_CASE("UnorderedMapOfStringString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  UnorderedMapOfStringTest();
+  UnorderedMapOfStringStringTest();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }

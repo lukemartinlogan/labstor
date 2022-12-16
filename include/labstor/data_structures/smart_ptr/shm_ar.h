@@ -34,15 +34,19 @@ class _shm_ar_shm : public ShmSmartPointer {
     mptr<T>(obj_).shm_destroy();
   }
 
+  /** Returns the deserialized ShmArchive (just a few pointers) */
+  T data() {
+    return mptr<T>(obj_).get_ref();
+  }
+
   /** Returns a reference to the internal object */
-  ShmArchive<T>& get_ref() {
+  ShmArchive<T>& internal_ref() {
     return obj_;
   }
 
-  /** Return a reference to the internal object */
-  ShmArchive<T>& operator*() {
-    return get_ref();
-  }
+  /** Move constructor */
+  _shm_ar_shm(_shm_ar_shm &&other) noexcept
+  : obj_(std::move(other.obj_)) {}
 };
 
 /**
@@ -64,17 +68,22 @@ class _shm_ar_noshm {
 
   /** Destroys memory allocated by this object */
   void shm_destroy() {
+    Allocator::DestructObj<T>(obj_);
   }
 
-  /** Returns a reference to the internal object */
-  T& get_ref() {
+  /** Gets the object */
+  T& data() {
     return obj_;
   }
 
-  /** Return a reference to the internal object */
-  T& operator*() {
-    return get_ref();
+  /** Returns a reference to the internal object */
+  T& internal_ref() {
+    return obj_;
   }
+
+  /** Move constructor */
+  _shm_ar_noshm(_shm_ar_noshm &&other) noexcept
+  : obj_(std::move(other.obj_)) {}
 };
 
 /**
@@ -92,11 +101,14 @@ class _shm_ar_noshm {
  * 2. The raw type if the data type is anything else
  *
  * E.g., used in unordered_map for storing collision entries.
+ * E.g., used in a list for storing list entries.
  * */
 template<typename T>
 class shm_ar {
  public:
-  typedef SHM_REF_OR_ARCHIVE(T) T_Ref;
+  typedef SHM_REF_OR_ARCHIVE(T) T_Ar;
+  typedef SHM_T_OR_REF_T(T) T_Ref;
+
   SHM_MAKE_T_OR_ARCHIVE(T) obj_;
 
   /** Construct + store object */
@@ -112,15 +124,19 @@ class shm_ar {
     obj_.shm_destroy();
   }
 
-  /** Returns a reference to the internal object */
-  T_Ref get_ref() {
-    return obj_.get_ref();
+  /** Returns the data represented by the archive */
+  T_Ref data() {
+    return obj_.data();
   }
 
-  /** Return a reference to the internal object */
-  T_Ref operator*() {
-    return get_ref();
+  /** Returns a reference to the internal object */
+  T_Ar& internal_ref() {
+    return obj_.internal_ref();
   }
+
+  /** Move constructor */
+  shm_ar(shm_ar &&other) noexcept
+  : obj_(std::move(other.obj_)) {}
 };
 
 } // namespace labstor::ipc

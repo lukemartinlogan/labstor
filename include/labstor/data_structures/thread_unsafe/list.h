@@ -7,6 +7,7 @@
 
 #include "labstor/data_structures/data_structure.h"
 #include "labstor/data_structures/smart_ptr/manual_ptr.h"
+#include "labstor/data_structures/smart_ptr/shm_ar.h"
 
 namespace labstor::ipc {
 
@@ -18,19 +19,17 @@ class list;
 template<typename T>
 struct list_entry {
  private:
-  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
-  typedef SHM_T_OR_REF_T(T) T_Ref;
+  typedef typename shm_ar<T>::T_Ref T_Ref;
 
  public:
   Pointer next_ptr_, prior_ptr_;
-  T_Ar data_;
+  shm_ar<T> data_;
+
+  template<typename ...Args>
+  explicit list_entry(Args ...args) : data_(std::forward<Args>(args)...) {}
 
   T_Ref data() {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      return mptr<T>(data_).get_ref();
-    } else {
-      return data_;
-    }
+    return data_.data();
   }
 };
 
@@ -342,7 +341,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     auto pos = first;
     while (pos != last) {
       auto next = pos + 1;
-      Allocator::DestructObj<T,T_Ar>(pos.entry_->data_);
+      pos.entry_->data_.shm_destroy();
       alloc_->Free(pos.entry_ptr_);
       --header_->length_;
       pos = next;
@@ -420,8 +419,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   template<typename ...Args>
   inline list_entry<T>* _create_entry(Pointer &ptr, Args&& ...args) {
     auto entry = alloc_->template
-      AllocateObjs<list_entry<T>>(1, ptr);
-    Allocator::ConstructObj<T, T_Ar>(entry->data_, std::forward<Args>(args)...);
+      AllocateConstructObjs<list_entry<T>>(1, ptr, std::forward<Args>(args)...);
     return entry;
   }
 };
