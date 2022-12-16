@@ -309,26 +309,12 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       Free(header_ptr_);
   }
 
-  /** Moves one unordered_map into another */
-  unordered_map(unordered_map&& source) noexcept {
-    WeakMove(source);
-  }
-
-  /** Enable copying  */
+  /** Copy constructor  */
   unordered_map(const unordered_map &other) {
     StrongCopy(other);
   }
 
-  /** Move one map into another */
-  unordered_map&
-  operator=(unordered_map &&other) {
-    if (this != &other) {
-      WeakMove(other);
-    }
-    return *this;
-  }
-
-  /** Assign one map into another */
+  /** Copy assignment operator */
   unordered_map&
   operator=(const unordered_map &other) {
     if (this != &other) {

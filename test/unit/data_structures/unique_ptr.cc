@@ -45,9 +45,11 @@ void UniquePtrOfString() {
   REQUIRE(data->str() == "there");
   REQUIRE((*data).str() == "there");
   unique_ptr<string> data2 = std::move(data);
+  REQUIRE(data.IsNull());
 
   ShmArchive<unique_ptr<string>> ar;
   data2 >> ar;
+  REQUIRE(data2.obj_.header_ptr_ == ar.header_ptr_);
   mptr<string> from_ar(ar);
   REQUIRE(*from_ar == "there");
 }

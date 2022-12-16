@@ -88,11 +88,23 @@ class ShmSerializer : public ShmSerializeable {
   }
 
   /** Move all pointers to another */
-  void WeakMove(ShmSerializer &other) {
+  void WeakMove(ShmSerializer &other) noexcept {
+    WeakCopy(other);
+    other.SetNull();
+  }
+
+  /** Move constructor */
+  ShmSerializer(ShmSerializer &&other) noexcept {
+    WeakMove(other);
+  }
+
+  /** Move assignment operator */
+  ShmSerializer&
+  operator=(ShmSerializer &&other) noexcept {
     if (this != &other) {
-      WeakCopy(other);
-      other.SetNull();
+      WeakMove(other);
     }
+    return *this;
   }
 
   /** Get the allocator for this pointer */

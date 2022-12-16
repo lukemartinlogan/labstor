@@ -58,7 +58,7 @@ class manual_ptr : public ShmDataStructurePointer<T> {
     return *this;
   }
 
-  /** Mve a manual_ptr */
+  /** Move a manual_ptr */
   void WeakMove(manual_ptr &other) {
     obj_.WeakMove(other.obj_);
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {

@@ -149,6 +149,33 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
     }
   }
 
+  /** Copy only pointers */
+  void WeakCopy(const ShmDataStructure &other) {
+    mem_mngr_ = other.mem_mngr_;
+    destructable_ = other.destructable_;
+    ShmSerializer<TYPED_HEADER>::WeakCopy(other);
+  }
+
+  /** Move only pointers */
+  void WeakMove(ShmDataStructure &other) {
+    WeakCopy(other);
+    other.SetNull();
+  }
+
+  /** Move constructor */
+  ShmDataStructure(ShmDataStructure &&other) noexcept {
+    WeakMove(other);
+  }
+
+  /** Move assignment operator */
+  ShmDataStructure&
+  operator=(ShmDataStructure &&other) noexcept {
+    if (this != &other) {
+      WeakMove(other);
+    }
+    return *this;
+  }
+
   /** Sets this object as destructable */
   void SetDestructable() {
     destructable_ = true;

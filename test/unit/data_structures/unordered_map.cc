@@ -39,7 +39,7 @@ using labstor::ipc::Pointer;
 using labstor::ipc::unordered_map;
 using labstor::ipc::string;
 
-void UnorderedMapOfIntTest() {
+void UnorderedMapOfIntIntTest() {
   Allocator *alloc = alloc_g;
   unordered_map<int, int> map(alloc);
 
@@ -356,10 +356,10 @@ void UnorderedMapOfStringStringTest() {
   }
 }
 
-TEST_CASE("UnorderedMapOfInt") {
+TEST_CASE("UnorderedMapOfIntInt") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  UnorderedMapOfIntTest();
+  UnorderedMapOfIntIntTest();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
 

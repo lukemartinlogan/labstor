@@ -50,7 +50,9 @@ class unique_ptr : public ShmDataStructurePointer<T> {
 
   /** Move constructor */
   unique_ptr(unique_ptr&& source) noexcept {
-    obj_.WeakMove(source.obj_);
+    if (this != &source) {
+      obj_.WeakMove(source.obj_);
+    }
   }
 
   /** Serialize into a ShmArchive<unique_ptr> */
