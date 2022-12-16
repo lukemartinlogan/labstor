@@ -193,7 +193,9 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_deserialize;\
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::IsNull;\
   using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::SetDestructable;\
-  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::UnsetDestructable;
+  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::UnsetDestructable;\
+  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::WeakMove;\
+  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::WeakCopy;
 
 
 #endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_DATA_STRUCTURE_H_

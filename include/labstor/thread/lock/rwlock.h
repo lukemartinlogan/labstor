@@ -14,15 +14,25 @@ union RwLockPayload {
   struct {
     uint32_t r_;
     uint32_t w_;
-  } bits;
+  } bits_;
   uint64_t as_int_;
 
+  RwLockPayload() = default;
+
+  RwLockPayload(const RwLockPayload &other) {
+    as_int_ = other.as_int_;
+  }
+
+  RwLockPayload(uint64_t other) {
+    as_int_ = other;
+  }
+
   bool IsWriteLocked() const {
-    return bits.w_ > 0;
+    return bits_.w_ > 0;
   }
 
   bool IsReadLocked() const {
-    return bits.r_ > 0;
+    return bits_.r_ > 0;
   }
 };
 
@@ -36,6 +46,9 @@ struct RwLock {
 
   void WriteLock();
   void WriteUnlock();
+
+  void assert_r_refcnt(int ref);
+  void assert_w_refcnt(int ref);
 };
 
 struct ScopedRwReadLock {

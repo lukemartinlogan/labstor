@@ -292,7 +292,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
                 RealNumber growth = RealNumber(5,4)) {
     ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
     header_ = alloc_->template
-      AllocateObjs<TYPED_HEADER>(1, header_ptr_);
+      AllocateConstructObjs<TYPED_HEADER>(1, header_ptr_);
     auto buckets = make_mptr<vector<BUCKET_T>>(alloc_, num_buckets, alloc_);
     buckets >> header_->buckets_;
     header_->length_ = 0;
@@ -319,6 +319,15 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     StrongCopy(other);
   }
 
+  /** Move one map into another */
+  unordered_map&
+  operator=(unordered_map &&other) {
+    if (this != &other) {
+      WeakMove(other);
+    }
+    return *this;
+  }
+
   /** Assign one map into another */
   unordered_map&
   operator=(const unordered_map &other) {
@@ -337,8 +346,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     auto alloc = other.alloc_;
     shm_init(alloc, num_buckets, max_collisions, growth);
     for (auto entry : other) {
-      emplace(std::move(*entry.key_),
-              std::move(*entry.val_));
+      emplace_templ<false, true>(
+        std::move(*entry.key_), std::move(*entry.val_));
     }
   }
 
@@ -538,6 +547,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
     // Acquire the header lock for a read (not modifying bucket vec)
     ScopedRwReadLock header_lock(header_->lock_);
+    header_lock.lock_.assert_r_refcnt(0);
     header_lock.Lock();
 
     // Hash the key to a bucket
@@ -656,8 +666,10 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
  private:
   /** Grow a map from \a old_size to a new size */
   void grow_map(size_t old_size) {
-    ScopedRwWriteLock scoped_lock(header_->lock_);
-    scoped_lock.Lock();
+    ScopedRwWriteLock header_lock(header_->lock_);
+    header_lock.lock_.assert_r_refcnt(0);
+    header_lock.lock_.assert_w_refcnt(0);
+    header_lock.Lock();
     mptr<vector<BUCKET_T>> buckets(header_->buckets_);
     size_t num_buckets = buckets->size();
     if (num_buckets != old_size) {

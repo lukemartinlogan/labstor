@@ -20,7 +20,7 @@ void RwLock::ReadLock() {
       continue;
     }
     desired = expected;
-    desired.bits.r_ += 1;
+    desired.bits_.r_ += 1;
     ret = payload_.compare_exchange_weak(
       expected.as_int_,
       desired.as_int_);
@@ -36,7 +36,7 @@ void RwLock::ReadUnlock() {
   do {
     expected.as_int_ = payload_.load();
     desired = expected;
-    desired.bits.r_ -= 1;
+    desired.bits_.r_ -= 1;
     ret = payload_.compare_exchange_weak(
       expected.as_int_,
       desired.as_int_);
@@ -61,7 +61,7 @@ void RwLock::WriteLock() {
       continue;
     }
     desired = expected;
-    desired.bits.w_ += 1;
+    desired.bits_.w_ += 1;
     ret = payload_.compare_exchange_weak(
       expected.as_int_,
       desired.as_int_);
@@ -77,11 +77,29 @@ void RwLock::WriteUnlock() {
   do {
     expected.as_int_ = payload_.load();
     desired = expected;
-    desired.bits.w_ -= 1;
+    desired.bits_.w_ -= 1;
     ret = payload_.compare_exchange_weak(
       expected.as_int_,
       desired.as_int_);
   } while(!ret);
+}
+
+/**
+ * Verify the reference count for reads (for debugging)
+ * */
+void RwLock::assert_r_refcnt(int ref) {
+  if (RwLockPayload(payload_).bits_.r_ != ref) {
+    throw 1;
+  }
+}
+
+/**
+ * Verify the reference count for writes (for debugging)
+ * */
+void RwLock::assert_w_refcnt(int ref) {
+  if (RwLockPayload(payload_).bits_.w_ != ref) {
+    throw 1;
+  }
 }
 
 /**

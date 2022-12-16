@@ -130,7 +130,7 @@ void UnorderedMapOfStringIntTest() {
   }
 
   // Check if the 20 entries are indexable
-  /*{
+  {
     for (int i = 0; i < 20; ++i) {
       string t1(std::to_string(i));
       auto t3 = map[t1];
@@ -193,7 +193,7 @@ void UnorderedMapOfStringIntTest() {
       string i_text(std::to_string(i));
       REQUIRE(map.find(i_text) != map.end());
     }
-  }*/
+  }
 }
 
 void UnorderedMapOfIntStringTest() {
