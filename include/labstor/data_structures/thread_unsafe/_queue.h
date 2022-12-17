@@ -47,20 +47,20 @@ class _queue {
   }
 
   void enqueue(T *entry) {
-    verify_queue(); // TODO(llogan): remove
-    memset(entry, 0, sizeof(_queue_entry)); // TODO(llogan): remove
+    // verify_queue(); // TODO(llogan): remove
+    // memset(entry, 0, sizeof(_queue_entry)); // TODO(llogan): remove
     if (header_->size_ == 0) {
       header_->head_ = reinterpret_cast<size_t>(entry) - region_start_;
       header_->tail_ = header_->head_;
       ++header_->size_;
-      verify_queue(); // TODO(llogan): remove
+      // verify_queue(); // TODO(llogan): remove
       return;
     }
     auto tail = reinterpret_cast<T*>(header_->tail_ + region_start_);
     tail->next_ = reinterpret_cast<size_t>(entry) - region_start_;
     header_->tail_ = tail->next_;
     ++header_->size_;
-    verify_queue(); // TODO(llogan): remove
+    // verify_queue(); // TODO(llogan): remove
   }
 
   void enqueue_off(size_t off) {
