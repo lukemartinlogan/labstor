@@ -125,6 +125,9 @@ using labstor::ipc::ShmSerializer<TYPED_HEADER>::WeakMove;
       WeakMove(other);\
     }\
     return *this;\
+  }\
+  void shm_init(CLASS_NAME &&other) noexcept {\
+    WeakMove(other);\
   }
 
 #define SHM_INHERIT_COPY_OPERATORS(CLASS_NAME)\

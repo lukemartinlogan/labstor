@@ -19,6 +19,10 @@ namespace labstor::ipc {
 
 /**
  * The general base class of a shared-memory data structure
+ *
+ * There are no virtual functions, but all base classes must
+ * implement certain methods which are indicated below in the
+ * section "REQUIRED METHODS"
  * */
 template<typename TYPED_CLASS, typename TYPED_HEADER>
 class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
@@ -64,9 +68,6 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
     other.SetNull();
   }
 
-  /** Copy constructor */
-  // void StrongCopy(const ShmDataStructure &other) {}
-
   /** Sets this object as destructable */
   void SetDestructable() {
     destructable_ = true;
@@ -77,8 +78,13 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
     destructable_ = false;
   }
 
-  /** Serialize / deserialize this object... */
-  SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
+  /**
+   * REQUIRED METHODS
+   * */
+
+ public:
+  /** Copy constructor (REQUIRED) */
+  // virtual void StrongCopy(const ShmDataStructure &other) = 0;
 };
 
 }  // namespace labstor::ipc
@@ -90,6 +96,17 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
   using labstor::ipc::ShmDataStructure< \
     TYPE_UNWRAP(TYPED_CLASS), TYPE_UNWRAP(TYPED_HEADER)>
 
+/**
+ * Define various functions and variables common across all
+ * SharedMemoryDataStructures.
+ *
+ * Variables which derived classes should see are not by default visible
+ * due to the nature of c++ template resolution.
+ *
+ * 1. Create Move constructors + Move assignment operators.
+ * 2. Create Copy constructors + Copy assignment operators.
+ * 3. Create shm_serialize and shm_deserialize for archiving data structures.
+ * */
 #define SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)\
   SHM_DATA_STRUCTURE_USING_NS::header_;\
   SHM_DATA_STRUCTURE_USING_NS::header_ptr_;\
@@ -106,6 +123,12 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
   SHM_INHERIT_MOVE_OPERATORS(CLASS_NAME)\
   SHM_INHERIT_COPY_OPERATORS(CLASS_NAME)\
   SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
+
+/**
+ * ShmDataStructures should define:
+ * CLASS_NAME, TYPED_CLASS, and TYPED_HEADER macros and then
+ * unset them in their respective header files.
+ * */
 
 #define BASIC_SHM_DATA_STRUCTURE_TEMPLATE\
   SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME,\
