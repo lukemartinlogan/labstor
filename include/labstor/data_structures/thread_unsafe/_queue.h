@@ -35,17 +35,32 @@ class _queue {
     region_start_ = reinterpret_cast<size_t>(region_start);
   }
 
+  void verify_queue() {
+    size_t cur = header_->head_;
+    for (size_t i = 0; i < header_->size_; ++i) {
+      if (cur > GIGABYTES(1)) {
+        throw 1;
+      }
+      auto entry = reinterpret_cast<_queue_entry*>(cur + region_start_);
+      cur = entry->next_;
+    }
+  }
+
   void enqueue(T *entry) {
+    verify_queue(); // TODO(llogan): remove
+    memset(entry, 0, sizeof(_queue_entry)); // TODO(llogan): remove
     if (header_->size_ == 0) {
       header_->head_ = reinterpret_cast<size_t>(entry) - region_start_;
       header_->tail_ = header_->head_;
       ++header_->size_;
+      verify_queue(); // TODO(llogan): remove
       return;
     }
     auto tail = reinterpret_cast<T*>(header_->tail_ + region_start_);
     tail->next_ = reinterpret_cast<size_t>(entry) - region_start_;
     header_->tail_ = tail->next_;
     ++header_->size_;
+    verify_queue(); // TODO(llogan): remove
   }
 
   void enqueue_off(size_t off) {

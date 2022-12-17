@@ -174,6 +174,21 @@ void UnorderedMapOfIntStringTest() {
     REQUIRE(i == 20);
   }
 
+  // Set the unordered_map in place
+  {
+    auto iter = map.find(4);
+    auto val = (*iter).val_;
+    val = string("25");
+    REQUIRE((*val) == "25");
+  }
+
+  // Check if the value was set
+  {
+    auto iter = map.find(4);
+    auto val = (*iter).val_;
+    REQUIRE((*val) == "25");
+  }
+
   // Remove 15 entries from the map
   {
     for (int i = 0; i < 15; ++i) {
