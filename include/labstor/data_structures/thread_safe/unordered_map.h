@@ -437,16 +437,23 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * Find an object in the unordered_map
    * */
   unordered_map_iterator<Key, T, Hash> find(const Key &key) {
-    if (header_ == nullptr) { shm_init(); }
     unordered_map_iterator<Key, T, Hash> iter(this);
+
+    // Acquire the header read lock
     ScopedRwReadLock header_lock(header_->lock_);
     header_lock.Lock();
+
+    // Determine the bucket corresponding to the key
     iter.buckets_ << header_->buckets_;
     size_t bkt_id = Hash{}(key) % iter.buckets_->size();
     iter.bucket_ = iter.buckets_->begin() + bkt_id;
     BUCKET_T &bkt = (*iter.bucket_);
+
+    // Acquire the bucket lock
     ScopedRwReadLock bkt_lock(bkt.lock_);
     bkt_lock.Lock();
+
+    // Get the specific collision iterator
     iter.collisions_ << bkt.collisions_;
     iter.collision_ = find_collision(key, iter.collisions_);
     if (iter.collision_.is_end()) {
