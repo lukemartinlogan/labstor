@@ -20,7 +20,8 @@ struct string_header {
 };
 
 /**
- * MACROS to simplify the string namespace
+ * MACROS used to simplify the string namespace
+ * Used as inputs to the SHM_DATA_STRUCTURE_TEMPLATE
  * */
 #define CLASS_NAME string
 #define TYPED_CLASS string
@@ -31,7 +32,7 @@ struct string_header {
  * */
 class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
  public:
-  SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
+  BASIC_SHM_DATA_STRUCTURE_TEMPLATE
 
  public:
   /** Default constructor */
@@ -62,11 +63,6 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   /** Construct for an std::string with allocator in shared-memory */
   explicit string(Allocator *alloc, const std::string &text) {
     shm_init(alloc, text);
-  }
-
-  /** Copy constructor */
-  string(const string &other) : ShmDataStructure(other) {
-    shm_init(other);
   }
 
   /** Construct by concatenating two string in shared-memory */
@@ -114,7 +110,7 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
   /** Copy constructor */
-  void shm_init(const string &other) {
+  void StrongCopy(const string &other) {
     shm_init(other.alloc_, other.size());
     _create_str(other.data(), other.size());
   }
@@ -156,9 +152,6 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     if (IsNull()) { return; }
     alloc_->Free(header_ptr_);
   }
-
-  /** Disable assignment (avoids copies) */
-  string& operator=(const string &other) = delete;
 
   /** Get character at index i in the string */
   char& operator[](size_t i) const {

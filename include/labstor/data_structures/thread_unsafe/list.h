@@ -8,6 +8,7 @@
 #include "labstor/data_structures/data_structure.h"
 #include "labstor/data_structures/smart_ptr/manual_ptr.h"
 #include "labstor/data_structures/internal/shm_ar.h"
+#include "labstor/data_structures/internal/shm_ref.h"
 
 namespace labstor::ipc {
 
@@ -18,9 +19,6 @@ class list;
 /** represents an object within a list */
 template<typename T>
 struct list_entry {
- private:
-  typedef typename shm_ar<T>::T_Ref T_Ref;
-
  public:
   Pointer next_ptr_, prior_ptr_;
   shm_ar<T> data_;
@@ -34,8 +32,8 @@ struct list_entry {
   /**
    * Returns the element stored in the list
    * */
-  T_Ref data() {
-    return data_.data();
+  shm_ref<T> data() {
+    return shm_ref<T>(data_);
   }
 };
 
@@ -101,6 +99,11 @@ struct list_iterator_templ {
 
   /** Get the object the iterator points to */
   T_Ref_Const operator*() const {
+    return entry_->data().export_data();
+  }
+
+  /** Get the reference object the iterator points to */
+  shm_ref<T> operator~() {
     return entry_->data();
   }
 
@@ -209,14 +212,22 @@ using list_iterator = list_iterator_templ<T, false>;
 template<typename T>
 using list_citerator = list_iterator_templ<T, true>;
 
+
+/**
+ * MACROS used to simplify the list namespace
+ * Used as inputs to the SHM_DATA_STRUCTURE_TEMPLATE
+ * */
 #define CLASS_NAME list
 #define TYPED_CLASS list<T>
 #define TYPED_HEADER list_header<T>
 
+/**
+ * Doubly linked list implementation
+ * */
 template<typename T>
 class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
  public:
-  SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
+  BASIC_SHM_DATA_STRUCTURE_TEMPLATE
 
  public:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
@@ -236,16 +247,6 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   /** Default shared-memory constructor */
   explicit list(Allocator *alloc) {
     shm_init(alloc);
-  }
-
-  /** Moves one list into another */
-  list(list&& source) noexcept {
-    WeakMove(source);
-  }
-
-  /** Copy constructor  */
-  list(const list &other) {
-    StrongCopy(other);
   }
 
   /** Initialize list in shared memory (default allocator) */
@@ -269,15 +270,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     alloc_->Free(header_ptr_);
   }
 
-  /** Assign one list into another */
-  list& operator=(const list &other) {
-    if (this != &other) {
-      StrongCopy(other);
-    }
-    return *this;
-  }
-
-  /** Copy a list */
+  /** Copy constructor */
   void StrongCopy(const list &other) {
     shm_init(other.alloc_);
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {

@@ -94,20 +94,6 @@ class ShmSerializer : public ShmSerializeable {
     other.SetNull();
   }
 
-  /** Move constructor */
-  ShmSerializer(ShmSerializer &&other) noexcept {
-    WeakMove(other);
-  }
-
-  /** Move assignment operator */
-  ShmSerializer&
-  operator=(ShmSerializer &&other) noexcept {
-    if (this != &other) {
-      WeakMove(other);
-    }
-    return *this;
-  }
-
   /** Get the allocator for this pointer */
   Allocator* GetAllocator() {
     return alloc_;
@@ -129,6 +115,31 @@ using labstor::ipc::ShmSerializer<TYPED_HEADER>::IsNull;\
 using labstor::ipc::ShmSerializer<TYPED_HEADER>::SetNull;\
 using labstor::ipc::ShmSerializer<TYPED_HEADER>::WeakCopy;\
 using labstor::ipc::ShmSerializer<TYPED_HEADER>::WeakMove;
+
+#define SHM_INHERIT_MOVE_OPERATORS(CLASS_NAME)\
+  CLASS_NAME(CLASS_NAME &&other) noexcept {\
+    WeakMove(other);\
+  }\
+  CLASS_NAME& operator=(CLASS_NAME &&other) noexcept {\
+    if (this != &other) {\
+      WeakMove(other);\
+    }\
+    return *this;\
+  }
+
+#define SHM_INHERIT_COPY_OPERATORS(CLASS_NAME)\
+  CLASS_NAME(const CLASS_NAME &other) noexcept {\
+    shm_init(other);\
+  }\
+  CLASS_NAME& operator=(const CLASS_NAME &other) {\
+    if (this != &other) {\
+      shm_init(other);\
+    }\
+    return *this;\
+  }\
+  void shm_init(const CLASS_NAME &other) {\
+    StrongCopy(other);\
+  }
 
 }  // namespace labstor::ipc
 

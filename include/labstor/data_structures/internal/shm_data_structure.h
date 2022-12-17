@@ -64,19 +64,8 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
     other.SetNull();
   }
 
-  /** Move constructor */
-  ShmDataStructure(ShmDataStructure &&other) noexcept {
-    WeakMove(other);
-  }
-
-  /** Move assignment operator */
-  ShmDataStructure&
-  operator=(ShmDataStructure &&other) noexcept {
-    if (this != &other) {
-      WeakMove(other);
-    }
-    return *this;
-  }
+  /** Copy constructor */
+  // void StrongCopy(const ShmDataStructure &other) {}
 
   /** Sets this object as destructable */
   void SetDestructable() {
@@ -88,7 +77,7 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
     destructable_ = false;
   }
 
-  /** Serialize the data structure into a ShmArchive */
+  /** Serialize / deserialize this object... */
   SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
 };
 
@@ -97,18 +86,29 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
 /**
  * Namespace simplification for a SHM data structure
  * */
+#define SHM_DATA_STRUCTURE_USING_NS\
+  using labstor::ipc::ShmDataStructure< \
+    TYPE_UNWRAP(TYPED_CLASS), TYPE_UNWRAP(TYPED_HEADER)>
+
 #define SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)\
-  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::header_;\
-  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::header_ptr_;\
-  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::mem_mngr_;\
-  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::alloc_;\
-  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::destructable_;\
-  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_serialize;\
-  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_deserialize;\
-  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::IsNull;\
-  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::SetDestructable;\
-  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::UnsetDestructable;\
-  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::WeakMove;\
-  using labstor::ipc::ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::WeakCopy;
+  SHM_DATA_STRUCTURE_USING_NS::header_;\
+  SHM_DATA_STRUCTURE_USING_NS::header_ptr_;\
+  SHM_DATA_STRUCTURE_USING_NS::mem_mngr_;\
+  SHM_DATA_STRUCTURE_USING_NS::alloc_;\
+  SHM_DATA_STRUCTURE_USING_NS::destructable_;\
+  SHM_DATA_STRUCTURE_USING_NS::shm_serialize;\
+  SHM_DATA_STRUCTURE_USING_NS::shm_deserialize;\
+  SHM_DATA_STRUCTURE_USING_NS::IsNull;\
+  SHM_DATA_STRUCTURE_USING_NS::SetDestructable;\
+  SHM_DATA_STRUCTURE_USING_NS::UnsetDestructable;\
+  SHM_DATA_STRUCTURE_USING_NS::WeakMove;\
+  SHM_DATA_STRUCTURE_USING_NS::WeakCopy;\
+  SHM_INHERIT_MOVE_OPERATORS(CLASS_NAME)\
+  SHM_INHERIT_COPY_OPERATORS(CLASS_NAME)\
+  SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
+
+#define BASIC_SHM_DATA_STRUCTURE_TEMPLATE\
+  SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME,\
+    TYPE_WRAP(TYPED_CLASS), TYPE_WRAP(TYPED_HEADER))
 
 #endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_DATA_STRUCTURE_H_

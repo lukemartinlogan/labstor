@@ -36,11 +36,13 @@ void ListOfIntTest() {
   Allocator *alloc = alloc_g;
   list<int> lp(alloc);
 
+  // Emplace 30 elements
   for (int i = 0; i < 30; ++i) {
     lp.emplace_back(i);
   }
   REQUIRE(lp.size() == 30);
 
+  // Check full iterator
   {
     int fcur = 0;
     for (auto num : lp) {
@@ -49,12 +51,15 @@ void ListOfIntTest() {
     }
   }
 
-  lp.emplace_front(100);
-  REQUIRE(lp.front() == 100);
-  REQUIRE(lp.size() == 31);
+  // emplace_front and erase front
+  {
+    lp.emplace_front(100);
+    REQUIRE(lp.front() == 100);
+    REQUIRE(lp.size() == 31);
+    lp.erase(lp.begin(), lp.begin() + 1);
+  }
 
-  lp.erase(lp.begin(), lp.begin() + 1);
-
+  // Verify the list is still the original list
   {
     int fcur = 0;
     for (auto num : lp) {
@@ -63,19 +68,36 @@ void ListOfIntTest() {
     }
   }
 
-  lp.erase(lp.begin(), lp.end());
-  REQUIRE(lp.size() == 0);
+  // Modify the fourth list entry
+  {
+    auto iter = lp.begin() + 4;
+    (~iter) = 25;
+  }
+
+  // Verify the modification took place
+  {
+    auto iter = lp.begin() + 4;
+    REQUIRE((*iter) == 25);
+  }
+
+  // Erase the entire list
+  {
+    lp.clear();
+    REQUIRE(lp.size() == 0);
+  }
 }
 
 void ListOfStringTest() {
   Allocator *alloc = alloc_g;
   list<string> lp(alloc);
 
+  // Emplace 30 elements into the list
   for (int i = 0; i < 30; ++i) {
     lp.emplace_back(std::to_string(i));
   }
   REQUIRE(lp.size() == 30);
 
+  // Verify forward iterator
   {
     int fcur = 0;
     for (auto num : lp) {
@@ -84,18 +106,33 @@ void ListOfStringTest() {
     }
   }
 
-  lp.emplace_front("100");
-  REQUIRE(lp.front() == "100");
-  REQUIRE(lp.size() == 31);
+  // Verify emplace_front and erase front
+  {
+    lp.emplace_front("100");
+    REQUIRE(lp.front() == "100");
+    REQUIRE(lp.size() == 31);
+    lp.erase(lp.begin(), lp.begin() + 1);
+  }
 
-  lp.erase(lp.begin(), lp.begin() + 1);
-
+  // Verify the list is still unchanged
   {
     int fcur = 0;
     for (auto num : lp) {
       REQUIRE(num == std::to_string(fcur));
       ++fcur;
     }
+  }
+
+  // Modify the fourth list entry
+  {
+    auto iter = lp.begin() + 4;
+    (~iter) = std::move(string("25"));
+  }
+
+  // Verify the modification took place
+  {
+    auto iter = lp.begin() + 4;
+    REQUIRE((*iter) == "25");
   }
 
   lp.erase(lp.begin(), lp.end());

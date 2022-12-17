@@ -51,7 +51,7 @@ struct array_queue_header {
 template<typename Key, typename T>
 class array_queue {
  public:
-  SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
+  BASIC_SHM_DATA_STRUCTURE_TEMPLATE
 
  public:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;

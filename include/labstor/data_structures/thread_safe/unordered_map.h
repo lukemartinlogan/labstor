@@ -138,20 +138,20 @@ struct unordered_map_iterator {
 
   /** Copy constructor  */
   unordered_map_iterator(const unordered_map_iterator &other) {
-    StrongCopy(other);
+    shm_init(other);
   }
 
   /** Assign one iterator into another */
   unordered_map_iterator<Key, T, Hash>&
   operator=(const unordered_map_iterator<Key, T, Hash> &other) {
     if (this != &other) {
-      StrongCopy(other);
+      shm_init(other);
     }
     return *this;
   }
 
   /** Copy an iterator */
-  void StrongCopy(const unordered_map_iterator<Key, T, Hash> &other) {
+  void shm_init(const unordered_map_iterator<Key, T, Hash> &other) {
     map_ = other.map_;
     buckets_ = other.buckets_;
     collisions_ = other.collisions_;
@@ -163,6 +163,11 @@ struct unordered_map_iterator {
 
   /** Get the pointed object */
   COLLISION_RET_T operator*() const {
+    return COLLISION_RET_T(*collision_);
+  }
+
+  /** Get the reference object the iterator points to */
+  shm_ref<T> operator~() {
     return COLLISION_RET_T(*collision_);
   }
 
@@ -232,6 +237,7 @@ struct unordered_map_iterator {
 
 /**
  * MACROS to simplify the unordered_map namespace
+ * Used as inputs to the SHM_DATA_STRUCTURE_TEMPLATE
  * */
 #define CLASS_NAME unordered_map
 #define TYPED_CLASS unordered_map<Key, T, Hash>
@@ -243,7 +249,7 @@ struct unordered_map_iterator {
 template<typename Key, typename T, class Hash>
 class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
  public:
-  SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
+  BASIC_SHM_DATA_STRUCTURE_TEMPLATE
   friend unordered_map_iterator<Key, T, Hash>;
 
  public:
@@ -295,30 +301,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     header_->growth_ = growth;
   }
 
-  /** Destroy the unordered_map buckets */
-  void shm_destroy() {
-    if (IsNull()) { return; }
-    mptr<vector<BUCKET_T>> buckets(header_->buckets_);
-    buckets->shm_destroy();
-    alloc_->template
-      Free(header_ptr_);
-  }
-
-  /** Copy constructor  */
-  unordered_map(const unordered_map &other) {
-    StrongCopy(other);
-  }
-
-  /** Copy assignment operator */
-  unordered_map&
-  operator=(const unordered_map &other) {
-    if (this != &other) {
-      StrongCopy(other);
-    }
-    return *this;
-  }
-
-  /** Copy an unordered map */
+  /** Copy constructor */
   void StrongCopy(const unordered_map &other) {
     if (other.header_ == nullptr) { return; }
     auto num_buckets = other.get_num_buckets();
@@ -330,6 +313,15 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       emplace_templ<false, true>(
         std::move(*entry.key_), std::move(*entry.val_));
     }
+  }
+
+  /** Destroy the unordered_map buckets */
+  void shm_destroy() {
+    if (IsNull()) { return; }
+    mptr<vector<BUCKET_T>> buckets(header_->buckets_);
+    buckets->shm_destroy();
+    alloc_->template
+      Free(header_ptr_);
   }
 
   /**
@@ -428,7 +420,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   T_Ref operator[](const Key &key) {
     auto iter = find(key);
     if (iter != end()) {
-      return (*iter).val_.get_ref();
+      return (*iter).val_;
     }
     throw UNORDERED_MAP_CANT_FIND.format();
   }

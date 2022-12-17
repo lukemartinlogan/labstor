@@ -32,4 +32,12 @@
 
 #define TYPE_BITS(type) ((sizeof(type)*8))
 
+#define TYPE_WRAP(...) (__VA_ARGS__)
+
+#define TYPE_UNWRAP(X) ESC(ISH X)
+#define ISH(...) ISH __VA_ARGS__
+#define ESC(...) ESC_(__VA_ARGS__)
+#define ESC_(...) VAN ## __VA_ARGS__
+#define VANISH
+
 #endif  // LABSTOR_MACROS_H

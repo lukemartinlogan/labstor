@@ -8,6 +8,7 @@
 #include "labstor/data_structures/data_structure.h"
 #include "labstor/data_structures/smart_ptr/manual_ptr.h"
 #include "labstor/data_structures/internal/shm_ar.h"
+#include "labstor/data_structures/internal/shm_ref.h"
 
 namespace labstor::ipc {
 
@@ -74,6 +75,11 @@ struct vector_iterator_templ {
   /** Dereference the iterator */
   T_Ref_Const operator*() const {
     return (*vec_)[i_];
+  }
+
+  /** Get the reference object the iterator points to */
+  shm_ref<T> operator~() {
+    return shm_ref<T>(vec_->data_ar()[i_]);
   }
 
   /** Increment iterator in-place */
@@ -268,7 +274,8 @@ template<typename T>
 using vector_criterator = vector_iterator_templ<T, false, true>;
 
 /**
- * MACROS to simplify the vector namespace
+ * MACROS used to simplify the vector namespace
+ * Used as inputs to the SHM_DATA_STRUCTURE_TEMPLATE
  * */
 #define CLASS_NAME vector
 #define TYPED_CLASS vector<T>
@@ -280,7 +287,7 @@ using vector_criterator = vector_iterator_templ<T, false, true>;
 template<typename T>
 class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
  public:
-  SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)
+  BASIC_SHM_DATA_STRUCTURE_TEMPLATE
 
  public:
   typedef SHM_T_OR_REF_T(T) T_Ref;
@@ -343,25 +350,6 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     alloc_->Free(header_ptr_);
   }
 
-  /** Moves one vector into another */
-  vector(vector&& source) noexcept {
-    WeakMove(source);
-  }
-
-  /** Copy constructor  */
-  vector(const vector &other) {
-    StrongCopy();
-  }
-
-  /** Assign one vector into another */
-  vector&
-  operator=(const vector &other) {
-    if (this != &other) {
-      StrongCopy(other);
-    }
-    return *this;
-  }
-
   /** Copy a vector */
   void StrongCopy(const vector &other) {
     shm_init(other.alloc_);
@@ -382,7 +370,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     if (header_ == nullptr) {
       shm_init(nullptr);
     }
-    grow_vector(_data(), length, false, std::forward<Args>(args)...);
+    grow_vector(data_ar(), length, false, std::forward<Args>(args)...);
   }
 
   /**
@@ -397,20 +385,20 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     if (header_ == nullptr) {
       shm_init(nullptr);
     }
-    grow_vector(_data(), length, true, std::forward<Args>(args)...);
+    grow_vector(data_ar(), length, true, std::forward<Args>(args)...);
     header_->length_ = length;
   }
 
   /** Index the vector at position i */
   T_Ref operator[](const size_t i) {
-    shm_ar<T> *vec = _data();
+    shm_ar<T> *vec = data_ar();
     return vec[i].data();
   }
 
   /** Construct an element at the back of the vector */
   template<typename... Args>
   void emplace_back(Args&&... args) {
-    shm_ar<T> *vec = _data();
+    shm_ar<T> *vec = data_ar();
     if (header_->length_ == header_->max_length_) {
       vec = grow_vector(vec, 0, false);
     }
@@ -427,7 +415,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       emplace_back(std::forward<Args>(args)...);
       return;
     }
-    shm_ar<T> *vec = _data();
+    shm_ar<T> *vec = data_ar();
     if (header_->length_ == header_->max_length_) {
       vec = grow_vector(vec, 0, false);
     }
@@ -478,8 +466,16 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     if (header_ == nullptr) {
       return nullptr;
     }
-    return mem_mngr_->template
+    return alloc_->template
       Convert<void>(header_->vec_ptr_);
+  }
+
+  /**
+   * Retreives a pointer to the array from the process-independent pointer.
+   * */
+  shm_ar<T>* data_ar() {
+    return alloc_->template
+      Convert<shm_ar<T>>(header_->vec_ptr_);
   }
 
  private:
@@ -542,7 +538,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @param count the amount to shift left by
    * */
   void shift_left(const vector_iterator<T> pos, int count = 1) {
-    shm_ar<T> *vec = _data();
+    shm_ar<T> *vec = data_ar();
     for (int i = 0; i < count; ++i) {
       Allocator::DestructObj<shm_ar<T>>(*(vec + pos.i_ + i));
     }
@@ -563,22 +559,13 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @param count the amount to shift right by
    * */
   void shift_right(const vector_iterator<T> pos, int count = 1) {
-    auto src = _data() + size() - 1;
+    auto src = data_ar() + size() - 1;
     auto dst = src + count;
     auto sz = static_cast<off64_t>(size());
     for (auto i = sz - 1; i >= pos.i_; --i) {
       memcpy(dst, src, sizeof(shm_ar<T>));
       dst -= 1; src -= 1;
     }
-  }
-
-
-  /**
-   * Retreives a pointer to the array from the process-independent pointer.
-   * */
-  shm_ar<T>* _data() {
-    return alloc_->template
-      Convert<shm_ar<T>>(header_->vec_ptr_);
   }
 
 
