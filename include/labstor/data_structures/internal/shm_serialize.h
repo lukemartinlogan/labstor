@@ -54,21 +54,11 @@ class ShmSerializer : public ShmSerializeable {
   }
 
   /** Deserialize object from a raw pointer */
-  void operator>>(Pointer &header_ptr) const {
-    shm_serialize(header_ptr);
-  }
-
-  /** Deserialize object from a raw pointer */
   void shm_deserialize(const Pointer &header_ptr) {
     header_ptr_ = header_ptr;
     if (header_ptr_.is_null()) { return; }
     alloc_ = LABSTOR_MEMORY_MANAGER->GetAllocator(header_ptr_.allocator_id_);
     header_ = LABSTOR_MEMORY_MANAGER->Convert<TYPED_HEADER>(header_ptr_);
-  }
-
-  /** Deserialize object from a raw pointer */
-  void operator<<(const Pointer &header_ptr) {
-    shm_deserialize(header_ptr);
   }
 
   /** Set to null */
