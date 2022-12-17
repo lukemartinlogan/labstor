@@ -55,8 +55,8 @@ struct unordered_map_pair {
  public:
   /** Constructor */
   template<typename ...Args>
-  explicit unordered_map_pair(const Key &key, Args&& ...args)
-  : key_(key), val_(std::forward<Args>(args)...) {}
+  explicit unordered_map_pair(Key key, Args&& ...args)
+  : key_(std::move(key)), val_(std::forward<Args>(args)...) {}
 
   /** Move constructor */
   unordered_map_pair(unordered_map_pair&& other) noexcept
@@ -542,7 +542,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     // Insert into the map
     mptr<list<COLLISION_T>> collisions(bkt.collisions_);
     if constexpr(!modify_existing) {
-      auto has_key = find_collision(*entry.key_, collisions);
+      auto has_key = find_collision(key, collisions);
       if (has_key != collisions->end()) {
         return false;
       }

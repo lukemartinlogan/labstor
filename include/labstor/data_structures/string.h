@@ -157,11 +157,6 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     alloc_->Free(header_ptr_);
   }
 
-  /** Moves one string into another */
-  string(string&& source) noexcept {
-    WeakMove(source);
-  }
-
   /** Disable assignment (avoids copies) */
   string& operator=(const string &other) = delete;
 

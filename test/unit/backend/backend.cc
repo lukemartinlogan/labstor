@@ -36,12 +36,10 @@ TEST_CASE("BackendReserve") {
 
   // Reserve + Map 8GB of memory
   b1.CreateSlot(GIGABYTES(8));
-  sleep(2);
 
   // Set 2GB of SHMEM
   auto &slot = b1.GetSlot(1);
   memset(slot.ptr_, 0, GIGABYTES(2));
-  sleep(2);
 
   // Destroy SHMEM
   b1.Destroy();
