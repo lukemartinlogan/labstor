@@ -26,11 +26,8 @@ class _shm_ar_shm : public ShmSmartPointer {
   : obj_(make_shm_ar<T>(std::forward<Args>(args)...)) {
   }
 
-  /** Destructor. Does nothing. */
-  ~_shm_ar_shm() = default;
-
-  /** Destroys memory allocated by this object */
-  void shm_destroy() {
+  /** Destructor. */
+  ~_shm_ar_shm() {
     mptr<T>(obj_).shm_destroy();
   }
 
@@ -68,9 +65,6 @@ class _shm_ar_noshm {
 
   /** Destructor. Does nothing. */
   ~_shm_ar_noshm() = default;
-
-  /** Destroys memory allocated by this object */
-  void shm_destroy() {}
 
   /** Gets the object */
   T& data() {
@@ -120,15 +114,8 @@ class shm_ar {
   explicit shm_ar(Args&& ...args)
   : obj_(std::forward<Args>(args)...) {}
 
-  /** Destruct. */
-  ~shm_ar() {
-    shm_destroy();
-  }
-
-  /** Destroys memory allocated by this object */
-  void shm_destroy() {
-    obj_.shm_destroy();
-  }
+  /** Destructor */
+  ~shm_ar() = default;
 
   /** Returns the data represented by the archive */
   T_Ref data() {

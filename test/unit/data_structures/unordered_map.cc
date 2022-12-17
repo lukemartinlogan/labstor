@@ -123,15 +123,15 @@ void UnorderedMapOfIntStringTest() {
 
   // Insert 20 entries into the map (no growth trigger)
   {
-    for (int i = 0; i < 1; ++i) {
+    for (int i = 0; i < 20; ++i) {
       int t1 = i;
-      auto t2 = string(std::to_string(i+1));
-      map.emplace(t1, t2);
+      // auto t2 = string(std::to_string(i+1));
+      map.emplace(t1, std::to_string(i+1));
     }
   }
 
   // Check if the 20 entries are indexable
-  /*{
+  {
     for (int i = 0; i < 20; ++i) {
       int t1 = i;
       string t2(std::to_string(i+1));
@@ -191,7 +191,7 @@ void UnorderedMapOfIntStringTest() {
     for (int i = 0; i < 100; ++i) {
       REQUIRE(map.find(i) != map.end());
     }
-  }*/
+  }
 }
 
 void UnorderedMapOfStringIntTest() {

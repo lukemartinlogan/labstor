@@ -341,7 +341,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     auto pos = first;
     while (pos != last) {
       auto next = pos + 1;
-      pos.entry_->data_.shm_destroy();
+      Allocator::DestructObj(pos.entry_->data_);
       alloc_->Free(pos.entry_ptr_);
       --header_->length_;
       pos = next;
