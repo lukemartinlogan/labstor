@@ -27,15 +27,8 @@
 #include "test_init.h"
 #include "labstor/data_structures/thread_unsafe/list.h"
 #include "labstor/data_structures/string.h"
-#include <labstor/memory/allocator/page_allocator.h>
+#include "labstor/memory/allocator/page_allocator.h"
 
-using labstor::ipc::MemoryBackendType;
-using labstor::ipc::MemoryBackend;
-using labstor::ipc::allocator_id_t;
-using labstor::ipc::AllocatorType;
-using labstor::ipc::Allocator;
-using labstor::ipc::MemoryManager;
-using labstor::ipc::Pointer;
 using labstor::ipc::list;
 using labstor::ipc::string;
 

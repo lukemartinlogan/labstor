@@ -27,7 +27,7 @@
 #include "test_init.h"
 #include "labstor/data_structures/thread_safe/unordered_map.h"
 #include "labstor/data_structures/string.h"
-#include <labstor/memory/allocator/page_allocator.h>
+#include "labstor/memory/allocator/page_allocator.h"
 
 using labstor::ipc::MemoryBackendType;
 using labstor::ipc::MemoryBackend;

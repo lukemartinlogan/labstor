@@ -7,15 +7,7 @@
 #include <mpi.h>
 
 #include "labstor/data_structures/thread_unsafe/vector.h"
-#include <labstor/memory/allocator/page_allocator.h>
-
-using labstor::ipc::MemoryBackendType;
-using labstor::ipc::MemoryBackend;
-using labstor::ipc::allocator_id_t;
-using labstor::ipc::AllocatorType;
-using labstor::ipc::Allocator;
-using labstor::ipc::MemoryManager;
-using labstor::ipc::Pointer;
+#include "labstor/memory/allocator/page_allocator.h"
 
 Allocator *alloc_g = nullptr;
 
@@ -37,18 +29,10 @@ void Posttest() {
   alloc_g = nullptr;
 }
 
-int main(int argc, char **argv) {
-  int rc;
-  MPI_Init(&argc, &argv);
-  Catch::Session session;
-  auto cli = session.cli();
-  session.cli(cli);
-  rc = session.applyCommandLine(argc, argv);
-  if (rc != 0) return rc;
+void MainPretest() {
   Pretest(AllocatorType::kPageAllocator);
-  int tesT_Refurn_code = session.run();
+}
+
+void MainPosttest() {
   Posttest();
-  if (rc != 0) return rc;
-  MPI_Finalize();
-  return tesT_Refurn_code;
 }

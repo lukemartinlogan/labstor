@@ -4,7 +4,8 @@ project(labstor)
 set(CMAKE_CXX_STANDARD 17)
 
 add_executable(test_lock_exec
-        main_thread.cc
+        ${TEST_MAIN}/main.cc
+        test_init.cc
         lock.cc)
 add_dependencies(test_lock_exec labstor_data_structures)
 target_link_libraries(test_lock_exec

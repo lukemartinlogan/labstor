@@ -3,9 +3,8 @@ project(labstor)
 
 set(CMAKE_CXX_STANDARD 17)
 
-include_directories(${CMAKE_SOURCE_DIR}/test/unit)
+set(TEST_MAIN ${CMAKE_CURRENT_SOURCE_DIR})
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(base)
-add_subdirectory(backend)
-add_subdirectory(allocators)
 add_subdirectory(data_structures)
-add_subdirectory(lock)

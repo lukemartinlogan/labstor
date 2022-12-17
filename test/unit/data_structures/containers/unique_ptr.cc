@@ -8,7 +8,7 @@
 #include "basic_test.h"
 #include "test_init.h"
 #include "labstor/data_structures/string.h"
-#include <labstor/memory/allocator/page_allocator.h>
+#include "labstor/memory/allocator/page_allocator.h"
 
 using labstor::ipc::string;
 using labstor::ipc::unique_ptr;

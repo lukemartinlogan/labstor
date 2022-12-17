@@ -4,7 +4,8 @@ project(labstor)
 set(CMAKE_CXX_STANDARD 17)
 
 add_executable(test_memory_exec
-        main_mpi.cc
+        ${TEST_MAIN}/main_mpi.cc
+        test_init.cc
         backend.cc
         memory_slots.cc
         memory_manager.cc)

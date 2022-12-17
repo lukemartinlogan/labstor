@@ -13,8 +13,10 @@ int main(int argc, char **argv) {
   session.cli(cli);
   rc = session.applyCommandLine(argc, argv);
   if (rc != 0) return rc;
-  int tesT_Refurn_code = session.run();
+  MainPretest();
+  rc = session.run();
+  MainPosttest();
   if (rc != 0) return rc;
   MPI_Finalize();
-  return tesT_Refurn_code;
+  return rc;
 }

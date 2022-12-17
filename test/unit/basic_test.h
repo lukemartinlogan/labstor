@@ -21,4 +21,7 @@ static bool VerifyBuffer(char *ptr, size_t size, char nonce) {
   return true;
 }
 
+void MainPretest();
+void MainPosttest();
+
 #endif //LABSTOR_TEST_UNIT_BASIC_TEST_H_

@@ -24,23 +24,34 @@
  */
 
 #include "basic_test.h"
+#include "test_init.h"
+#include "labstor/data_structures/string.h"
+#include "labstor/memory/allocator/page_allocator.h"
 
-#include <labstor/memory/backend/posix_shm_mmap.h>
+using labstor::ipc::string;
 
-using labstor::ipc::MemorySlot;
-using labstor::ipc::PosixShmMmap;
+void TestString() {
+  Allocator *alloc = alloc_g;
 
-TEST_CASE("BackendReserve") {
-  PosixShmMmap b1("shmem_test");
-  b1.Create();
+  auto text1 = string("hello1");
+  REQUIRE(text1 == "hello1");
+  REQUIRE(text1 != "h");
+  REQUIRE(text1 != "asdfklaf");
 
-  // Reserve + Map 8GB of memory
-  b1.CreateSlot(GIGABYTES(8));
+  auto text2 = string("hello2");
+  REQUIRE(text2 == "hello2");
 
-  // Set 2GB of SHMEM
-  auto &slot = b1.GetSlot(1);
-  memset(slot.ptr_, 0, GIGABYTES(2));
+  string text3 = text1 + text2;
+  REQUIRE(text3 == "hello1hello2");
 
-  // Destroy SHMEM
-  b1.Destroy();
+  string text4(6);
+  memcpy(text4.data_mutable(), "hello4", 6);
+}
+
+TEST_CASE("String") {
+  Allocator *alloc = alloc_g;
+  REQUIRE(IS_SHM_SERIALIZEABLE(string));
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+  TestString();
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }

@@ -5,7 +5,7 @@
 #include "basic_test.h"
 
 #include <mpi.h>
-#include <labstor/memory/memory_manager.h>
+#include "labstor/memory/memory_manager.h"
 
 using labstor::ipc::MemoryBackendType;
 using labstor::ipc::MemoryBackend;

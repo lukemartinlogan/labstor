@@ -4,8 +4,10 @@ project(labstor)
 set(CMAKE_CXX_STANDARD 17)
 
 add_executable(test_allocator_exec
-        main_thread.cc
-        allocator.cc)
+        ${TEST_MAIN}/main.cc
+        test_init.cc
+        allocator.cc
+        allocator_thread.cc)
 add_dependencies(test_allocator_exec labstor_data_structures)
 target_link_libraries(test_allocator_exec
         labstor_data_structures Catch2::Catch2 MPI::MPI_CXX OpenMP::OpenMP_CXX)

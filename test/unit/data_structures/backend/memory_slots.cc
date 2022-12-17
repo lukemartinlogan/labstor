@@ -27,7 +27,7 @@
 
 #include <mpi.h>
 #include <iostream>
-#include <labstor/memory/backend/posix_shm_mmap.h>
+#include "labstor/memory/backend/posix_shm_mmap.h"
 
 using labstor::ipc::PosixShmMmap;
 
