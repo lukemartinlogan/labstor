@@ -541,13 +541,18 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
     // Insert into the map
     mptr<list<COLLISION_T>> collisions(bkt.collisions_);
-    if constexpr(!modify_existing) {
-      auto has_key = find_collision(key, collisions);
-      if (has_key != collisions->end()) {
+    auto has_key = find_collision(key, collisions);
+    if (has_key != collisions->end()) {
+      if constexpr(!modify_existing) {
         return false;
+      } else {
+        collisions->erase(has_key);
+        collisions->emplace_back(std::move(entry_shm));
+        return true;
       }
+    } else {
+      collisions->emplace_back(std::move(entry_shm));
     }
-    collisions->emplace_back(std::move(entry_shm));
 
     // Get the number of buckets now to ensure repetitive growths don't happen
     size_t cur_num_buckets;

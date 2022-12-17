@@ -9,9 +9,10 @@ add_executable(test_data_structure_exec
         string.cc
         vector.cc
         list.cc
-        unordered_map.cc
         manual_ptr.cc
         unique_ptr.cc
+        unordered_map.cc
+        unordered_map_thread.cc
 )
 
 add_dependencies(test_data_structure_exec labstor_data_structures)

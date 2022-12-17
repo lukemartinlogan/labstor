@@ -79,6 +79,14 @@ void UnorderedMapOfIntIntTest() {
     REQUIRE(i == 20);
   }
 
+  // Re-emplace elements
+  {
+    for (int i = 0; i < 20; ++i) {
+      map.emplace(i, i+100);
+      REQUIRE(map[i] == i+100);
+    }
+  }
+
   // Remove 15 entries from the map
   {
     for (int i = 0; i < 15; ++i) {
