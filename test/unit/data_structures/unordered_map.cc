@@ -265,12 +265,11 @@ void UnorderedMapOfStringIntTest() {
     for (int i = 0; i < 100; ++i) {
       string i_text(std::to_string(i));
       map.emplace(i_text, i);
-      REQUIRE(map.find(i_text) != map.end());
     }
-    /*for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 100; ++i) {
       string i_text(std::to_string(i));
       REQUIRE(map.find(i_text) != map.end());
-    }*/
+    }
   }
 }
 
