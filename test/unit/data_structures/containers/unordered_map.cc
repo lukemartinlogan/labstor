@@ -178,15 +178,13 @@ void UnorderedMapOfIntStringTest() {
   {
     auto iter = map.find(4);
     auto val = (*iter).val_;
-    val = string("25");
+    val = std::move(string("25"));
     REQUIRE((*val) == "25");
   }
 
   // Check if the value was set
   {
-    auto iter = map.find(4);
-    auto val = (*iter).val_;
-    REQUIRE((*val) == "25");
+    REQUIRE(map[4] == "25");
   }
 
   // Remove 15 entries from the map
