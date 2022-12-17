@@ -11,7 +11,7 @@
 #include "labstor/data_structures/thread_unsafe/list.h"
 #include "labstor/data_structures/data_structure.h"
 #include "labstor/data_structures/smart_ptr/manual_ptr.h"
-#include "labstor/data_structures/smart_ptr/shm_ref.h"
+#include "labstor/data_structures/internal/shm_ref.h"
 
 
 namespace labstor::ipc {
@@ -49,26 +49,21 @@ struct unordered_map_pair {
   typedef SHM_T_OR_ARCHIVE(Key) Key_Ar;
 
  public:
-  shm_ar<Key> key_;
-  shm_ar<T> val_;
+  shm_ar<Key> key_;  /**< The key. Either a ShmArchive<T> or T*/
+  shm_ar<T> val_;    /**< The value. Either a ShmArchive<T> or T*/
 
  public:
   /** Constructor */
   template<typename ...Args>
   explicit unordered_map_pair(const Key &key, Args&& ...args)
-  : key_(key),
-    val_(std::forward<Args>(args)...) {
-  }
+  : key_(key), val_(std::forward<Args>(args)...) {}
 
   /** Move constructor */
-  unordered_map_pair(unordered_map_pair&& other)
+  unordered_map_pair(unordered_map_pair&& other) noexcept
   : key_(std::move(other.key_)), val_(std::move(other.val_)) {}
 
   /** Destructor */
-  ~unordered_map_pair() {
-    key_.shm_destroy();
-    val_.shm_destroy();
-  }
+  ~unordered_map_pair() = default;
 };
 
 /**

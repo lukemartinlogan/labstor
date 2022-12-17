@@ -52,9 +52,11 @@ class manual_ptr : public ShmDataStructurePointer<T> {
     WeakMove(source);
   }
 
-  /** Assignment operator */
+  /** Copy assignment operator */
   manual_ptr<T>& operator=(const manual_ptr<T> &other) {
-    WeakCopy(other);
+    if (this != &other) {
+      WeakCopy(other);
+    }
     return *this;
   }
 

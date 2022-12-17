@@ -25,7 +25,7 @@ template<typename T>
 class ShmDataStructurePointer : public ShmSmartPointer {
  public:
   typedef SHM_T_OR_SHM_PTR_T(T) T_Ptr;
-  T_Ptr obj_;
+  T_Ptr obj_;  /** T for complex object, ShmPointer<T> for C-style */
 
  public:
   /** Sets this pointer to NULL */

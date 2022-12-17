@@ -7,7 +7,7 @@
 
 #include "labstor/memory/memory.h"
 #include "labstor/data_structures/data_structure.h"
-#include "manual_ptr.h"
+#include "labstor/data_structures/smart_ptr/manual_ptr.h"
 
 namespace labstor::ipc {
 
@@ -34,7 +34,7 @@ class _shm_ar_shm : public ShmSmartPointer {
     mptr<T>(obj_).shm_destroy();
   }
 
-  /** Returns the deserialized ShmArchive (just a few pointers) */
+  /** Returns copy of the deserialized ShmArchive (just a few pointers) */
   T data() {
     return mptr<T>(obj_).get_ref();
   }
@@ -47,6 +47,9 @@ class _shm_ar_shm : public ShmSmartPointer {
   /** Move constructor */
   _shm_ar_shm(_shm_ar_shm &&other) noexcept
   : obj_(std::move(other.obj_)) {}
+
+  /** Copy constructor */
+  _shm_ar_shm(const _shm_ar_shm &other) = delete;
 };
 
 /**
@@ -67,9 +70,7 @@ class _shm_ar_noshm {
   ~_shm_ar_noshm() = default;
 
   /** Destroys memory allocated by this object */
-  void shm_destroy() {
-    Allocator::DestructObj<T>(obj_);
-  }
+  void shm_destroy() {}
 
   /** Gets the object */
   T& data() {
@@ -84,6 +85,9 @@ class _shm_ar_noshm {
   /** Move constructor */
   _shm_ar_noshm(_shm_ar_noshm &&other) noexcept
   : obj_(std::move(other.obj_)) {}
+
+  /** Copy constructor */
+  _shm_ar_noshm(const _shm_ar_noshm &other) = delete;
 };
 
 /**
@@ -139,6 +143,9 @@ class shm_ar {
   /** Move constructor */
   shm_ar(shm_ar &&other) noexcept
   : obj_(std::move(other.obj_)) {}
+
+  /** Copy constructor */
+  shm_ar(const shm_ar &other) = delete;
 };
 
 } // namespace labstor::ipc

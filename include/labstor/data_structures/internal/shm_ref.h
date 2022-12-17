@@ -43,6 +43,14 @@ class _shm_ref_shm {
   T* operator->() {
     return get();
   }
+
+  /** Move constructor */
+  _shm_ref_shm(_shm_ref_shm &&other) noexcept
+  : obj_(std::move(other.obj_)) {}
+
+  /** Copy constructor */
+  _shm_ref_shm(const _shm_ref_shm &other)
+    : obj_(other.obj_) {}
 };
 
 /**
@@ -75,6 +83,14 @@ class _shm_ref_noshm {
   T* operator->() {
     return get();
   }
+
+  /** Move constructor */
+  _shm_ref_noshm(_shm_ref_noshm &&other) noexcept
+  : obj_(std::move(other.obj_)) {}
+
+  /** Copy constructor */
+  _shm_ref_noshm(const _shm_ref_noshm &other)
+  : obj_(other.obj_) {}
 };
 
 /**
@@ -84,8 +100,11 @@ class _shm_ref_noshm {
   SHM_X_OR_Y(T, _shm_ref_shm<T>, _shm_ref_noshm<T>)
 
 /**
- * If T represents a shared-memory object, store T.
+ * If T represents a shared-memory object, store mptr<T>.
  * If T represents a non-shm object, store T*
+ *
+ * This object assumes that another data structure owns the object, nad
+ * is not responsible for freeing it.
  * */
 template<typename T>
 class shm_ref : public ShmSmartPointer {
@@ -120,6 +139,14 @@ class shm_ref : public ShmSmartPointer {
   T* operator->() {
     return get();
   }
+
+  /** Move constructor */
+  shm_ref(shm_ref &&other) noexcept
+  : obj_(std::move(other.obj_)) {}
+
+  /** Copy constructor */
+  shm_ref(const shm_ref &other)
+    : obj_(other.obj_) {}
 };
 
 }  // namespace labstor::ipc

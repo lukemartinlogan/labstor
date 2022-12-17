@@ -388,7 +388,7 @@ class Allocator {
     typename ...Args>
   static void ConstructObj(T &obj,
                            Args&& ...args) {
-    new(&obj) T(std::forward<Args>(args)...);
+    new (&obj) T(std::forward<Args>(args)...);
   }
 
   /**
