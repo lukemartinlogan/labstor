@@ -151,6 +151,7 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   void shm_destroy() {
     if (IsNull()) { return; }
     alloc_->Free(header_ptr_);
+    SetNull();
   }
 
   /** Get character at index i in the string */

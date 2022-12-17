@@ -174,7 +174,7 @@ void UnorderedMapOfIntStringTest() {
     REQUIRE(i == 20);
   }
 
-  // Set the unordered_map in place
+  // Modify the fourth map entry (move assignment)
   {
     auto iter = map.find(4);
     auto val = (*iter).val_;
@@ -182,9 +182,23 @@ void UnorderedMapOfIntStringTest() {
     REQUIRE((*val) == "25");
   }
 
-  // Check if the value was set
+  // Verify the modification took place
   {
     REQUIRE(map[4] == "25");
+  }
+
+  // Modify the fourth map entry (copy assignment)
+  {
+    auto iter = map.find(4);
+    auto val = (*iter).val_;
+    string text("50");
+    val = text;
+    REQUIRE((*val) == "50");
+  }
+
+  // Verify the modification took place
+  {
+    REQUIRE(map[4] == "50");
   }
 
   // Remove 15 entries from the map
@@ -343,6 +357,33 @@ void UnorderedMapOfStringStringTest() {
       ++i;
     }
     REQUIRE(i == 20);
+  }
+
+  // Modify the fourth map entry (move assignment)
+  {
+    auto iter = map.find(string("4"));
+    auto val = (*iter).val_;
+    val = std::move(string("25"));
+    REQUIRE((*val) == "25");
+  }
+
+  // Verify the modification took place
+  {
+    REQUIRE(map[string("4")] == "25");
+  }
+
+  // Modify the fourth map entry (copy assignment)
+  {
+    auto iter = map.find(string("4"));
+    auto val = (*iter).val_;
+    string text("50");
+    val = text;
+    REQUIRE((*val) == "50");
+  }
+
+  // Verify the modification took place
+  {
+    REQUIRE(map[string("4")] == "50");
   }
 
   // Remove 15 entries from the map

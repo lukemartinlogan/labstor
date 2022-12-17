@@ -116,6 +116,7 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
   SHM_DATA_STRUCTURE_USING_NS::shm_serialize;\
   SHM_DATA_STRUCTURE_USING_NS::shm_deserialize;\
   SHM_DATA_STRUCTURE_USING_NS::IsNull;\
+  SHM_DATA_STRUCTURE_USING_NS::SetNull;\
   SHM_DATA_STRUCTURE_USING_NS::SetDestructable;\
   SHM_DATA_STRUCTURE_USING_NS::UnsetDestructable;\
   SHM_DATA_STRUCTURE_USING_NS::WeakMove;\

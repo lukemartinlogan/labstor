@@ -34,13 +34,14 @@ class manual_ptr : public ShmDataStructurePointer<T> {
   template<typename ...Args>
   void shm_init(Args&& ...args) {
     obj_.shm_init(std::forward<Args>(args)...);
+  }
+
+  /** Destructor. Does not free data. */
+  ~manual_ptr() {
     if constexpr(IS_SHM_SERIALIZEABLE(T)) {
       obj_.UnsetDestructable();
     }
   }
-
-  /** Destructor. Does nothing -- must manually call shm_destroy */
-  ~manual_ptr() = default;
 
   /** Copy constructor */
   manual_ptr(const manual_ptr &other) {
@@ -63,31 +64,25 @@ class manual_ptr : public ShmDataStructurePointer<T> {
   /** Move a manual_ptr */
   void WeakMove(manual_ptr &other) {
     obj_.WeakMove(other.obj_);
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_.UnsetDestructable();
-    }
   }
 
   /** Copy a manual_ptr */
   void WeakCopy(const manual_ptr &other) {
     obj_.WeakCopy(other.obj_);
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_.UnsetDestructable();
-    }
   }
 
-  /** Loads an object from a ShmArchive<T> */
+  /** Constructor. From a ShmArchive<T> */
   template<typename ...Args>
   explicit manual_ptr(ShmArchive<T> &ar) {
     shm_deserialize(ar);
   }
 
-  /** Loads an object from a ShmArchive<mptr> */
+  /** Constructor. From a ShmArchive<mptr> */
   explicit manual_ptr(ShmArchive<TYPED_CLASS> &ar) {
     shm_deserialize(ar);
   }
 
-  /** Loads an object from a ShmArchive<uptr> */
+  /** Constructor. From a ShmArchive<uptr> */
   explicit manual_ptr(ShmArchive<uptr<T>> &ar) {
     shm_deserialize(ar);
   }

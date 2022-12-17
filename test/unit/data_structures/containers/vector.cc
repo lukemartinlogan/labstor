@@ -143,6 +143,31 @@ void VectorOfStringTest() {
     }
   }
 
+  // Modify the fourth list entry (move assignment)
+  {
+    auto iter = vec.begin() + 4;
+    (~iter) = std::move(string("25"));
+  }
+
+  // Verify the modification took place
+  {
+    auto iter = vec.begin() + 4;
+    REQUIRE((*iter) == "25");
+  }
+
+  // Modify the fourth list entry (copy assignment)
+  {
+    auto iter = vec.begin() + 4;
+    string text("50");
+    (~iter) = text;
+  }
+
+  // Verify the modification took place
+  {
+    auto iter = vec.begin() + 4;
+    REQUIRE((*iter) == "50");
+  }
+
   // Erase entire vector
   {
     vec.erase(vec.begin(), vec.end());

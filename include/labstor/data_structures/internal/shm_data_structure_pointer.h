@@ -86,11 +86,7 @@ class ShmDataStructurePointer : public ShmSmartPointer {
 
   /** Destroy the data allocated by this pointer */
   void shm_destroy() {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_.SetDestructable();
-    } else {
-      obj_.shm_destroy();
-    }
+    obj_.shm_destroy();
   }
 
   /** Serialize into a raw pointer */
@@ -101,9 +97,6 @@ class ShmDataStructurePointer : public ShmSmartPointer {
   /** Deserialize from a raw pointer */
   void shm_deserialize(const Pointer &header_ptr) {
     obj_.shm_deserialize(header_ptr);
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
-      obj_.UnsetDestructable();
-    }
   }
 };
 

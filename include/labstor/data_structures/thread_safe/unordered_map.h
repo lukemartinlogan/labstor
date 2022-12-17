@@ -322,6 +322,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     buckets->shm_destroy();
     alloc_->template
       Free(header_ptr_);
+    SetNull();
   }
 
   /**

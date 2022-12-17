@@ -348,6 +348,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     erase(begin(), end());
     alloc_->Free(header_->vec_ptr_);
     alloc_->Free(header_ptr_);
+    SetNull();
   }
 
   /** Copy a vector */

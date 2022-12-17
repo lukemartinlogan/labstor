@@ -108,29 +108,35 @@ using labstor::ipc::ShmSerializer<TYPED_HEADER>::WeakMove;
 
 #define SHM_INHERIT_MOVE_OPERATORS(CLASS_NAME)\
   CLASS_NAME(CLASS_NAME &&other) noexcept {\
+    shm_destroy();\
     WeakMove(other);\
   }\
   CLASS_NAME& operator=(CLASS_NAME &&other) noexcept {\
     if (this != &other) {\
+      shm_destroy();\
       WeakMove(other);\
     }\
     return *this;\
   }\
   void shm_init(CLASS_NAME &&other) noexcept {\
+    shm_destroy();\
     WeakMove(other);\
   }
 
 #define SHM_INHERIT_COPY_OPERATORS(CLASS_NAME)\
   CLASS_NAME(const CLASS_NAME &other) noexcept {\
+    shm_destroy();\
     shm_init(other);\
   }\
   CLASS_NAME& operator=(const CLASS_NAME &other) {\
     if (this != &other) {\
+      shm_destroy();\
       shm_init(other);\
     }\
     return *this;\
   }\
   void shm_init(const CLASS_NAME &other) {\
+    shm_destroy();\
     StrongCopy(other);\
   }
 

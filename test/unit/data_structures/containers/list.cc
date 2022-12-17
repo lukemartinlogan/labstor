@@ -123,7 +123,7 @@ void ListOfStringTest() {
     }
   }
 
-  // Modify the fourth list entry
+  // Modify the fourth list entry (move assignment)
   {
     auto iter = lp.begin() + 4;
     (~iter) = std::move(string("25"));
@@ -133,6 +133,19 @@ void ListOfStringTest() {
   {
     auto iter = lp.begin() + 4;
     REQUIRE((*iter) == "25");
+  }
+
+  // Modify the fourth list entry (copy assignment)
+  {
+    auto iter = lp.begin() + 4;
+    string text("50");
+    (~iter) = text;
+  }
+
+  // Verify the modification took place
+  {
+    auto iter = lp.begin() + 4;
+    REQUIRE((*iter) == "50");
   }
 
   lp.erase(lp.begin(), lp.end());

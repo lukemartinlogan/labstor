@@ -268,6 +268,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     if (IsNull()) { return; }
     clear();
     alloc_->Free(header_ptr_);
+    SetNull();
   }
 
   /** Copy constructor */
@@ -303,21 +304,21 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     } else if (pos.is_begin()) {
       entry->prior_ptr_.set_null();
       entry->next_ptr_ = header_->head_ptr_;
-      auto head = mem_mngr_->template
+      auto head = alloc_->template
         Convert<list_entry<T>>(header_->tail_ptr_);
       head->prior_ptr_ = entry_ptr;
       header_->head_ptr_ = entry_ptr;
     } else if (pos.is_end()) {
       entry->prior_ptr_ = header_->tail_ptr_;
       entry->next_ptr_.set_null();
-      auto tail = mem_mngr_->template
+      auto tail = alloc_->template
         Convert<list_entry<T>>(header_->tail_ptr_);
       tail->next_ptr_ = entry_ptr;
       header_->tail_ptr_ = entry_ptr;
     } else {
-      auto next = mem_mngr_->template
+      auto next = alloc_->template
         Convert<list_entry<T>>(pos.entry_->next_ptr_);
-      auto prior = mem_mngr_->template
+      auto prior = alloc_->template
         Convert<list_entry<T>>(pos.entry_->prior_ptr_);
       entry->next_ptr_ = pos.entry_->next_ptr_;
       entry->prior_ptr_ = pos.entry_->prior_ptr_;
@@ -349,7 +350,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     if (first_prior_ptr.is_null()) {
       header_->head_ptr_ = last.entry_ptr_;
     } else {
-      auto first_prior = mem_mngr_->template
+      auto first_prior = alloc_->template
         Convert<list_entry<T>>(first_prior_ptr);
       first_prior->next_ptr_ = last.entry_ptr_;
     }
