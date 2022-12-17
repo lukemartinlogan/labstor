@@ -25,9 +25,15 @@ struct list_entry {
   Pointer next_ptr_, prior_ptr_;
   shm_ar<T> data_;
 
+  /**
+   * Constructor.
+   * */
   template<typename ...Args>
   explicit list_entry(Args ...args) : data_(std::forward<Args>(args)...) {}
 
+  /**
+   * Returns the element stored in the list
+   * */
   T_Ref data() {
     return data_.data();
   }
@@ -341,7 +347,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     auto pos = first;
     while (pos != last) {
       auto next = pos + 1;
-      Allocator::DestructObj(pos.entry_->data_);
+      Allocator::DestructObj<list_entry<T>>(*pos.entry_);
       alloc_->Free(pos.entry_ptr_);
       --header_->length_;
       pos = next;

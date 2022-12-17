@@ -506,7 +506,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * @param entry_shm the (key,value) pair shared-memory serialized
    * @return None
    * */
-  template<bool growth, bool modify_existing, typename ...Args>
+  template<bool growth, bool modify_existing>
   bool insert_templ(COLLISION_T &&entry_shm) {
     return insert_templ<growth, modify_existing>(entry_shm);
   }
