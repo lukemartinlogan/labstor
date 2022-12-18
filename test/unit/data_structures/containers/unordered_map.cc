@@ -39,20 +39,31 @@ using labstor::ipc::Pointer;
 using labstor::ipc::unordered_map;
 using labstor::ipc::string;
 
-#define INT_OR_STRING(TYPE, VAR, VAL)\
+#define SET_VAR_TO_INT_OR_STRING(TYPE, VAR, VAL)\
   if constexpr(IS_SHM_SERIALIZEABLE(TYPE)) {\
     VAR = string(std::to_string(VAL));\
   } else {\
     VAR = VAL;\
   }
 
+#define GET_INT_FROM_VAR(TYPE, RET, VAR) \
+  int RET; \
+  if constexpr(IS_SHM_SERIALIZEABLE(TYPE)) {\
+    RET = atoi((VAR).str().c_str());\
+  } else {\
+    RET = VAR;\
+  }
+
+#define GET_INT_FROM_KEY(VAR) GET_INT_FROM_VAR(Key, key_ret, VAR)
+#define GET_INT_FROM_VAL(VAR) GET_INT_FROM_VAR(Val, val_ret, VAR)
+
 #define CREATE_KV_PAIR(KEY, VAL)\
   Key key; Val val;             \
-  INT_OR_STRING(Key, key, KEY); \
-  INT_OR_STRING(Val, val, VAL);
+  SET_VAR_TO_INT_OR_STRING(Key, key, KEY); \
+  SET_VAR_TO_INT_OR_STRING(Val, val, VAL);
 
 template<typename Key=int, typename Val=int>
-void UnorderedMapOfIntIntTest() {
+void UnorderedMapOpTest() {
   Allocator *alloc = alloc_g;
   unordered_map<Key, Val> map(alloc);
 
@@ -88,8 +99,10 @@ void UnorderedMapOfIntIntTest() {
     prep.Lock();
     int i = 0;
     for (auto entry : map) {
-      REQUIRE((0 <= *entry.key_ && *entry.key_ < 20));
-      REQUIRE((0 <= *entry.val_ && *entry.val_ < 20));
+      GET_INT_FROM_KEY(*entry.key_);
+      GET_INT_FROM_VAL(*entry.val_);
+      REQUIRE((0 <= key_ret && key_ret < 20));
+      REQUIRE((0 <= val_ret && val_ret < 20));
       ++i;
     }
     REQUIRE(i == 20);
@@ -98,29 +111,64 @@ void UnorderedMapOfIntIntTest() {
   // Re-emplace elements
   {
     for (int i = 0; i < 20; ++i) {
-      map.emplace(i, i+100);
-      REQUIRE(map[i] == i+100);
+      CREATE_KV_PAIR(i, i + 100);
+      map.emplace(key, val);
+      REQUIRE(map[key] == val);
     }
+  }
+
+  // Modify the fourth map entry (move assignment)
+  {
+    CREATE_KV_PAIR(4, 25);
+    auto iter = map.find(key);
+    auto val_ref = (*iter).val_;
+    val_ref = std::move(val);
+    REQUIRE((*val_ref) == val);
+  }
+
+  // Verify the modification took place
+  {
+    CREATE_KV_PAIR(4, 25);
+    REQUIRE(map[key] == val);
+  }
+
+  // Modify the fourth map entry (copy assignment)
+  {
+    CREATE_KV_PAIR(4, 50);
+    auto iter = map.find(key);
+    auto val_ref = (*iter).val_;
+    val_ref = val;
+    REQUIRE((*val_ref) == val);
+  }
+
+  // Verify the modification took place
+  {
+    CREATE_KV_PAIR(4, 50);
+    REQUIRE(map[key] == val);
   }
 
   // Remove 15 entries from the map
   {
     for (int i = 0; i < 15; ++i) {
-      map.erase(i);
+      CREATE_KV_PAIR(i, i);
+      map.erase(key);
     }
     REQUIRE(map.size() == 5);
     for (int i = 0; i < 15; ++i) {
-      REQUIRE(map.find(i) == map.end());
+      CREATE_KV_PAIR(i,i);
+      REQUIRE(map.find(key) == map.end());
     }
   }
 
   // Attempt to replace an existing key
   {
     for (int i = 15; i < 20; ++i) {
-      REQUIRE(map.try_emplace(i, 100) == false);
+      CREATE_KV_PAIR(i, 100);
+      REQUIRE(map.try_emplace(key, val) == false);
     }
     for (int i = 15; i < 20; ++i) {
-      REQUIRE(map[i] != 100);
+      CREATE_KV_PAIR(i, 100);
+      REQUIRE(map[key] != val);
     }
   }
 
@@ -133,337 +181,31 @@ void UnorderedMapOfIntIntTest() {
   // Add 100 entries to the map (should force a growth)
   {
     for (int i = 0; i < 100; ++i) {
-      map.emplace(i, i);
+      CREATE_KV_PAIR(i, i);
+      map.emplace(key, val);
     }
     for (int i = 0; i < 100; ++i) {
-      REQUIRE(map.find(i) != map.end());
+      CREATE_KV_PAIR(i, i);
+      REQUIRE(map.find(key) != map.end());
     }
   }
 
   // Copy the unordered_map
   {
-    unordered_map<int, int> cpy(map);
+    unordered_map<Key, Val> cpy(map);
     for (int i = 0; i < 100; ++i) {
-      REQUIRE(map.find(i) != map.end());
-      REQUIRE(cpy.find(i) != cpy.end());
+      CREATE_KV_PAIR(i, i);
+      REQUIRE(map.find(key) != map.end());
+      REQUIRE(cpy.find(key) != cpy.end());
     }
   }
 
   // Move the unordered_map
   {
-    unordered_map<int, int> cpy = std::move(map);
+    unordered_map<Key, Val> cpy = std::move(map);
     for (int i = 0; i < 100; ++i) {
-      REQUIRE(cpy.find(i) != cpy.end());
-    }
-  }
-}
-
-void UnorderedMapOfIntStringTest() {
-  Allocator *alloc = alloc_g;
-  unordered_map<int, string> map(alloc);
-
-  // Insert 20 entries into the map (no growth trigger)
-  {
-    for (int i = 0; i < 20; ++i) {
-      int t1 = i;
-      // auto t2 = string(std::to_string(i+1));
-      map.emplace(t1, std::to_string(i+1));
-    }
-  }
-
-  // Check if the 20 entries are indexable
-  {
-    for (int i = 0; i < 20; ++i) {
-      int t1 = i;
-      string t2(std::to_string(i+1));
-      auto t3 = map[t1];
-      REQUIRE(t3.str() == std::to_string(i+1));
-    }
-  }
-
-  // Check if 20 entries are findable
-  {
-    for (int i = 0; i < 20; ++i) {
-      int t1 = i;
-      auto iter = map.find(t1);
-      auto entry = *iter;
-      REQUIRE(*entry.val_ == std::to_string(i+1));
-    }
-  }
-
-  // Iterate over the map
-  {
-    auto prep = map.iter_prep();
-    prep.Lock();
-    int i = 0;
-    for (auto entry : map) {
-      int key = *entry.key_;
-      int val;
-      std::stringstream((*entry.val_).str()) >> val;
-      REQUIRE((0 <= key && key < 20));
-      REQUIRE((1 <= val && val < 21));
-      ++i;
-    }
-    REQUIRE(i == 20);
-  }
-
-  // Modify the fourth map entry (move assignment)
-  {
-    auto iter = map.find(4);
-    auto val = (*iter).val_;
-    val = std::move(string("25"));
-    REQUIRE((*val) == "25");
-  }
-
-  // Verify the modification took place
-  {
-    REQUIRE(map[4] == "25");
-  }
-
-  // Modify the fourth map entry (copy assignment)
-  {
-    auto iter = map.find(4);
-    auto val = (*iter).val_;
-    string text("50");
-    val = text;
-    REQUIRE((*val) == "50");
-  }
-
-  // Verify the modification took place
-  {
-    REQUIRE(map[4] == "50");
-  }
-
-  // Remove 15 entries from the map
-  {
-    for (int i = 0; i < 15; ++i) {
-      map.erase(i);
-    }
-    REQUIRE(map.size() == 5);
-    for (int i = 0; i < 15; ++i) {
-      REQUIRE(map.find(i) == map.end());
-    }
-  }
-
-  // Erase the entire map
-  {
-    map.clear();
-    REQUIRE(map.size() == 0);
-  }
-
-  // Add 100 entries to the map (will force a growth)
-  {
-    for (int i = 0; i < 100; ++i) {
-      map.emplace(i, i);
-    }
-    for (int i = 0; i < 100; ++i) {
-      REQUIRE(map.find(i) != map.end());
-    }
-  }
-
-  // Copy the unordered_map
-  {
-    unordered_map<int, string> cpy(map);
-    for (int i = 0; i < 100; ++i) {
-      REQUIRE(map.find(i) != map.end());
-      REQUIRE(cpy.find(i) != cpy.end());
-    }
-  }
-
-  // Move the unordered_map
-  {
-    unordered_map<int, string> cpy = std::move(map);
-    for (int i = 0; i < 100; ++i) {
-      REQUIRE(cpy.find(i) != cpy.end());
-    }
-  }
-}
-
-void UnorderedMapOfStringIntTest() {
-  Allocator *alloc = alloc_g;
-  unordered_map<string, int> map(alloc);
-
-  // Insert 20 entries into the map (no growth trigger)
-  {
-    for (int i = 0; i < 20; ++i) {
-      auto t1 = string(std::to_string(i));
-      map.emplace(t1, i+1);
-    }
-  }
-
-  // Check if the 20 entries are indexable
-  {
-    for (int i = 0; i < 20; ++i) {
-      string t1(std::to_string(i));
-      auto t3 = map[t1];
-      REQUIRE(t3 == i+1);
-    }
-  }
-
-  // Check if 20 entries are findable
-  {
-    for (int i = 0; i < 20; ++i) {
-      string t1(std::to_string(i));
-      auto iter = map.find(t1);
-      auto entry = *iter;
-      REQUIRE(*entry.val_ == i+1);
-    }
-  }
-
-  // Iterate over the map
-  {
-    auto prep = map.iter_prep();
-    prep.Lock();
-    int i = 0;
-    for (auto entry : map) {
-      int key;
-      int val;
-      std::stringstream((*entry.key_).str()) >> key;
-      REQUIRE((0 <= key && key < 20));
-      REQUIRE((1 <= *entry.val_ && *entry.val_ < 21));
-      ++i;
-    }
-    REQUIRE(i == 20);
-  }
-
-  // Remove 15 entries from the map
-  {
-    for (int i = 0; i < 15; ++i) {
-      string i_text(std::to_string(i));
-      map.erase(i_text);
-    }
-    REQUIRE(map.size() == 5);
-    for (int i = 0; i < 15; ++i) {
-      string i_text(std::to_string(i));
-      REQUIRE(map.find(i_text) == map.end());
-    }
-  }
-
-  // Erase the entire map
-  {
-    map.clear();
-    REQUIRE(map.size() == 0);
-  }
-
-  // Add 100 entries to the map (will force a growth)
-  {
-    for (int i = 0; i < 100; ++i) {
-      string i_text(std::to_string(i));
-      map.emplace(i_text, i);
-    }
-    for (int i = 0; i < 100; ++i) {
-      string i_text(std::to_string(i));
-      REQUIRE(map.find(i_text) != map.end());
-    }
-  }
-}
-
-void UnorderedMapOfStringStringTest() {
-  Allocator *alloc = alloc_g;
-  unordered_map<string, string> map(alloc);
-
-  // Insert 20 entries into the map (no growth trigger)
-  {
-    for (int i = 0; i < 20; ++i) {
-      auto t1 = string(std::to_string(i));
-      auto t2 = string(std::to_string(i + 1));
-      map.emplace(t1, t2);
-    }
-  }
-
-  // Check if the 20 entries are indexable
-  {
-    for (int i = 0; i < 20; ++i) {
-      string t1(std::to_string(i));
-      string t2(std::to_string(i + 1));
-      auto t3 = map[t1];
-      REQUIRE(t3 == t2);
-    }
-  }
-
-  // Check if 20 entries are findable
-  {
-    for (int i = 0; i < 20; ++i) {
-      string t1(std::to_string(i));
-      string t2(std::to_string(i + 1));
-      auto iter = map.find(t1);
-      auto entry = *iter;
-      REQUIRE(*entry.val_ == t2);
-    }
-  }
-
-  // Iterate over the map
-  {
-    auto prep = map.iter_prep();
-    prep.Lock();
-    int i = 0;
-    for (auto entry : map) {
-      int key;
-      int val;
-      std::stringstream((*entry.key_).str()) >> key;
-      std::stringstream((*entry.val_).str()) >> val;
-      REQUIRE((0 <= key && key < 20));
-      REQUIRE((1 <= val && val < 21));
-      ++i;
-    }
-    REQUIRE(i == 20);
-  }
-
-  // Modify the fourth map entry (move assignment)
-  {
-    auto iter = map.find(string("4"));
-    auto val = (*iter).val_;
-    val = std::move(string("25"));
-    REQUIRE((*val) == "25");
-  }
-
-  // Verify the modification took place
-  {
-    REQUIRE(map[string("4")] == "25");
-  }
-
-  // Modify the fourth map entry (copy assignment)
-  {
-    auto iter = map.find(string("4"));
-    auto val = (*iter).val_;
-    string text("50");
-    val = text;
-    REQUIRE((*val) == "50");
-  }
-
-  // Verify the modification took place
-  {
-    REQUIRE(map[string("4")] == "50");
-  }
-
-  // Remove 15 entries from the map
-  {
-    for (int i = 0; i < 15; ++i) {
-      string i_text(std::to_string(i));
-      map.erase(i_text);
-    }
-    REQUIRE(map.size() == 5);
-    for (int i = 0; i < 15; ++i) {
-      string i_text(std::to_string(i));
-      REQUIRE(map.find(i_text) == map.end());
-    }
-  }
-
-  // Erase the entire map
-  {
-    map.clear();
-    REQUIRE(map.size() == 0);
-  }
-
-  // Add 100 entries to the map (will force a growth)
-  {
-    for (int i = 0; i < 100; ++i) {
-      string i_text(std::to_string(i));
-      map.emplace(i_text, i_text);
-    }
-    for (int i = 0; i < 100; ++i) {
-      string i_text(std::to_string(i));
-      REQUIRE(map.find(i_text) != map.end());
+      CREATE_KV_PAIR(i, i);
+      REQUIRE(cpy.find(key) != cpy.end());
     }
   }
 }
@@ -471,14 +213,14 @@ void UnorderedMapOfStringStringTest() {
 TEST_CASE("UnorderedMapOfIntInt") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  UnorderedMapOfIntIntTest();
+  UnorderedMapOpTest<int, int>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
 
 TEST_CASE("UnorderedMapOfIntString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  UnorderedMapOfIntStringTest();
+  UnorderedMapOpTest<int,string>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
 
@@ -486,13 +228,13 @@ TEST_CASE("UnorderedMapOfIntString") {
 TEST_CASE("UnorderedMapOfStringInt") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  UnorderedMapOfStringIntTest();
+  UnorderedMapOpTest<string,int>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
 
 TEST_CASE("UnorderedMapOfStringString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  UnorderedMapOfStringStringTest();
+  UnorderedMapOpTest<string,string>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
