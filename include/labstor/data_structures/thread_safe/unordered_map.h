@@ -303,7 +303,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   /** Copy constructor */
   void StrongCopy(const unordered_map &other) {
-    if (other.header_ == nullptr) { return; }
+    if (other.IsNull()) { return; }
     auto num_buckets = other.get_num_buckets();
     auto max_collisions = other.header_->max_collisions_;
     auto growth = other.header_->growth_;
@@ -311,7 +311,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     shm_init(alloc, num_buckets, max_collisions, growth);
     for (auto entry : other) {
       emplace_templ<false, true>(
-        std::move(*entry.key_), std::move(*entry.val_));
+        *entry.key_, *entry.val_);
     }
   }
 

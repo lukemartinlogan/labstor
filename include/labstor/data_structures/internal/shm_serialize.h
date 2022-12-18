@@ -67,7 +67,7 @@ class ShmSerializer : public ShmSerializeable {
   }
 
   /** Check if null */
-  bool IsNull() {
+  bool IsNull() const {
     return header_ptr_.is_null();
   }
 

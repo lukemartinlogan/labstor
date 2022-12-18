@@ -39,30 +39,46 @@ using labstor::ipc::Pointer;
 using labstor::ipc::unordered_map;
 using labstor::ipc::string;
 
+#define INT_OR_STRING(TYPE, VAR, VAL)\
+  if constexpr(IS_SHM_SERIALIZEABLE(TYPE)) {\
+    VAR = string(std::to_string(VAL));\
+  } else {\
+    VAR = VAL;\
+  }
+
+#define CREATE_KV_PAIR(KEY, VAL)\
+  Key key; Val val;             \
+  INT_OR_STRING(Key, key, KEY); \
+  INT_OR_STRING(Val, val, VAL);
+
+template<typename Key=int, typename Val=int>
 void UnorderedMapOfIntIntTest() {
   Allocator *alloc = alloc_g;
-  unordered_map<int, int> map(alloc);
+  unordered_map<Key, Val> map(alloc);
 
   // Insert 20 entries into the map (no growth trigger)
   {
     for (int i = 0; i < 20; ++i) {
-      map.emplace(i, i);
+      CREATE_KV_PAIR(i, i);
+      map.emplace(key, val);
     }
   }
 
   // Check if the 20 entries are indexable
   {
     for (int i = 0; i < 20; ++i) {
-      REQUIRE(map[i] == i);
+      CREATE_KV_PAIR(i, i);
+      REQUIRE(map[key] == val);
     }
   }
 
   // Check if 20 entries are findable
   {
     for (int i = 0; i < 20; ++i) {
-      auto iter = map.find(i);
+      CREATE_KV_PAIR(i, i);
+      auto iter = map.find(key);
       auto entry = *iter;
-      REQUIRE(*entry.val_ == i);
+      REQUIRE(*entry.val_ == val);
     }
   }
 
@@ -121,6 +137,23 @@ void UnorderedMapOfIntIntTest() {
     }
     for (int i = 0; i < 100; ++i) {
       REQUIRE(map.find(i) != map.end());
+    }
+  }
+
+  // Copy the unordered_map
+  {
+    unordered_map<int, int> cpy(map);
+    for (int i = 0; i < 100; ++i) {
+      REQUIRE(map.find(i) != map.end());
+      REQUIRE(cpy.find(i) != cpy.end());
+    }
+  }
+
+  // Move the unordered_map
+  {
+    unordered_map<int, int> cpy = std::move(map);
+    for (int i = 0; i < 100; ++i) {
+      REQUIRE(cpy.find(i) != cpy.end());
     }
   }
 }
@@ -225,6 +258,23 @@ void UnorderedMapOfIntStringTest() {
     }
     for (int i = 0; i < 100; ++i) {
       REQUIRE(map.find(i) != map.end());
+    }
+  }
+
+  // Copy the unordered_map
+  {
+    unordered_map<int, string> cpy(map);
+    for (int i = 0; i < 100; ++i) {
+      REQUIRE(map.find(i) != map.end());
+      REQUIRE(cpy.find(i) != cpy.end());
+    }
+  }
+
+  // Move the unordered_map
+  {
+    unordered_map<int, string> cpy = std::move(map);
+    for (int i = 0; i < 100; ++i) {
+      REQUIRE(cpy.find(i) != cpy.end());
     }
   }
 }
