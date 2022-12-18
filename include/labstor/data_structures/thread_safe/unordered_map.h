@@ -501,25 +501,14 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
   /**
-   * Emplace a serialized (key, value) pair in the map
-   *
-   * @param entry_shm the (key,value) pair shared-memory serialized
-   * @return None
-   * */
-  template<bool growth, bool modify_existing>
-  bool insert_templ(COLLISION_T &&entry_shm) {
-    return insert_templ<growth, modify_existing>(entry_shm);
-  }
-
-  /**
-   * Emplace a serialized (key, value) pair in the map
+   * Insert a serialized (key, value) pair in the map
    *
    * @param growth whether or not to grow the unordered map on collision
    * @param modify_existing whether or not to override an existing entry
    * @param entry_shm the (key,value) pair shared-memory serialized
    * @return None
    * */
-  template<bool growth, bool modify_existing, typename ...Args>
+  template<bool growth, bool modify_existing>
   bool insert_templ(COLLISION_T &entry_shm) {
     if (header_ == nullptr) { shm_init(); }
     COLLISION_RET_T entry(entry_shm);
@@ -550,9 +539,8 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
         collisions->emplace_back(std::move(entry_shm));
         return true;
       }
-    } else {
-      collisions->emplace_back(std::move(entry_shm));
     }
+    collisions->emplace_back(std::move(entry_shm));
 
     // Get the number of buckets now to ensure repetitive growths don't happen
     size_t cur_num_buckets;
@@ -573,6 +561,19 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
     // Increment the size of the map
     ++header_->length_;
+    return true;
+  }
+
+  bool insert_simple(COLLISION_T &&entry_shm,
+                     mptr<vector<BUCKET_T>> &buckets) {
+    if (header_ == nullptr) { shm_init(); }
+    COLLISION_RET_T entry(entry_shm);
+    auto &key = *entry.key_;
+    auto &val = *entry.val_;
+    size_t bkt_id = Hash{}(key) % buckets->size();
+    BUCKET_T &bkt = (*buckets)[bkt_id];
+    mptr<list<COLLISION_T>> collisions(bkt.collisions_);
+    collisions->emplace_back(std::move(entry_shm));
     return true;
   }
 
@@ -651,26 +652,34 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
  private:
   /** Grow a map from \a old_size to a new size */
   void grow_map(size_t old_size) {
+    // Acquire the header write lock
     ScopedRwWriteLock header_lock(header_->lock_);
     header_lock.Lock();
+
+    // Get all existing buckets
     mptr<vector<BUCKET_T>> buckets(header_->buckets_);
     size_t num_buckets = buckets->size();
     if (num_buckets != old_size) {
       return;
     }
+
+    // Create new buckets
     size_t new_num_buckets = get_new_size(num_buckets);
-    unordered_map new_map(alloc_,
-                          new_num_buckets,
-                          header_->max_collisions_, header_->growth_);
+    auto new_buckets = make_mptr<vector<BUCKET_T>>(
+      alloc_, new_num_buckets, alloc_);
+
+    // Copy-paste the map
     for (size_t i = 0; i < num_buckets; ++i) {
       auto &bkt = (*buckets)[i];
       mptr<list<COLLISION_T>> collisions(bkt.collisions_);
       for (auto& entry : *collisions) {
-        new_map.insert_templ<false, true>(std::move(entry));
+        insert_simple(std::move(entry), new_buckets);
       }
     }
-    shm_destroy();
-    (*this) = std::move(new_map);
+
+    // Replace this map's buckets
+    buckets.shm_destroy();
+    new_buckets >> header_->buckets_;
   }
 
   /** Calculate the new number of buckets based on growth rate */

@@ -17,7 +17,7 @@ add_executable(test_data_structure_exec
 
 add_dependencies(test_data_structure_exec labstor_data_structures)
 target_link_libraries(test_data_structure_exec
-        labstor_data_structures Catch2::Catch2 MPI::MPI_CXX)
+        labstor_data_structures Catch2::Catch2 MPI::MPI_CXX OpenMP::OpenMP_CXX)
 
 # STRING TESTS
 add_test(NAME test_string COMMAND

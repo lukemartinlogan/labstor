@@ -23,11 +23,14 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include "omp.h"
 #include "basic_test.h"
 #include "test_init.h"
 #include "labstor/data_structures/thread_safe/unordered_map.h"
 #include "labstor/data_structures/string.h"
 #include "labstor/memory/allocator/page_allocator.h"
+#include "labstor/util/errors.h"
+#include <sstream>
 
 using labstor::ipc::MemoryBackendType;
 using labstor::ipc::MemoryBackend;
@@ -43,13 +46,47 @@ void UnorderedMapParallelInsert() {
   Allocator *alloc = alloc_g;
   unordered_map<string, string> map(alloc);
 
-  // Insert 20 entries into the map (no growth trigger)
+  int entries_per_thread = 50;
+  int nthreads = 4;
+  int total_entries = nthreads * entries_per_thread;
+  LABSTOR_THREAD_MANAGER->GetThreadStatic();
+
+  omp_set_dynamic(0);
+#pragma omp parallel shared(alloc, map) num_threads(nthreads)
   {
-    for (int i = 0; i < 20; ++i) {
-      auto t1 = string(std::to_string(i));
-      auto t2 = string(std::to_string(i + 1));
-      map.emplace(t1, t2);
+    int rank = omp_get_thread_num();
+    int off = rank*entries_per_thread;
+#pragma omp barrier
+    // Insert entries into the map (no growth trigger)
+    {
+      for (int i = 0; i < entries_per_thread; ++i) {
+        int key = off + i;
+        int val = 2 * key;
+        auto t1 = string(std::to_string(key));
+        auto t2 = string(std::to_string(val));
+
+        {
+          std::stringstream ss;
+          ss << "Emplace start: " << t1.str() << std::endl;
+          std::cout << ss.str();
+        }
+        map.emplace(t1, t2);
+        {
+          std::stringstream ss;
+          ss << "Emplace end: " << t1.str() << std::endl;
+          std::cout << ss.str();
+        }
+      }
     }
+#pragma omp barrier
+  }
+  REQUIRE(map.size() == total_entries);
+
+  // Verify the map has all entries
+  for (int i = 0; i < total_entries; ++i) {
+    auto key = string(std::to_string(i));
+    auto val = string(std::to_string(2*i));
+    REQUIRE(map[key] == val);
   }
 }
 

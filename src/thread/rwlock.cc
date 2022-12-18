@@ -10,7 +10,7 @@ namespace labstor {
  * Acquire the read lock
  * */
 void RwLock::ReadLock() {
-  bool ret;
+  bool ret = false;
   RwLockPayload expected, desired;
   auto thread_info = LABSTOR_THREAD_MANAGER->GetThreadStatic();
   do {
@@ -97,7 +97,7 @@ void RwLock::assert_r_refcnt(int ref) {
  * Verify the reference count for writes (for debugging)
  * */
 void RwLock::assert_w_refcnt(int ref) {
-  if (RwLockPayload(payload_).bits_.w_ != ref) {
+  if (RwLockPayload(payload_).bits_.w_ > 1) {
     throw 1;
   }
 }

@@ -9,6 +9,8 @@
 #include <labstor/constants/data_structure_singleton_macros.h>
 #include <labstor/introspect/system_info.h>
 
+#include <atomic>
+
 namespace labstor::ipc {
 
 /**
@@ -71,7 +73,7 @@ typedef uint32_t slot_id_t;  // Uniquely ids a MemoryBackend slot
  * */
 struct Pointer {
   allocator_id_t allocator_id_;   // allocator pointer is attached to
-  size_t off_;                    // Offset within the allocator's slot
+  std::atomic<size_t> off_;       // Offset within the allocator's slot
 
   /** Default constructor */
   Pointer() = default;
@@ -79,6 +81,36 @@ struct Pointer {
   /** Full constructor */
   explicit Pointer(allocator_id_t id, size_t off) :
     allocator_id_(id), off_(off) {}
+
+  /** Copy constructor */
+  Pointer(const Pointer &other)
+  : allocator_id_(other.allocator_id_), off_(other.off_.load()) {
+  }
+
+  /** Move constructor */
+  Pointer(Pointer &&other) noexcept
+  : allocator_id_(other.allocator_id_), off_(other.off_.load()) {
+    other.set_null();
+  }
+
+  /** Copy assignment operator */
+  Pointer& operator=(const Pointer &other) {
+    if (this != &other) {
+      allocator_id_ = other.allocator_id_;
+      off_ = other.off_.load();
+    }
+    return *this;
+  }
+
+  /** Move assignment operator */
+  Pointer& operator=(Pointer &&other) {
+    if (this != &other) {
+      allocator_id_ = other.allocator_id_;
+      off_ = other.off_.load();
+      other.set_null();
+    }
+    return *this;
+  }
 
   /** Set to null */
   void set_null() {
