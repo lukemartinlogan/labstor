@@ -108,7 +108,7 @@ class MemoryBackend {
   }
 
   MemorySlot GetHeaderSlot(size_t size = sizeof(MemoryBackendHeader),
-                            bool keep=false) {
+                           bool keep = false) {
     MemorySlot slot;
     slot.slot_id_ = 0;
     slot.off_ = 0;
@@ -121,7 +121,7 @@ class MemoryBackend {
   }
 
   MemorySlot& GetSlot(slot_id_t slot_id) {
-    for(slot_id_t i = slots_.size(); i <= slot_id; ++i) {
+    for (slot_id_t i = slots_.size(); i <= slot_id; ++i) {
       MemorySlot slot;
       slot.slot_id_ = slot_id;
       _MapSlot(slot, false);

@@ -23,8 +23,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_IPC_MANAGER_COMMUNICATOR_FACTORY_H_
-#define LABSTOR_INCLUDE_LABSTOR_IPC_MANAGER_COMMUNICATOR_FACTORY_H_
+#ifndef LABSTOR_IPC_MANAGER_COMMUNICATOR_FACTORY_H_
+#define LABSTOR_IPC_MANAGER_COMMUNICATOR_FACTORY_H_
 
 #include <memory>
 #include "communicator.h"
@@ -46,4 +46,4 @@ class CommunicatorFactory {
 
 }  // namespace labstor
 
-#endif  // LABSTOR_INCLUDE_LABSTOR_IPC_MANAGER_COMMUNICATOR_FACTORY_H_
+#endif  // LABSTOR_IPC_MANAGER_COMMUNICATOR_FACTORY_H_

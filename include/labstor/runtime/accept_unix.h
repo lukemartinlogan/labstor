@@ -23,8 +23,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_RUNTIME_UNIX_RUNTIME_H_
-#define LABSTOR_INCLUDE_LABSTOR_RUNTIME_UNIX_RUNTIME_H_
+#ifndef LABSTOR_RUNTIME_UNIX_RUNTIME_H_
+#define LABSTOR_RUNTIME_UNIX_RUNTIME_H_
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -125,4 +125,4 @@ class UnixAcceptDaemon : public Daemon {
 
 }  // namespace labstor
 
-#endif  // LABSTOR_INCLUDE_LABSTOR_RUNTIME_UNIX_RUNTIME_H_
+#endif  // LABSTOR_RUNTIME_UNIX_RUNTIME_H_

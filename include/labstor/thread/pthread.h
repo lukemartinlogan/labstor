@@ -23,8 +23,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_THREAD_PTHREAD_H_
-#define LABSTOR_INCLUDE_LABSTOR_THREAD_PTHREAD_H_
+#ifndef LABSTOR_THREAD_PTHREAD_H_
+#define LABSTOR_THREAD_PTHREAD_H_
 
 #include "thread.h"
 #include <errno.h>
@@ -110,4 +110,4 @@ class PthreadStatic : public ThreadStatic {
 
 }  // namespace labstor
 
-#endif  // LABSTOR_INCLUDE_LABSTOR_THREAD_PTHREAD_H_
+#endif  // LABSTOR_THREAD_PTHREAD_H_

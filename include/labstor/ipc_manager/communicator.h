@@ -23,8 +23,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_IPC_MANAGER_COMM_H_
-#define LABSTOR_INCLUDE_LABSTOR_IPC_MANAGER_COMM_H_
+#ifndef LABSTOR_IPC_MANAGER_COMM_H_
+#define LABSTOR_IPC_MANAGER_COMM_H_
 
 #include <cstdlib>
 
@@ -45,4 +45,4 @@ class Communicator {
 
 }  // namespace labstor
 
-#endif  // LABSTOR_INCLUDE_LABSTOR_IPC_MANAGER_COMM_H_
+#endif  // LABSTOR_IPC_MANAGER_COMM_H_

@@ -23,9 +23,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
-#ifndef LABSTOR_INCLUDE_LABSTOR_MEMORY_DATA_STRUCTURES__ARRAY_H_
-#define LABSTOR_INCLUDE_LABSTOR_MEMORY_DATA_STRUCTURES__ARRAY_H_
+#ifndef LABSTOR_MEMORY_DATA_STRUCTURES__ARRAY_H_
+#define LABSTOR_MEMORY_DATA_STRUCTURES__ARRAY_H_
 
 #include <cstdint>
 #include "labstor/types/basic.h"
@@ -135,4 +134,4 @@ class _array {
 
 }  // namespace labstor::ipc
 
-#endif  // LABSTOR_INCLUDE_LABSTOR_MEMORY_DATA_STRUCTURES__ARRAY_H_
+#endif  // LABSTOR_MEMORY_DATA_STRUCTURES__ARRAY_H_

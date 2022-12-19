@@ -62,7 +62,7 @@ using labstor::ipc::string;
   SET_VAR_TO_INT_OR_STRING(Key, key, KEY); \
   SET_VAR_TO_INT_OR_STRING(Val, val, VAL);
 
-template<typename Key=int, typename Val=int>
+template<typename Key, typename Val>
 void UnorderedMapOpTest() {
   Allocator *alloc = alloc_g;
   unordered_map<Key, Val> map(alloc);
@@ -155,7 +155,7 @@ void UnorderedMapOpTest() {
     }
     REQUIRE(map.size() == 5);
     for (int i = 0; i < 15; ++i) {
-      CREATE_KV_PAIR(i,i);
+      CREATE_KV_PAIR(i, i);
       REQUIRE(map.find(key) == map.end());
     }
   }
@@ -220,7 +220,7 @@ TEST_CASE("UnorderedMapOfIntInt") {
 TEST_CASE("UnorderedMapOfIntString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  UnorderedMapOpTest<int,string>();
+  UnorderedMapOpTest<int, string>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
 
@@ -228,13 +228,13 @@ TEST_CASE("UnorderedMapOfIntString") {
 TEST_CASE("UnorderedMapOfStringInt") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  UnorderedMapOpTest<string,int>();
+  UnorderedMapOpTest<string, int>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
 
 TEST_CASE("UnorderedMapOfStringString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  UnorderedMapOpTest<string,string>();
+  UnorderedMapOpTest<string, string>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }

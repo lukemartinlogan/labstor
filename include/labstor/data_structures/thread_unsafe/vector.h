@@ -1,9 +1,31 @@
-//
-// Created by lukemartinlogan on 11/6/22.
-//
+/*
+ * Copyright (C) 2022  SCS Lab <scslab@iit.edu>,
+ * Luke Logan <llogan@hawk.iit.edu>,
+ * Jaime Cernuda Garcia <jcernudagarcia@hawk.iit.edu>
+ * Jay Lofstead <gflofst@sandia.gov>,
+ * Anthony Kougkas <akougkas@iit.edu>,
+ * Xian-He Sun <sun@iit.edu>
+ *
+ * This file is part of LabStor
+ *
+ * LabStor is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_VECTOR_H_
-#define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_VECTOR_H_
+
+#ifndef LABSTOR_DATA_STRUCTURES_LOCKLESS_VECTOR_H_
+#define LABSTOR_DATA_STRUCTURES_LOCKLESS_VECTOR_H_
 
 #include "labstor/data_structures/data_structure.h"
 #include "labstor/data_structures/smart_ptr/manual_ptr.h"
@@ -480,7 +502,6 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
  private:
-
   /**
    * Grow a vector to a new size.
    *
@@ -575,7 +596,6 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * */
 
  public:
-
   /** Beginning of the forward iterator */
   vector_iterator<T> begin() {
     if (size() == 0) { return end(); }
@@ -635,4 +655,4 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 #undef TYPED_CLASS
 #undef TYPED_HEADER
 
-#endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_LOCKLESS_VECTOR_H_
+#endif  // LABSTOR_DATA_STRUCTURES_LOCKLESS_VECTOR_H_

@@ -23,11 +23,11 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_CONSTANTS_CONSTANTS_H_
-#define LABSTOR_INCLUDE_LABSTOR_CONSTANTS_CONSTANTS_H_
+#ifndef LABSTOR_CONSTANTS_CONSTANTS_H_
+#define LABSTOR_CONSTANTS_CONSTANTS_H_
 
 #include <string>
 
 const char kLabStorRuntimeUrl[] = "labstor_runtime_url";
 
-#endif  // LABSTOR_INCLUDE_LABSTOR_CONSTANTS_CONSTANTS_H_
+#endif  // LABSTOR_CONSTANTS_CONSTANTS_H_

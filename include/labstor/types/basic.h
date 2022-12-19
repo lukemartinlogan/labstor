@@ -65,8 +65,8 @@ struct RealNumber {
   unsigned denominator_;
 
   RealNumber() =  default;
-  RealNumber(int numerator, unsigned denominator = 1) :
-    numerator_(numerator), denominator_(denominator) {}
+  explicit RealNumber(int numerator, unsigned denominator = 1)
+  : numerator_(numerator), denominator_(denominator) {}
 };
 
 struct id {

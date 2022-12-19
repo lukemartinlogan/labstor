@@ -1,9 +1,31 @@
-//
-// Created by lukemartinlogan on 10/30/22.
-//
+/*
+ * Copyright (C) 2022  SCS Lab <scslab@iit.edu>,
+ * Luke Logan <llogan@hawk.iit.edu>,
+ * Jaime Cernuda Garcia <jcernudagarcia@hawk.iit.edu>
+ * Jay Lofstead <gflofst@sandia.gov>,
+ * Anthony Kougkas <akougkas@iit.edu>,
+ * Xian-He Sun <sun@iit.edu>
+ *
+ * This file is part of LabStor
+ *
+ * LabStor is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_UNORDERED_MAP_H_
-#define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_UNORDERED_MAP_H_
+
+#ifndef LABSTOR_DATA_STRUCTURES_UNORDERED_MAP_H_
+#define LABSTOR_DATA_STRUCTURES_UNORDERED_MAP_H_
 
 #include "labstor/thread/thread_manager.h"
 #include "labstor/thread/lock.h"
@@ -290,7 +312,7 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   void shm_init(Allocator *alloc = nullptr,
                 int num_buckets = 20,
                 int max_collisions = 4,
-                RealNumber growth = RealNumber(5,4)) {
+                RealNumber growth = RealNumber(5, 4)) {
     ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
     header_ = alloc_->template
       AllocateConstructObjs<TYPED_HEADER>(1, header_ptr_);
@@ -470,7 +492,6 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
  private:
-
   /**
    * Find a key in the collision list
    * */
@@ -579,7 +600,6 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
 
  public:
-
   /**
    * ITERATION
    * */
@@ -700,4 +720,4 @@ class unordered_map : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 #undef TYPED_CLASS
 #undef TYPED_HEADER
 
-#endif  // LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_UNORDERED_MAP_H_
+#endif  // LABSTOR_DATA_STRUCTURES_UNORDERED_MAP_H_

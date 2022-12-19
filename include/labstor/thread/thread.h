@@ -23,8 +23,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_THREAD_THREAD_H_
-#define LABSTOR_INCLUDE_LABSTOR_THREAD_THREAD_H_
+#ifndef LABSTOR_THREAD_THREAD_H_
+#define LABSTOR_THREAD_THREAD_H_
 
 #include <vector>
 #include <cstdint>
@@ -56,4 +56,4 @@ class ThreadStatic {
 
 }  // namespace labstor
 
-#endif  // LABSTOR_INCLUDE_LABSTOR_THREAD_THREAD_H_
+#endif  // LABSTOR_THREAD_THREAD_H_

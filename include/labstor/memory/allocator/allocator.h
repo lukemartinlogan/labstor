@@ -23,9 +23,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-
-#ifndef LABSTOR_INCLUDE_LABSTOR_MEMORY_ALLOCATOR_ALLOCATOR_H_
-#define LABSTOR_INCLUDE_LABSTOR_MEMORY_ALLOCATOR_ALLOCATOR_H_
+#ifndef LABSTOR_MEMORY_ALLOCATOR_ALLOCATOR_H_
+#define LABSTOR_MEMORY_ALLOCATOR_ALLOCATOR_H_
 
 #include <cstdint>
 #include <labstor/memory/backend/memory_backend_factory.h>
@@ -72,7 +71,6 @@ class Allocator {
   MemorySlot &slot_;
 
  public:
-
   /**
    * Constructor
    * */
@@ -473,4 +471,4 @@ class Allocator {
 
 }  // namespace labstor::ipc
 
-#endif  // LABSTOR_INCLUDE_LABSTOR_MEMORY_ALLOCATOR_ALLOCATOR_H_
+#endif  // LABSTOR_MEMORY_ALLOCATOR_ALLOCATOR_H_

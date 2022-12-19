@@ -23,8 +23,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_SYSINFO_INFO_H_
-#define LABSTOR_INCLUDE_LABSTOR_SYSINFO_INFO_H_
+#ifndef LABSTOR_SYSINFO_INFO_H_
+#define LABSTOR_SYSINFO_INFO_H_
 
 #include <unistd.h>
 #include <sys/sysinfo.h>
@@ -43,4 +43,4 @@ struct SystemInfo {
 
 }  // namespace labstor
 
-#endif  // LABSTOR_INCLUDE_LABSTOR_SYSINFO_INFO_H_
+#endif  // LABSTOR_SYSINFO_INFO_H_

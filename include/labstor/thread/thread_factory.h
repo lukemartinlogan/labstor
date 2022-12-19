@@ -23,8 +23,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_THREAD_THREAD_FACTORY_H_
-#define LABSTOR_INCLUDE_LABSTOR_THREAD_THREAD_FACTORY_H_
+#ifndef LABSTOR_THREAD_THREAD_FACTORY_H_
+#define LABSTOR_THREAD_THREAD_FACTORY_H_
 
 #include "thread.h"
 #include "pthread.h"
@@ -38,7 +38,9 @@ class ThreadFactory {
   BIND bind_;
 
  public:
-  explicit ThreadFactory(ThreadType type, BIND bind) : type_(type), bind_(bind) {}
+  explicit ThreadFactory(ThreadType type, BIND bind)
+  : type_(type), bind_(bind) {}
+
   std::unique_ptr<Thread> Get() {
     switch (type_) {
       case ThreadType::kPthread: return std::make_unique<Pthread<BIND>>(bind_);
@@ -59,4 +61,4 @@ class ThreadStaticFactory {
 
 }  // namespace labstor
 
-#endif  // LABSTOR_INCLUDE_LABSTOR_THREAD_THREAD_FACTORY_H_
+#endif  // LABSTOR_THREAD_THREAD_FACTORY_H_
