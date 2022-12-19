@@ -83,7 +83,7 @@ class manual_ptr : public ShmDataStructurePointer<T> {
     return *this;
   }
 
-  /** Move a manual_ptr */
+  /** Move assignment operator */
   void WeakMove(manual_ptr &other) {
     obj_.WeakMove(other.obj_);
   }

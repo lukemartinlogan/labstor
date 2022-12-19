@@ -71,17 +71,20 @@ class unique_ptr : public ShmDataStructurePointer<T> {
   unique_ptr(const unique_ptr &other) = delete;
 
   /** Move constructor */
-  unique_ptr(unique_ptr&& source) noexcept {
-    if (this != &source) {
-      obj_.WeakMove(source.obj_);
+  unique_ptr(unique_ptr&& other) noexcept {
+    obj_.WeakMove(other.obj_);
+  }
+
+  /** Move assignment operator */
+  unique_ptr<T>& operator=(unique_ptr<T> &&other) {
+    if (this != &other) {
+      obj_.WeakMove(other.obj_);
     }
+    return *this;
   }
 
   /** Serialize into a ShmArchive<unique_ptr> */
   SHM_SERIALIZE_WRAPPER(unique_ptr)
-
-  /** Disables the assignment operator */
-  void operator=(unique_ptr<T> &&other) = delete;
 };
 
 template<typename T>
