@@ -34,7 +34,7 @@
 
 #include "labstor/data_structures/internal/shm_macros.h"
 #include "labstor/data_structures/internal/shm_archive.h"
-#include "labstor/data_structures/internal/shm_pointer.h"
+#include "labstor/data_structures/internal/shm_struct.h"
 #include "labstor/data_structures/internal/shm_construct.h"
 
 namespace labstor::ipc {
@@ -106,7 +106,7 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
 
  public:
   /** Copy constructor (REQUIRED) */
-  // virtual void StrongCopy(const ShmDataStructure &other) = 0;
+  // virtual void StrongCopy(const CLASS_NAME &other) = 0;
 };
 
 }  // namespace labstor::ipc

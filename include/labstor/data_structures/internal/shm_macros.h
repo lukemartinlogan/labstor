@@ -95,7 +95,7 @@
  * */
 
 #define SHM_T_OR_SHM_PTR_T(T) \
-  SHM_X_OR_Y(T, T, ShmPointer<T>)
+  SHM_X_OR_Y(T, T, ShmStruct<T>)
 
 /**
  * SHM_T_OR_CONST_T: Determines whether or not an object should be
@@ -106,17 +106,6 @@
   typename std::conditional<         \
     IS_CONST, \
     const T, T>::type
-
-/**
- * Enables generic serialization of a class
- * */
-#define SHM_GENERIC_SERIALIZE()
-
-/**
- * Enables generic deserialization of a class
- * */
-#define SHM_GENERIC_DESERIALIZE()
-
 
 /**
  * Enables a specific ShmArchive type to be serialized

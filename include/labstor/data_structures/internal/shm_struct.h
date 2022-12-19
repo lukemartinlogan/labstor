@@ -29,7 +29,7 @@
 
 #include "labstor/memory/memory_manager.h"
 #include "shm_macros.h"
-#include "shm_serialize.h"
+#include "shm_data_structure.h"
 #include "shm_archive.h"
 
 namespace labstor::ipc {
@@ -40,6 +40,14 @@ namespace labstor::ipc {
 class ShmSmartPointer : public ShmSerializeable {};
 
 /**
+ * MACROS used to simplify the vector namespace
+ * Used as inputs to the SHM_DATA_STRUCTURE_TEMPLATE
+ * */
+#define CLASS_NAME ShmStruct
+#define TYPED_CLASS T
+#define TYPED_HEADER T
+
+/**
  * Used for storing a simple type (C-style struct, etc) in shared
  * memory semantically.
  *
@@ -47,11 +55,12 @@ class ShmSmartPointer : public ShmSerializeable {};
  * Called internally by manual_ptr, unique_ptr, and shared_ptr
  * */
 template<typename T>
-struct ShmPointer : public ShmSerializer<T> {
-  SHM_SERIALIZER_TEMPLATE(T)
+struct ShmStruct : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
+ public:
+  BASIC_SHM_DATA_STRUCTURE_TEMPLATE
 
-  /** Default constructor -- Does nothing */
-  ShmPointer() = default;
+  /** Default constructor */
+  ShmStruct() = default;
 
   /** Construct pointer in-place (find allocator) */
   template<typename ...Args>
@@ -67,54 +76,53 @@ struct ShmPointer : public ShmSerializer<T> {
    * */
   template<typename ...Args>
   void shm_init(Allocator *alloc, Args &&...args) {
-    alloc_ = alloc;
-    if (alloc_ == nullptr) {
-      alloc_ = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
-    }
+    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
     header_ = alloc_->template
       AllocateConstructObjs<T>(1, header_ptr_, std::forward<Args>(args)...);
   }
 
-  /** Destroy the contents of the ShmPointer */
+  /** Destroy the contents of the ShmStruct */
   void shm_destroy() {
     if (IsNull()) { return; }
     alloc_->Free(header_ptr_);
+    SetNull();
   }
 
-  /** (De)serialize ShmPointer into ShmArchive<T> */
-  SHM_SERIALIZE_DESERIALIZE_WRAPPER(T)
-
   /** Convert the pointer to a pointer */
-  T *get() {
+  T* get() {
     return header_;
   }
 
   /** Convert into a reference */
-  T &get_ref() {
+  T& get_ref() {
     return *get();
   }
 
   /** Convert the pointer to const pointer */
-  T *get_const() const {
+  T* get_const() const {
     return header_;
   }
 
   /** Convert into a const reference */
-  T &get_ref_const() const {
+  T& get_ref_const() const {
     return *get_const();
   }
 
   /** Convert into a pointer */
-  T *operator->() {
+  T* operator->() {
     return get();
   }
 
   /** Convert into a reference */
-  T &operator*() {
+  T& operator*() {
     return get_ref();
   }
 };
 
 }  // namespace labstor::ipc
+
+#undef CLASS_NAME
+#undef TYPED_CLASS
+#undef TYPED_HEADER
 
 #endif  // LABSTOR_DATA_STRUCTURES_SHM_POINTER_H_
