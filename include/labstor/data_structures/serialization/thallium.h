@@ -38,6 +38,19 @@ namespace thallium {
 namespace lipc = labstor::ipc;
 
 /**
+ *  Lets Thallium know how to serialize an lipc::allocator_id.
+ *
+ * This function is called implicitly by Thallium.
+ *
+ * @param ar An archive provided by Thallium.
+ * @param vec The vector to serialize.
+ */
+template <typename A>
+void serialize(A &ar, lipc::allocator_id_t &alloc_id) {
+  ar &alloc_id.int_;
+}
+
+/**
  *  Lets Thallium know how to serialize an lipc::vector.
  *
  * This function is called implicitly by Thallium.
@@ -47,6 +60,7 @@ namespace lipc = labstor::ipc;
  */
 template <typename A, typename T>
 void save(A &ar, lipc::vector<T> &vec) {
+  ar << vec.GetAllocatorId();
   ar << vec.size();
   for (auto iter = vec.cbegin(); iter != vec.cend(); ++iter) {
     ar << (*iter);
@@ -54,7 +68,7 @@ void save(A &ar, lipc::vector<T> &vec) {
 }
 
 /**
- *  Lets Thallium know how to serialize an lipc::vector.
+ *  Lets Thallium know how to deserialize an lipc::vector.
  *
  * This function is called implicitly by Thallium.
  *
@@ -64,9 +78,13 @@ void save(A &ar, lipc::vector<T> &vec) {
 template <typename A, typename T>
 void load(A &ar, lipc::vector<T> &vec) {
   size_t size;
+  lipc::allocator_id_t alloc_id;
+  ar >> alloc_id;
   ar >> size;
+  auto alloc = LABSTOR_MEMORY_MANAGER->GetAllocator(alloc_id);
+  vec.shm_init(alloc);
   vec.resize(size);
-  for (auto iter = vec.begin(); iter + vec.end(); ++iter) {
+  for (auto iter = vec.begin(); iter != vec.end(); ++iter) {
     T obj;
     ar >> obj;
     ~(iter) = std::move(obj);
@@ -83,8 +101,8 @@ void load(A &ar, lipc::vector<T> &vec) {
  */
 template <typename A>
 void save(A &ar, lipc::string &text) {
-  ar.write(text.GetAllocator()->GetId());
-  ar.write(text.size());
+  ar << text.GetAllocator()->GetId();
+  ar << text.size();
   ar.write(text.data_mutable(), text.size());
 }
 
@@ -100,9 +118,10 @@ template <typename A>
 void load(A &ar, lipc::string &text) {
   lipc::allocator_id_t alloc_id;
   size_t size;
-  ar.
-  ar.read(size);
-  text.shm_init(size);
+  ar >> alloc_id;
+  ar >> size;
+  auto alloc = LABSTOR_MEMORY_MANAGER->GetAllocator(alloc_id);
+  text.shm_init(alloc, size);
   ar.read(text.data_mutable(), size);
 }
 
