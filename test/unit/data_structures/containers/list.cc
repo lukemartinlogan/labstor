@@ -51,6 +51,44 @@ void ListOfIntTest() {
     }
   }
 
+  // Copy list (constructor)
+  {
+    list<int> cpy(lp);
+    int fcur = 0;
+    for (auto num : lp) {
+      REQUIRE(num == fcur);
+      ++fcur;
+    }
+  }
+
+  // Copy list (assign)
+  {
+    list<int> cpy;
+    cpy = lp;
+    int fcur = 0;
+    for (auto num : lp) {
+      REQUIRE(num == fcur);
+      ++fcur;
+    }
+  }
+
+  // move vector
+  {
+    list<int> cpy(std::move(lp));
+    int fcur = 0;
+    for (auto num : lp) {
+      REQUIRE(num == fcur);
+      ++fcur;
+    }
+
+    lp = std::move(cpy);
+    fcur = 0;
+    for (auto num : lp) {
+      REQUIRE(num == fcur);
+      ++fcur;
+    }
+  }
+
   // emplace_front and erase front
   {
     lp.emplace_front(100);
