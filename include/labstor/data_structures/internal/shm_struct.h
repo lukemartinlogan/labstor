@@ -35,11 +35,6 @@
 namespace labstor::ipc {
 
 /**
- * Indicates a data structure represents a memory paradigm for Shm.
- * */
-class ShmSmartPointer : public ShmSerializeable {};
-
-/**
  * MACROS used to simplify the vector namespace
  * Used as inputs to the SHM_DATA_STRUCTURE_TEMPLATE
  * */

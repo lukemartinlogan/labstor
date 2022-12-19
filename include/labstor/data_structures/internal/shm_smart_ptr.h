@@ -40,11 +40,16 @@
 namespace labstor::ipc {
 
 /**
+ * Indicates a data structure represents a memory paradigm for Shm.
+ * */
+class ShmSmartPointer : public ShmSerializeable {};
+
+/**
  * A base class used for creating shared-memory pointer management
  * classes (manual_ptr, unique_ptr, shared_ptr).
  * */
 template<typename T>
-class ShmDataStructurePointer : public ShmSmartPointer {
+class ShmSmartPtr : public ShmSmartPointer {
  public:
   typedef SHM_T_OR_SHM_PTR_T(T) T_Ptr;
   T_Ptr obj_;  /**< T for complex object, ShmStruct<T> for C-style */
@@ -130,15 +135,15 @@ class ShmDataStructurePointer : public ShmSmartPointer {
  * Namespace simplification for a SHM data structure pointer
  * */
 #define SHM_DATA_STRUCTURE_POINTER_TEMPLATE(T) \
-  using ShmDataStructurePointer<T>::obj_;\
-  using ShmDataStructurePointer<T>::get;\
-  using ShmDataStructurePointer<T>::get_ref;\
-  using ShmDataStructurePointer<T>::get_const;\
-  using ShmDataStructurePointer<T>::get_ref_const;\
-  using ShmDataStructurePointer<T>::SetNull;\
-  using ShmDataStructurePointer<T>::IsNull;\
-  using ShmDataStructurePointer<T>::shm_destroy;\
-  using ShmDataStructurePointer<T>::shm_serialize;\
-  using ShmDataStructurePointer<T>::shm_deserialize;
+  using ShmSmartPtr<T>::obj_;\
+  using ShmSmartPtr<T>::get;\
+  using ShmSmartPtr<T>::get_ref;\
+  using ShmSmartPtr<T>::get_const;\
+  using ShmSmartPtr<T>::get_ref_const;\
+  using ShmSmartPtr<T>::SetNull;\
+  using ShmSmartPtr<T>::IsNull;\
+  using ShmSmartPtr<T>::shm_destroy;\
+  using ShmSmartPtr<T>::shm_serialize;\
+  using ShmSmartPtr<T>::shm_deserialize;
 
 #endif  // LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_DATA_STRUCTURE_POINTER_H_

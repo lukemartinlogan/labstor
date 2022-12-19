@@ -30,7 +30,7 @@
 #include "internal/shm_archive.h"
 #include "internal/shm_construct.h"
 #include "internal/shm_data_structure.h"
-#include "internal/shm_data_structure_pointer.h"
+#include "internal/shm_smart_ptr.h"
 #include "internal/shm_macros.h"
 #include "internal/shm_struct.h"
 #include "internal/shm_serialize.h"

@@ -48,7 +48,7 @@ namespace labstor::ipc {
  * and deletes eventually.
  * */
 template<typename T>
-class unique_ptr : public ShmDataStructurePointer<T> {
+class unique_ptr : public ShmSmartPtr<T> {
  public:
   SHM_DATA_STRUCTURE_POINTER_TEMPLATE(T);
 

@@ -29,6 +29,7 @@
 
 #include "shm_archive.h"
 #include "shm_struct.h"
+#include "shm_smart_ptr.h"
 
 namespace labstor::ipc {
 
