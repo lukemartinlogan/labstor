@@ -68,6 +68,16 @@ class _shm_ref_shm {
     return obj_.get_ref();
   }
 
+  /** Return a pointer to the internal object */
+  const T* get_const() const {
+    return obj_.get_const();
+  }
+
+  /** Return a reference to the internal object */
+  const T& get_ref_const() const {
+    return obj_.get_ref_const();
+  }
+
   /** Return a reference to the internal object */
   T& operator*() {
     return get_ref();
@@ -128,6 +138,16 @@ class _shm_ref_noshm {
 
   /** Return a reference to the internal object */
   T& get_ref() {
+    return *obj_;
+  }
+
+  /** Return a pointer to the internal object */
+  const T* get_const() const {
+    return obj_;
+  }
+
+  /** Return a reference to the internal object */
+  const T& get_ref_const() const {
     return *obj_;
   }
 
@@ -195,7 +215,7 @@ class shm_ref : public ShmSmartPointer {
     return obj_.export_data();
   }
 
-  /** Return a reference to the internal object */
+  /** Return a pointer to the internal object */
   T* get() {
     return obj_.get();
   }
@@ -203,6 +223,16 @@ class shm_ref : public ShmSmartPointer {
   /** Return a reference to the internal object */
   T& get_ref() {
     return obj_.get_ref();
+  }
+
+  /** Return a const pointer to the internal object */
+  const T* get_const() const {
+    return obj_.get_const();
+  }
+
+  /** Return a const reference to the internal object */
+  const T& get_ref_const() const {
+    return obj_.get_ref_const();
   }
 
   /** Return a reference to the internal object */

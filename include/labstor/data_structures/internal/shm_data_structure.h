@@ -60,6 +60,7 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
   /** Default constructor */
   ShmDataStructure()
     : mem_mngr_(LABSTOR_MEMORY_MANAGER), destructable_(true) {
+    SetNull();  // TODO(llogan): probably unnecessary
   }
 
   /** Copy constructor */
