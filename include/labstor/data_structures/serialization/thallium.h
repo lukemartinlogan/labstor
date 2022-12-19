@@ -48,8 +48,8 @@ namespace lipc = labstor::ipc;
 template <typename A, typename T>
 void save(A &ar, lipc::vector<T> &vec) {
   ar << vec.size();
-  for (auto &entry : vec) {
-    ar << entry;
+  for (auto iter = vec.cbegin(); iter != vec.cend(); ++iter) {
+    ar << (*iter);
   }
 }
 

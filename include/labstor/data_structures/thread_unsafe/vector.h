@@ -57,6 +57,7 @@ struct vector_iterator_templ {
 
   typedef SHM_CONST_T_OR_T(T_Ref, CONST_ITER) T_Ref_Const;
   typedef SHM_CONST_T_OR_T(vector<T>, CONST_ITER) VecT_Const;
+  typedef SHM_CONST_T_OR_T(shm_ref<T>, CONST_ITER) shmrefT_Const;
 
  public:
   VecT_Const *vec_;
@@ -74,14 +75,29 @@ struct vector_iterator_templ {
     : vec_(vec), i_(static_cast<off64_t>(i)) {}
 
   /** Copy constructor */
-  vector_iterator_templ(const vector_iterator_templ &other) {
+  vector_iterator_templ(const vector_iterator_templ &other)
+  : vec_(other.vec_), i_(other.i_) {
+  }
+
+  /** Copy assignment operator  */
+  vector_iterator_templ&
+  operator=(const vector_iterator_templ &other) {
+    if (this != &other) {
+      vec_ = other.vec_;
+      i_ = other.i_;
+    }
+    return *this;
+  }
+
+  /** Move constructor */
+  vector_iterator_templ(vector_iterator_templ &&other) {
     vec_ = other.vec_;
     i_ = other.i_;
   }
 
-  /** Assign one iterator into another  */
+  /** Move assignment operator  */
   vector_iterator_templ&
-  operator=(const vector_iterator_templ &other) {
+  operator=(vector_iterator_templ &&other) {
     if (this != &other) {
       vec_ = other.vec_;
       i_ = other.i_;
@@ -96,12 +112,16 @@ struct vector_iterator_templ {
 
   /** Dereference the iterator */
   T_Ref_Const operator*() const {
-    return (*vec_)[i_];
+    if constexpr(!CONST_ITER) {
+      return vec_->data_ar()[i_].data();
+    } else {
+      return vec_->data_ar_const()[i_].data();
+    }
   }
 
   /** Get the reference object the iterator points to */
-  shm_ref<T> operator~() {
-    return shm_ref<T>(vec_->data_ar()[i_]);
+  shmrefT_Const operator~() {
+    return shm_ref<T>(vec_->data_ar_const()[i_]);
   }
 
   /** Increment iterator in-place */
@@ -376,8 +396,8 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   /** Copy a vector */
   void StrongCopy(const vector &other) {
     shm_init(other.alloc_);
-    for (auto &obj : other) {
-      emplace_back(obj);
+    for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
+      emplace_back((*iter));
     }
   }
 
@@ -493,10 +513,27 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       Convert<void>(header_->vec_ptr_);
   }
 
+  /** Get constant pointer to the data */
+  void* data_const() const {
+    if (header_ == nullptr) {
+      return nullptr;
+    }
+    return alloc_->template
+      Convert<void>(header_->vec_ptr_);
+  }
+
   /**
    * Retreives a pointer to the array from the process-independent pointer.
    * */
   shm_ar<T>* data_ar() {
+    return alloc_->template
+      Convert<shm_ar<T>>(header_->vec_ptr_);
+  }
+
+  /**
+   * Retreives a pointer to the array from the process-independent pointer.
+   * */
+  shm_ar<T>* data_ar_const() const {
     return alloc_->template
       Convert<shm_ar<T>>(header_->vec_ptr_);
   }
@@ -610,15 +647,15 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
   /** Beginning of the constant forward iterator */
-  vector_citerator<T> cbegin() {
-    if (size() == 0) { return end(); }
+  vector_citerator<T> cbegin() const {
+    if (size() == 0) { return cend(); }
     vector_citerator<T> iter(this);
     iter.set_begin();
     return iter;
   }
 
   /** End of the forward iterator */
-  static vector_citerator<T> const cend() {
+  static const vector_citerator<T> cend() {
     return vector_citerator<T>::end();
   }
 
