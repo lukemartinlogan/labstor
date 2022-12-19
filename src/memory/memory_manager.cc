@@ -44,7 +44,9 @@ MemoryBackend* MemoryManager::AttachBackend(MemoryBackendType type,
                                             const std::string &url) {
   backends_.emplace(url, MemoryBackendFactory::Get(type, url));
   auto backend = backends_[url].get();
-  backend->Attach();
+  if (!backend->Attach()) {
+    throw MEMORY_BACKEND_NOT_FOUND.format();
+  }
   ScanBackends();
   return backend;
 }
