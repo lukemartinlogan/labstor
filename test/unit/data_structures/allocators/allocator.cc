@@ -49,6 +49,10 @@ void PageAllocationTest(Allocator *alloc) {
     REQUIRE(VerifyBuffer((char*)ptrs[i], page_size, i));
   }
 
+  // Check the custom header
+  auto hdr = alloc->GetCustomHeader<SimpleAllocatorHeader>();
+  REQUIRE(hdr->checksum_ == HEADER_CHECKSUM);
+
   // Free pages
   for (int i = 0; i < count; ++i) {
     alloc->Free(ps[i]);

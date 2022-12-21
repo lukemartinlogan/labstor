@@ -33,8 +33,11 @@ Allocator* Pretest(AllocatorType type) {
   mem_mngr->CreateBackend(MemoryBackendType::kPosixShmMmap,
                           shm_url);
   mem_mngr->CreateAllocator(type, shm_url, alloc_id,
-                            0, MemoryManager::kDefaultSlotSize);
+                            sizeof(SimpleAllocatorHeader),
+                            MemoryManager::kDefaultSlotSize);
   auto alloc = mem_mngr->GetAllocator(alloc_id);
+  auto hdr = alloc->GetCustomHeader<SimpleAllocatorHeader>();
+  hdr->checksum_ = HEADER_CHECKSUM;
   return alloc;
 }
 

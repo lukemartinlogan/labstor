@@ -40,6 +40,12 @@ using labstor::ipc::Allocator;
 using labstor::ipc::MemoryManager;
 using labstor::ipc::Pointer;
 
+#define HEADER_CHECKSUM 8482942
+
+struct SimpleAllocatorHeader {
+  int checksum_;
+};
+
 Allocator* Pretest(AllocatorType type);
 void Posttest();
 void PageAllocationTest(Allocator *alloc);
