@@ -1,0 +1,10 @@
+//
+// Created by lukemartinlogan on 12/21/22.
+//
+
+#ifndef LABSTOR_SRC_MEMORY_MEMORY_INTERCEPT_H_
+#define LABSTOR_SRC_MEMORY_MEMORY_INTERCEPT_H_
+
+
+
+#endif //LABSTOR_SRC_MEMORY_MEMORY_INTERCEPT_H_

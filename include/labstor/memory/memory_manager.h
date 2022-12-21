@@ -38,11 +38,19 @@ class MemoryManager {
  private:
   std::unordered_map<std::string, std::unique_ptr<MemoryBackend>> backends_;
   std::unordered_map<allocator_id_t, std::unique_ptr<Allocator>> allocators_;
+  Allocator *root_allocator_;
   Allocator *default_allocator_;
 
  public:
   /** The default amount of memory a single allocator manages */
   static const size_t kDefaultSlotSize = GIGABYTES(64);
+
+  /**
+   * Constructor. Create the "root" allocator, used until the program defines
+   * its own custom allocator
+   * */
+  MemoryManager() {
+  }
 
   /**
    * Create a memory backend. Memory backends are divided into slots.
