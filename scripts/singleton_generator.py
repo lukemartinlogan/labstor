@@ -57,8 +57,8 @@ class SingletonGenerator:
         lines.append("")
         for defn in self.defs:
             lines.append(f"#include <{defn.include}>")
-            lines.append(f"template<> std::unique_ptr<{defn.class_name}> scs::Singleton<{defn.class_name}>::obj_ = nullptr;")
-            lines.append(f"template<> labstor::Mutex scs::Singleton<{defn.class_name}>::lock_ = labstor::Mutex();")
+            lines.append(f"template<> {defn.class_name} scs::Singleton<{defn.class_name}>::obj_ = {defn.class_name}();")
+            #lines.append(f"template<> labstor::Mutex scs::Singleton<{defn.class_name}>::lock_ = labstor::Mutex();")
         self._SaveLines(lines, path)
 
     def _GenerateH(self, path):

@@ -34,20 +34,11 @@ namespace scs {
 template<typename T>
 class Singleton {
  private:
-  static std::unique_ptr<T> obj_;
-  static labstor::Mutex lock_;
+  static T obj_;
  public:
   Singleton() = default;
   static T* GetInstance() {
-    if (!obj_) {
-      if (lock_.TryLock()) {
-        obj_ = std::make_unique<T>();
-      } else {
-        lock_.Lock();
-        lock_.Unlock();
-      }
-    }
-    return obj_.get();
+    return &obj_;
   }
 };
 
