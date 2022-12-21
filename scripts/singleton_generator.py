@@ -3,7 +3,7 @@
 Create the .h and .cc files for defining LabStor singletons
 USAGE:
     cd /path/to/labstor
-    python3 src/singleton_generator.py
+    python3 scripts/singleton_generator.py
 """
 
 import re
@@ -52,11 +52,13 @@ class SingletonGenerator:
         lines = []
         lines.append("#include <labstor/constants/macros.h>")
         lines.append("#include <labstor/util/singleton.h>")
+        lines.append("#include <labstor/thread/lock/mutex.h>")
         lines.append(f"#include <{h_file.replace('include/', '')}>")
         lines.append("")
         for defn in self.defs:
             lines.append(f"#include <{defn.include}>")
             lines.append(f"template<> std::unique_ptr<{defn.class_name}> scs::Singleton<{defn.class_name}>::obj_ = nullptr;")
+            lines.append(f"template<> labstor::Mutex scs::Singleton<{defn.class_name}>::lock_ = labstor::Mutex();")
         self._SaveLines(lines, path)
 
     def _GenerateH(self, path):

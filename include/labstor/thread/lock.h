@@ -29,5 +29,6 @@
 
 #include "lock/mutex.h"
 #include "lock/rwlock.h"
+#include "thread_manager.h"
 
 #endif  // LABSTOR_THREAD_LOCK_H_

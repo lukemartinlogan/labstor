@@ -28,7 +28,6 @@
 #define LABSTOR_THREAD_RWLOCK_H_
 
 #include <atomic>
-#include "labstor/thread/thread_manager.h"
 
 namespace labstor {
 

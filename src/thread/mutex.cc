@@ -25,6 +25,7 @@
 
 
 #include "labstor/thread/lock.h"
+#include "labstor/thread/thread_manager.h"
 
 namespace labstor {
 
