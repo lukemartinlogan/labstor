@@ -32,6 +32,8 @@
 #include "labstor/data_structures/internal/shm_ar.h"
 #include "labstor/data_structures/internal/shm_ref.h"
 
+#include <vector>
+
 namespace labstor::ipc {
 
 /** forward pointer for vector */
@@ -362,9 +364,23 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     shm_init(alloc, length, std::forward<Args>(args)...);
   }
 
+  /** Copy a standard vector to a shm vector */
+  explicit vector(std::vector<T> &other) {
+    shm_init(other);
+  }
+
+  /** Copy a standard vector to a shm vector, new allocator  */
+  explicit vector(Allocator *alloc, std::vector<T> &other) {
+    shm_init(alloc, other);
+  }
+
   /** Initialize list in shared memory (default allocator) */
-  void shm_init() {
-    shm_init(nullptr);
+  void shm_init(size_t length = 0) {
+    if (length > 0) {
+      shm_init(nullptr, length);
+    } else {
+      shm_init(nullptr);
+    }
   }
 
   /** Construct the vector in shared memory */
@@ -382,6 +398,20 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     header_->length_ = 0;
     header_->max_length_ = 0;
     header_->vec_ptr_.set_null();
+  }
+
+  /** Construct the vector in shared memory */
+  void shm_init(std::vector<T> &other) {
+    shm_init(nullptr, other);
+  }
+
+  /** Construct the vector in shared memory */
+  void shm_init(Allocator *alloc, std::vector<T> &other) {
+    shm_init(alloc);
+    reserve(other.size());
+    for (auto &entry : other) {
+      emplace_back(entry);
+    }
   }
 
   /** Destroy all shared memory allocated by the vector */
@@ -410,9 +440,8 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * */
   template<typename ...Args>
   void reserve(size_t length, Args&& ...args) {
-    if (header_ == nullptr) {
-      shm_init(nullptr);
-    }
+    if (IsNull()) { shm_init(nullptr); }
+    if (length == 0) { return; }
     grow_vector(data_ar(), length, false, std::forward<Args>(args)...);
   }
 
@@ -425,9 +454,8 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * */
   template<typename ...Args>
   void resize(size_t length, Args&& ...args) {
-    if (header_ == nullptr) {
-      shm_init(nullptr);
-    }
+    if (IsNull()) { shm_init(nullptr); }
+    if (length == 0) { return; }
     grow_vector(data_ar(), length, true, std::forward<Args>(args)...);
     header_->length_ = length;
   }

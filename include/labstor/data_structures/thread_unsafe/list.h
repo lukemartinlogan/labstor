@@ -32,6 +32,8 @@
 #include "labstor/data_structures/internal/shm_ar.h"
 #include "labstor/data_structures/internal/shm_ref.h"
 
+#include <list>
+
 namespace labstor::ipc {
 
 /** forward pointer for list */
@@ -271,6 +273,16 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     shm_init(alloc);
   }
 
+  /** Copy constructor (std::list) with default allocator */
+  explicit list(std::list<T> &other) {
+    shm_init(nullptr, other);
+  }
+
+  /** Copy constructor (std::list) with allocator */
+  explicit list(Allocator *alloc, std::list<T> &other) {
+    shm_init(alloc, other);
+  }
+
   /** Initialize list in shared memory (default allocator) */
   void shm_init() {
     shm_init(nullptr);
@@ -283,6 +295,19 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
       ClearAllocateObjs<TYPED_HEADER>(1, header_ptr_);
     header_->head_ptr_.set_null();
     header_->tail_ptr_.set_null();
+  }
+
+  /** list copy constructor */
+  void shm_init(std::list<T> &other) {
+    shm_init(nullptr, other);
+  }
+
+  /** list copy constructor */
+  void shm_init(Allocator *alloc, std::list<T> &other) {
+    shm_init(alloc);
+    for (auto &entry : other) {
+      emplace_back(entry);
+    }
   }
 
   /** Destroy all shared memory allocated by the list */

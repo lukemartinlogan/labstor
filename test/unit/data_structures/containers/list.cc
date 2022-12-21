@@ -118,6 +118,21 @@ void ListOfIntTest() {
     REQUIRE((*iter) == 25);
   }
 
+  // Copy list (copy constructor)
+  {
+    std::list<int> orig;
+    for (int i = 0; i < 30; ++i) {
+      orig.emplace_back(i);
+    }
+    labstor::ipc::list<int> cpy(orig);
+    REQUIRE(cpy.size() == 30);
+    int fcur = 0;
+    for (auto num : cpy) {
+      REQUIRE(num == fcur);
+      ++fcur;
+    }
+  }
+
   // Erase the entire list
   {
     lp.clear();
