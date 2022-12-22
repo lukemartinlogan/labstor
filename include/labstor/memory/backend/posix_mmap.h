@@ -81,9 +81,10 @@ class PosixMmap : public MemoryBackend {
   template<typename T=char>
   T* _Map(size_t size) {
     T *ptr = reinterpret_cast<T*>(
-      mmap64(nullptr, size, PROT_READ | PROT_WRITE,
+      mmap64(nullptr, NextPageSizeMultiple(size), PROT_READ | PROT_WRITE,
              MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
     if (ptr == MAP_FAILED) {
+      perror("map failed");
       throw SHMEM_CREATE_FAILED.format();
     }
     return ptr;

@@ -49,7 +49,8 @@ void MemoryManager::ScanBackends() {
 }
 
 void MemoryManager::RegisterAllocator(std::unique_ptr<Allocator> &alloc) {
-  if (default_allocator_ == nullptr) {
+  if (default_allocator_ == nullptr ||
+      default_allocator_ == &root_allocator_) {
     default_allocator_ = alloc.get();
   }
   allocators_.emplace(alloc->GetId(), std::move(alloc));

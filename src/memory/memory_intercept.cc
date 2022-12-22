@@ -57,24 +57,12 @@ void* valloc(size_t size) {
   return memalign(LABSTOR_SYSTEM_INFO->page_size_, size);
 }
 
-/** The nearest multiple of the alignment */
-size_t NextMultiple(size_t alignment, size_t size) {
-  auto page_size = LABSTOR_SYSTEM_INFO->page_size_;
-  size_t new_size = size;
-  size_t page_off = size % alignment;
-  if (page_off) {
-    new_size = size + page_size - page_off;
-  }
-  return new_size;
-}
-
 /**
  * Equivalent to valloc(minimum-page-that-holds(n)),
  * that is, round up size to nearest pagesize.
  * */
 void* pvalloc(size_t size) {
-  auto page_size = LABSTOR_SYSTEM_INFO->page_size_;
-  size_t new_size = NextMultiple(page_size, size);
+  size_t new_size = labstor::ipc::NextPageSizeMultiple(size);
   return valloc(new_size);
 }
 
@@ -85,6 +73,7 @@ void* pvalloc(size_t size) {
  * of sizeof(void *). Returns NULL if size is 0. */
 int posix_memalign(void **memptr, size_t alignment, size_t size) {
   (*memptr) = memalign(alignment, size);
+  return 0;
 }
 
 /**
@@ -92,5 +81,5 @@ int posix_memalign(void **memptr, size_t alignment, size_t size) {
  * alignment
  * */
 void *aligned_alloc(size_t alignment, size_t size) {
-  return memalign(alignment, NextMultiple(alignment, size));
+  return memalign(alignment, labstor::ipc::NextAlignmentMultiple(alignment, size));
 }

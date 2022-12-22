@@ -35,11 +35,15 @@ struct SystemInfo {
   int pid_;
   int ncpu_;
   int page_size_;
+  size_t ram_size_;
 
   SystemInfo() {
     pid_ = getpid();
     ncpu_ = get_nprocs_conf();
     page_size_ = getpagesize();
+    struct sysinfo info;
+    sysinfo(&info);
+    ram_size_ = info.totalram;
   }
 };
 

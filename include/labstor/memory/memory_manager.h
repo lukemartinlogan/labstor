@@ -36,6 +36,7 @@ namespace labstor::ipc {
 
 class MemoryManager {
  private:
+  allocator_id_t root_allocator_id_;
   PosixMmap root_backend_;
   PageAllocator root_allocator_;
   std::unordered_map<std::string, std::unique_ptr<MemoryBackend>> backends_;
@@ -47,10 +48,15 @@ class MemoryManager {
   static const size_t kDefaultBackendSize = GIGABYTES(64);
 
   /**
-   * Constructor. Create the "root" allocator, used until the program defines
-   * its own custom allocator
+   * Constructor. Create the root allocator and backend, which is used
+   * until the user specifies a new default.
    * */
   MemoryManager() {
+    root_allocator_id_.bits_.major_ = 0;
+    root_allocator_id_.bits_.minor_ = 0;
+    root_backend_.shm_init(LABSTOR_SYSTEM_INFO->ram_size_);
+    root_allocator_.shm_init(&root_backend_, root_allocator_id_);
+    default_allocator_ = &root_allocator_;
   }
 
   /**

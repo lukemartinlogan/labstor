@@ -42,7 +42,7 @@ union allocator_id_t {
   struct {
     uint32_t major_;  // Typically some sort of process id
     uint32_t minor_;  // Typically a process-local id
-  } bits;
+  } bits_;
   uint64_t int_;
 
   /**
@@ -54,8 +54,8 @@ union allocator_id_t {
    * Constructor which sets major & minor
    * */
   explicit allocator_id_t(uint32_t major, uint32_t minor) {
-    bits.major_ = major;
-    bits.minor_ = minor;
+    bits_.major_ = major;
+    bits_.minor_ = minor;
   }
 
   /**
@@ -164,6 +164,24 @@ struct Pointer {
 
 /** The null process-indepent pointer */
 static const Pointer kNullPointer = Pointer::null();
+
+/** Round up to the nearest multiple of the alignment */
+static size_t NextAlignmentMultiple(size_t alignment, size_t size) {
+  auto page_size = LABSTOR_SYSTEM_INFO->page_size_;
+  size_t new_size = size;
+  size_t page_off = size % alignment;
+  if (page_off) {
+    new_size = size + page_size - page_off;
+  }
+  return new_size;
+}
+
+/** Round up to the nearest multiple of page size */
+static size_t NextPageSizeMultiple(size_t size) {
+  auto page_size = LABSTOR_SYSTEM_INFO->page_size_;
+  size_t new_size = NextAlignmentMultiple(page_size, size);
+  return new_size;
+}
 
 }  // namespace labstor::ipc
 
