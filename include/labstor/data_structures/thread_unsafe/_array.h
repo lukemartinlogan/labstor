@@ -89,7 +89,7 @@ class _array {
     return header_ != nullptr;
   }
 
-  bool Create(void *buffer, size_t size) {
+  bool shm_init(void *buffer, size_t size) {
     header_ = reinterpret_cast<_array_header*>(buffer);
     header_->length_ = 0;
     header_->max_length_ = (size - sizeof(_array_header)) / sizeof(T);
@@ -97,7 +97,7 @@ class _array {
     return true;
   }
 
-  bool Attach(void *buffer) {
+  bool shm_deserialize(void *buffer) {
     header_ = reinterpret_cast<_array_header*>(buffer);
     array_ = reinterpret_cast<T*>(header_ + 1);
     return true;
@@ -109,6 +109,13 @@ class _array {
 
   T& operator[](const size_t i) {
     return array_[i];
+  }
+
+  void resize(size_t size) {
+    if (size > header_->max_length_) {
+      throw ARRAY_OUT_OF_BOUNDS.format("array::emplace_back");
+    }
+    header_->length_ = size;
   }
 
   template<typename... Args>

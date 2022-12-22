@@ -46,11 +46,10 @@ void PageAllocator::shm_init(MemoryBackend *backend,
                      thread_table_size, concurrency, min_free_count);
   custom_header_ = GetCustomHeader<char>();
   void *free_list_start = GetFreeListStart();
-  free_lists_.Create(free_list_start, header_->thread_table_size_);
-  for (auto &free_list : free_lists_) {
-    _queue<Page> q;
-    q.Create(&free_list.queue_, backend_->data_);
-  }
+  // Create the array of free lists (which are queues)
+  free_lists_.shm_init(free_list_start, header_->thread_table_size_);
+  free_lists_.resize(concurrency);
+  // Initialize each free list with an equal segment of the backend
   size_t cur_off = free_lists_.After() - backend_->data_;
   size_t cur_size = backend_->data_size_ - cur_off;
   size_t per_conc_region = cur_size / header_->concurrency_;
@@ -58,12 +57,15 @@ void PageAllocator::shm_init(MemoryBackend *backend,
     throw NOT_ENOUGH_CONCURRENT_SPACE.format(
       "PageAllocator", backend_->data_size_, header_->concurrency_);
   }
-  for (auto i = 0; i < header_->concurrency_; ++i) {
-    free_lists_[i].region_off_ = cur_off;
-    free_lists_[i].region_size_ = per_conc_region;
-    free_lists_[i].free_size_ = per_conc_region;
-    free_lists_[i].total_alloced_ = 0;
-    free_lists_[i].total_freed_ = 0;
+  for (auto &free_list : free_lists_) {
+    _queue<Page> q;
+    q.shm_init(&free_list.queue_, backend_->data_);
+    Allocator::ConstructObj<PageFreeList>(free_list);
+    free_list.region_off_ = cur_off;
+    free_list.region_size_ = per_conc_region;
+    free_list.free_size_ = per_conc_region;
+    free_list.total_alloced_ = 0;
+    free_list.total_freed_ = 0;
     cur_off += per_conc_region;
   }
 }
@@ -73,7 +75,7 @@ void PageAllocator::shm_deserialize(MemoryBackend *backend) {
   header_ = reinterpret_cast<PageAllocatorHeader*>(backend_->data_);
   custom_header_ = GetCustomHeader<char>();
   void *free_list_start = GetFreeListStart();
-  free_lists_.Attach(free_list_start);
+  free_lists_.shm_deserialize(free_list_start);
 }
 
 size_t PageAllocator::GetCurrentlyAllocatedSize() {
@@ -81,8 +83,8 @@ size_t PageAllocator::GetCurrentlyAllocatedSize() {
   size_t total_freed = 0;
   for (auto i = 0; i < header_->concurrency_; ++i) {
     auto &free_list = free_lists_[i];
-    total_alloced += free_list.total_alloced_;
-    total_freed += free_list.total_freed_;
+    total_alloced += free_lists_[i].total_alloced_;
+    total_freed += free_lists_[i].total_freed_;
   }
   return total_alloced - total_freed;
 }
@@ -151,7 +153,7 @@ void PageAllocator::FreeNoNullCheck(Pointer &ptr) {
 Pointer PageAllocator::_Allocate(PageFreeList &free_list) {
   // Dequeue a page from the free list
   _queue<Page> q;
-  q.Attach(&free_list.queue_, backend_->data_);
+  q.shm_deserialize(&free_list.queue_, backend_->data_);
   if (q.size()) {
     size_t off = q.dequeue_off();
     free_list.free_size_ -= header_->page_size_;
@@ -192,7 +194,7 @@ void PageAllocator::_Borrow(PageFreeList *to, tid_t tid, bool append) {
 
 void PageAllocator::_Free(PageFreeList *free_list, Pointer &p) {
   _queue<Page> q;
-  q.Attach(&free_list->queue_, backend_->data_);
+  q.shm_deserialize(&free_list->queue_, backend_->data_);
   q.enqueue_off(p.off_);
   free_list->free_size_ += header_->page_size_;
   free_list->total_freed_ += header_->page_size_;

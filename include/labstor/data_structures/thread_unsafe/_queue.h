@@ -46,13 +46,13 @@ class _queue {
   size_t region_start_;
 
  public:
-  void Create(void *buffer, char *region_start) {
+  void shm_init(void *buffer, char *region_start) {
     header_ = reinterpret_cast<_queue_header*>(buffer);
     memset(header_, 0, sizeof(_queue_header));
     region_start_ = reinterpret_cast<size_t>(region_start);
   }
 
-  void Attach(void *buffer, char *region_start) {
+  void shm_deserialize(void *buffer, char *region_start) {
     header_ = reinterpret_cast<_queue_header*>(buffer);
     region_start_ = reinterpret_cast<size_t>(region_start);
   }

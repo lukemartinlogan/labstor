@@ -62,6 +62,10 @@ struct RwLock {
 
   RwLock() : payload_(0) {}
 
+  void Init() {
+    payload_ = 0;
+  }
+
   void ReadLock();
   void ReadUnlock();
 
