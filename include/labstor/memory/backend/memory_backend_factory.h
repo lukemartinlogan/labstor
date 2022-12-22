@@ -28,17 +28,34 @@
 #define LABSTOR_MEMORY_BACKEND_MEMORY_BACKEND_FACTORY_H_
 
 #include "memory_backend.h"
+#include "posix_mmap.h"
 #include "posix_shm_mmap.h"
 
 namespace labstor::ipc {
 
 class MemoryBackendFactory {
  public:
-  static std::unique_ptr<MemoryBackend> Get(MemoryBackendType type,
-                                            const std::string &url) {
+  static std::unique_ptr<MemoryBackend> shm_init(
+    MemoryBackendType type, size_t size, const std::string &url) {
     switch (type) {
       case MemoryBackendType::kPosixShmMmap: {
-        return std::make_unique<PosixShmMmap>(url);
+        auto backend = std::make_unique<PosixShmMmap>();
+        backend->shm_init(size, url);
+        return backend;
+      }
+      default: return nullptr;
+    }
+  }
+
+  static std::unique_ptr<MemoryBackend> shm_deserialize(
+    MemoryBackendType type, const std::string &url) {
+    switch (type) {
+      case MemoryBackendType::kPosixShmMmap: {
+        auto backend = std::make_unique<PosixShmMmap>();
+        if (!backend->shm_deserialize(url)) {
+          throw MEMORY_BACKEND_NOT_FOUND.format();
+        }
+        return backend;
       }
       default: return nullptr;
     }

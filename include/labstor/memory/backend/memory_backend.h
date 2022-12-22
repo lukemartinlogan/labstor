@@ -35,110 +35,31 @@
 
 namespace labstor::ipc {
 
-struct MemorySlot {
-  slot_id_t slot_id_;
-  char *ptr_;
-  size_t off_;
-  size_t size_;
-
-  MemorySlot() = default;
-};
-
 struct MemoryBackendHeader {
-  size_t num_slots_;
-  size_t header_size_;
-  size_t cur_size_;
-  size_t max_size_;
+  size_t data_size_;
 };
 
 enum class MemoryBackendType {
-  kPosixShmMmap
+  kPosixMmap,
+  kPosixShmMmap,
 };
 
 class MemoryBackend {
- protected:
-  std::string url_;
-  size_t header_size_, max_size_;
+ public:
   MemoryBackendHeader *header_;
-  std::vector<MemorySlot> slots_;
+  char *data_;
+  size_t data_size_;
 
  public:
-  explicit MemoryBackend(std::string url) :
-    url_(std::move(url)), header_size_(MEGABYTES(1)),
-    max_size_(std::numeric_limits<size_t>::max()),
-    header_(nullptr) {}
-
-  explicit MemoryBackend(std::string url,
-                         size_t header_size, size_t max_size) :
-    url_(std::move(url)), header_size_(header_size),
-    max_size_(max_size), header_(nullptr) {}
+  MemoryBackend() = default;
 
   virtual ~MemoryBackend() = default;
 
-  size_t GetNumSlots() {
-    return header_->num_slots_;
-  }
-
-  size_t FirstAllocatorSlot() {
-    return 1;
-  }
-
-  size_t GetMappedSlots() {
-    return slots_.size();
-  }
-
-  MemorySlot& CreateSlot(size_t size) {
-    MemorySlot slot;
-    slot.size_ = size;
-    if (header_) {
-      slot.slot_id_ = header_->num_slots_;
-      slot.off_ = header_->cur_size_;
-    } else {
-      slot.slot_id_ = 0;
-      slot.off_ = 0;
-    }
-    _Reserve(slot.off_ + size);
-    _MapSlot(slot, true);
-    slots_.emplace_back(slot);
-    if (header_) {
-      header_->num_slots_ += 1;
-      header_->cur_size_ += size;
-    }
-    return slots_[slot.slot_id_];
-  }
-
-  MemorySlot GetHeaderSlot(size_t size = sizeof(MemoryBackendHeader),
-                           bool keep = false) {
-    MemorySlot slot;
-    slot.slot_id_ = 0;
-    slot.off_ = 0;
-    slot.size_ = size;
-    _MapSlot(slot, false);
-    if (keep) {
-      slots_.emplace_back(slot);
-    }
-    return slot;
-  }
-
-  MemorySlot& GetSlot(slot_id_t slot_id) {
-    for (slot_id_t i = slots_.size(); i <= slot_id; ++i) {
-      MemorySlot slot;
-      slot.slot_id_ = slot_id;
-      _MapSlot(slot, false);
-      slots_.emplace_back(slot);
-    }
-    return slots_[slot_id];
-  }
-
-  virtual bool Create() = 0;
-  virtual bool Attach() = 0;
-  virtual void Detach() = 0;
-  virtual void Destroy() = 0;
-
- protected:
-  virtual void _Reserve(size_t size) = 0;
-  virtual void _MapSlot(MemorySlot &slot, bool create) = 0;
-  virtual void _UnmapSlot(MemorySlot &slot) = 0;
+  /// Each allocator must define its own shm_init.
+  // virtual bool shm_init(size_t size, ...) = 0;
+  virtual bool shm_deserialize(std::string url) = 0;
+  virtual void shm_detach() = 0;
+  virtual void shm_destroy() = 0;
 };
 
 }  // namespace labstor::ipc

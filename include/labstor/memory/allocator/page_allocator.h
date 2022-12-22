@@ -77,9 +77,8 @@ class PageAllocator : public Allocator {
   /**
    * Allocator constructor
    * */
-  explicit PageAllocator(slot_id_t slot_id, MemoryBackend *backend) :
-    header_(nullptr), custom_header_(nullptr), Allocator(slot_id, backend) {
-  }
+  explicit PageAllocator()
+  : header_(nullptr), custom_header_(nullptr) {}
 
   /**
    * Determine the size of the shared-memory header
@@ -98,17 +97,18 @@ class PageAllocator : public Allocator {
   /**
    * Initialize the allocator in shared memory
    * */
-  void shm_init(allocator_id_t id,
-              size_t custom_header_size = 0,
-              size_t page_size = KILOBYTES(4),
-              size_t thread_table_size = KILOBYTES(4),
-              int concurrency = 8,
-              size_t min_free_count = 16);
+  void shm_init(MemoryBackend *backend,
+                allocator_id_t id,
+                size_t custom_header_size = 0,
+                size_t page_size = KILOBYTES(4),
+                size_t thread_table_size = KILOBYTES(4),
+                int concurrency = 8,
+                size_t min_free_count = 16);
 
   /**
    * Attach an existing allocator from shared memory
    * */
-  void shm_deserialize() override;
+  void shm_deserialize(MemoryBackend *backend) override;
 
   /**
    * Allocate a memory of \a size size. The page allocator cannot allocate

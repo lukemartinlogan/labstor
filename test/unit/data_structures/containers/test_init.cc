@@ -38,9 +38,9 @@ void Pretest(AllocatorType type) {
   allocator_id_t alloc_id(0, 0);
   auto mem_mngr = LABSTOR_MEMORY_MANAGER;
   mem_mngr->CreateBackend(MemoryBackendType::kPosixShmMmap,
+                          MemoryManager::kDefaultBackendSize,
                           shm_url);
-  mem_mngr->CreateAllocator(type, shm_url, alloc_id,
-                            0, MemoryManager::kDefaultSlotSize);
+  mem_mngr->CreateAllocator(type, shm_url, alloc_id, 0);
   alloc_g = mem_mngr->GetAllocator(alloc_id);
 }
 

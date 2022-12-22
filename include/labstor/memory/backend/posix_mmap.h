@@ -23,8 +23,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LABSTOR_INCLUDE_MEMORY_BACKEND_POSIX_SHM_MMAP_H
-#define LABSTOR_INCLUDE_MEMORY_BACKEND_POSIX_SHM_MMAP_H
+#ifndef LABSTOR_INCLUDE_MEMORY_BACKEND_POSIX_MMAP_H
+#define LABSTOR_INCLUDE_MEMORY_BACKEND_POSIX_MMAP_H
 
 #include "memory_backend.h"
 #include <string>
@@ -45,42 +45,28 @@
 
 namespace labstor::ipc {
 
-using labstor::ipc::_array;
-
-class PosixShmMmap : public MemoryBackend {
+class PosixMmap : public MemoryBackend {
  private:
-  std::string url_;
-  int fd_;
+  size_t total_size_;
 
  public:
-  PosixShmMmap() : fd_(-1) {}
+  PosixMmap() = default;
 
-  ~PosixShmMmap() override { _Detach(); }
+  ~PosixMmap() override { _Detach(); }
 
-  bool shm_init(size_t size, std::string url) {
-    url_ = std::move(url);
-    fd_ = shm_open(url_.c_str(), O_CREAT | O_RDWR, 0666);
-    if (fd_ < 0) {
-      return false;
-    }
-    _Reserve(size);
-    header_ = _Map<MemoryBackendHeader>(LABSTOR_SYSTEM_INFO->page_size_, 0);
+  bool shm_init(size_t size) {
+    total_size_ = sizeof(MemoryBackendHeader) + size;
+    char *ptr = _Map(total_size_);
+    header_ = reinterpret_cast<MemoryBackendHeader*>(ptr);
     header_->data_size_ = size;
     data_size_ = size;
-    data_ = _Map(size, LABSTOR_SYSTEM_INFO->page_size_);
+    data_ = reinterpret_cast<char*>(header_ + 1);
     return true;
   }
 
   bool shm_deserialize(std::string url) override {
-    url_ = std::move(url);
-    fd_ = shm_open(url_.c_str(), O_RDWR, 0666);
-    if (fd_ < 0) {
-      return false;
-    }
-    header_ = _Map<MemoryBackendHeader>(LABSTOR_SYSTEM_INFO->page_size_, 0);
-    data_size_ = header_->data_size_;
-    data_ = _Map(data_size_, LABSTOR_SYSTEM_INFO->page_size_);
-    return true;
+    (void) url;
+    throw SHMEM_NOT_SUPPORTED.format();
   }
 
   void shm_detach() override {
@@ -92,15 +78,11 @@ class PosixShmMmap : public MemoryBackend {
   }
 
  protected:
-  void _Reserve(size_t size) {
-    ftruncate64(fd_, static_cast<off64_t>(size));
-  }
-
   template<typename T=char>
-  T* _Map(size_t size, off64_t off) {
+  T* _Map(size_t size) {
     T *ptr = reinterpret_cast<T*>(
       mmap64(nullptr, size, PROT_READ | PROT_WRITE,
-             MAP_SHARED, fd_, 0));
+             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
     if (ptr == MAP_FAILED) {
       throw SHMEM_CREATE_FAILED.format();
     }
@@ -108,17 +90,14 @@ class PosixShmMmap : public MemoryBackend {
   }
 
   void _Detach() {
-    munmap(data_, data_size_);
-    munmap(header_, LABSTOR_SYSTEM_INFO->page_size_);
-    close(fd_);
+    munmap(reinterpret_cast<void*>(header_), total_size_);
   }
 
   void _Destroy() {
     _Detach();
-    shm_unlink(url_.c_str());
   }
 };
 
 }  // namespace labstor::ipc
 
-#endif  // LABSTOR_INCLUDE_MEMORY_BACKEND_POSIX_SHM_MMAP_H
+#endif  // LABSTOR_INCLUDE_MEMORY_BACKEND_POSIX_MMAP_H

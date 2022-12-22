@@ -32,44 +32,19 @@
 
 namespace labstor::ipc {
 
-MemoryBackend* MemoryManager::CreateBackend(MemoryBackendType type,
-                                            const std::string &url) {
-  backends_.emplace(url, MemoryBackendFactory::Get(type, url));
-  auto backend = backends_[url].get();
-  backend->Create();
-  return backend;
-}
-
-MemoryBackend* MemoryManager::AttachBackend(MemoryBackendType type,
-                                            const std::string &url) {
-  backends_.emplace(url, MemoryBackendFactory::Get(type, url));
-  auto backend = backends_[url].get();
-  if (!backend->Attach()) {
-    throw MEMORY_BACKEND_NOT_FOUND.format();
-  }
-  ScanBackends();
-  return backend;
-}
-
 MemoryBackend* MemoryManager::GetBackend(const std::string &url) {
   return backends_[url].get();
 }
 
 void MemoryManager::DestroyBackend(const std::string &url) {
   auto backend = GetBackend(url);
-  backend->Destroy();
+  backend->shm_destroy();
 }
 
 void MemoryManager::ScanBackends() {
   for (auto &[url, backend] : backends_) {
-    for (auto slot_id = backend->FirstAllocatorSlot();
-          slot_id < backend->GetNumSlots(); ++slot_id) {
-      auto &slot = backend->GetSlot(slot_id);
-      auto header = reinterpret_cast<AllocatorHeader*>(slot.ptr_);
-      auto type = static_cast<AllocatorType>(header->allocator_type_);
-      auto alloc = AllocatorFactory::Attach(type, slot_id, backend.get());
-      RegisterAllocator(alloc);
-    }
+    auto alloc = AllocatorFactory::shm_deserialize(backend.get());
+    RegisterAllocator(alloc);
   }
 }
 

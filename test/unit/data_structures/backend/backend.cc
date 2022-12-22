@@ -27,20 +27,17 @@
 
 #include "labstor/memory/backend/posix_shm_mmap.h"
 
-using labstor::ipc::MemorySlot;
 using labstor::ipc::PosixShmMmap;
 
 TEST_CASE("BackendReserve") {
-  PosixShmMmap b1("shmem_test");
-  b1.Create();
+  PosixShmMmap b1;
 
   // Reserve + Map 8GB of memory
-  b1.CreateSlot(GIGABYTES(8));
+  b1.shm_init(GIGABYTES(8), "shmem_test");
 
   // Set 2GB of SHMEM
-  auto &slot = b1.GetSlot(1);
-  memset(slot.ptr_, 0, GIGABYTES(2));
+  memset(b1.data_, 0, GIGABYTES(2));
 
   // Destroy SHMEM
-  b1.Destroy();
+  b1.shm_destroy();
 }

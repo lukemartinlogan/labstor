@@ -31,10 +31,10 @@ Allocator* Pretest(AllocatorType type) {
   allocator_id_t alloc_id(0, 0);
   auto mem_mngr = LABSTOR_MEMORY_MANAGER;
   mem_mngr->CreateBackend(MemoryBackendType::kPosixShmMmap,
+                          MemoryManager::kDefaultBackendSize,
                           shm_url);
   mem_mngr->CreateAllocator(type, shm_url, alloc_id,
-                            sizeof(SimpleAllocatorHeader),
-                            MemoryManager::kDefaultSlotSize);
+                            sizeof(SimpleAllocatorHeader));
   auto alloc = mem_mngr->GetAllocator(alloc_id);
   auto hdr = alloc->GetCustomHeader<SimpleAllocatorHeader>();
   hdr->checksum_ = HEADER_CHECKSUM;

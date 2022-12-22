@@ -56,6 +56,7 @@ namespace labstor {
   const Error ARRAY_OUT_OF_BOUNDS("Exceeded the bounds of array in {}");
 
   const Error SHMEM_CREATE_FAILED("Failed to allocate SHMEM");
+  const Error SHMEM_NOT_SUPPORTED("Attempting to deserialize a non-shm backend");
   const Error MEMORY_BACKEND_NOT_FOUND("Failed to find the memory backend");
   const Error NOT_ENOUGH_CONCURRENT_SPACE("{}: Failed to divide memory slot {} among {} devices");
   const Error ALIGNED_ALLOC_NOT_SUPPORTED("Allocator does not support aligned allocations");

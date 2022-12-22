@@ -53,10 +53,10 @@ TEST_CASE("MemoryManager") {
   if (rank == 0) {
     std::cout << "Creating SHMEM (rank 0): " << shm_url << std::endl;
     mem_mngr->CreateBackend(MemoryBackendType::kPosixShmMmap,
+                            MemoryManager::kDefaultBackendSize,
                             shm_url);
     mem_mngr->CreateAllocator(AllocatorType::kPageAllocator,
-                              shm_url, alloc_id,
-                              0, MemoryManager::kDefaultSlotSize);
+                              shm_url, alloc_id, 0);
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank != 0) {

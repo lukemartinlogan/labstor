@@ -66,17 +66,13 @@ struct AllocatorHeader {
  * */
 class Allocator {
  protected:
-  slot_id_t slot_id_;
   MemoryBackend *backend_;
-  MemorySlot &slot_;
 
  public:
   /**
    * Constructor
    * */
-  explicit Allocator(slot_id_t slot_id, MemoryBackend *backend)
-    : slot_id_(slot_id), backend_(backend),
-      slot_(backend_->GetSlot(slot_id)) {}
+  Allocator() = default;
 
   /**
    * Destructor
@@ -91,12 +87,13 @@ class Allocator {
    * each allocator has its own arguments to this method. Though each
    * allocator must have "id" as its first argument.
    * */
-  // virtual void shm_init(allocator_id_t id, Args ...args) = 0;
+  // virtual void shm_init(MemoryBackend *backend,
+  //                       allocator_id_t id, Args ...args) = 0;
 
   /**
    * Attach the allocator to the slot and backend passed in the constructor.
    * */
-  virtual void shm_deserialize() = 0;
+  virtual void shm_deserialize(MemoryBackend *backend) = 0;
 
   /**
    * Allocate a region of memory of \a size size
@@ -178,12 +175,6 @@ class Allocator {
    * */
   virtual size_t GetCurrentlyAllocatedSize() = 0;
 
-  /**
-   * Get the slot this allocator is attached to in the memory backend
-   * */
-  slot_id_t GetSlotId() {
-    return slot_id_;
-  }
 
   ///////////////////////////////////////
   ///////////POINTER ALLOCATORS
@@ -197,7 +188,7 @@ class Allocator {
   T* AllocatePtr(size_t size, Pointer &p, size_t alignment = 0) {
     p = Allocate(size, alignment);
     if (p.is_null()) { return nullptr; }
-    return reinterpret_cast<T*>(slot_.ptr_ + p.off_);
+    return reinterpret_cast<T*>(backend_->data_ + p.off_);
   }
 
   /**
@@ -226,7 +217,7 @@ class Allocator {
   T* ClearAllocatePtr(size_t size, Pointer &p, size_t alignment = 0) {
     p = Allocate(size, alignment);
     if (p.is_null()) { return nullptr; }
-    auto ptr = reinterpret_cast<T*>(slot_.ptr_ + p.off_);
+    auto ptr = reinterpret_cast<T*>(backend_->data_ + p.off_);
     if (ptr) {
       memset(ptr, 0, size);
     }
@@ -451,7 +442,7 @@ class Allocator {
    * */
   template<typename HEAD>
   HEAD* GetCustomHeader() {
-    return reinterpret_cast<HEAD*>(slot_.ptr_ + GetInternalHeaderSize());
+    return reinterpret_cast<HEAD*>(backend_->data_ + GetInternalHeaderSize());
   }
 
   /**
@@ -463,8 +454,7 @@ class Allocator {
   template<typename T>
   T* Convert(Pointer &p) {
     if (p.is_null()) { return nullptr; }
-    auto &slot = backend_->GetSlot(slot_id_);
-    return reinterpret_cast<T*>(slot.ptr_ + p.off_);
+    return reinterpret_cast<T*>(backend_->data_ + p.off_);
   }
 
   /**
@@ -478,7 +468,7 @@ class Allocator {
     Pointer p;
     if (ptr == nullptr) { return kNullPointer; }
     p.off_ = reinterpret_cast<size_t>(ptr) -
-             reinterpret_cast<size_t>(slot_.ptr_);
+             reinterpret_cast<size_t>(backend_->data_);
     p.allocator_id_ = GetId();
     return p;
   }
@@ -493,7 +483,7 @@ class Allocator {
   template<typename T = void>
   bool ContainsPtr(T *ptr) {
     return  reinterpret_cast<size_t>(ptr) >=
-            reinterpret_cast<size_t>(slot_.ptr_);
+            reinterpret_cast<size_t>(backend_->data_);
   }
 };
 

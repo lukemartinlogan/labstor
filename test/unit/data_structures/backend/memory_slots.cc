@@ -39,45 +39,26 @@ TEST_CASE("MemorySlot") {
 
   LABSTOR_ERROR_HANDLE_START()
 
-  PosixShmMmap backend(shm_url);
+  PosixShmMmap backend;
   if (rank == 0) {
     std::cout << "HERE?" << std::endl;
     SECTION("Creating SHMEM (rank 0)") {
-      backend.Create();
-      backend.CreateSlot(MEGABYTES(1));
-      auto &slot = backend.GetSlot(1);
-      memset(slot.ptr_, nonce, slot.size_);
+      backend.shm_init(MEGABYTES(1), shm_url);
+      memset(backend.data_, nonce, backend.data_size_);
     }
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank != 0) {
     SECTION("Attaching SHMEM (rank 1)") {
-      backend.Attach();
-      auto &slot = backend.GetSlot(1);
-      char *ptr = reinterpret_cast<char *>(slot.ptr_);
-      REQUIRE(VerifyBuffer(ptr, slot.size_, nonce));
-    }
-  }
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == 0) {
-    SECTION("Creating new slot (rank 0)") {
-      backend.CreateSlot(MEGABYTES(1));
-      auto &slot = backend.GetSlot(2);
-      memset(slot.ptr_, nonce, slot.size_);
-    }
-  }
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank != 0) {
-    SECTION("Getting new slot (rank 1)") {
-      auto &slot = backend.GetSlot(2);
-      char *ptr = reinterpret_cast<char *>(slot.ptr_);
-      REQUIRE(VerifyBuffer(ptr, slot.size_, nonce));
+      backend.shm_deserialize(shm_url);
+      char *ptr = backend.data_;
+      REQUIRE(VerifyBuffer(ptr, backend.data_size_, nonce));
     }
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
     SECTION("Destroying shmem (rank 1)") {
-      backend.Destroy();
+      backend.shm_destroy();
     }
   }
 

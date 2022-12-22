@@ -36,14 +36,15 @@ namespace labstor::ipc {
 
 class MemoryManager {
  private:
+  PosixMmap root_backend_;
+  PageAllocator root_allocator_;
   std::unordered_map<std::string, std::unique_ptr<MemoryBackend>> backends_;
   std::unordered_map<allocator_id_t, std::unique_ptr<Allocator>> allocators_;
-  Allocator *root_allocator_;
   Allocator *default_allocator_;
 
  public:
   /** The default amount of memory a single allocator manages */
-  static const size_t kDefaultSlotSize = GIGABYTES(64);
+  static const size_t kDefaultBackendSize = GIGABYTES(64);
 
   /**
    * Constructor. Create the "root" allocator, used until the program defines
@@ -58,12 +59,23 @@ class MemoryManager {
    * There can be multiple slots per-backend, enabling multiple allocation
    * policies over a single memory region.
    * */
-  MemoryBackend* CreateBackend(MemoryBackendType type, const std::string &url);
+  MemoryBackend* CreateBackend(MemoryBackendType type,
+                               size_t size, const std::string &url) {
+    backends_.emplace(url, MemoryBackendFactory::shm_init(type, size, url));
+    auto backend = backends_[url].get();
+    return backend;
+  }
 
   /**
    * Attaches to an existing memory backend located at \a url url.
    * */
-  MemoryBackend* AttachBackend(MemoryBackendType type, const std::string &url);
+  MemoryBackend* AttachBackend(MemoryBackendType type,
+                               const std::string &url) {
+    backends_.emplace(url, MemoryBackendFactory::shm_deserialize(type, url));
+    auto backend = backends_[url].get();
+    ScanBackends();
+    return backend;
+  }
 
   /**
    * Returns a pointer to a backend that has already been attached.
@@ -94,16 +106,14 @@ class MemoryManager {
                              const std::string &url,
                              allocator_id_t alloc_id,
                              size_t custom_header_size,
-                             size_t slot_size,
                              Args&& ...args) {
     auto backend = GetBackend(url);
-    auto slot = backend->CreateSlot(slot_size);
     if (alloc_id.is_null()) {
       alloc_id = allocator_id_t(LABSTOR_SYSTEM_INFO->pid_,
                                 allocators_.size());
     }
-    auto alloc = AllocatorFactory::Create(
-      type, slot.slot_id_, backend, alloc_id,
+    auto alloc = AllocatorFactory::shm_init(
+      type, backend, alloc_id,
       custom_header_size, std::forward<Args>(args)...);
     RegisterAllocator(alloc);
     return GetAllocator(alloc_id);
