@@ -87,21 +87,41 @@ class Allocator {
    * Create the shared-memory allocator with \a id unique allocator id over
    * the particular slot of a memory backend.
    *
-   * The Create function is required, but it cannot be marked virtual as
+   * The shm_init function is required, but cannot be marked virtual as
    * each allocator has its own arguments to this method. Though each
-   * allocator must have "id" as its firt argument.
+   * allocator must have "id" as its first argument.
    * */
-  // virtual void Create(allocator_id_t id, Args ...args) = 0;
+  // virtual void shm_init(allocator_id_t id, Args ...args) = 0;
 
   /**
    * Attach the allocator to the slot and backend passed in the constructor.
    * */
-  virtual void Attach() = 0;
+  virtual void shm_deserialize() = 0;
 
   /**
    * Allocate a region of memory of \a size size
    * */
   virtual Pointer Allocate(size_t size) = 0;
+
+  /**
+   * Allocate a region of memory of \a size size
+   * and \a alignment alignment. Assumes that
+   * alignment is not 0.
+   * */
+  virtual Pointer AlignedAllocate(size_t size, size_t alignment) = 0;
+
+  /**
+   * Allocate a region of \a size size and \a alignment
+   * alignment. Will fall back to regular Allocate if
+   * alignmnet is 0.
+   * */
+  Pointer Allocate(size_t size, size_t alignment) {
+    if (alignment == 0) {
+      return Allocate(size);
+    } else {
+      return AlignedAllocate(size, alignment);
+    }
+  }
 
   /**
    * Reallocate \a pointer to \a new_size new size
@@ -165,22 +185,17 @@ class Allocator {
     return slot_id_;
   }
 
-  /**
-   * Allocate a pointer of \a size size
-   * */
-  template<typename T>
-  T* AllocatePtr(size_t size) {
-    Pointer p;
-    return AllocatePtr<T>(size, p);
-  }
+  ///////////////////////////////////////
+  ///////////POINTER ALLOCATORS
+  ///////////////////////////////////////
 
   /**
    * Allocate a pointer of \a size size and return \a p process-independent
    * pointer and a process-specific pointer.
    * */
   template<typename T>
-  T* AllocatePtr(size_t size, Pointer &p) {
-    p = Allocate(size);
+  T* AllocatePtr(size_t size, Pointer &p, size_t alignment = 0) {
+    p = Allocate(size, alignment);
     if (p.is_null()) { return nullptr; }
     return reinterpret_cast<T*>(slot_.ptr_ + p.off_);
   }
@@ -189,9 +204,18 @@ class Allocator {
    * Allocate a pointer of \a size size
    * */
   template<typename T>
-  T* ClearAllocatePtr(size_t size) {
+  T* AllocatePtr(size_t size, size_t alignment = 0) {
     Pointer p;
-    return ClearAllocatePtr<T>(size, p);
+    return AllocatePtr<T>(size, p, alignment);
+  }
+
+  /**
+   * Allocate a pointer of \a size size
+   * */
+  template<typename T>
+  T* ClearAllocatePtr(size_t size, size_t alignment = 0) {
+    Pointer p;
+    return ClearAllocatePtr<T>(size, p, alignment);
   }
 
   /**
@@ -199,8 +223,8 @@ class Allocator {
    * pointer and a process-specific pointer.
    * */
   template<typename T>
-  T* ClearAllocatePtr(size_t size, Pointer &p) {
-    p = Allocate(size);
+  T* ClearAllocatePtr(size_t size, Pointer &p, size_t alignment = 0) {
+    p = Allocate(size, alignment);
     if (p.is_null()) { return nullptr; }
     auto ptr = reinterpret_cast<T*>(slot_.ptr_ + p.off_);
     if (ptr) {
@@ -208,6 +232,49 @@ class Allocator {
     }
     return ptr;
   }
+
+  /**
+   * Reallocate a pointer to a new size
+   *
+   * @param p process-independent pointer (input & output)
+   * @param new_size the new size to allocate
+   * @param modified whether or not p was modified (output)
+   * @return A process-specific pointer
+   * */
+  template<typename T>
+  T* ReallocatePtr(Pointer &p, size_t new_size, bool &modified) {
+    modified = Reallocate(p, new_size);
+    return Convert<T>(p);
+  }
+
+  /**
+   * Reallocate a pointer to a new size
+   *
+   * @param p process-independent pointer (input & output)
+   * @param new_size the new size to allocate
+   * @return A process-specific pointer
+   * */
+  template<typename T>
+  T* ReallocatePtr(Pointer &p, size_t new_size) {
+    Reallocate(p, new_size);
+    return Convert<T>(p);
+  }
+
+  /**
+   * Free a process-specific pointer.
+   *
+   * @param ptr process-specific pointer
+   * @return None
+   * */
+  template<typename T>
+  void FreePtr(T *ptr) {
+    Pointer p = Convert<T>(ptr);
+    Free(p);
+  }
+
+  ///////////////////////////////////////
+  ///////////OBJECT ALLOCATORS
+  ///////////////////////////////////////
 
   /**
    * Allocate an array of objects (but don't construct).
@@ -277,33 +344,6 @@ class Allocator {
   }
 
   /**
-   * Reallocate a pointer to a new size
-   *
-   * @param p process-independent pointer (input & output)
-   * @param new_size the new size to allocate
-   * @param modified whether or not p was modified (output)
-   * @return A process-specific pointer
-   * */
-  template<typename T>
-  T* ReallocatePtr(Pointer &p, size_t new_size, bool &modified) {
-    modified = Reallocate(p, new_size);
-    return Convert<T>(p);
-  }
-
-  /**
-   * Reallocate a pointer to a new size
-   *
-   * @param p process-independent pointer (input & output)
-   * @param new_size the new size to allocate
-   * @return A process-specific pointer
-   * */
-  template<typename T>
-  T* ReallocatePtr(Pointer &p, size_t new_size) {
-    Reallocate(p, new_size);
-    return Convert<T>(p);
-  }
-
-  /**
    * Reallocate a pointer of objects to a new size.
    *
    * @param p process-independent pointer (input & output)
@@ -339,18 +379,6 @@ class Allocator {
     T *ptr = ReallocatePtr<T>(p, new_count*sizeof(T));
     ConstructObjs<T>(ptr, old_count, new_count, std::forward<Args>(args)...);
     return ptr;
-  }
-
-  /**
-   * Free a process-specific pointer.
-   *
-   * @param ptr process-specific pointer
-   * @return None
-   * */
-  template<typename T>
-  void FreePtr(T *ptr) {
-    Pointer p = Convert<T>(ptr);
-    Free(p);
   }
 
   /**

@@ -33,12 +33,12 @@ void* PageAllocator::GetFreeListStart() {
     custom_header_ + header_->custom_header_size_);;
 }
 
-void PageAllocator::Create(allocator_id_t id,
-                           size_t custom_header_size,
-                           size_t page_size,
-                           size_t thread_table_size,
-                           int concurrency,
-                           size_t min_free_count) {
+void PageAllocator::shm_init(allocator_id_t id,
+                             size_t custom_header_size,
+                             size_t page_size,
+                             size_t thread_table_size,
+                             int concurrency,
+                             size_t min_free_count) {
   header_ = reinterpret_cast<PageAllocatorHeader*>(slot_.ptr_);
   header_->Configure(id, custom_header_size, page_size,
                      thread_table_size, concurrency, min_free_count);
@@ -66,7 +66,7 @@ void PageAllocator::Create(allocator_id_t id,
   }
 }
 
-void PageAllocator::Attach() {
+void PageAllocator::shm_deserialize() {
   header_ = reinterpret_cast<PageAllocatorHeader*>(slot_.ptr_);
   custom_header_ = GetCustomHeader<char>();
   void *free_list_start = GetFreeListStart();
@@ -112,6 +112,10 @@ Pointer PageAllocator::Allocate(size_t size) {
   _Borrow(nullptr, tid, true);
 
   return kNullPointer;
+}
+
+Pointer PageAllocator::AlignedAllocate(size_t size, size_t alignment) {
+  throw ALIGNED_ALLOC_NOT_SUPPORTED.format();
 }
 
 bool PageAllocator::ReallocateNoNullCheck(Pointer &ptr, size_t new_size) {

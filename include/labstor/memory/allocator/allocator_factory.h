@@ -47,9 +47,9 @@ class AllocatorFactory {
     switch (type) {
       case AllocatorType::kPageAllocator: {
         auto alloc = std::make_unique<PageAllocator>(slot_id, backend);
-        alloc->Create(alloc_id,
-                      custom_header_size,
-                      std::forward<Args>(args)...);
+        alloc->shm_init(alloc_id,
+                        custom_header_size,
+                        std::forward<Args>(args)...);
         return alloc;
       }
       default: return nullptr;
@@ -66,7 +66,7 @@ class AllocatorFactory {
     switch (type) {
       case AllocatorType::kPageAllocator: {
         auto alloc = std::make_unique<PageAllocator>(slot_id, backend);
-        alloc->Attach();
+        alloc->shm_deserialize();
         return alloc;
       }
       default: return nullptr;

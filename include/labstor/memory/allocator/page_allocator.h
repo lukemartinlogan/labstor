@@ -98,7 +98,7 @@ class PageAllocator : public Allocator {
   /**
    * Initialize the allocator in shared memory
    * */
-  void Create(allocator_id_t id,
+  void shm_init(allocator_id_t id,
               size_t custom_header_size = 0,
               size_t page_size = KILOBYTES(4),
               size_t thread_table_size = KILOBYTES(4),
@@ -108,13 +108,19 @@ class PageAllocator : public Allocator {
   /**
    * Attach an existing allocator from shared memory
    * */
-  void Attach() override;
+  void shm_deserialize() override;
 
   /**
-   * Allocate a memory of a \size size. The page allocator cannot allocate
+   * Allocate a memory of \a size size. The page allocator cannot allocate
    * memory larger than the page size.
    * */
   Pointer Allocate(size_t size) override;
+
+  /**
+   * Allocate a memory of \a size size, which is aligned to \a
+   * alignment.
+   * */
+  Pointer AlignedAllocate(size_t size, size_t alignment) override;
 
   /**
    * Reallocate \a p pointer to \a new_size new size.

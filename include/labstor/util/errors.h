@@ -58,6 +58,7 @@ namespace labstor {
   const Error SHMEM_CREATE_FAILED("Failed to allocate SHMEM");
   const Error MEMORY_BACKEND_NOT_FOUND("Failed to find the memory backend");
   const Error NOT_ENOUGH_CONCURRENT_SPACE("{}: Failed to divide memory slot {} among {} devices");
+  const Error ALIGNED_ALLOC_NOT_SUPPORTED("Allocator does not support aligned allocations");
   const Error PAGE_SIZE_UNSUPPORTED("Allocator does not support size: {}");
   const Error OUT_OF_MEMORY("{}: could not allocate memory of size {}");
   const Error INVALID_FREE("{}: could not free memory of size {}");
