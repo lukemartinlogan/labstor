@@ -66,6 +66,16 @@ struct RwLock {
     payload_ = 0;
   }
 
+  RwLock(const RwLock &other) = delete;
+
+  RwLock(RwLock &&other) noexcept
+  : payload_(other.payload_.load()) {}
+
+  RwLock& operator=(RwLock &&other) {
+    payload_ = other.payload_.load();
+    return (*this);
+  }
+
   void ReadLock();
   void ReadUnlock();
 

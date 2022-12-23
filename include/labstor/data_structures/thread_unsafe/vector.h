@@ -466,6 +466,12 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
     return vec[i].data();
   }
 
+  /** Index the vector at position i */
+  const T_Ref operator[](const size_t i) const {
+    shm_ar<T> *vec = data_ar_const();
+    return vec[i].data();
+  }
+
   /** Construct an element at the back of the vector */
   template<typename... Args>
   void emplace_back(Args&&... args) {

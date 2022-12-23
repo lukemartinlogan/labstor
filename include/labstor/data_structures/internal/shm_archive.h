@@ -75,6 +75,22 @@ struct ShmArchive {
     : header_ptr_(other.header_ptr_) {
     other.header_ptr_.set_null();
   }
+
+  /** Copies a ShmArchive into another */
+  ShmArchive& operator=(const ShmArchive &other) {
+    if (this != &other) {
+      header_ptr_ = other.header_ptr_;
+    }
+    return *this;
+  }
+
+  /** Moves the data from one archive into another */
+  ShmArchive& operator=(ShmArchive&& other) noexcept {
+    if (this != &other) {
+      header_ptr_ = other.header_ptr_;
+    }
+    return *this;
+  }
 };
 
 }  // namespace labstor::ipc
