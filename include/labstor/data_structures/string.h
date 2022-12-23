@@ -200,6 +200,11 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   }
 
   /** Get a constant reference to the C-style string */
+  char* c_str() const {
+    return header_->text_;
+  }
+
+  /** Get a constant reference to the C-style string */
   char* data() const {
     return header_->text_;
   }
