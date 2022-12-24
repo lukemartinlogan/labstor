@@ -319,7 +319,7 @@ using vector_criterator = vector_iterator_templ<T, false, true>;
 
 /**
  * MACROS used to simplify the vector namespace
- * Used as inputs to the SHM_DATA_STRUCTURE_TEMPLATE
+ * Used as inputs to the SHM_CONTAINER_TEMPLATE
  * */
 #define CLASS_NAME vector
 #define TYPED_CLASS vector<T>
@@ -329,9 +329,9 @@ using vector_criterator = vector_iterator_templ<T, false, true>;
  * The vector class
  * */
 template<typename T>
-class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
+class vector : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
  public:
-  BASIC_SHM_DATA_STRUCTURE_TEMPLATE
+  BASIC_SHM_CONTAINER_TEMPLATE
 
  public:
   typedef SHM_T_OR_REF_T(T) T_Ref;
@@ -392,7 +392,7 @@ class vector : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   /** Construct the vector in shared memory */
   void shm_init(Allocator *alloc) {
-    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
+    ShmContainer<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
     header_ = alloc_->template
       AllocateObjs<TYPED_HEADER>(1, header_ptr_);
     header_->length_ = 0;

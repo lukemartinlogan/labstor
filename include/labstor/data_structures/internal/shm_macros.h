@@ -95,7 +95,7 @@
  * */
 
 #define SHM_T_OR_SHM_PTR_T(T) \
-  SHM_X_OR_Y(T, T, ShmSimplePointer<T>)
+  SHM_X_OR_Y(T, T, ShmStruct<T>)
 
 /**
  * SHM_T_OR_CONST_T: Determines whether or not an object should be

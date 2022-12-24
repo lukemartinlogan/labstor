@@ -34,7 +34,7 @@
 #include <labstor/constants/data_structure_singleton_macros.h>
 
 #include "labstor/data_structures/internal/shm_archive.h"
-#include "labstor/data_structures/internal/shm_simple_pointer.h"
+#include "labstor/data_structures/internal/shm_struct.h"
 #include "labstor/data_structures/internal/shm_construct.h"
 
 namespace labstor::ipc {
@@ -47,12 +47,16 @@ class ShmSmartPointer : public ShmArchiveable {};
 /**
  * A base class used for creating shared-memory pointer management
  * classes (manual_ptr, unique_ptr, shared_ptr).
+ *
+ * Smart pointers are not stored directly in shared memory. They are
+ * wrappers around shared-memory objects (ShmContainer or ShmStruct)
+ * which are used for constructing destructing these objects.
  * */
 template<typename T>
 class ShmSmartPtr : public ShmSmartPointer {
  public:
   typedef SHM_T_OR_SHM_PTR_T(T) T_Ptr;
-  T_Ptr obj_;  /**< T for complex object, ShmSimplePointer<T> for C-style */
+  T_Ptr obj_;  /**< T for archiveable objects, ShmStruct<T> for C-style */
 
  public:
   /** Sets this pointer to NULL */

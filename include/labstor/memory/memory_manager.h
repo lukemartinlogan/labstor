@@ -160,7 +160,7 @@ class MemoryManager {
    * Convert a process-independent pointer into a process-specific pointer.
    * */
   template<typename T>
-  T* Convert(Pointer &p) {
+  T* Convert(const Pointer &p) {
     if (p.is_null()) {
       return nullptr;
     }

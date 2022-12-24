@@ -84,7 +84,60 @@ class ShmArchiveable {
  * a single complex shared-memory data structure
  * */
 template<typename T>
-struct ShmArchive;
+struct ShmArchive {
+ public:
+  Pointer header_ptr_;
+
+  /** Default constructor */
+  ShmArchive() = default;
+
+  /** Get the process-independent pointer */
+  inline Pointer& Get() {
+    return header_ptr_;
+  }
+
+  /** Get the process-independent pointer */
+  inline const Pointer& GetConst() {
+    return header_ptr_;
+  }
+
+  /** Creates a ShmArchive from a header pointer */
+  explicit ShmArchive(Pointer &ptr)
+    : header_ptr_(ptr) {
+  }
+
+  /** Creates a ShmArchive from a header pointer */
+  explicit ShmArchive(const Pointer &ptr)
+    : header_ptr_(ptr) {
+  }
+
+  /** Copy constructor */
+  ShmArchive(const ShmArchive &other)
+    : header_ptr_(other.header_ptr_) {
+  }
+
+  /** Move constructor */
+  ShmArchive(ShmArchive&& other) noexcept
+    : header_ptr_(other.header_ptr_) {
+    other.header_ptr_.set_null();
+  }
+
+  /** Copy assignmnet operator */
+  ShmArchive& operator=(const ShmArchive &other) {
+    if (this != &other) {
+      header_ptr_ = other.header_ptr_;
+    }
+    return *this;
+  }
+
+  /** Move assignment operator. */
+  ShmArchive& operator=(ShmArchive&& other) noexcept {
+    if (this != &other) {
+      header_ptr_ = other.header_ptr_;
+    }
+    return *this;
+  }
+};
 
 /** Generates the code for move operators */
 #define SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
@@ -125,7 +178,10 @@ struct ShmArchive;
 /**
  * Enables a specific ShmArchive type to be serialized
  * */
-#define SHM_SERIALIZE_OPS(AR_TYPE)\
+#define SHM_SERIALIZE_WRAPPER(AR_TYPE)\
+  void shm_serialize(ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) const {\
+    shm_serialize(ar.header_ptr_);\
+  }\
   void operator>>(ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) const {\
     shm_serialize(ar.header_ptr_);\
   }
@@ -133,15 +189,18 @@ struct ShmArchive;
 /**
  * Enables a specific ShmArchive type to be deserialized
  * */
-#define SHM_DESERIALIZE_OPS(AR_TYPE)\
+#define SHM_DESERIALIZE_WRAPPER(AR_TYPE)\
+  void shm_deserialize(const ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) {\
+    shm_deserialize(ar.header_ptr_);\
+  }\
   void operator<<(const ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) {\
     shm_deserialize(ar.header_ptr_);\
   }
 
 /** Enables serialization + deserialization for data structures */
-#define SHM_SERIALIZE_DESERIALIZE_OPS(AR_TYPE)\
-  SHM_SERIALIZE_OPS(AR_TYPE)\
-  SHM_DESERIALIZE_OPS(AR_TYPE)
+#define SHM_SERIALIZE_DESERIALIZE_WRAPPER(AR_TYPE)\
+  SHM_SERIALIZE_WRAPPER(AR_TYPE)\
+  SHM_DESERIALIZE_WRAPPER(AR_TYPE)
 
 
 }  // namespace labstor::ipc

@@ -73,7 +73,7 @@ struct array_queue_header {
 template<typename Key, typename T>
 class array_queue {
  public:
-  BASIC_SHM_DATA_STRUCTURE_TEMPLATE
+  BASIC_SHM_CONTAINER_TEMPLATE
 
  public:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
@@ -84,7 +84,7 @@ class array_queue {
 
   /** Default shared-memory constructor */
   explicit array_queue(Allocator *alloc)
-  : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
+  : ShmContainer<TYPED_CLASS, TYPED_HEADER>(alloc) {
     shm_init();
   }
 
@@ -97,7 +97,7 @@ class array_queue {
    * */
   template<typename ...Args>
   explicit array_queue(Allocator *alloc, size_t length, Args&& ...args)
-  : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc) {
+  : ShmContainer<TYPED_CLASS, TYPED_HEADER>(alloc) {
     shm_init(length);
   }
 
@@ -110,7 +110,7 @@ class array_queue {
    * */
   template<typename ...Args>
   explicit array_queue(allocator_id_t alloc_id, size_t length, Args&& ...args)
-  : ShmDataStructure<TYPED_CLASS, TYPED_HEADER>(alloc_id) {
+  : ShmContainer<TYPED_CLASS, TYPED_HEADER>(alloc_id) {
     resize(length, std::forward<Args>(args)...);
   }
 

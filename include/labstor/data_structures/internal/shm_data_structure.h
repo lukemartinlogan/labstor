@@ -24,58 +24,35 @@
  */
 
 
-#ifndef LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_DATA_STRUCTURE_H_
-#define LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_DATA_STRUCTURE_H_
+#ifndef LABSTOR_DATA_STRUCTURES_SHM_SERIALIZE_H_
+#define LABSTOR_DATA_STRUCTURES_SHM_SERIALIZE_H_
 
-#include "labstor/memory/memory.h"
-#include "labstor/memory/allocator/allocator.h"
 #include "labstor/memory/memory_manager.h"
-#include <labstor/constants/data_structure_singleton_macros.h>
-
-#include "labstor/data_structures/internal/shm_macros.h"
-#include "labstor/data_structures/internal/shm_archive.h"
-#include "labstor/data_structures/internal/shm_serialize.h"
-#include "labstor/data_structures/internal/shm_construct.h"
-
-#include "labstor/data_structures/smart_ptr/manual_ptr.h"
+#include "shm_macros.h"
+#include "shm_archive.h"
 
 namespace labstor::ipc {
 
-/** Used for all data structures */
-
-
 /**
- * The general base class of a shared-memory data structure
- *
- * There are no virtual functions, but all base classes must
- * implement certain methods which are indicated below in the
- * section "REQUIRED METHODS"
+ * ShmDataStructures all have a header, which is stored in
+ * shared memory as a ShmArchive.
  * */
-template<typename TYPED_CLASS, typename TYPED_HEADER>
+template<typename TYPED_HEADER>
 class ShmDataStructure : public ShmArchiveable {
- public:
-  mptr<TYPED_HEADER> header_;
-  typedef TYPED_HEADER header_t;
-
  protected:
-  LABSTOR_MEMORY_MANAGER_T mem_mngr_;  /**< Memory manager */
+  Pointer header_ptr_;
+  LABSTOR_MEMORY_MANAGER_T mem_mngr_;
   Allocator *alloc_;
-  bool destructable_;  /**< Whether or not to call shm_destroy in destructor */
+  TYPED_HEADER *header_;
+  bool destructable_;
 
  public:
   /** Default constructor */
   ShmDataStructure()
-    : mem_mngr_(LABSTOR_MEMORY_MANAGER), destructable_(true) {
-    SetNull();  // TODO(llogan): probably unnecessary
-  }
+  : header_ptr_(kNullPointer), mem_mngr_(LABSTOR_MEMORY_MANAGER),
+    alloc_(nullptr), header_(nullptr), destructable_(true) {}
 
-  /** Copy constructor */
-  ShmDataStructure(const ShmDataStructure &other) {
-    WeakCopy(other);
-    SetDestructable();
-  }
-
-  /** Initialize shared-memory data structure */
+  /** Set the allocator of the data structure */
   void shm_init(Allocator *alloc) {
     if (alloc == nullptr) {
       alloc_ = mem_mngr_->GetDefaultAllocator();
@@ -84,26 +61,34 @@ class ShmDataStructure : public ShmArchiveable {
     }
   }
 
-  /** Serialize object */
-  void shm_serialize(ShmArchive<TYPED_CLASS> &other) const {
+  /** Serialize an object into a raw pointer */
+  void shm_serialize(Pointer &header_ptr) const {
+    header_ptr = header_ptr_;
   }
 
-  /** Deserialize object */
-  void shm_deserialize(const ShmArchive<TYPED_CLASS> &other) {
+  /** Deserialize object from a raw pointer */
+  void shm_deserialize(const Pointer &header_ptr) {
+    header_ptr_ = header_ptr;
+    if (header_ptr.is_null()) { return; }
+    alloc_ = mem_mngr_->GetAllocator(header_ptr.allocator_id_);
+    header_ = mem_mngr_->Convert<TYPED_HEADER>(header_ptr);
   }
 
   /** Copy only pointers */
   void WeakCopy(const ShmDataStructure &other) {
+    header_ptr_ = other.header_ptr_;
     header_ = other.header_;
-    mem_mngr_ = other.mem_mngr_;
+    alloc_ = other.alloc_;
     destructable_ = other.destructable_;
   }
 
   /** Move only pointers */
   void WeakMove(ShmDataStructure &other) {
+    header_ptr_ = std::move(other.header_ptr_);
     header_ = std::move(other.header_);
-    mem_mngr_ = other.mem_mngr_;
+    alloc_ = other.alloc_;
     destructable_ = other.destructable_;
+    other.SetNull();
   }
 
   /** Sets this object as destructable */
@@ -118,12 +103,12 @@ class ShmDataStructure : public ShmArchiveable {
 
   /** Set to null */
   void SetNull() {
-    header_->SetNull();
+    header_ptr_.set_null();
   }
 
   /** Check if null */
   bool IsNull() const {
-    return header_->IsNull();
+    return header_ptr_.is_null();
   }
 
   /** Get the allocator for this pointer */
@@ -135,64 +120,29 @@ class ShmDataStructure : public ShmArchiveable {
   allocator_id_t GetAllocatorId() const {
     return alloc_->GetId();
   }
-
-
-
-  ////////////////////////////////
-  ////////REQUIRED METHODS
-  ///////////////////////////////
-
- public:
-  /** Copy constructor (REQUIRED) */
-  // void StrongCopy(const CLASS_NAME &other);
 };
-
-}  // namespace labstor::ipc
 
 /**
  * Namespace simplification for a SHM data structure
  * */
 #define SHM_DATA_STRUCTURE_USING_NS\
-  using labstor::ipc::ShmDataStructure< \
-    TYPE_UNWRAP(TYPED_CLASS), TYPE_UNWRAP(TYPED_HEADER)>
+  using labstor::ipc::ShmDataStructure<TYPE_UNWRAP(TYPED_HEADER)>
 
-/**
- * Define various functions and variables common across all
- * SharedMemoryDataStructures.
- *
- * Variables which derived classes should see are not by default visible
- * due to the nature of c++ template resolution.
- *
- * 1. Create Move constructors + Move assignment operators.
- * 2. Create Copy constructors + Copy assignment operators.
- * 3. Create shm_serialize and shm_deserialize for archiving data structures.
- * */
-#define SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)\
-  SHM_DATA_STRUCTURE_USING_NS::header_;\
-  SHM_DATA_STRUCTURE_USING_NS::header_ptr_;\
-  SHM_DATA_STRUCTURE_USING_NS::mem_mngr_;\
-  SHM_DATA_STRUCTURE_USING_NS::alloc_;\
-  SHM_DATA_STRUCTURE_USING_NS::destructable_;\
-  SHM_DATA_STRUCTURE_USING_NS::shm_serialize;\
-  SHM_DATA_STRUCTURE_USING_NS::shm_deserialize;\
-  SHM_DATA_STRUCTURE_USING_NS::IsNull;\
-  SHM_DATA_STRUCTURE_USING_NS::SetNull;\
-  SHM_DATA_STRUCTURE_USING_NS::SetDestructable;\
-  SHM_DATA_STRUCTURE_USING_NS::UnsetDestructable;\
-  SHM_DATA_STRUCTURE_USING_NS::WeakMove;\
-  SHM_DATA_STRUCTURE_USING_NS::WeakCopy;\
-  SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
-  SHM_INHERIT_COPY_OPS(CLASS_NAME)\
-  SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
+#define SHM_DATA_STRUCTURE_TEMPLATE(TYPED_HEADER)\
+SHM_DATA_STRUCTURE_USING_NS::header_ptr_;\
+SHM_DATA_STRUCTURE_USING_NS::alloc_;\
+SHM_DATA_STRUCTURE_USING_NS::header_;\
+SHM_DATA_STRUCTURE_USING_NS::mem_mngr_;\
+SHM_DATA_STRUCTURE_USING_NS::destructable_;\
+SHM_DATA_STRUCTURE_USING_NS::shm_serialize;\
+SHM_DATA_STRUCTURE_USING_NS::shm_deserialize;\
+SHM_DATA_STRUCTURE_USING_NS::IsNull;\
+SHM_DATA_STRUCTURE_USING_NS::SetNull;            \
+SHM_DATA_STRUCTURE_USING_NS::SetDestructable;\
+SHM_DATA_STRUCTURE_USING_NS::UnsetDestructable;\
+SHM_DATA_STRUCTURE_USING_NS::WeakCopy;\
+SHM_DATA_STRUCTURE_USING_NS::WeakMove;
 
-/**
- * ShmDataStructures should define:
- * CLASS_NAME, TYPED_CLASS, and TYPED_HEADER macros and then
- * unset them in their respective header files.
- * */
+}  // namespace labstor::ipc
 
-#define BASIC_SHM_DATA_STRUCTURE_TEMPLATE \
-  SHM_DATA_STRUCTURE_TEMPLATE(CLASS_NAME, \
-    TYPE_WRAP(TYPED_CLASS), TYPE_WRAP(TYPED_HEADER))
-
-#endif  // LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_DATA_STRUCTURE_H_
+#endif  // LABSTOR_DATA_STRUCTURES_SHM_SERIALIZE_H_

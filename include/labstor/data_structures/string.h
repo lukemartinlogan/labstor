@@ -43,7 +43,7 @@ struct string_header {
 
 /**
  * MACROS used to simplify the string namespace
- * Used as inputs to the SHM_DATA_STRUCTURE_TEMPLATE
+ * Used as inputs to the SHM_CONTAINER_TEMPLATE
  * */
 #define CLASS_NAME string
 #define TYPED_CLASS string
@@ -52,9 +52,9 @@ struct string_header {
 /**
  * A string of characters.
  * */
-class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
+class string : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
  public:
-  BASIC_SHM_DATA_STRUCTURE_TEMPLATE
+  BASIC_SHM_CONTAINER_TEMPLATE
 
  public:
   /** Default constructor */
@@ -158,7 +158,7 @@ class string : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
    * Construct a string of specific length and allocator in shared memory
    * */
   void shm_init(Allocator *alloc, size_t length) {
-    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
+    ShmContainer<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
     header_ = alloc_->template
       AllocatePtr<TYPED_HEADER>(
       sizeof(TYPED_HEADER) + length + 1,

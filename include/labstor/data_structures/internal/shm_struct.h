@@ -29,78 +29,18 @@
 
 #include "labstor/memory/memory_manager.h"
 #include "shm_macros.h"
-#include "shm_data_structure.h"
 #include "shm_archive.h"
+#include "shm_data_structure.h"
 
 namespace labstor::ipc {
 
 /**
  * MACROS used to simplify the vector namespace
- * Used as inputs to the SHM_DATA_STRUCTURE_TEMPLATE
+ * Used as inputs to the SHM_CONTAINER_TEMPLATE
  * */
-#define CLASS_NAME ShmSimplePointer
+#define CLASS_NAME ShmStruct
 #define TYPED_CLASS T
 #define TYPED_HEADER T
-
-/**
- * A wrapper around a process-independent pointer for storing
- * a single complex shared-memory data structure
- * */
-template<typename T>
-struct ShmPointerArchive {
- public:
-  Pointer header_ptr_;
-
-  /** Default constructor */
-  ShmPointerArchive() = default;
-
-  /** Get the process-independent pointer */
-  inline Pointer& Get() {
-    return header_ptr_;
-  }
-
-  /** Get the process-independent pointer */
-  inline const Pointer& GetConst() {
-    return header_ptr_;
-  }
-
-  /** Creates a ShmPointerArchive from a header pointer */
-  explicit ShmPointerArchive(Pointer &ptr)
-    : header_ptr_(ptr) {
-  }
-
-  /** Creates a ShmPointerArchive from a header pointer */
-  explicit ShmPointerArchive(const Pointer &ptr)
-    : header_ptr_(ptr) {
-  }
-
-  /** Copies a ShmPointerArchive into another */
-  ShmPointerArchive(const ShmPointerArchive &other)
-    : header_ptr_(other.header_ptr_) {
-  }
-
-  /** Moves the data from one archive into another */
-  ShmPointerArchive(ShmPointerArchive&& other) noexcept
-    : header_ptr_(other.header_ptr_) {
-    other.header_ptr_.set_null();
-  }
-
-  /** Copies a ShmPointerArchive into another */
-  ShmPointerArchive& operator=(const ShmPointerArchive &other) {
-    if (this != &other) {
-      header_ptr_ = other.header_ptr_;
-    }
-    return *this;
-  }
-
-  /** Moves the data from one archive into another */
-  ShmPointerArchive& operator=(ShmPointerArchive&& other) noexcept {
-    if (this != &other) {
-      header_ptr_ = other.header_ptr_;
-    }
-    return *this;
-  }
-};
 
 /**
  * Used for storing a simple type (C-style struct, etc) in shared
@@ -109,12 +49,12 @@ struct ShmPointerArchive {
  * Called internally by manual_ptr, unique_ptr, and shared_ptr
  * */
 template<typename T>
-struct ShmSimplePointer : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
+struct ShmStruct : public ShmDataStructure<TYPED_CLASS> {
  public:
-  BASIC_SHM_DATA_STRUCTURE_TEMPLATE
+  SHM_DATA_STRUCTURE_TEMPLATE(TYPED_HEADER)
 
   /** Default constructor */
-  ShmSimplePointer() = default;
+  ShmStruct() = default;
 
   /** Construct pointer in-place (find allocator) */
   template<typename ...Args>
@@ -125,17 +65,17 @@ struct ShmSimplePointer : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   /**
    * Constructs and stores a simple C type in shared-memory. E.g., a struct
-   * or union. Complex structures should look at ShmDataStructure under
+   * or union. Complex structures should look at ShmContainer under
    * data_structures/data_structure.h
    * */
   template<typename ...Args>
   void shm_init(Allocator *alloc, Args &&...args) {
-    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
+    ShmDataStructure<TYPED_CLASS>::shm_init(alloc);
     header_ = alloc_->template
       AllocateConstructObjs<T>(1, header_ptr_, std::forward<Args>(args)...);
   }
 
-  /** Destroy the contents of the ShmSimplePointer */
+  /** Destroy the contents of the ShmStruct */
   void shm_destroy() {
     if (IsNull()) { return; }
     alloc_->Free(header_ptr_);
@@ -171,6 +111,20 @@ struct ShmSimplePointer : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
   T& operator*() {
     return get_ref();
   }
+
+  /** Copy constructor */
+  void StrongCopy(const ShmStruct &other) {
+    WeakCopy(other);
+  }
+
+  /** Move operators */
+  SHM_INHERIT_MOVE_OPS(CLASS_NAME)
+
+  /** Copy operators */
+  SHM_INHERIT_COPY_OPS(CLASS_NAME)
+
+  /** Serialize into an archive */
+  SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
 };
 
 }  // namespace labstor::ipc

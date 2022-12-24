@@ -452,7 +452,7 @@ class Allocator {
    * @return a process-specific pointer
    * */
   template<typename T>
-  T* Convert(Pointer &p) {
+  T* Convert(const Pointer &p) {
     if (p.is_null()) { return nullptr; }
     return reinterpret_cast<T*>(backend_->data_ + p.off_);
   }

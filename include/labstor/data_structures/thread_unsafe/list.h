@@ -239,7 +239,7 @@ using list_citerator = list_iterator_templ<T, true>;
 
 /**
  * MACROS used to simplify the list namespace
- * Used as inputs to the SHM_DATA_STRUCTURE_TEMPLATE
+ * Used as inputs to the SHM_CONTAINER_TEMPLATE
  * */
 #define CLASS_NAME list
 #define TYPED_CLASS list<T>
@@ -249,9 +249,9 @@ using list_citerator = list_iterator_templ<T, true>;
  * Doubly linked list implementation
  * */
 template<typename T>
-class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
+class list : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
  public:
-  BASIC_SHM_DATA_STRUCTURE_TEMPLATE
+  BASIC_SHM_CONTAINER_TEMPLATE
 
  public:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
@@ -290,7 +290,7 @@ class list : public ShmDataStructure<TYPED_CLASS, TYPED_HEADER> {
 
   /** Initialize list in shared memory */
   void shm_init(Allocator *alloc) {
-    ShmDataStructure<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
+    ShmContainer<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
     header_ = alloc_->template
       ClearAllocateObjs<TYPED_HEADER>(1, header_ptr_);
     header_->head_ptr_.set_null();

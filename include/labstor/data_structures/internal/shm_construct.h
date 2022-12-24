@@ -28,7 +28,7 @@
 #define LABSTOR_DATA_STRUCTURES_SHM_CONSTRUCT_H_
 
 #include "shm_archive.h"
-#include "shm_simple_pointer.h"
+#include "shm_struct.h"
 #include "shm_smart_ptr.h"
 
 namespace labstor::ipc {
@@ -45,7 +45,7 @@ static ShmArchive<T> make_shm_ar(Args&& ...args) {
     }
     obj >> ar;
   } else {
-    ShmSimplePointer<T> obj;
+    ShmStruct<T> obj;
     obj.shm_init(std::forward<Args>(args)...);
     obj >> ar;
   }
