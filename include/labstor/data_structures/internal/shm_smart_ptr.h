@@ -34,7 +34,7 @@
 #include <labstor/constants/data_structure_singleton_macros.h>
 
 #include "labstor/data_structures/internal/shm_archive.h"
-#include "labstor/data_structures/internal/shm_struct.h"
+#include "labstor/data_structures/internal/shm_simple_pointer.h"
 #include "labstor/data_structures/internal/shm_construct.h"
 
 namespace labstor::ipc {
@@ -42,7 +42,7 @@ namespace labstor::ipc {
 /**
  * Indicates a data structure represents a memory paradigm for Shm.
  * */
-class ShmSmartPointer : public ShmSerializeable {};
+class ShmSmartPointer : public ShmArchiveable {};
 
 /**
  * A base class used for creating shared-memory pointer management
@@ -52,7 +52,7 @@ template<typename T>
 class ShmSmartPtr : public ShmSmartPointer {
  public:
   typedef SHM_T_OR_SHM_PTR_T(T) T_Ptr;
-  T_Ptr obj_;  /**< T for complex object, ShmStruct<T> for C-style */
+  T_Ptr obj_;  /**< T for complex object, ShmSimplePointer<T> for C-style */
 
  public:
   /** Sets this pointer to NULL */

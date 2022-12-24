@@ -29,69 +29,120 @@
 
 #include "labstor/memory/memory_manager.h"
 #include "shm_macros.h"
-#include "shm_serialize.h"
 
 namespace labstor::ipc {
+
+/**
+ * Indicates that a data structure can be archived in shared memory
+ * and has a corresponding ShmArchive override.
+ * */
+class ShmArchiveable {
+  /**
+   * Initialize a SHM data structure in shared-memory.
+   * Constructors may wrap around these.
+   * */
+  // void shm_init(...);
+
+  /**
+   * Destroys the shared-memory allocated by the object.
+   * Destructors may wrap around this.
+   * */
+  // void shm_destroy();
+
+  /**
+   * Deep copy of an object. Wrapped by copy constructor
+   * */
+  // void StrongCopy(const CLASS_NAME &other);
+  // SHM_INHERIT_COPY_OPS(CLASS_NAME)
+
+  /**
+   * Copies only the object's pointers.
+   * */
+  // void WeakCopy(const CLASS_NAME &other);
+
+  /**
+   * Moves the object's contents into another object
+   * */
+  // void WeakMove(CLASS_NAME &other);
+  // SHM_INHERIT_MOVE_OPS(CLASS_NAME)
+
+  /**
+   * Store object into a ShmArchive
+   * */
+  // void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const;
+  // SHM_SERIALIZE_OPS(TYPED_CLASS)
+
+  /**
+   * Construct object from a ShmArchive.
+   * */
+  // void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar);
+  // SHM_DESERIALIZE_OPS(TYPED_CLASS)
+};
 
 /**
  * A wrapper around a process-independent pointer for storing
  * a single complex shared-memory data structure
  * */
 template<typename T>
-struct ShmArchive {
- public:
-  Pointer header_ptr_;
+struct ShmArchive;
 
-  /** Default constructor */
-  ShmArchive() = default;
-
-  /** Get the process-independent pointer */
-  inline Pointer& Get() {
-    return header_ptr_;
+/** Generates the code for move operators */
+#define SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
+  CLASS_NAME(CLASS_NAME &&other) noexcept {\
+    shm_destroy();\
+    WeakMove(other);\
+  }\
+  CLASS_NAME& operator=(CLASS_NAME &&other) noexcept {\
+    if (this != &other) {\
+      shm_destroy();\
+      WeakMove(other);\
+    }\
+    return *this;\
+  }\
+  void shm_init(CLASS_NAME &&other) noexcept {\
+    shm_destroy();\
+    WeakMove(other);\
   }
 
-  /** Get the process-independent pointer */
-  inline const Pointer& GetConst() {
-    return header_ptr_;
+/** Generates the code for copy operators */
+#define SHM_INHERIT_COPY_OPS(CLASS_NAME)\
+  CLASS_NAME(const CLASS_NAME &other) noexcept {\
+    shm_destroy();\
+    shm_init(other);\
+  }\
+  CLASS_NAME& operator=(const CLASS_NAME &other) {\
+    if (this != &other) {\
+      shm_destroy();\
+      shm_init(other);\
+    }\
+    return *this;\
+  }\
+  void shm_init(const CLASS_NAME &other) {\
+    shm_destroy();\
+    StrongCopy(other);\
   }
 
-  /** Creates a ShmArchive from a header pointer */
-  explicit ShmArchive(Pointer &ptr)
-    : header_ptr_(ptr) {
+/**
+ * Enables a specific ShmArchive type to be serialized
+ * */
+#define SHM_SERIALIZE_OPS(AR_TYPE)\
+  void operator>>(ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) const {\
+    shm_serialize(ar.header_ptr_);\
   }
 
-  /** Creates a ShmArchive from a header pointer */
-  explicit ShmArchive(const Pointer &ptr)
-    : header_ptr_(ptr) {
+/**
+ * Enables a specific ShmArchive type to be deserialized
+ * */
+#define SHM_DESERIALIZE_OPS(AR_TYPE)\
+  void operator<<(const ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) {\
+    shm_deserialize(ar.header_ptr_);\
   }
 
-  /** Copies a ShmArchive into another */
-  ShmArchive(const ShmArchive &other)
-    : header_ptr_(other.header_ptr_) {
-  }
+/** Enables serialization + deserialization for data structures */
+#define SHM_SERIALIZE_DESERIALIZE_OPS(AR_TYPE)\
+  SHM_SERIALIZE_OPS(AR_TYPE)\
+  SHM_DESERIALIZE_OPS(AR_TYPE)
 
-  /** Moves the data from one archive into another */
-  ShmArchive(ShmArchive&& other) noexcept
-    : header_ptr_(other.header_ptr_) {
-    other.header_ptr_.set_null();
-  }
-
-  /** Copies a ShmArchive into another */
-  ShmArchive& operator=(const ShmArchive &other) {
-    if (this != &other) {
-      header_ptr_ = other.header_ptr_;
-    }
-    return *this;
-  }
-
-  /** Moves the data from one archive into another */
-  ShmArchive& operator=(ShmArchive&& other) noexcept {
-    if (this != &other) {
-      header_ptr_ = other.header_ptr_;
-    }
-    return *this;
-  }
-};
 
 }  // namespace labstor::ipc
 

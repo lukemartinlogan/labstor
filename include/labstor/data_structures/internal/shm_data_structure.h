@@ -34,10 +34,15 @@
 
 #include "labstor/data_structures/internal/shm_macros.h"
 #include "labstor/data_structures/internal/shm_archive.h"
-#include "labstor/data_structures/internal/shm_struct.h"
+#include "labstor/data_structures/internal/shm_serialize.h"
 #include "labstor/data_structures/internal/shm_construct.h"
 
+#include "labstor/data_structures/smart_ptr/manual_ptr.h"
+
 namespace labstor::ipc {
+
+/** Used for all data structures */
+
 
 /**
  * The general base class of a shared-memory data structure
@@ -47,13 +52,14 @@ namespace labstor::ipc {
  * section "REQUIRED METHODS"
  * */
 template<typename TYPED_CLASS, typename TYPED_HEADER>
-class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
+class ShmDataStructure : public ShmArchiveable {
  public:
-  SHM_SERIALIZER_TEMPLATE(TYPED_HEADER)
+  mptr<TYPED_HEADER> header_;
   typedef TYPED_HEADER header_t;
 
  protected:
   LABSTOR_MEMORY_MANAGER_T mem_mngr_;  /**< Memory manager */
+  Allocator *alloc_;
   bool destructable_;  /**< Whether or not to call shm_destroy in destructor */
 
  public:
@@ -78,17 +84,26 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
     }
   }
 
+  /** Serialize object */
+  void shm_serialize(ShmArchive<TYPED_CLASS> &other) const {
+  }
+
+  /** Deserialize object */
+  void shm_deserialize(const ShmArchive<TYPED_CLASS> &other) {
+  }
+
   /** Copy only pointers */
   void WeakCopy(const ShmDataStructure &other) {
+    header_ = other.header_;
     mem_mngr_ = other.mem_mngr_;
     destructable_ = other.destructable_;
-    ShmSerializer<TYPED_HEADER>::WeakCopy(other);
   }
 
   /** Move only pointers */
   void WeakMove(ShmDataStructure &other) {
-    WeakCopy(other);
-    other.SetNull();
+    header_ = std::move(other.header_);
+    mem_mngr_ = other.mem_mngr_;
+    destructable_ = other.destructable_;
   }
 
   /** Sets this object as destructable */
@@ -101,13 +116,35 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
     destructable_ = false;
   }
 
-  /**
-   * REQUIRED METHODS
-   * */
+  /** Set to null */
+  void SetNull() {
+    header_->SetNull();
+  }
+
+  /** Check if null */
+  bool IsNull() const {
+    return header_->IsNull();
+  }
+
+  /** Get the allocator for this pointer */
+  Allocator* GetAllocator() {
+    return alloc_;
+  }
+
+  /** Get the shared-memory allocator id */
+  allocator_id_t GetAllocatorId() const {
+    return alloc_->GetId();
+  }
+
+
+
+  ////////////////////////////////
+  ////////REQUIRED METHODS
+  ///////////////////////////////
 
  public:
   /** Copy constructor (REQUIRED) */
-  // virtual void StrongCopy(const CLASS_NAME &other) = 0;
+  // void StrongCopy(const CLASS_NAME &other);
 };
 
 }  // namespace labstor::ipc
@@ -144,8 +181,8 @@ class ShmDataStructure : public ShmSerializer<TYPED_HEADER> {
   SHM_DATA_STRUCTURE_USING_NS::UnsetDestructable;\
   SHM_DATA_STRUCTURE_USING_NS::WeakMove;\
   SHM_DATA_STRUCTURE_USING_NS::WeakCopy;\
-  SHM_INHERIT_MOVE_OPERATORS(CLASS_NAME)\
-  SHM_INHERIT_COPY_OPERATORS(CLASS_NAME)\
+  SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
+  SHM_INHERIT_COPY_OPS(CLASS_NAME)\
   SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
 
 /**
