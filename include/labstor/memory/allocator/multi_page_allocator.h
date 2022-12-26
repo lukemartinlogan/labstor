@@ -45,11 +45,13 @@ struct MultiPageFreeList {
   /**
    * Initialize the free list array
    * */
-  void shm_init(size_t region_off, size_t region_size) {
+  void shm_init(size_t mp_free_list_elmt_size,
+                size_t region_off, size_t region_size) {
     Allocator::ConstructObj<MultiPageFreeList>(*this);
     void *after = reinterpret_cast<char*>(this) + 1;
     _array<_queue_header<Page>> free_lists;
-    free_lists.shm_deserialize(after);
+    free_lists.shm_init(after,
+                        mp_free_list_elmt_size - sizeof(MultiPageFreeList));
     region_off_= region_off;
     region_size_ = region_size;
     free_size_ = region_size;
@@ -73,6 +75,7 @@ struct MultiPageAllocatorHeader : public AllocatorHeader {
   /// Bytes to dedicate to per-thread free list tables
   size_t thread_table_size_;
   /// Cache every page between these sizes
+  size_t mp_free_list_elmt_size_;
   size_t min_page_size_, max_page_size_;
   uint32_t min_page_log_, max_page_log_, last_page_idx_;
   /// The page sizes to cache
@@ -95,11 +98,11 @@ struct MultiPageAllocatorHeader : public AllocatorHeader {
                  int concurrency) {
     AllocatorHeader::Configure(alloc_id, AllocatorType::kPageAllocator,
                                custom_header_size);
-    min_page_size = min_page_size_;
-    max_page_size = max_page_size_;
-    growth_rate = growth_rate_;
-    coalesce_min_size = coalesce_min_size_;
-    coalesce_frac = coalesce_frac_;
+    min_page_size_ = min_page_size;
+    max_page_size_ = max_page_size;
+    growth_rate_ = growth_rate;
+    coalesce_min_size_ = coalesce_min_size;
+    coalesce_frac_ = coalesce_frac;
     thread_table_size_ = thread_table_size;
     concurrency_ = concurrency;
   }
@@ -122,7 +125,7 @@ class MultiPageAllocator : public Allocator {
    * Determine the size of the shared-memory header
    * */
   size_t GetInternalHeaderSize() override {
-    return sizeof(PageAllocatorHeader);
+    return sizeof(MultiPageAllocatorHeader);
   }
 
   /**
@@ -143,7 +146,7 @@ class MultiPageAllocator : public Allocator {
                 RealNumber growth_rate = RealNumber(1, 16384),
                 size_t coalesce_min_size = MEGABYTES(20),
                 RealNumber coalesce_frac = RealNumber(2, 0),
-                size_t thread_table_size = KILOBYTES(4),
+                size_t thread_table_size = MEGABYTES(1),
                 int concurrency = 4);
 
   /**

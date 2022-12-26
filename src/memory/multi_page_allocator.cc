@@ -30,8 +30,10 @@ uint32_t CountLogarithm(RealNumber base, size_t x, size_t &round) {
  * */
 inline uint32_t MultiPageAllocator::IndexLogarithm(size_t x, size_t &round) {
   if (x <= header_->min_page_size_) {
+    round = header_->min_page_size_;
     return 0;
   } else if (x > header_->max_page_size_){
+    round = x;
     return header_->last_page_idx_;
   }
   size_t log = CountLogarithm(header_->growth_rate_, x, round);
@@ -59,8 +61,6 @@ void MultiPageAllocator::shm_init(MemoryBackend *backend,
   custom_header_ = GetCustomHeader<char>();
   // Get the number of page sizes to cache per MultiPageFreeList
   size_t round;
-  header_->min_page_size_ = min_page_size;
-  header_->max_page_size_ = max_page_size;
   header_->min_page_log_ = CountLogarithm(growth_rate, min_page_size, round);
   header_->max_page_log_ = CountLogarithm(growth_rate, max_page_size, round);
   header_->last_page_idx_ = header_->max_page_log_ - header_->min_page_log_ + 1;
@@ -68,6 +68,7 @@ void MultiPageAllocator::shm_init(MemoryBackend *backend,
   // Get the size of a single MultiPageFreeList
   size_t mp_free_list_elmt_size = _array<MultiPageFreeList>::GetSizeBytes(
     1, MultiPageFreeList::GetSizeBytes(num_cached_pages + 1));
+  header_->mp_free_list_elmt_size_ = mp_free_list_elmt_size;
   // Allocate the array of MultiPageFreeLists
   void *free_list_start = GetMpFreeListStart();
   mp_free_lists_.shm_init(free_list_start,
@@ -79,7 +80,8 @@ void MultiPageAllocator::shm_init(MemoryBackend *backend,
   size_t cur_size = backend_->data_size_ - cur_off;
   size_t per_conc_region = cur_size / header_->concurrency_;
   for (auto &mp_free_list : mp_free_lists_) {
-    mp_free_list.shm_init(cur_off, per_conc_region);
+    mp_free_list.shm_init(mp_free_list_elmt_size,
+                          cur_off, per_conc_region);
     cur_off += per_conc_region;
   }
 }
@@ -231,7 +233,6 @@ Pointer MultiPageAllocator::_Allocate(MultiPageFreeList &mp_free_list,
                                       size_t page_size_idx,
                                       size_t page_size) {
   Pointer ret;
-  _queue<MpPage> page_free_list;
 
   // Re-use a cached page
   if (page_size_idx < header_->last_page_idx_) {
@@ -373,7 +374,7 @@ bool MultiPageAllocator::_AllocateSegment(MultiPageFreeList &mp_free_list,
 void MultiPageAllocator::_AddThread() {
   int new_tid = header_->concurrency_.fetch_add(1);
   auto &mp_free_list = mp_free_lists_[new_tid];
-  mp_free_list.shm_init(0, 0);
+  mp_free_list.shm_init(header_->mp_free_list_elmt_size_, 0, 0);
 }
 
 /** Free a page to a free list */
@@ -384,6 +385,8 @@ void MultiPageAllocator::_Free(MultiPageFreeList &mp_free_list, Pointer &p) {
                                 backend_->data_, page_free_list);
   Pointer real_p = p - hdr->off_;
   page_free_list.enqueue_off(real_p.off_);
+  mp_free_list.free_size_ += hdr->page_size_;
+  mp_free_list.total_alloced_ -= hdr->page_size_;
 }
 
 }  // namespace labstor::ipc

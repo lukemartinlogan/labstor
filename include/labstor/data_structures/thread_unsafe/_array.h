@@ -96,7 +96,7 @@ class _array {
   bool shm_init(void *buffer, size_t size, size_t elmt_size = sizeof(T)) {
     header_ = reinterpret_cast<_array_header<T>*>(buffer);
     header_->length_ = 0;
-    header_->max_length_ = (size - sizeof(_array_header<T>)) / sizeof(T);
+    header_->max_length_ = (size - sizeof(_array_header<T>)) / elmt_size;
     header_->elmt_size_ = elmt_size;
     elmt_size_ = elmt_size;
     array_ = reinterpret_cast<char*>(header_ + 1);
@@ -111,7 +111,7 @@ class _array {
   }
 
   char* After() {
-    return reinterpret_cast<char*>(array_ + header_->max_length_);
+    return array_ + GetOff(header_->max_length_);
   }
 
   T& operator[](const size_t i) {
