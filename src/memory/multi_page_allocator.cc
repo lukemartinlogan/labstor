@@ -7,40 +7,40 @@
 namespace labstor::ipc {
 
 /**
- * base^y = x; solve for y
+ * base^y = x; solve for y (round up)
  * */
-size_t CountLogarithm(RealNumber base, size_t x, size_t &round) {
-  size_t y = 1;
+uint32_t CountLogarithm(RealNumber base, size_t x, size_t &round) {
+  uint32_t y = 1;
   RealNumber compound(base);
   while (compound.as_int() < x) {
     compound *= base;
     RealNumber compound_exp = compound * compound;
     y += 1;
     if (compound_exp.as_int() <= x) {
-      y *= y;
+      y *= 2;
       compound = compound_exp;
     }
   }
   round = compound.as_int();
-  return y - 1;
+  return y;
 }
 
 /**
  * The index of the free list to allocate pages from
  * */
-inline size_t MultiPageAllocator::IndexLogarithm(size_t x, size_t &round) {
+inline uint32_t MultiPageAllocator::IndexLogarithm(size_t x, size_t &round) {
   if (x <= header_->min_page_size_) {
     return 0;
   } else if (x > header_->max_page_size_){
-    return header_->max_page_idx_ - header_->min_page_idx_ + 1;
+    return header_->last_page_idx_;
   }
-  return CountLogarithm(header_->growth_rate_, x, round) -
-  header_->min_page_idx_;
+  size_t log = CountLogarithm(header_->growth_rate_, x, round);
+  return log - header_->min_page_log_;
 }
 
 /**
-   * Initialize the allocator in shared memory
-   * */
+ * Initialize the allocator in shared memory
+ * */
 void MultiPageAllocator::shm_init(MemoryBackend *backend,
                                   allocator_id_t alloc_id,
                                   size_t custom_header_size,
@@ -59,15 +59,17 @@ void MultiPageAllocator::shm_init(MemoryBackend *backend,
   custom_header_ = GetCustomHeader<char>();
   // Get the number of page sizes to cache per MultiPageFreeList
   size_t round;
-  header_->min_page_idx_ = CountLogarithm(growth_rate, min_page_size, round);
-  header_->max_page_idx_ = CountLogarithm(growth_rate, max_page_size, round);
-  size_t num_cached_pages = header_->max_page_idx_ - header_->min_page_idx_;
-  num_cached_pages += 1;
+  header_->min_page_size_ = min_page_size;
+  header_->max_page_size_ = max_page_size;
+  header_->min_page_log_ = CountLogarithm(growth_rate, min_page_size, round);
+  header_->max_page_log_ = CountLogarithm(growth_rate, max_page_size, round);
+  header_->last_page_idx_ = header_->max_page_log_ - header_->min_page_log_ + 1;
+  size_t num_cached_pages = header_->last_page_idx_ + 1;
   // Get the size of a single MultiPageFreeList
   size_t mp_free_list_elmt_size = _array<MultiPageFreeList>::GetSizeBytes(
     1, MultiPageFreeList::GetSizeBytes(num_cached_pages + 1));
   // Allocate the array of MultiPageFreeLists
-  void *free_list_start = GetFreeListStart();
+  void *free_list_start = GetMpFreeListStart();
   mp_free_lists_.shm_init(free_list_start,
                           header_->thread_table_size_,
                           mp_free_list_elmt_size);
@@ -89,7 +91,7 @@ void MultiPageAllocator::shm_deserialize(MemoryBackend *backend) {
   backend_ = backend;
   header_ = reinterpret_cast<MultiPageAllocatorHeader*>(backend_->data_);
   custom_header_ = GetCustomHeader<char>();
-  void *free_list_start = GetFreeListStart();
+  void *free_list_start = GetMpFreeListStart();
   mp_free_lists_.shm_deserialize(free_list_start);
 }
 
@@ -98,7 +100,8 @@ void MultiPageAllocator::shm_deserialize(MemoryBackend *backend) {
  * */
 Pointer MultiPageAllocator::Allocate(size_t size) {
   size_t page_size;
-  size_t page_size_idx = IndexLogarithm(size, page_size);
+  uint32_t page_size_idx = IndexLogarithm(size, page_size);
+  bool all_locks_held = true;
 
   // Get current thread ID
   auto thread_info = LABSTOR_THREAD_MANAGER->GetThreadStatic();
@@ -111,16 +114,22 @@ Pointer MultiPageAllocator::Allocate(size_t size) {
     ScopedMutex list_lock(mp_free_list.lock_);
     if (mp_free_list.free_size_ < size) continue;
     if (list_lock.TryLock()) {
+      all_locks_held = false;
       Pointer p = _Allocate(mp_free_list, page_size_idx, page_size);
-      if (!p.is_null()) return p;
-      _Borrow(&mp_free_list, tid, false);
-      p = _Allocate(mp_free_list, page_size_idx, page_size);
+      if (p.is_null()) { continue; }
+      auto hdr = Convert<MpPage>(p);
+      hdr->page_size_ = page_size;
+      hdr->page_idx_ = page_size_idx;
+      hdr->off_ = sizeof(MpPage);
+      p += sizeof(MpPage);
       return p;
     }
   }
 
-  // Create a new allocator list, borrowing from an allocator with space
-  _Borrow(nullptr, tid, true);
+  // Create a new allocator list to cache
+  if (all_locks_held) {
+    _AddThread();
+  }
 
   return kNullPointer;
 }
@@ -130,6 +139,24 @@ Pointer MultiPageAllocator::Allocate(size_t size) {
  * alignment.
  * */
 Pointer MultiPageAllocator::AlignedAllocate(size_t size, size_t alignment) {
+  // Add alignment to size to guarantee the ability to shift
+  size += alignment;
+  Pointer p = Allocate(size);
+  // Get the current header statistics
+  auto hdr = Convert<MpPage>(p - sizeof(MpPage));
+  size_t page_idx = hdr->page_idx_;
+  size_t page_size = hdr->page_size_;
+  // Get the alignment offset
+  auto ptr = Convert<char>(p);
+  size_t align_off = reinterpret_cast<size_t>(ptr) % alignment;
+  size_t new_page_off = alignment - align_off;
+  p += new_page_off;
+  // Create the header for the aligned payload
+  auto new_hdr = Convert<MpPage>(p - sizeof(MpPage));
+  new_hdr->page_size_ = page_size;
+  new_hdr->page_idx_ = page_idx;
+  new_hdr->off_ = new_page_off;
+  return p;
 }
 
 /**
@@ -138,12 +165,44 @@ Pointer MultiPageAllocator::AlignedAllocate(size_t size, size_t alignment) {
  * @return whether or not the pointer p was changed
  * */
 bool MultiPageAllocator::ReallocateNoNullCheck(Pointer &p, size_t new_size) {
+  auto hdr = Convert<MpPage>(p - sizeof(MpPage));
+  size_t cur_size = hdr->page_size_ - hdr->off_;
+  if (new_size <= cur_size) {
+    return false;
+  }
+  Pointer new_p = Allocate(new_size);
+  char *src = Convert<char>(p);
+  char *dst = Convert<char>(new_p);
+  memcpy(dst, src, cur_size);
+  Free(p);
+  p = new_p;
+  return true;
 }
 
 /**
  * Free \a ptr pointer. Null check is performed elsewhere.
  * */
 void MultiPageAllocator::FreeNoNullCheck(Pointer &ptr) {
+  auto thread_info = LABSTOR_THREAD_MANAGER->GetThreadStatic();
+  auto tid = thread_info->GetTid();
+
+  // Try to find an unlocked list to free to
+  for (auto i = 0; i < header_->concurrency_; ++i) {
+    auto mp_free_list_id = (tid + i) % header_->concurrency_;
+    auto &mp_free_list = mp_free_lists_[mp_free_list_id];
+    ScopedMutex list_lock(mp_free_list.lock_);
+    if (list_lock.TryLock()) {
+      _Free(mp_free_list, ptr);
+      return;
+    }
+  }
+
+  // Force lock the list the thread corresponds to
+  auto free_list_id = tid % header_->concurrency_;
+  auto &mp_free_list = mp_free_lists_[free_list_id];
+  ScopedMutex list_lock(mp_free_list.lock_);
+  list_lock.Lock();
+  _Free(mp_free_list, ptr);
 }
 
 /**
@@ -161,45 +220,170 @@ size_t MultiPageAllocator::GetCurrentlyAllocatedSize() {
   return total_alloced - total_freed;
 }
 
-void* MultiPageAllocator::GetFreeListStart() {
+/** Get the pointer to the mp_free_lists_ array */
+void* MultiPageAllocator::GetMpFreeListStart() {
   return reinterpret_cast<void*>(
     custom_header_ + header_->custom_header_size_);
 }
 
+/** Allocate a page from a thread's mp free list */
 Pointer MultiPageAllocator::_Allocate(MultiPageFreeList &mp_free_list,
                                       size_t page_size_idx,
                                       size_t page_size) {
+  Pointer ret;
   _queue<MpPage> page_free_list;
-  // Each page has a header with info needed for aligned allocations
-  page_size += sizeof(MpPageHeader);
 
   // Re-use a cached page
-  mp_free_list.GetPageFreeList(page_size_idx, backend_->data_, page_free_list);
-  if (page_free_list.size()) {
-    size_t off = page_free_list.dequeue_off();
-    mp_free_list.free_size_ -= page_size;
-    mp_free_list.total_alloced_ += page_size;
-    return Pointer(GetId(), off);
+  if (page_size_idx < header_->last_page_idx_) {
+    if (_AllocateCached(mp_free_list, page_size_idx, page_size, ret)) {
+      return ret;
+    } else if (_AllocateBorrowCached(mp_free_list, page_size_idx,
+                                     page_size, ret)) {
+      return ret;
+    }
+  } else {
+    if (_AllocateLargeCached(mp_free_list, page_size_idx, page_size, ret)) {
+      return ret;
+    }
   }
 
-  // Create a new page from the segment
+  // TODO(llogan): check fragmentation
+
+  // Create a new page from the thread's segment
+  if (_AllocateSegment(mp_free_list, page_size_idx, page_size, ret)) {
+    return ret;
+  }
+
+  return kNullPointer;
+}
+
+/** Allocate a large, cached page */
+bool MultiPageAllocator::_AllocateLargeCached(MultiPageFreeList &mp_free_list,
+                                              size_t page_size_idx,
+                                              size_t page_size,
+                                              Pointer &ret) {
+  _queue<MpPage> page_free_list;
+  mp_free_list.GetPageFreeList(page_size_idx, backend_->data_, page_free_list);
+  for (size_t i = 0; i < page_free_list.size(); ++i) {
+    size_t backend_off = page_free_list.dequeue_off();
+    ret = Pointer(GetId(), backend_off);
+    auto hdr = Convert<MpPage>(ret);
+    if (hdr->page_size_ >= page_size) {
+      return true;
+    }
+    page_free_list.enqueue_off(backend_off);
+  }
+  return false;
+}
+
+/** Allocate a cached page */
+bool MultiPageAllocator::_AllocateCached(MultiPageFreeList &mp_free_list,
+                                         size_t page_size_idx,
+                                         size_t page_size,
+                                         Pointer &ret) {
+  _queue<MpPage> page_free_list;
+  mp_free_list.GetPageFreeList(page_size_idx, backend_->data_, page_free_list);
+  if (page_free_list.size() == 0) {
+    return false;
+  }
+  size_t off = page_free_list.dequeue_off();
+  mp_free_list.free_size_ -= page_size;
+  mp_free_list.total_alloced_ += page_size;
+  ret = Pointer(GetId(), off);
+  return true;
+}
+
+/** Allocate a larger cached page */
+bool MultiPageAllocator::_AllocateBorrowCached(MultiPageFreeList &mp_free_list,
+                                               size_t page_size_idx,
+                                               size_t page_size,
+                                               Pointer &ret) {
+  // Get the free list corresponding to the original page_size
+  size_t orig_page_size = page_size + sizeof(MpPage);
+  _queue<MpPage> orig_page_free_list;
+  mp_free_list.GetPageFreeList(page_size_idx, backend_->data_,
+                               orig_page_free_list);
+  // Find the first cached page larger than page_size
+  do {
+    _queue<MpPage> page_free_list;
+    mp_free_list.GetPageFreeList(page_size_idx, backend_->data_, page_free_list);
+    if (page_free_list.size() == 0) {
+      page_size_idx += 1;
+      page_size = (header_->growth_rate_ * page_size).as_int();
+      continue;
+    }
+    // Dequeue the large page
+    size_t backend_off = page_free_list.dequeue_off();
+    auto hdr = Convert<MpPage>(Pointer(GetId(), backend_off));
+    page_size = hdr->page_size_;
+    // Shard the large page into original page sizes
+    orig_page_size += sizeof(MpPage);
+    size_t num_shards = page_size / orig_page_size;
+    size_t shard_off = page_size % orig_page_size;
+    if (shard_off != 0) {
+      num_shards -= 1;
+    }
+    for (int i = 0; i < num_shards; ++i) {
+      Pointer p(GetId(), backend_off + orig_page_size * i);
+      auto hdr = Convert<MpPage>(p);
+      hdr->page_size_ = orig_page_size;
+      hdr->off_ = 0;
+      hdr->page_idx_ = page_size_idx;
+      orig_page_free_list.enqueue_off(p.off_);
+    }
+    if (shard_off != 0) {
+      Pointer p(GetId(), backend_off + orig_page_size * num_shards);
+      auto hdr = Convert<MpPage>(p);
+      hdr->page_size_ = orig_page_size + shard_off;
+      hdr->off_ = 0;
+      hdr->page_idx_ = page_size_idx;
+      orig_page_free_list.enqueue_off(p.off_);
+    }
+    // Dequeue a page from the original page free list
+    size_t off = orig_page_free_list.dequeue_off();
+    ret = Pointer(GetId(), off);
+    hdr = Convert<MpPage>(ret);
+    mp_free_list.free_size_ -= hdr->page_size_;
+    mp_free_list.total_alloced_ += hdr->page_size_;
+    return true;
+  } while(page_size_idx <= header_->last_page_idx_);
+
+  return false;
+}
+
+/** Allocate a page off the thread's segment */
+bool MultiPageAllocator::_AllocateSegment(MultiPageFreeList &mp_free_list,
+                                          size_t page_size_idx,
+                                          size_t page_size,
+                                          Pointer &ret) {
+  page_size += sizeof(MpPage);
   if (mp_free_list.region_size_ >= page_size) {
     size_t off = mp_free_list.region_off_;
     mp_free_list.region_size_ -= page_size;
     mp_free_list.region_off_ += page_size;
     mp_free_list.free_size_ -= page_size;
     mp_free_list.total_alloced_ += page_size;
-    return Pointer(GetId(), off);
+    ret = Pointer(GetId(), off);
+    return true;
   }
-
-  return kNullPointer;
+  return false;
 }
 
-void MultiPageAllocator::_Borrow(MultiPageFreeList *to,
-                                 tid_t tid, bool append) {
+/** Create a new thread allocator by borrowing from other allocators */
+void MultiPageAllocator::_AddThread() {
+  int new_tid = header_->concurrency_.fetch_add(1);
+  auto &mp_free_list = mp_free_lists_[new_tid];
+  mp_free_list.shm_init(0, 0);
 }
 
-void MultiPageAllocator::_Free(MultiPageFreeList *free_list, Pointer &p) {
+/** Free a page to a free list */
+void MultiPageAllocator::_Free(MultiPageFreeList &mp_free_list, Pointer &p) {
+  auto hdr = Convert<MpPage>(p - sizeof(MpPage));
+  _queue<MpPage> page_free_list;
+  mp_free_list.GetPageFreeList(hdr->page_idx_,
+                                backend_->data_, page_free_list);
+  Pointer real_p = p - hdr->off_;
+  page_free_list.enqueue_off(real_p.off_);
 }
 
-}  // namespcae labstor::ipc
+}  // namespace labstor::ipc

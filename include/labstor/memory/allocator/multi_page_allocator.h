@@ -12,12 +12,10 @@
 
 namespace labstor::ipc {
 
-struct MpPageHeader {
-  size_t off_;
-};
-
-struct MpPage : _queue_entry {
-  MpPageHeader header_;
+struct MpPage : public _queue_entry {
+  size_t page_size_;  /**< The size of the page allocated */
+  uint32_t off_;        /**< The offset within the page */
+  uint32_t page_idx_;   /**< The id of the page in the mp free list */
 };
 
 struct MultiPageFreeList {
@@ -71,12 +69,12 @@ struct MultiPageFreeList {
 
 struct MultiPageAllocatorHeader : public AllocatorHeader {
   /// Number of threads to initially assume
-  int concurrency_;
+  std::atomic<int> concurrency_;
   /// Bytes to dedicate to per-thread free list tables
   size_t thread_table_size_;
   /// Cache every page between these sizes
   size_t min_page_size_, max_page_size_;
-  size_t min_page_idx_, max_page_idx_;
+  uint32_t min_page_log_, max_page_log_, last_page_idx_;
   /// The page sizes to cache
   RealNumber growth_rate_;
   /// The minimum number of free bytes before a coalesce can be triggered
@@ -142,9 +140,9 @@ class MultiPageAllocator : public Allocator {
                 size_t custom_header_size = 0,
                 size_t min_page_size = 32,
                 size_t max_page_size = MEGABYTES(1),
-                RealNumber growth_rate = RealNumber(5,4),
+                RealNumber growth_rate = RealNumber(1, 16384),
                 size_t coalesce_min_size = MEGABYTES(20),
-                RealNumber coalesce_frac = RealNumber(2,1),
+                RealNumber coalesce_frac = RealNumber(2, 0),
                 size_t thread_table_size = KILOBYTES(4),
                 int concurrency = 4);
 
@@ -184,12 +182,48 @@ class MultiPageAllocator : public Allocator {
   size_t GetCurrentlyAllocatedSize() override;
 
  private:
-  inline size_t IndexLogarithm(size_t x, size_t &round);
-  void* GetFreeListStart();
+  /** Get the index of "x" within the page free list array */
+  inline uint32_t IndexLogarithm(size_t x, size_t &round);
+
+  /** Get the pointer to the mp_free_lists_ array */
+  void* GetMpFreeListStart();
+
+  /** Allocate a page from a thread's mp free list */
   Pointer _Allocate(MultiPageFreeList &free_list,
                     size_t page_size_idx, size_t page_size);
-  void _Borrow(MultiPageFreeList *to, tid_t tid, bool append);
-  void _Free(MultiPageFreeList *free_list, Pointer &p);
+
+  /** Allocate a large, cached page */
+  bool _AllocateLargeCached(MultiPageFreeList &mp_free_list,
+                            size_t page_size_idx,
+                            size_t page_size,
+                            Pointer &ret);
+
+  /** Allocate a cached page */
+  bool _AllocateCached(MultiPageFreeList &mp_free_list,
+                       size_t page_size_idx,
+                       size_t page_size,
+                       Pointer &ret);
+
+  /** Allocate and divide a cached page larger than page_size */
+  bool _AllocateBorrowCached(MultiPageFreeList &mp_free_list,
+                             size_t page_size_idx,
+                             size_t page_size,
+                             Pointer &ret);
+
+  /** Allocate a page from the segment */
+  bool _AllocateSegment(MultiPageFreeList &mp_free_list,
+                        size_t page_size_idx,
+                        size_t page_size,
+                        Pointer &ret);
+
+  /** Reorganize free space to minimize fragmentation */
+  void _Coalesce(MultiPageFreeList &to, tid_t tid);
+
+  /** Create a new thread allocator by borrowing from other allocators */
+  void _AddThread();
+
+  /** Free a page to a free list */
+  void _Free(MultiPageFreeList &free_list, Pointer &p);
 };
 
 }  // namespace labstor::ipc

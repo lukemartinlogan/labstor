@@ -129,7 +129,7 @@ TEST_CASE("PageAllocator") {
 TEST_CASE("MultiPageAllocator") {
   auto alloc = Pretest(AllocatorType::kMultiPageAllocator);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  PageAllocationTest(alloc);
+  MultiPageAllocationTest(alloc);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   Posttest();
 }

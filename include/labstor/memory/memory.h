@@ -134,6 +134,34 @@ struct Pointer {
     return *this;
   }
 
+  /** Addition operator */
+  Pointer operator+(size_t size) {
+    Pointer p;
+    p.allocator_id_ = allocator_id_;
+    p.off_ = off_ + size;
+    return p;
+  }
+
+  /** Subtraction operator */
+  Pointer operator-(size_t size) {
+    Pointer p;
+    p.allocator_id_ = allocator_id_;
+    p.off_ = off_ - size;
+    return p;
+  }
+
+  /** Addition assignment operator */
+  Pointer& operator+=(size_t size) {
+    off_ += size;
+    return *this;
+  }
+
+  /** Subtraction assignment operator */
+  Pointer& operator-=(size_t size) {
+    off_ -= size;
+    return *this;
+  }
+
   /** Set to null */
   void set_null() {
     allocator_id_.set_null();

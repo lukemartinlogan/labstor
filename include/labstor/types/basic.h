@@ -38,6 +38,7 @@ using std::size_t;
 #include <string>
 #include <cstring>
 #include <unordered_map>
+#include <limits>
 #endif
 
 typedef uint32_t labstor_runtime_id_t;
@@ -60,29 +61,61 @@ namespace labstor {
 
 typedef labstor_credentials UserCredentials;
 
+/**
+ * decimal + (n/65536)
+ * */
 struct RealNumber {
-  int64_t numerator_;
-  uint32_t denominator_;
+  uint64_t decimal_;
+  uint32_t numerator_;
+  static const uint32_t precision = 65536;
 
   RealNumber() =  default;
-  explicit RealNumber(int numerator, unsigned denominator = 1)
-  : numerator_(numerator), denominator_(denominator) {}
+  explicit RealNumber(uint64_t decimal, uint32_t numerator = 0)
+  : decimal_(decimal), numerator_(numerator) {}
 
-  RealNumber operator*(const RealNumber &other) {
+  /**
+   * (d1 + n1/p) * d2 =
+   * d1 * d2 + d2 * n1 / p
+   * */
+  RealNumber operator*(size_t other) const {
     RealNumber res;
-    res.numerator_ *= other.numerator_;
-    res.denominator_ *= other.denominator_;
+    res.decimal_ = other * decimal_;
+    uint64_t frac = other * numerator_;
+    res.decimal_ += frac / precision;
+    res.numerator_ = frac % precision;
     return res;
   }
 
+  /**
+   * (d1 + n1/p) * (d2 + n2/p) =
+   * (d1 * d2) + (d1 * n2)/p + (d2 * n1) / p + (n1 * n2 / p) / p =
+   * (d1 * d2) + [(d1 * n2) + (d2 * n1) + (n1 * n2)/p] / p
+   * */
+  RealNumber operator*(const RealNumber &other) const {
+    RealNumber res;
+    // d1 * d2
+    res.decimal_ = other.decimal_ * decimal_;
+    uint64_t frac =
+      (decimal_ * other.numerator_) + // d1 * n2
+      (other.decimal_ * numerator_) + // d2 * n1
+      (numerator_ * other.numerator_) / precision; // n1 * n2 / p
+    res.decimal_ += frac / precision;
+    res.numerator_ = frac % precision;
+    return res;
+  }
+
+  RealNumber operator*=(size_t other) {
+    (*this) = (*this) * other;
+    return *this;
+  }
+
   RealNumber operator*=(const RealNumber &other) {
-    numerator_ *= other.numerator_;
-    denominator_ *= other.denominator_;
+    (*this) = (*this) * other;
     return *this;
   }
 
   size_t as_int() const {
-    return numerator_ / denominator_;
+    return decimal_ + numerator_ / precision;
   }
 };
 

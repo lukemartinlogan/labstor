@@ -312,7 +312,7 @@ class unordered_map : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
   void shm_init(Allocator *alloc = nullptr,
                 int num_buckets = 20,
                 int max_collisions = 4,
-                RealNumber growth = RealNumber(5, 4)) {
+                RealNumber growth = RealNumber(1, 64)) {
     ShmContainer<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
     header_ = alloc_->template
       AllocateConstructObjs<TYPED_HEADER>(1, header_ptr_);
@@ -706,7 +706,7 @@ class unordered_map : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
   size_t get_new_size(size_t old_num_buckets) {
     RealNumber growth = header_->growth_;
     size_t new_num_buckets =
-      old_num_buckets * growth.numerator_ / growth.denominator_;
+      (growth * old_num_buckets).as_int();
     if (new_num_buckets - old_num_buckets < 10) {
       new_num_buckets = old_num_buckets + 10;
     }

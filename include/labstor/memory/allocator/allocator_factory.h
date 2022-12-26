@@ -29,6 +29,7 @@
 
 #include "allocator.h"
 #include "page_allocator.h"
+#include "multi_page_allocator.h"
 
 namespace labstor::ipc {
 
@@ -46,6 +47,14 @@ class AllocatorFactory {
     switch (type) {
       case AllocatorType::kPageAllocator: {
         auto alloc = std::make_unique<PageAllocator>();
+        alloc->shm_init(backend,
+                        alloc_id,
+                        custom_header_size,
+                        std::forward<Args>(args)...);
+        return alloc;
+      }
+      case AllocatorType::kMultiPageAllocator: {
+        auto alloc = std::make_unique<MultiPageAllocator>();
         alloc->shm_init(backend,
                         alloc_id,
                         custom_header_size,
