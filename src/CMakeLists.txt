@@ -9,6 +9,7 @@ add_library(labstor_data_structures
         thread/mutex.cc
         thread/rwlock.cc
         memory/page_allocator.cc
+        memory/multi_page_allocator.cc
         memory/memory_manager.cc
         data_structure_singleton.cc)
 target_link_libraries(labstor_data_structures

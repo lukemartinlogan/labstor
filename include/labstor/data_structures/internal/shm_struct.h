@@ -43,8 +43,8 @@ namespace labstor::ipc {
 #define TYPED_HEADER T
 
 /**
- * Used for storing a simple type (C-style struct, etc) in shared
- * memory semantically.
+ * Used for storing a simple type (int, double, C-style struct, etc) in shared
+ * memory.
  *
  * Called internally by manual_ptr, unique_ptr, and shared_ptr
  * */

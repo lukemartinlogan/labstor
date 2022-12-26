@@ -35,6 +35,7 @@ struct _queue_entry {
   size_t next_;
 };
 
+template<typename T>
 struct _queue_header {
   size_t head_, tail_, size_;
 };
@@ -42,18 +43,18 @@ struct _queue_header {
 template<typename T>
 class _queue {
  private:
-  _queue_header *header_;
+  _queue_header<T> *header_;
   size_t region_start_;
 
  public:
   void shm_init(void *buffer, char *region_start) {
-    header_ = reinterpret_cast<_queue_header*>(buffer);
-    memset(header_, 0, sizeof(_queue_header));
+    header_ = reinterpret_cast<_queue_header<T>*>(buffer);
+    memset(header_, 0, sizeof(_queue_header<T>));
     region_start_ = reinterpret_cast<size_t>(region_start);
   }
 
   void shm_deserialize(void *buffer, char *region_start) {
-    header_ = reinterpret_cast<_queue_header*>(buffer);
+    header_ = reinterpret_cast<_queue_header<T>*>(buffer);
     region_start_ = reinterpret_cast<size_t>(region_start);
   }
 

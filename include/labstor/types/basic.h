@@ -61,12 +61,29 @@ namespace labstor {
 typedef labstor_credentials UserCredentials;
 
 struct RealNumber {
-  int numerator_;
-  unsigned denominator_;
+  int64_t numerator_;
+  uint32_t denominator_;
 
   RealNumber() =  default;
   explicit RealNumber(int numerator, unsigned denominator = 1)
   : numerator_(numerator), denominator_(denominator) {}
+
+  RealNumber operator*(const RealNumber &other) {
+    RealNumber res;
+    res.numerator_ *= other.numerator_;
+    res.denominator_ *= other.denominator_;
+    return res;
+  }
+
+  RealNumber operator*=(const RealNumber &other) {
+    numerator_ *= other.numerator_;
+    denominator_ *= other.denominator_;
+    return *this;
+  }
+
+  size_t as_int() const {
+    return numerator_ / denominator_;
+  }
 };
 
 struct id {

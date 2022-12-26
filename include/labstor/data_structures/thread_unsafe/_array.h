@@ -32,9 +32,11 @@
 
 namespace labstor::ipc {
 
+template<typename T>
 struct _array_header {
   size_t length_;
   size_t max_length_;
+  size_t elmt_size_;
 };
 
 template<typename T>
@@ -48,8 +50,8 @@ struct _array_iterator {
   explicit _array_iterator(_array<T> &array) : array_(array), i_(0) {}
   explicit _array_iterator(_array<T> &array, size_t i) : array_(array), i_(i) {}
 
-  T& operator*() const { return array_[i_]; }
-  T* operator->() const { return &array_[i_]; }
+  T& operator*() const { return *array_.GetElmt(i_); }
+  T* operator->() const { return &array_.GetElmt(i_); }
 
   _array_iterator& operator++() {
     ++i_;
@@ -79,8 +81,10 @@ struct _array_iterator {
 template <typename T>
 class _array {
  private:
-  _array_header *header_;
-  T *array_;
+  _array_header<T> *header_;
+  char *array_;
+  size_t elmt_size_;
+  friend class _array_iterator<T>;
 
  public:
   _array() : header_(nullptr), array_(nullptr) {}
@@ -89,17 +93,20 @@ class _array {
     return header_ != nullptr;
   }
 
-  bool shm_init(void *buffer, size_t size) {
-    header_ = reinterpret_cast<_array_header*>(buffer);
+  bool shm_init(void *buffer, size_t size, size_t elmt_size = sizeof(T)) {
+    header_ = reinterpret_cast<_array_header<T>*>(buffer);
     header_->length_ = 0;
-    header_->max_length_ = (size - sizeof(_array_header)) / sizeof(T);
-    array_ = reinterpret_cast<T*>(header_ + 1);
+    header_->max_length_ = (size - sizeof(_array_header<T>)) / sizeof(T);
+    header_->elmt_size_ = elmt_size;
+    elmt_size_ = elmt_size;
+    array_ = reinterpret_cast<char*>(header_ + 1);
     return true;
   }
 
   bool shm_deserialize(void *buffer) {
-    header_ = reinterpret_cast<_array_header*>(buffer);
-    array_ = reinterpret_cast<T*>(header_ + 1);
+    header_ = reinterpret_cast<_array_header<T>*>(buffer);
+    array_ = reinterpret_cast<char*>(header_ + 1);
+    elmt_size_ = header_->elmt_size_;
     return true;
   }
 
@@ -108,7 +115,7 @@ class _array {
   }
 
   T& operator[](const size_t i) {
-    return array_[i];
+    return *GetElmt(i);
   }
 
   void resize(size_t size) {
@@ -123,7 +130,7 @@ class _array {
     if (header_->length_ == header_->max_length_) {
       throw ARRAY_OUT_OF_BOUNDS.format("array::emplace_back");
     }
-    array_[header_->length_++] = std::move(T(std::forward<Args>(args)...));
+    *GetElmt(header_->length_++) = std::move(T(std::forward<Args>(args)...));
   }
 
   size_t size() {
@@ -136,6 +143,23 @@ class _array {
 
   _array_iterator<T> end() {
     return _array_iterator<T>(*this, size());
+  }
+
+  size_t GetSizeBytes() {
+    return sizeof(_array_header<T>) + header_->max_length_ * elmt_size_;
+  }
+
+  static size_t GetSizeBytes(size_t max_length, size_t elmt_size) {
+    return sizeof(_array_header<T>) + max_length * elmt_size;
+  }
+
+ private:
+  inline T* GetElmt(size_t i) {
+    return reinterpret_cast<T*>(array_ + GetOff(i));
+  }
+
+  inline size_t GetOff(size_t i) {
+    return i * elmt_size_;
   }
 };
 

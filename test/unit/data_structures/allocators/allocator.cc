@@ -25,6 +25,8 @@
 
 
 #include "test_init.h"
+#include "labstor/memory/allocator/page_allocator.h"
+#include "labstor/memory/allocator/multi_page_allocator.h"
 
 void PageAllocationTest(Allocator *alloc) {
   int count = 1024;
@@ -71,8 +73,61 @@ void PageAllocationTest(Allocator *alloc) {
   }
 }
 
+void MultiPageAllocationTest(Allocator *alloc) {
+  int count = 1024;
+  size_t page_size = KILOBYTES(4);
+  auto mem_mngr = LABSTOR_MEMORY_MANAGER;
+
+  // Allocate pages
+  std::vector<Pointer> ps(count);
+  void *ptrs[count];
+  for (int i = 0; i < count; ++i) {
+    ptrs[i] = alloc->AllocatePtr<void>(page_size, ps[i]);
+    memset(ptrs[i], i, page_size);
+    REQUIRE(ps[i].off_ != 0);
+    REQUIRE(!ps[i].is_null());
+    REQUIRE(ptrs[i] != nullptr);
+  }
+
+  // Convert process pointers into independent pointers
+  for (int i = 0; i < count; ++i) {
+    Pointer p = mem_mngr->Convert(ptrs[i]);
+    REQUIRE(p == ps[i]);
+    REQUIRE(VerifyBuffer((char*)ptrs[i], page_size, i));
+  }
+
+  // Check the custom header
+  auto hdr = alloc->GetCustomHeader<SimpleAllocatorHeader>();
+  REQUIRE(hdr->checksum_ == HEADER_CHECKSUM);
+
+  // Free pages
+  for (int i = 0; i < count; ++i) {
+    alloc->Free(ps[i]);
+  }
+
+  // Reallocate pages
+  for (int i = 0; i < count; ++i) {
+    ptrs[i] = alloc->AllocatePtr<void>(page_size, ps[i]);
+    REQUIRE(ps[i].off_ != 0);
+    REQUIRE(!ps[i].is_null());
+  }
+
+  // Free again
+  for (int i = 0; i < count; ++i) {
+    alloc->Free(ps[i]);
+  }
+}
+
 TEST_CASE("PageAllocator") {
   auto alloc = Pretest(AllocatorType::kPageAllocator);
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+  PageAllocationTest(alloc);
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+  Posttest();
+}
+
+TEST_CASE("MultiPageAllocator") {
+  auto alloc = Pretest(AllocatorType::kMultiPageAllocator);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   PageAllocationTest(alloc);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);

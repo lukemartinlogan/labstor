@@ -37,7 +37,7 @@ typedef _queue_entry Page;
 
 struct PageFreeList {
   Mutex lock_;                       /**< Always locks the list */
-  _queue_header queue_;              /**< Singly linked list header */
+  _queue_header<Page> queue_;        /**< Singly linked list header */
   size_t region_off_, region_size_;  /**< Stack allocator */
   size_t free_size_;      /**< The number of bytes free in this list */
   size_t total_alloced_;  /**< Total number of bytes alloc'd from this list */
@@ -77,7 +77,7 @@ class PageAllocator : public Allocator {
   /**
    * Allocator constructor
    * */
-  explicit PageAllocator()
+  PageAllocator()
   : header_(nullptr), custom_header_(nullptr) {}
 
   /**
