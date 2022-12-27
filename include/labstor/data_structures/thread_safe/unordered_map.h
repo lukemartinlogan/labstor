@@ -312,7 +312,7 @@ class unordered_map : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
   void shm_init(Allocator *alloc = nullptr,
                 int num_buckets = 20,
                 int max_collisions = 4,
-                RealNumber growth = RealNumber(1, 64)) {
+                RealNumber growth = RealNumber(5, 4)) {
     ShmContainer<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
     header_ = alloc_->template
       AllocateConstructObjs<TYPED_HEADER>(1, header_ptr_);

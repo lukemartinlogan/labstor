@@ -62,7 +62,7 @@ namespace labstor {
 typedef labstor_credentials UserCredentials;
 
 /**
- * decimal + (n/65536)
+ * decimal + (numerator/65536)
  * */
 struct RealNumber {
   uint64_t decimal_;
@@ -70,8 +70,19 @@ struct RealNumber {
   static const uint32_t precision = 65536;
 
   RealNumber() =  default;
-  explicit RealNumber(uint64_t decimal, uint32_t numerator = 0)
-  : decimal_(decimal), numerator_(numerator) {}
+
+  /**
+   * Converts numerator / denomintor ->
+   * decimal + (numerator / 65536);
+   *
+   * For example,
+   * 4/5 = (4 * 65536 / 5) / 65536
+   * */
+  explicit RealNumber(uint64_t numerator, uint64_t denominator) {
+    decimal_ = numerator / denominator;
+    uint64_t rem = numerator % denominator;
+    numerator_ = rem * precision / denominator;
+  }
 
   /**
    * (d1 + n1/p) * d2 =

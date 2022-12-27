@@ -149,9 +149,9 @@ class MultiPageAllocator : public Allocator {
                 size_t custom_header_size = 0,
                 size_t min_page_size = 64,
                 size_t max_page_size = KILOBYTES(32),
-                RealNumber growth_rate = RealNumber(1, 32768),
+                RealNumber growth_rate = RealNumber(5, 4),
                 size_t coalesce_min_size = MEGABYTES(20),
-                RealNumber coalesce_frac = RealNumber(2, 0),
+                RealNumber coalesce_frac = RealNumber(2, 1),
                 size_t thread_table_size = MEGABYTES(1),
                 int concurrency = 4);
 
