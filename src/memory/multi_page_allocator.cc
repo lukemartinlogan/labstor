@@ -73,12 +73,13 @@ void MultiPageAllocator::shm_init(MemoryBackend *backend,
   mp_free_lists_.shm_init(free_list_start,
                           header_->thread_table_size_,
                           header_->mp_free_list_size_);
-  mp_free_lists_.resize(concurrency);
+  mp_free_lists_.resize_full();
   // Initialize each free list with an equal segment of the backend
   size_t cur_off = mp_free_lists_.After() - backend_->data_;
   size_t cur_size = backend_->data_size_ - cur_off;
   size_t per_conc_region = cur_size / header_->concurrency_;
-  for (auto &mp_free_list : mp_free_lists_) {
+  for (size_t i = 0; i < header_->concurrency_; ++i) {
+    auto &mp_free_list = mp_free_lists_[i];
     mp_free_list.shm_init(header_->mp_free_list_size_,
                           backend->data_,
                           cur_off, per_conc_region);
@@ -145,6 +146,21 @@ Pointer MultiPageAllocator::Allocate(size_t size) {
   // Create a new allocator list to cache
   if (all_locks_held) {
     _AddThread();
+  }
+
+  // Allocate from first list with space
+  for (auto i = 0; i < header_->concurrency_; ++i) {
+    auto mp_free_list_id = (tid + i) % header_->concurrency_;
+    auto &mp_free_list = mp_free_lists_[mp_free_list_id];
+    ScopedMutex list_lock(mp_free_list.lock_);
+    if (mp_free_list.free_size_ < size) continue;
+    list_lock.Lock();
+    Pointer p = _Allocate(mp_free_list, page_size_idx, page_size);
+    if (p.is_null()) { continue; }
+    _AllocateHeader(p, mp_free_list,
+                    page_size, page_size_idx, sizeof(MpPage));
+    p += sizeof(MpPage);
+    return p;
   }
 
   return kNullPointer;
@@ -378,7 +394,6 @@ bool MultiPageAllocator::_AllocateSegment(MultiPageFreeList &mp_free_list,
 
 /** Create a new thread allocator by borrowing from other allocators */
 void MultiPageAllocator::_AddThread() {
-  throw 1;
   int new_tid = header_->concurrency_.fetch_add(1);
   auto &mp_free_list = mp_free_lists_[new_tid];
   mp_free_list.shm_init(header_->mp_free_list_size_, backend_->data_, 0, 0);
