@@ -88,7 +88,7 @@ class string : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
   }
 
   /** Construct by concatenating two string in shared-memory */
-  explicit string(Allocator *alloc, string &text1, string &text2) {
+  explicit string(Allocator *alloc, const string &text1, const string &text2) {
     shm_init(alloc, text1, text2);
   }
 
@@ -138,7 +138,7 @@ class string : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
   }
 
   /** Construct by concatenating two string in shared-memory */
-  void shm_init(Allocator *alloc, string &text1, string &text2) {
+  void shm_init(Allocator *alloc, const string &text1, const string &text2) {
     size_t length = text1.size() + text2.size();
     shm_init(alloc, length);
     memcpy(header_->text_,
@@ -187,7 +187,13 @@ class string : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
   }
 
   /** Add two strings together */
-  string operator+(string &other) {
+  string operator+(const std::string &other) {
+    string tmp(other);
+    return string(GetAllocator(), *this, tmp);
+  }
+
+  /** Add two strings together */
+  string operator+(const string &other) {
     return string(GetAllocator(), *this, other);
   }
 
