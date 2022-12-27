@@ -67,7 +67,7 @@ void MultiPageAllocator::shm_init(MemoryBackend *backend,
   size_t num_cached_pages = header_->last_page_idx_ + 1;
   // Get the size of a single MultiPageFreeList
   header_->mp_free_list_size_ = _array<MultiPageFreeList>::GetSizeBytes(
-    1, MultiPageFreeList::GetSizeBytes(num_cached_pages + 1));
+    1, MultiPageFreeList::GetSizeBytes(num_cached_pages));
   // Allocate the array of MultiPageFreeLists
   void *free_list_start = GetMpFreeListStart();
   mp_free_lists_.shm_init(free_list_start,
@@ -120,10 +120,9 @@ void MultiPageAllocator::_AllocateHeader(Pointer &p,
                                          size_t page_size,
                                          size_t page_size_idx,
                                          size_t off) {
-  auto hdr = Convert<MpPage>(p);
   _AllocateHeader(p, page_size, page_size_idx, off);
-  mp_free_list.free_size_ -= hdr->page_size_;
-  mp_free_list.total_alloced_ += hdr->page_size_;
+  mp_free_list.free_size_ -= page_size;
+  mp_free_list.total_alloced_ += page_size;
 }
 
 /**
@@ -131,7 +130,8 @@ void MultiPageAllocator::_AllocateHeader(Pointer &p,
  * */
 Pointer MultiPageAllocator::Allocate(size_t size) {
   size_t page_size;
-  uint32_t page_size_idx = IndexLogarithm(size, page_size);
+  uint32_t page_size_idx = IndexLogarithm(size + sizeof(MpPage),
+                                          page_size);
   bool all_locks_held = true;
 
   // Get current thread ID
@@ -145,7 +145,7 @@ Pointer MultiPageAllocator::Allocate(size_t size) {
     ScopedMutex list_lock(mp_free_list.lock_);
     if (list_lock.TryLock()) {
       all_locks_held = false;
-      if (mp_free_list.free_size_ < size) continue;
+      if (mp_free_list.free_size_ < page_size) continue;
       Pointer p = _Allocate(mp_free_list, page_size_idx, page_size);
       if (p.is_null()) { continue; }
       _AllocateHeader(p, mp_free_list,
@@ -338,7 +338,7 @@ bool MultiPageAllocator::_AllocateBorrowCached(MultiPageFreeList &mp_free_list,
                                                size_t page_size,
                                                Pointer &ret) {
   // Get the free list corresponding to the original page_size
-  size_t orig_page_size = page_size + sizeof(MpPage);
+  size_t orig_page_size = page_size;
   _queue<MpPage> orig_page_free_list;
   mp_free_list.GetPageFreeList(page_size_idx, backend_->data_,
                                orig_page_free_list);
@@ -356,7 +356,6 @@ bool MultiPageAllocator::_AllocateBorrowCached(MultiPageFreeList &mp_free_list,
     auto hdr = Convert<MpPage>(Pointer(GetId(), backend_off));
     page_size = hdr->page_size_;
     // Shard the large page into original page sizes
-    orig_page_size += sizeof(MpPage);
     size_t num_shards = page_size / orig_page_size;
     size_t shard_off = page_size % orig_page_size;
     if (shard_off != 0) {
@@ -392,10 +391,10 @@ bool MultiPageAllocator::_AllocateSegment(MultiPageFreeList &mp_free_list,
                                           size_t page_size_idx,
                                           size_t page_size,
                                           Pointer &ret) {
-  page_size += sizeof(MpPage);
   if (mp_free_list.region_size_ >= page_size) {
     size_t off = mp_free_list.region_off_;
     mp_free_list.region_off_ += page_size;
+    mp_free_list.region_size_ -= page_size;
     ret = Pointer(GetId(), off);
     return true;
   }

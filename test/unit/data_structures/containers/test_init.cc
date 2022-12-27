@@ -52,7 +52,7 @@ void Posttest() {
 }
 
 void MainPretest() {
-  Pretest(AllocatorType::kPageAllocator);
+  Pretest(AllocatorType::kMultiPageAllocator);
 }
 
 void MainPosttest() {

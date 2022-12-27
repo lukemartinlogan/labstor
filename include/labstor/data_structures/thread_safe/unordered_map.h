@@ -222,6 +222,9 @@ struct unordered_map_iterator {
         return true;
       } else {
         ++bucket_;
+        if (bucket_ == buckets_->end()) {
+          return false;
+        }
         collisions_ << (*bucket_).collisions_;
         collision_ = collisions_->begin();
       }

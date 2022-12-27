@@ -58,21 +58,24 @@ struct MultiPageFreeList {
   /**
    * Initialize the free list array
    * */
-  void shm_init(size_t mp_free_list_elmt_size,
+  void shm_init(size_t mp_free_list_size,
                 char *region_start,
                 size_t region_off, size_t region_size) {
     Allocator::ConstructObj<MultiPageFreeList>(*this);
+    // Free list array for this thread begins after MultiPageFreeList
     void *after = reinterpret_cast<void*>(this + 1);
     _array<_queue_header<MpPage>> free_lists;
-    free_lists.shm_init(after,
-                        mp_free_list_elmt_size - sizeof(MultiPageFreeList));
+    free_lists.shm_init(after, mp_free_list_size - sizeof(MultiPageFreeList));
     free_lists.resize_full();
+    // Initialize each page free list
     for (auto &qh : free_lists) {
       _queue<MpPage> q;
       q.shm_init(&qh, region_start);
     }
+    // Set this thread's total memory allotment
     region_off_= region_off;
     region_size_ = region_size;
+    // Set this thread's multipage stats
     free_size_ = region_size;
     total_alloced_ = 0;
     total_freed_ = 0;

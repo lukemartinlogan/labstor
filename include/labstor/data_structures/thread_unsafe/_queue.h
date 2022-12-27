@@ -71,7 +71,7 @@ class _queue {
 
   void enqueue(T *entry) {
     // verify_queue(); // TODO(llogan): remove
-    // memset(entry, 0, sizeof(_queue_entry)); // TODO(llogan): remove
+    // memset(entry, 24, sizeof(_queue_entry)); // TODO(llogan): remove
     if (header_->size_ == 0) {
       header_->head_ = reinterpret_cast<size_t>(entry) - region_start_;
       header_->tail_ = header_->head_;
