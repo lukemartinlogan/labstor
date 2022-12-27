@@ -77,7 +77,7 @@ struct MultiPageFreeList {
 
 struct MultiPageAllocatorHeader : public AllocatorHeader {
   /// Number of threads to initially assume
-  std::atomic<int> concurrency_;
+  std::atomic<uint32_t> concurrency_;
   /// Bytes to dedicate to per-thread free list tables
   size_t thread_table_size_;
   /// Cache every page between these sizes
@@ -101,7 +101,7 @@ struct MultiPageAllocatorHeader : public AllocatorHeader {
                  size_t coalesce_min_size,
                  RealNumber coalesce_frac,
                  size_t thread_table_size,
-                 int concurrency) {
+                 uint32_t concurrency) {
     AllocatorHeader::Configure(alloc_id, AllocatorType::kPageAllocator,
                                custom_header_size);
     min_page_size_ = min_page_size;
@@ -153,7 +153,7 @@ class MultiPageAllocator : public Allocator {
                 size_t coalesce_min_size = MEGABYTES(20),
                 RealNumber coalesce_frac = RealNumber(2, 1),
                 size_t thread_table_size = MEGABYTES(1),
-                int concurrency = 4);
+                uint32_t concurrency = 4);
 
   /**
    * Attach an existing allocator from shared memory

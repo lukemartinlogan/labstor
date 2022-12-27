@@ -52,7 +52,7 @@ void MultiPageAllocator::shm_init(MemoryBackend *backend,
                                   size_t coalesce_min_size,
                                   RealNumber coalesce_frac,
                                   size_t thread_table_size,
-                                  int concurrency) {
+                                  uint32_t concurrency) {
   backend_ = backend;
   header_ = reinterpret_cast<MultiPageAllocatorHeader*>(backend_->data_);
   header_->Configure(alloc_id, custom_header_size, min_page_size,
@@ -394,6 +394,19 @@ bool MultiPageAllocator::_AllocateSegment(MultiPageFreeList &mp_free_list,
 
 /** Create a new thread allocator by borrowing from other allocators */
 void MultiPageAllocator::_AddThread() {
+  bool ret;
+  uint32_t expected;
+  do {
+    expected = header_->concurrency_.load();
+    uint32_t desired = expected + 1;
+    if (desired > mp_free_lists_.max_size()) {
+      return;
+    }
+    ret = header_->concurrency_.compare_exchange_weak(
+      expected,
+      desired);
+  } while (!ret);
+
   int new_tid = header_->concurrency_.fetch_add(1);
   auto &mp_free_list = mp_free_lists_[new_tid];
   mp_free_list.shm_init(header_->mp_free_list_size_, backend_->data_, 0, 0);

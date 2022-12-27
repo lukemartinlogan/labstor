@@ -141,6 +141,10 @@ class _array {
     return header_->length_;
   }
 
+  size_t max_size() {
+    return header_->max_length_;
+  }
+
   _array_iterator<T> begin() {
     return _array_iterator<T>(*this, 0);
   }
