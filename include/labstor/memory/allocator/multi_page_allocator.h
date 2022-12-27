@@ -102,7 +102,7 @@ struct MultiPageAllocatorHeader : public AllocatorHeader {
                  RealNumber coalesce_frac,
                  size_t thread_table_size,
                  uint32_t concurrency) {
-    AllocatorHeader::Configure(alloc_id, AllocatorType::kPageAllocator,
+    AllocatorHeader::Configure(alloc_id, AllocatorType::kMultiPageAllocator,
                                custom_header_size);
     min_page_size_ = min_page_size;
     max_page_size_ = max_page_size;
