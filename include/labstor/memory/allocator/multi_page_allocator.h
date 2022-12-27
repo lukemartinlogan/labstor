@@ -13,9 +13,22 @@
 namespace labstor::ipc {
 
 struct MpPage : public _queue_entry {
-  size_t page_size_;  /**< The size of the page allocated */
+  int flags_;           /**< Page flags (e.g., is_allocated?) */
+  size_t page_size_;    /**< The size of the page allocated */
   uint32_t off_;        /**< The offset within the page */
   uint32_t page_idx_;   /**< The id of the page in the mp free list */
+
+  void SetAllocated() {
+    flags_ = 0x1;
+  }
+
+  void UnsetAllocated() {
+    flags_ = 0;
+  }
+
+  bool IsAllocated() const {
+    return flags_ & 0x1;
+  }
 };
 
 struct MultiPageFreeList {
@@ -196,6 +209,12 @@ class MultiPageAllocator : public Allocator {
 
   /** Get the pointer to the mp_free_lists_ array */
   void* GetMpFreeListStart();
+
+  /** Set the page's header */
+  void _AllocateHeader(Pointer &p,
+                       size_t page_size,
+                       size_t page_size_idx,
+                       size_t off);
 
   /** Set the page's header + change allocator stats*/
   void _AllocateHeader(Pointer &p,

@@ -63,6 +63,7 @@ namespace labstor {
   const Error PAGE_SIZE_UNSUPPORTED("Allocator does not support size: {}");
   const Error OUT_OF_MEMORY("{}: could not allocate memory of size {}");
   const Error INVALID_FREE("{}: could not free memory of size {}");
+  const Error DOUBLE_FREE("Freeing the same memory twice!");
 
   const Error UNORDERED_MAP_CANT_FIND("Could not find key in unordered_map");
 }  // namespace labstor

@@ -99,6 +99,20 @@ void MultiPageAllocator::shm_deserialize(MemoryBackend *backend) {
 }
 
 /**
+ * Sets the header
+ * */
+void MultiPageAllocator::_AllocateHeader(Pointer &p,
+                                         size_t page_size,
+                                         size_t page_size_idx,
+                                         size_t off) {
+  auto hdr = Convert<MpPage>(p);
+  hdr->SetAllocated();
+  hdr->page_size_ = page_size;
+  hdr->page_idx_ = page_size_idx;
+  hdr->off_ = off;
+}
+
+/**
  * Sets the header and decrements counters
  * */
 void MultiPageAllocator::_AllocateHeader(Pointer &p,
@@ -107,9 +121,7 @@ void MultiPageAllocator::_AllocateHeader(Pointer &p,
                                          size_t page_size_idx,
                                          size_t off) {
   auto hdr = Convert<MpPage>(p);
-  hdr->page_size_ = page_size;
-  hdr->page_idx_ = page_size_idx;
-  hdr->off_ = off;
+  _AllocateHeader(p, page_size, page_size_idx, off);
   mp_free_list.free_size_ -= hdr->page_size_;
   mp_free_list.total_alloced_ += hdr->page_size_;
 }
@@ -174,6 +186,7 @@ Pointer MultiPageAllocator::AlignedAllocate(size_t size, size_t alignment) {
   // Add alignment to size to guarantee the ability to shift
   size += alignment;
   Pointer p = Allocate(size);
+  if (p.is_null()) { return p; }
   // Get the current header statistics
   auto hdr = Convert<MpPage>(p - sizeof(MpPage));
   size_t page_idx = hdr->page_idx_;
@@ -182,13 +195,10 @@ Pointer MultiPageAllocator::AlignedAllocate(size_t size, size_t alignment) {
   auto ptr = Convert<char>(p);
   size_t align_off = reinterpret_cast<size_t>(ptr) % alignment;
   size_t new_page_off = alignment - align_off;
-  p += new_page_off;
+  p += new_page_off - sizeof(MpPage);
   // Create the header for the aligned payload
-  auto new_hdr = Convert<MpPage>(p - sizeof(MpPage));
-  new_hdr->page_size_ = page_size;
-  new_hdr->page_idx_ = page_idx;
-  new_hdr->off_ = new_page_off;
-  return p;
+  _AllocateHeader(p, page_size, page_idx, new_page_off);
+  return p + sizeof(MpPage);
 }
 
 /**
@@ -214,7 +224,7 @@ bool MultiPageAllocator::ReallocateNoNullCheck(Pointer &p, size_t new_size) {
 /**
  * Free \a ptr pointer. Null check is performed elsewhere.
  * */
-void MultiPageAllocator::FreeNoNullCheck(Pointer &ptr) {
+void MultiPageAllocator::FreeNoNullCheck(Pointer &p) {
   auto thread_info = LABSTOR_THREAD_MANAGER->GetThreadStatic();
   auto tid = thread_info->GetTid();
 
@@ -224,7 +234,7 @@ void MultiPageAllocator::FreeNoNullCheck(Pointer &ptr) {
     auto &mp_free_list = mp_free_lists_[mp_free_list_id];
     ScopedMutex list_lock(mp_free_list.lock_);
     if (list_lock.TryLock()) {
-      _Free(mp_free_list, ptr);
+      _Free(mp_free_list, p);
       return;
     }
   }
@@ -234,7 +244,7 @@ void MultiPageAllocator::FreeNoNullCheck(Pointer &ptr) {
   auto &mp_free_list = mp_free_lists_[free_list_id];
   ScopedMutex list_lock(mp_free_list.lock_);
   list_lock.Lock();
-  _Free(mp_free_list, ptr);
+  _Free(mp_free_list, p);
 }
 
 /**
@@ -415,6 +425,10 @@ void MultiPageAllocator::_AddThread() {
 /** Free a page to a free list */
 void MultiPageAllocator::_Free(MultiPageFreeList &mp_free_list, Pointer &p) {
   auto hdr = Convert<MpPage>(p - sizeof(MpPage));
+  if (!hdr->IsAllocated()) {
+    throw DOUBLE_FREE;
+  }
+  hdr->UnsetAllocated();
   _queue<MpPage> page_free_list;
   mp_free_list.GetPageFreeList(hdr->page_idx_,
                                 backend_->data_, page_free_list);
