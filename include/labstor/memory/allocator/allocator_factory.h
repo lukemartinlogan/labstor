@@ -76,6 +76,11 @@ class AllocatorFactory {
         alloc->shm_deserialize(backend);
         return alloc;
       }
+      case AllocatorType::kMultiPageAllocator: {
+        auto alloc = std::make_unique<MultiPageAllocator>();
+        alloc->shm_deserialize(backend);
+        return alloc;
+      }
       default: return nullptr;
     }
   }
