@@ -118,6 +118,10 @@ class _array {
     return *GetElmt(i);
   }
 
+  void resize_full() {
+    header_->length_ = header_->max_length_;
+  }
+
   void resize(size_t size) {
     if (size > header_->max_length_) {
       throw ARRAY_OUT_OF_BOUNDS.format("array::emplace_back");

@@ -74,47 +74,44 @@ void PageAllocationTest(Allocator *alloc) {
 }
 
 void MultiPageAllocationTest(Allocator *alloc) {
-  int count = 1024;
-  size_t page_size = KILOBYTES(4);
-  auto mem_mngr = LABSTOR_MEMORY_MANAGER;
+  size_t alloc_sizes[] = {
+    64, 128, 256,
+    KILOBYTES(1), KILOBYTES(4), KILOBYTES(64),
+    MEGABYTES(1), MEGABYTES(16), MEGABYTES(32)
+  };
 
-  // Allocate pages
-  std::vector<Pointer> ps(count);
-  void *ptrs[count];
-  for (int i = 0; i < count; ++i) {
-    ptrs[i] = alloc->AllocatePtr<void>(page_size, ps[i]);
-    memset(ptrs[i], i, page_size);
-    REQUIRE(ps[i].off_ != 0);
-    REQUIRE(!ps[i].is_null());
-    REQUIRE(ptrs[i] != nullptr);
+  // Allocate and free pages between 64 bytes and 1MB
+  {
+    REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+    for (size_t r = 0; r < 10; ++r) {
+      for (size_t i = 0; i < 1000; ++i) {
+        Pointer ps[4];
+        for (size_t j = 0; j < 4; ++j) {
+          ps[j] = alloc->Allocate(alloc_sizes[i % 9]);
+        }
+        for (size_t j = 0; j < 4; ++j) {
+          alloc->Free(ps[j]);
+        }
+      }
+    }
+    REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   }
 
-  // Convert process pointers into independent pointers
-  for (int i = 0; i < count; ++i) {
-    Pointer p = mem_mngr->Convert(ptrs[i]);
-    REQUIRE(p == ps[i]);
-    REQUIRE(VerifyBuffer((char*)ptrs[i], page_size, i));
+  // Aligned allocate 4KB pages
+  {
+    for (size_t i = 0; i < 1024; ++i) {
+      Pointer p = alloc->AlignedAllocate(KILOBYTES(4), KILOBYTES(4));
+      memset(alloc->Convert<void>(p), 0, KILOBYTES(4));
+      alloc->Free(p);
+    }
   }
 
-  // Check the custom header
-  auto hdr = alloc->GetCustomHeader<SimpleAllocatorHeader>();
-  REQUIRE(hdr->checksum_ == HEADER_CHECKSUM);
-
-  // Free pages
-  for (int i = 0; i < count; ++i) {
-    alloc->Free(ps[i]);
-  }
-
-  // Reallocate pages
-  for (int i = 0; i < count; ++i) {
-    ptrs[i] = alloc->AllocatePtr<void>(page_size, ps[i]);
-    REQUIRE(ps[i].off_ != 0);
-    REQUIRE(!ps[i].is_null());
-  }
-
-  // Free again
-  for (int i = 0; i < count; ++i) {
-    alloc->Free(ps[i]);
+  // Reallocate a 4KB page to 16KB
+  {
+    Pointer p = alloc->Allocate(KILOBYTES(4));
+    alloc->Reallocate(p, KILOBYTES(16));
+    memset(alloc->Convert<void>(p), 0, KILOBYTES(16));
+    alloc->Free(p);
   }
 }
 
@@ -129,7 +126,12 @@ TEST_CASE("PageAllocator") {
 TEST_CASE("MultiPageAllocator") {
   auto alloc = Pretest(AllocatorType::kMultiPageAllocator);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+  PageAllocationTest(alloc);
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   MultiPageAllocationTest(alloc);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+
   Posttest();
 }

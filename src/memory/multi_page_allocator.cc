@@ -66,21 +66,21 @@ void MultiPageAllocator::shm_init(MemoryBackend *backend,
   header_->last_page_idx_ = header_->max_page_log_ - header_->min_page_log_ + 1;
   size_t num_cached_pages = header_->last_page_idx_ + 1;
   // Get the size of a single MultiPageFreeList
-  size_t mp_free_list_elmt_size = _array<MultiPageFreeList>::GetSizeBytes(
+  header_->mp_free_list_size_ = _array<MultiPageFreeList>::GetSizeBytes(
     1, MultiPageFreeList::GetSizeBytes(num_cached_pages + 1));
-  header_->mp_free_list_elmt_size_ = mp_free_list_elmt_size;
   // Allocate the array of MultiPageFreeLists
   void *free_list_start = GetMpFreeListStart();
   mp_free_lists_.shm_init(free_list_start,
                           header_->thread_table_size_,
-                          mp_free_list_elmt_size);
+                          header_->mp_free_list_size_);
   mp_free_lists_.resize(concurrency);
   // Initialize each free list with an equal segment of the backend
   size_t cur_off = mp_free_lists_.After() - backend_->data_;
   size_t cur_size = backend_->data_size_ - cur_off;
   size_t per_conc_region = cur_size / header_->concurrency_;
   for (auto &mp_free_list : mp_free_lists_) {
-    mp_free_list.shm_init(mp_free_list_elmt_size,
+    mp_free_list.shm_init(header_->mp_free_list_size_,
+                          backend->data_,
                           cur_off, per_conc_region);
     cur_off += per_conc_region;
   }
@@ -130,9 +130,9 @@ Pointer MultiPageAllocator::Allocate(size_t size) {
     auto mp_free_list_id = (tid + i) % header_->concurrency_;
     auto &mp_free_list = mp_free_lists_[mp_free_list_id];
     ScopedMutex list_lock(mp_free_list.lock_);
-    if (mp_free_list.free_size_ < size) continue;
     if (list_lock.TryLock()) {
       all_locks_held = false;
+      if (mp_free_list.free_size_ < size) continue;
       Pointer p = _Allocate(mp_free_list, page_size_idx, page_size);
       if (p.is_null()) { continue; }
       _AllocateHeader(p, mp_free_list,
@@ -378,9 +378,10 @@ bool MultiPageAllocator::_AllocateSegment(MultiPageFreeList &mp_free_list,
 
 /** Create a new thread allocator by borrowing from other allocators */
 void MultiPageAllocator::_AddThread() {
+  throw 1;
   int new_tid = header_->concurrency_.fetch_add(1);
   auto &mp_free_list = mp_free_lists_[new_tid];
-  mp_free_list.shm_init(header_->mp_free_list_elmt_size_, 0, 0);
+  mp_free_list.shm_init(header_->mp_free_list_size_, backend_->data_, 0, 0);
 }
 
 /** Free a page to a free list */

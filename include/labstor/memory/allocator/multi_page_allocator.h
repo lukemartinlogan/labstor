@@ -46,12 +46,18 @@ struct MultiPageFreeList {
    * Initialize the free list array
    * */
   void shm_init(size_t mp_free_list_elmt_size,
+                char *region_start,
                 size_t region_off, size_t region_size) {
     Allocator::ConstructObj<MultiPageFreeList>(*this);
-    void *after = reinterpret_cast<char*>(this) + 1;
-    _array<_queue_header<Page>> free_lists;
+    void *after = reinterpret_cast<void*>(this + 1);
+    _array<_queue_header<MpPage>> free_lists;
     free_lists.shm_init(after,
                         mp_free_list_elmt_size - sizeof(MultiPageFreeList));
+    free_lists.resize_full();
+    for (auto &qh : free_lists) {
+      _queue<MpPage> q;
+      q.shm_init(&qh, region_start);
+    }
     region_off_= region_off;
     region_size_ = region_size;
     free_size_ = region_size;
@@ -61,7 +67,7 @@ struct MultiPageFreeList {
 
   /** Get the free list at index i */
   void GetPageFreeList(size_t i, char *region_start, _queue<MpPage> &page_free_list) {
-    void *after = reinterpret_cast<char*>(this) + 1;
+    void *after = reinterpret_cast<void*>(this + 1);
     _array<_queue_header<MpPage>> free_lists;
     free_lists.shm_deserialize(after);
     _queue_header<MpPage> &hdr = free_lists[i];
@@ -75,7 +81,7 @@ struct MultiPageAllocatorHeader : public AllocatorHeader {
   /// Bytes to dedicate to per-thread free list tables
   size_t thread_table_size_;
   /// Cache every page between these sizes
-  size_t mp_free_list_elmt_size_;
+  size_t mp_free_list_size_;
   size_t min_page_size_, max_page_size_;
   uint32_t min_page_log_, max_page_log_, last_page_idx_;
   /// The page sizes to cache
@@ -141,9 +147,9 @@ class MultiPageAllocator : public Allocator {
   void shm_init(MemoryBackend *backend,
                 allocator_id_t alloc_id,
                 size_t custom_header_size = 0,
-                size_t min_page_size = 32,
-                size_t max_page_size = MEGABYTES(1),
-                RealNumber growth_rate = RealNumber(1, 16384),
+                size_t min_page_size = 64,
+                size_t max_page_size = KILOBYTES(32),
+                RealNumber growth_rate = RealNumber(1, 32768),
                 size_t coalesce_min_size = MEGABYTES(20),
                 RealNumber coalesce_frac = RealNumber(2, 0),
                 size_t thread_table_size = MEGABYTES(1),
