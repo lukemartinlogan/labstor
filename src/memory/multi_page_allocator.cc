@@ -98,6 +98,22 @@ void MultiPageAllocator::shm_deserialize(MemoryBackend *backend) {
 }
 
 /**
+ * Sets the header and decrements counters
+ * */
+void MultiPageAllocator::_AllocateHeader(Pointer &p,
+                                         MultiPageFreeList &mp_free_list,
+                                         size_t page_size,
+                                         size_t page_size_idx,
+                                         size_t off) {
+  auto hdr = Convert<MpPage>(p);
+  hdr->page_size_ = page_size;
+  hdr->page_idx_ = page_size_idx;
+  hdr->off_ = off;
+  mp_free_list.free_size_ -= hdr->page_size_;
+  mp_free_list.total_alloced_ += hdr->page_size_;
+}
+
+/**
  * Allocate a memory of \a size size.
  * */
 Pointer MultiPageAllocator::Allocate(size_t size) {
@@ -119,10 +135,8 @@ Pointer MultiPageAllocator::Allocate(size_t size) {
       all_locks_held = false;
       Pointer p = _Allocate(mp_free_list, page_size_idx, page_size);
       if (p.is_null()) { continue; }
-      auto hdr = Convert<MpPage>(p);
-      hdr->page_size_ = page_size;
-      hdr->page_idx_ = page_size_idx;
-      hdr->off_ = sizeof(MpPage);
+      _AllocateHeader(p, mp_free_list,
+                      page_size, page_size_idx, sizeof(MpPage));
       p += sizeof(MpPage);
       return p;
     }
@@ -288,8 +302,6 @@ bool MultiPageAllocator::_AllocateCached(MultiPageFreeList &mp_free_list,
     return false;
   }
   size_t off = page_free_list.dequeue_off();
-  mp_free_list.free_size_ -= page_size;
-  mp_free_list.total_alloced_ += page_size;
   ret = Pointer(GetId(), off);
   return true;
 }
@@ -343,9 +355,6 @@ bool MultiPageAllocator::_AllocateBorrowCached(MultiPageFreeList &mp_free_list,
     // Dequeue a page from the original page free list
     size_t off = orig_page_free_list.dequeue_off();
     ret = Pointer(GetId(), off);
-    hdr = Convert<MpPage>(ret);
-    mp_free_list.free_size_ -= hdr->page_size_;
-    mp_free_list.total_alloced_ += hdr->page_size_;
     return true;
   } while(page_size_idx <= header_->last_page_idx_);
 
@@ -360,10 +369,7 @@ bool MultiPageAllocator::_AllocateSegment(MultiPageFreeList &mp_free_list,
   page_size += sizeof(MpPage);
   if (mp_free_list.region_size_ >= page_size) {
     size_t off = mp_free_list.region_off_;
-    mp_free_list.region_size_ -= page_size;
     mp_free_list.region_off_ += page_size;
-    mp_free_list.free_size_ -= page_size;
-    mp_free_list.total_alloced_ += page_size;
     ret = Pointer(GetId(), off);
     return true;
   }
@@ -386,7 +392,7 @@ void MultiPageAllocator::_Free(MultiPageFreeList &mp_free_list, Pointer &p) {
   Pointer real_p = p - hdr->off_;
   page_free_list.enqueue_off(real_p.off_);
   mp_free_list.free_size_ += hdr->page_size_;
-  mp_free_list.total_alloced_ -= hdr->page_size_;
+  mp_free_list.total_freed_ += hdr->page_size_;
 }
 
 }  // namespace labstor::ipc

@@ -191,6 +191,13 @@ class MultiPageAllocator : public Allocator {
   /** Get the pointer to the mp_free_lists_ array */
   void* GetMpFreeListStart();
 
+  /** Set the page's header + change allocator stats*/
+  void _AllocateHeader(Pointer &p,
+                       MultiPageFreeList &mp_free_list,
+                       size_t page_size,
+                       size_t page_size_idx,
+                       size_t off);
+
   /** Allocate a page from a thread's mp free list */
   Pointer _Allocate(MultiPageFreeList &free_list,
                     size_t page_size_idx, size_t page_size);
