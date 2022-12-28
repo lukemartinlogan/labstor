@@ -37,11 +37,22 @@
 
 namespace labstor::ipc {
 
+/** Forward declaration of manual_ptr */
+template<typename T>
+class unique_ptr;
+
 /**
  * MACROS to simplify the unique_ptr namespace
  * */
 #define CLASS_NAME unique_ptr
 #define TYPED_CLASS unique_ptr<T>
+
+/**
+ * The shared-memory archive
+ * */
+template<typename T>
+struct ShmArchive<unique_ptr<T>> : public ShmArchive<T> {
+};
 
 /**
  * Creates a unique instance of a shared-memory data structure
@@ -81,6 +92,11 @@ class unique_ptr : public ShmSmartPtr<T> {
       obj_.WeakMove(other.obj_);
     }
     return *this;
+  }
+
+  /** Serialize into shared memory into a ShmArchive<mptr<T>> */
+  void shm_serialize(ShmArchive<unique_ptr<T>> &ar) const {
+    obj_.shm_serialize(static_cast<ShmArchive<T>>(ar));
   }
 
   /** Serialize into a ShmArchive<unique_ptr> */

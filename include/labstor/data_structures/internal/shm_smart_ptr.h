@@ -119,16 +119,6 @@ class ShmSmartPtr : public ShmSmartPointer {
   void shm_destroy() {
     obj_.shm_destroy();
   }
-
-  /** Serialize into a raw pointer */
-  void shm_serialize(Pointer &header_ptr) const {
-    obj_.shm_serialize(header_ptr);
-  }
-
-  /** Deserialize from a raw pointer */
-  void shm_deserialize(const Pointer &header_ptr) {
-    obj_.shm_deserialize(header_ptr);
-  }
 };
 
 
@@ -146,8 +136,6 @@ class ShmSmartPtr : public ShmSmartPointer {
   using ShmSmartPtr<T>::get_ref_const;\
   using ShmSmartPtr<T>::SetNull;\
   using ShmSmartPtr<T>::IsNull;\
-  using ShmSmartPtr<T>::shm_destroy;\
-  using ShmSmartPtr<T>::shm_serialize;\
-  using ShmSmartPtr<T>::shm_deserialize;
+  using ShmSmartPtr<T>::shm_destroy;
 
 #endif  // LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_DATA_STRUCTURE_POINTER_H_

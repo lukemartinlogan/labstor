@@ -40,7 +40,14 @@ namespace labstor::ipc {
  * */
 #define CLASS_NAME ShmStruct
 #define TYPED_CLASS T
-#define TYPED_HEADER T
+
+/**
+ * ShmArchive for a ShmStruct
+ * */
+template<typename T>
+struct ShmArchive : public ShmDataStructureArchive {
+  T obj_;
+};
 
 /**
  * Used for storing a simple type (int, double, C-style struct, etc) in shared
@@ -51,7 +58,7 @@ namespace labstor::ipc {
 template<typename T>
 struct ShmStruct : public ShmDataStructure<TYPED_CLASS> {
  public:
-  SHM_DATA_STRUCTURE_TEMPLATE(TYPED_HEADER)
+  SHM_DATA_STRUCTURE_TEMPLATE(TYPED_CLASS)
 
   /** Default constructor */
   ShmStruct() = default;

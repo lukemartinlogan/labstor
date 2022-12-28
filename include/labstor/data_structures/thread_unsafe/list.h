@@ -62,15 +62,6 @@ struct list_entry {
 };
 
 /**
- * The list shared-memory header
- * */
-template<typename T>
-struct list_header {
-  Pointer head_ptr_, tail_ptr_;
-  size_t length_;
-};
-
-/**
  * The list iterator
  * */
 template<typename T, bool CONST_ITER>
@@ -243,13 +234,22 @@ using list_citerator = list_iterator_templ<T, true>;
  * */
 #define CLASS_NAME list
 #define TYPED_CLASS list<T>
-#define TYPED_HEADER list_header<T>
+
+/**
+ * The list shared-memory header
+ * */
+template<typename T>
+struct ShmArchive<list<T>> : public ShmDataStructureArchive {
+  Pointer head_ptr_, tail_ptr_;
+  size_t length_;
+};
+
 
 /**
  * Doubly linked list implementation
  * */
 template<typename T>
-class list : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
+class list : public ShmContainer<TYPED_CLASS> {
  public:
   BASIC_SHM_CONTAINER_TEMPLATE
 
@@ -261,38 +261,10 @@ class list : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
   /** Default constructor */
   list() = default;
 
-  /** Destructor */
-  ~list() {
-    if (destructable_) {
-      shm_destroy();
-    }
-  }
-
-  /** Default shared-memory constructor */
-  explicit list(Allocator *alloc) {
-    shm_init(alloc);
-  }
-
-  /** Copy constructor (std::list) with default allocator */
-  explicit list(std::list<T> &other) {
-    shm_init(nullptr, other);
-  }
-
-  /** Copy constructor (std::list) with allocator */
-  explicit list(Allocator *alloc, std::list<T> &other) {
-    shm_init(alloc, other);
-  }
-
-  /** Initialize list in shared memory (default allocator) */
-  void shm_init() {
-    shm_init(nullptr);
-  }
-
   /** Initialize list in shared memory */
-  void shm_init(Allocator *alloc) {
-    ShmContainer<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
-    header_ = alloc_->template
-      ClearAllocateObjs<TYPED_HEADER>(1, header_ptr_);
+  void shm_init(Allocator *alloc = nullptr,
+                ShmArchive<TYPED_CLASS> *ar = nullptr) {
+    ShmContainer<TYPED_CLASS>::shm_init(alloc, ar);
     header_->head_ptr_.set_null();
     header_->tail_ptr_.set_null();
   }
@@ -308,6 +280,16 @@ class list : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
     for (auto &entry : other) {
       emplace_back(entry);
     }
+  }
+
+  /** Serialize into shared memory */
+  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
+    shm_serialize(ar.header_ptr_);
+  }
+
+  /** Deserialize from shared memory */
+  void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
+    shm_deserialize(ar.header_ptr_);
   }
 
   /** Destroy all shared memory allocated by the list */

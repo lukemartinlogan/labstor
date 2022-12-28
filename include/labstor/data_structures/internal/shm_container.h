@@ -46,11 +46,10 @@ namespace labstor::ipc {
  * implement certain methods which are indicated below in the
  * section "REQUIRED METHODS"
  * */
-template<typename TYPED_CLASS, typename TYPED_HEADER>
-class ShmContainer : public ShmDataStructure<TYPED_HEADER> {
+template<typename TYPED_CLASS>
+class ShmContainer : public ShmDataStructure<TYPED_CLASS> {
  public:
-  SHM_DATA_STRUCTURE_TEMPLATE(TYPED_HEADER)
-  typedef TYPED_HEADER header_t;
+  SHM_DATA_STRUCTURE_TEMPLATE(TYPED_CLASS)
 
  public:
   /** Default constructor */
@@ -78,8 +77,10 @@ class ShmContainer : public ShmDataStructure<TYPED_HEADER> {
  * 2. Create Copy constructors + Copy assignment operators.
  * 3. Create shm_serialize and shm_deserialize for archiving data structures.
  * */
-#define SHM_CONTAINER_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)\
-  SHM_DATA_STRUCTURE_TEMPLATE(TYPED_HEADER)\
+#define SHM_CONTAINER_TEMPLATE(CLASS_NAME, TYPED_CLASS)\
+  SHM_DATA_STRUCTURE_TEMPLATE(TYPED_CLASS)\
+  SHM_INHERIT_CONSTRUCTOR(CLASS_NAME)\
+  SHM_INHERIT_DESTRUCTOR(CLASS_NAME)\
   SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
   SHM_INHERIT_COPY_OPS(CLASS_NAME)\
   SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
@@ -91,7 +92,6 @@ class ShmContainer : public ShmDataStructure<TYPED_HEADER> {
  * */
 
 #define BASIC_SHM_CONTAINER_TEMPLATE \
-  SHM_CONTAINER_TEMPLATE(CLASS_NAME, \
-    TYPE_WRAP(TYPED_CLASS), TYPE_WRAP(TYPED_HEADER))
+  SHM_CONTAINER_TEMPLATE(CLASS_NAME, TYPE_WRAP(TYPED_CLASS))
 
 #endif  // LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_DATA_STRUCTURE_H_

@@ -41,15 +41,6 @@ template<typename T>
 class vector;
 
 /**
- * The vector shared-memory header
- * */
-template<typename T>
-struct vector_header {
-  Pointer vec_ptr_;
-  size_t max_length_, length_;
-};
-
-/**
  * The vector iterator implementation
  * */
 template<typename T, bool FORWARD_ITER, bool CONST_ITER>
@@ -323,13 +314,21 @@ using vector_criterator = vector_iterator_templ<T, false, true>;
  * */
 #define CLASS_NAME vector
 #define TYPED_CLASS vector<T>
-#define TYPED_HEADER vector_header<T>
+
+/**
+ * The vector shared-memory header
+ * */
+template<typename T>
+struct ShmArchive<vector<T>> : public ShmDataStructureArchive {
+  Pointer vec_ptr_;
+  size_t max_length_, length_;
+};
 
 /**
  * The vector class
  * */
 template<typename T>
-class vector : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
+class vector : public ShmContainer<TYPED_CLASS> {
  public:
   BASIC_SHM_CONTAINER_TEMPLATE
 
@@ -340,78 +339,45 @@ class vector : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
   /** Default constructor */
   vector() = default;
 
-  /** Destructor */
-  ~vector() {
-    if (destructable_) {
-      shm_destroy();
-    }
-  }
-
-  /** Default shared-memory constructor */
-  explicit vector(Allocator *alloc) {
-    shm_init(alloc);
-  }
-
   /**
-   * Construct a vector of a certain length in shared memory
+   * Construct the vector in shared memory
    *
-   * @param length the size the vector should be
-   * @param alloc the allocator to reserve memory from
-   * @param args the parameters of the elements to construct
+   * @WRAP_PARAM alloc -> nullptr
+   * @WRAP_PARAM ar -> nullptr
    * */
   template<typename ...Args>
-  explicit vector(Allocator *alloc, size_t length, Args&& ...args) {
-    shm_init(alloc, length, std::forward<Args>(args)...);
-  }
-
-  /** Copy a standard vector to a shm vector */
-  explicit vector(std::vector<T> &other) {
-    shm_init(other);
-  }
-
-  /** Copy a standard vector to a shm vector, new allocator  */
-  explicit vector(Allocator *alloc, std::vector<T> &other) {
-    shm_init(alloc, other);
-  }
-
-  /** Initialize list in shared memory (default allocator) */
-  void shm_init(size_t length = 0) {
-    if (length > 0) {
-      shm_init(nullptr, length);
-    } else {
-      shm_init(nullptr);
-    }
-  }
-
-  /** Construct the vector in shared memory */
-  template<typename ...Args>
-  void shm_init(Allocator *alloc, size_t length, Args&& ...args) {
+  void shm_init(Allocator *alloc, ShmArchive<TYPED_CLASS> *ar,
+                size_t length, Args&& ...args) {
     shm_init(alloc);
     resize(length, std::forward<Args>(args)...);
   }
 
-  /** Construct the vector in shared memory */
-  void shm_init(Allocator *alloc) {
-    ShmContainer<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
-    header_ = alloc_->template
-      AllocateObjs<TYPED_HEADER>(1, header_ptr_);
-    header_->length_ = 0;
-    header_->max_length_ = 0;
-    header_->vec_ptr_.set_null();
-  }
-
-  /** Construct the vector in shared memory */
-  void shm_init(std::vector<T> &other) {
-    shm_init(nullptr, other);
-  }
-
-  /** Construct the vector in shared memory */
-  void shm_init(Allocator *alloc, std::vector<T> &other) {
+  /**
+   * Copy from another vector; allocate using a new allocator
+   *
+   * @WRAP_PARAM alloc -> nullptr
+   * @WRAP_PARAM ar -> nullptr
+   * */
+  void shm_init(Allocator *alloc, ShmArchive<TYPED_CLASS> *ar,
+                std::vector<T> &other) {
     shm_init(alloc);
     reserve(other.size());
     for (auto &entry : other) {
       emplace_back(entry);
     }
+  }
+
+  /**
+   * Construct the vector in shared memory
+   *
+   * @WRAP_PARAM alloc -> nullptr
+   * @WRAP_PARAM ar -> nullptr
+   * */
+  void shm_init(Allocator *alloc, ShmArchive<TYPED_CLASS> *ar) {
+    ShmContainer<TYPED_CLASS>::shm_init(alloc, ar);
+    header_->length_ = 0;
+    header_->max_length_ = 0;
+    header_->vec_ptr_.set_null();
   }
 
   /** Destroy all shared memory allocated by the vector */
@@ -421,6 +387,16 @@ class vector : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
     alloc_->Free(header_->vec_ptr_);
     alloc_->Free(header_ptr_);
     SetNull();
+  }
+
+  /** Serialize into shared memory */
+  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
+    shm_serialize(ar.header_ptr_);
+  }
+
+  /** Deserialize from shared memory */
+  void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
+    shm_deserialize(ar.header_ptr_);
   }
 
   /** Copy a vector */

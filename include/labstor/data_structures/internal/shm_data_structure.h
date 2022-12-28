@@ -33,32 +33,51 @@
 
 namespace labstor::ipc {
 
+#define IS_SHM_DESTRUCTABLE 0x1
+#define IS_SHM_HEADER_DESTRUCTABLE 0x2
+
+/**
+ * Data required by all ShmArchives inheriting from ShmDataStructure
+ * */
+struct ShmDataStructureArchive {
+  Pointer header_ptr_;
+};
+
 /**
  * ShmDataStructures all have a header, which is stored in
  * shared memory as a ShmArchive.
  * */
-template<typename TYPED_HEADER>
+template<typename TYPED_CLASS>
 class ShmDataStructure : public ShmArchiveable {
  protected:
   Pointer header_ptr_;
   LABSTOR_MEMORY_MANAGER_T mem_mngr_;
   Allocator *alloc_;
-  TYPED_HEADER *header_;
-  bool destructable_;
+  ShmArchive<TYPED_CLASS> *header_;
+  int flags_;
 
  public:
   /** Default constructor */
   ShmDataStructure()
   : header_ptr_(kNullPointer), mem_mngr_(LABSTOR_MEMORY_MANAGER),
-    alloc_(nullptr), header_(nullptr), destructable_(true) {}
+    alloc_(nullptr), header_(nullptr), flags_(0) {}
 
   /** Set the allocator of the data structure */
-  void shm_init(Allocator *alloc) {
+  void shm_init(Allocator *alloc, ShmArchive<TYPED_CLASS> *ar) {
     if (alloc == nullptr) {
       alloc_ = mem_mngr_->GetDefaultAllocator();
     } else {
       alloc_ = alloc;
     }
+    if (ar == nullptr) {
+      header_ = alloc_->template
+          AllocateConstructObjs<ShmArchive<TYPED_CLASS>>(1, header_ptr_);
+      SetHeaderDestructable();
+    } else {
+      header_ = ar;
+      UnsetHeaderDestructable();
+    }
+    SetDestructable();
   }
 
   /** Serialize an object into a raw pointer */
@@ -71,7 +90,7 @@ class ShmDataStructure : public ShmArchiveable {
     header_ptr_ = header_ptr;
     if (header_ptr.is_null()) { return; }
     alloc_ = mem_mngr_->GetAllocator(header_ptr.allocator_id_);
-    header_ = mem_mngr_->Convert<TYPED_HEADER>(header_ptr);
+    header_ = mem_mngr_->Convert<ShmArchive<TYPED_CLASS>>(header_ptr);
   }
 
   /** Copy only pointers */
@@ -79,7 +98,7 @@ class ShmDataStructure : public ShmArchiveable {
     header_ptr_ = other.header_ptr_;
     header_ = other.header_;
     alloc_ = other.alloc_;
-    destructable_ = other.destructable_;
+    flags_ = other.flags_;
   }
 
   /** Move only pointers */
@@ -87,18 +106,38 @@ class ShmDataStructure : public ShmArchiveable {
     header_ptr_ = std::move(other.header_ptr_);
     header_ = std::move(other.header_);
     alloc_ = other.alloc_;
-    destructable_ = other.destructable_;
+    flags_ = other.flags_;
     other.SetNull();
   }
 
   /** Sets this object as destructable */
   void SetDestructable() {
-    destructable_ = true;
+    flags_ |= IS_SHM_DESTRUCTABLE;
+  }
+
+  /** Determines if this object is destructable */
+  bool IsDestructable() {
+    return flags_ & IS_SHM_DESTRUCTABLE;
   }
 
   /** Sets this object as nondestructable */
   void UnsetDestructable() {
-    destructable_ = false;
+    flags_ &= ~IS_SHM_DESTRUCTABLE;
+  }
+
+  /** Sets this object's header as destructable */
+  void SetHeaderDestructable() {
+    flags_ |= IS_SHM_HEADER_DESTRUCTABLE;
+  }
+
+  /** Determines if this object is destructable */
+  bool IsHeaderDestructable() {
+    return flags_ & IS_SHM_HEADER_DESTRUCTABLE;
+  }
+
+  /** Sets this object as nondestructable */
+  void UnsetHeaderDestructable() {
+    flags_ &= ~IS_SHM_HEADER_DESTRUCTABLE;
   }
 
   /** Set to null */
@@ -126,20 +165,23 @@ class ShmDataStructure : public ShmArchiveable {
  * Namespace simplification for a SHM data structure
  * */
 #define SHM_DATA_STRUCTURE_USING_NS\
-  using labstor::ipc::ShmDataStructure<TYPE_UNWRAP(TYPED_HEADER)>
+  using labstor::ipc::ShmDataStructure<TYPE_UNWRAP(TYPED_CLASS)>
 
-#define SHM_DATA_STRUCTURE_TEMPLATE(TYPED_HEADER)\
+#define SHM_DATA_STRUCTURE_TEMPLATE(TYPED_CLASS)\
 SHM_DATA_STRUCTURE_USING_NS::header_ptr_;\
 SHM_DATA_STRUCTURE_USING_NS::alloc_;\
 SHM_DATA_STRUCTURE_USING_NS::header_;\
 SHM_DATA_STRUCTURE_USING_NS::mem_mngr_;\
-SHM_DATA_STRUCTURE_USING_NS::destructable_;\
 SHM_DATA_STRUCTURE_USING_NS::shm_serialize;\
 SHM_DATA_STRUCTURE_USING_NS::shm_deserialize;\
 SHM_DATA_STRUCTURE_USING_NS::IsNull;\
 SHM_DATA_STRUCTURE_USING_NS::SetNull;            \
 SHM_DATA_STRUCTURE_USING_NS::SetDestructable;\
-SHM_DATA_STRUCTURE_USING_NS::UnsetDestructable;\
+SHM_DATA_STRUCTURE_USING_NS::IsDestructable;\
+SHM_DATA_STRUCTURE_USING_NS::UnsetDestructable; \
+SHM_DATA_STRUCTURE_USING_NS::SetHeaderDestructable;\
+SHM_DATA_STRUCTURE_USING_NS::IsHeaderDestructable;\
+SHM_DATA_STRUCTURE_USING_NS::UnsetHeaderDestructable;\
 SHM_DATA_STRUCTURE_USING_NS::WeakCopy;\
 SHM_DATA_STRUCTURE_USING_NS::WeakMove;
 
