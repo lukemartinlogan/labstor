@@ -91,7 +91,7 @@ class AllocatorFactory {
         return alloc;
       }
       case AllocatorType::kStackAllocator: {
-        auto alloc = std::make_unique<MultiPageAllocator>();
+        auto alloc = std::make_unique<StackAllocator>();
         alloc->shm_deserialize(backend);
         return alloc;
       }

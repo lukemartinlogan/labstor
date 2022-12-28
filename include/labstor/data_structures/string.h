@@ -224,15 +224,27 @@ class string : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
    * Comparison operators
    * */
 
+  int _strncmp(const char *a, size_t len_a,
+               const char *b, size_t len_b) const {
+    if (len_a != len_b) {
+      return int((int64_t)len_a - (int64_t)len_b);
+    }
+    int sum = 0;
+    for (size_t i = 0; i < len_a; ++i) {
+      sum += a[i] - b[i];
+    }
+    return sum;
+  }
+
 #define LABSTOR_STR_CMP_OPERATOR(op) \
   bool operator op(const char *other) const { \
-    return strncmp(data(), other, std::max(size(), strlen(other))) op 0; \
+    return _strncmp(data(), size(), other, strlen(other)) op 0; \
   } \
   bool operator op(const std::string &other) const { \
-    return strncmp(data(), other.data(), std::max(size(), other.size())) op 0; \
+    return _strncmp(data(), size(), other.data(), other.size()) op 0; \
   } \
   bool operator op(const string &other) const { \
-    return strncmp(data(), other.data(), std::max(size(), other.size())) op 0; \
+    return _strncmp(data(), size(), other.data(), other.size()) op 0; \
   }
 
   LABSTOR_STR_CMP_OPERATOR(==)
