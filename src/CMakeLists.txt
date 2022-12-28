@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 add_library(labstor_data_structures
         thread/mutex.cc
         thread/rwlock.cc
+        memory/stack_allocator.cc
         memory/page_allocator.cc
         memory/multi_page_allocator.cc
         memory/memory_manager.cc

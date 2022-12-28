@@ -28,6 +28,7 @@
 #define LABSTOR_MEMORY_ALLOCATOR_ALLOCATOR_FACTORY_H_
 
 #include "allocator.h"
+#include "stack_allocator.h"
 #include "page_allocator.h"
 #include "multi_page_allocator.h"
 
@@ -61,6 +62,14 @@ class AllocatorFactory {
                         std::forward<Args>(args)...);
         return alloc;
       }
+      case AllocatorType::kStackAllocator: {
+        auto alloc = std::make_unique<StackAllocator>();
+        alloc->shm_init(backend,
+                        alloc_id,
+                        custom_header_size,
+                        std::forward<Args>(args)...);
+        return alloc;
+      }
       default: return nullptr;
     }
   }
@@ -77,6 +86,11 @@ class AllocatorFactory {
         return alloc;
       }
       case AllocatorType::kMultiPageAllocator: {
+        auto alloc = std::make_unique<MultiPageAllocator>();
+        alloc->shm_deserialize(backend);
+        return alloc;
+      }
+      case AllocatorType::kStackAllocator: {
         auto alloc = std::make_unique<MultiPageAllocator>();
         alloc->shm_deserialize(backend);
         return alloc;

@@ -38,7 +38,8 @@ namespace labstor::ipc {
  * */
 enum class AllocatorType {
   kPageAllocator,
-  kMultiPageAllocator
+  kMultiPageAllocator,
+  kStackAllocator
 };
 
 /**

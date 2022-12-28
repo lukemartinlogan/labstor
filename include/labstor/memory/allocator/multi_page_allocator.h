@@ -8,28 +8,9 @@
 #include "allocator.h"
 #include "labstor/thread/lock.h"
 #include "labstor/data_structures/thread_unsafe/_queue.h"
-#include "page_allocator.h"
+#include "mp_page.h"
 
 namespace labstor::ipc {
-
-struct MpPage : public _queue_entry {
-  int flags_;           /**< Page flags (e.g., is_allocated?) */
-  size_t page_size_;    /**< The size of the page allocated */
-  uint32_t off_;        /**< The offset within the page */
-  uint32_t page_idx_;   /**< The id of the page in the mp free list */
-
-  void SetAllocated() {
-    flags_ = 0x1;
-  }
-
-  void UnsetAllocated() {
-    flags_ = 0;
-  }
-
-  bool IsAllocated() const {
-    return flags_ & 0x1;
-  }
-};
 
 struct MultiPageFreeList {
   /// Lock the list
@@ -51,8 +32,8 @@ struct MultiPageFreeList {
    * */
   static size_t GetSizeBytes(size_t num_page_caches) {
     return sizeof(MultiPageFreeList) +
-    _array<_queue<Page>>::GetSizeBytes(
-      num_page_caches, sizeof(_queue_header<Page>));
+    _array<_queue<MpPage>>::GetSizeBytes(
+      num_page_caches, sizeof(_queue_header<MpPage>));
   }
 
   /**

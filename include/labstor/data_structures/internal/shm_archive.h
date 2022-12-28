@@ -190,10 +190,12 @@ struct ShmArchive {
  * Enables a specific ShmArchive type to be deserialized
  * */
 #define SHM_DESERIALIZE_WRAPPER(AR_TYPE)\
-  void shm_deserialize(const ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) {\
+  void shm_deserialize(                 \
+    const labstor::ipc::ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) {\
     shm_deserialize(ar.header_ptr_);\
   }\
-  void operator<<(const ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) {\
+  void operator<<(                      \
+    const labstor::ipc::ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) {\
     shm_deserialize(ar.header_ptr_);\
   }
 

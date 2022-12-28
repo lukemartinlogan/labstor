@@ -274,8 +274,9 @@ Pointer MultiPageAllocator::_Allocate(MultiPageFreeList &mp_free_list,
                                       size_t page_size) {
   Pointer ret;
 
+  // TODO(llogan): add back
   // Re-use a cached page
-  if (page_size_idx < header_->last_page_idx_) {
+  /*if (page_size_idx < header_->last_page_idx_) {
     if (_AllocateCached(mp_free_list, page_size_idx, page_size, ret)) {
       return ret;
     } else if (_AllocateBorrowCached(mp_free_list, page_size_idx,
@@ -286,7 +287,7 @@ Pointer MultiPageAllocator::_Allocate(MultiPageFreeList &mp_free_list,
     if (_AllocateLargeCached(mp_free_list, page_size_idx, page_size, ret)) {
       return ret;
     }
-  }
+  }*/
 
   // TODO(llogan): check fragmentation
 
@@ -344,15 +345,16 @@ bool MultiPageAllocator::_AllocateBorrowCached(MultiPageFreeList &mp_free_list,
                                orig_page_free_list);
   // Find the first cached page larger than page_size
   do {
-    _queue<MpPage> page_free_list;
-    mp_free_list.GetPageFreeList(page_size_idx, backend_->data_, page_free_list);
-    if (page_free_list.size() == 0) {
+    _queue<MpPage> large_page_free_list;
+    mp_free_list.GetPageFreeList(page_size_idx, backend_->data_,
+                                 large_page_free_list);
+    if (large_page_free_list.size() == 0) {
       page_size_idx += 1;
       page_size = (header_->growth_rate_ * page_size).as_int();
       continue;
     }
     // Dequeue the large page
-    size_t backend_off = page_free_list.dequeue_off();
+    size_t backend_off = large_page_free_list.dequeue_off();
     auto hdr = Convert<MpPage>(Pointer(GetId(), backend_off));
     page_size = hdr->page_size_;
     // Shard the large page into original page sizes
@@ -367,6 +369,7 @@ bool MultiPageAllocator::_AllocateBorrowCached(MultiPageFreeList &mp_free_list,
       hdr->page_size_ = orig_page_size;
       hdr->off_ = 0;
       hdr->page_idx_ = page_size_idx;
+      hdr->UnsetAllocated();
       orig_page_free_list.enqueue_off(p.off_);
     }
     if (shard_off != 0) {
@@ -375,6 +378,7 @@ bool MultiPageAllocator::_AllocateBorrowCached(MultiPageFreeList &mp_free_list,
       hdr->page_size_ = orig_page_size + shard_off;
       hdr->off_ = 0;
       hdr->page_idx_ = page_size_idx;
+      hdr->UnsetAllocated();
       orig_page_free_list.enqueue_off(p.off_);
     }
     // Dequeue a page from the original page free list
@@ -423,6 +427,8 @@ void MultiPageAllocator::_AddThread() {
 
 /** Free a page to a free list */
 void MultiPageAllocator::_Free(MultiPageFreeList &mp_free_list, Pointer &p) {
+  // TODO(llogan): remove
+  return;
   auto hdr = Convert<MpPage>(p - sizeof(MpPage));
   if (!hdr->IsAllocated()) {
     throw DOUBLE_FREE;
