@@ -123,6 +123,14 @@ TEST_CASE("PageAllocator") {
   Posttest();
 }
 
+TEST_CASE("StackAllocator") {
+  auto alloc = Pretest(AllocatorType::kStackAllocator);
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+  PageAllocationTest(alloc);
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+  Posttest();
+}
+
 TEST_CASE("MultiPageAllocator") {
   auto alloc = Pretest(AllocatorType::kMultiPageAllocator);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);

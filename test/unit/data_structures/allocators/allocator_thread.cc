@@ -47,6 +47,14 @@ TEST_CASE("PageAllocatorMultithreaded") {
   Posttest();
 }
 
+TEST_CASE("StackAllocatorMultithreaded") {
+  auto alloc = Pretest(AllocatorType::kStackAllocator);
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+  MultiThreadedPageAllocationTest(alloc);
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+  Posttest();
+}
+
 TEST_CASE("MultiPageAllocatorMultithreaded") {
   auto alloc = Pretest(AllocatorType::kMultiPageAllocator);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);

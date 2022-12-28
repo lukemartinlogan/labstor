@@ -72,7 +72,7 @@ bool StackAllocator::ReallocateNoNullCheck(Pointer &p, size_t new_size) {
 
 void StackAllocator::FreeNoNullCheck(Pointer &p) {
   auto hdr = Convert<MpPage>(p - sizeof(MpPage));
-  if (hdr->IsAllocated()) {
+  if (!hdr->IsAllocated()) {
     throw DOUBLE_FREE;
   }
   hdr->UnsetAllocated();
