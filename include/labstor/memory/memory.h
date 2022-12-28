@@ -135,7 +135,7 @@ struct Pointer {
   }
 
   /** Addition operator */
-  Pointer operator+(size_t size) {
+  Pointer operator+(size_t size) const {
     Pointer p;
     p.allocator_id_ = allocator_id_;
     p.off_ = off_ + size;
@@ -143,7 +143,7 @@ struct Pointer {
   }
 
   /** Subtraction operator */
-  Pointer operator-(size_t size) {
+  Pointer operator-(size_t size) const {
     Pointer p;
     p.allocator_id_ = allocator_id_;
     p.off_ = off_ - size;

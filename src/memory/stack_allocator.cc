@@ -67,7 +67,14 @@ Pointer StackAllocator::AlignedAllocate(size_t size, size_t alignment) {
 }
 
 bool StackAllocator::ReallocateNoNullCheck(Pointer &p, size_t new_size) {
-  throw PAGE_SIZE_UNSUPPORTED.format(new_size);
+  Pointer new_p;
+  void *src = Convert<void>(p);
+  auto hdr = Convert<MpPage>(p - sizeof(MpPage));
+  void *dst = AllocatePtr<void>(new_size, new_p);
+  memcpy(dst, src, hdr->page_size_);
+  Free(p);
+  p = new_p;
+  return true;
 }
 
 void StackAllocator::FreeNoNullCheck(Pointer &p) {

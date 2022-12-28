@@ -701,7 +701,7 @@ class unordered_map : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
     }
 
     // Replace this map's buckets
-    buckets.shm_destroy();
+    buckets->shm_destroy();
     new_buckets >> header_->buckets_;
   }
 
