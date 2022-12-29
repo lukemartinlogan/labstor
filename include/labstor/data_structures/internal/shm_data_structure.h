@@ -166,6 +166,14 @@ class ShmDataStructure : public ShmArchiveable {
   allocator_id_t GetAllocatorId() const {
     return alloc_->GetId();
   }
+
+ public:
+  ////////////////////////////////
+  ////////REQUIRED METHODS
+  ///////////////////////////////
+
+  /** Copy constructor */
+  // void StrongCopy(const CLASS_NAME &other);
 };
 
 /**
@@ -174,6 +182,17 @@ class ShmDataStructure : public ShmArchiveable {
 #define SHM_DATA_STRUCTURE_USING_NS\
   using labstor::ipc::ShmDataStructure<TYPE_UNWRAP(TYPED_CLASS)>
 
+/**
+ * Define various functions and variables common across all
+ * SharedMemoryDataStructures.
+ *
+ * Variables which derived classes should see are not by default visible
+ * due to the nature of c++ template resolution.
+ *
+ * 1. Create Move constructors + Move assignment operators.
+ * 2. Create Copy constructors + Copy assignment operators.
+ * 3. Create shm_serialize and shm_deserialize for archiving data structures.
+ * */
 #define SHM_DATA_STRUCTURE_TEMPLATE(TYPED_CLASS)\
 SHM_DATA_STRUCTURE_USING_NS::header_ptr_;\
 SHM_DATA_STRUCTURE_USING_NS::alloc_;\
@@ -189,7 +208,21 @@ SHM_DATA_STRUCTURE_USING_NS::SetHeaderDestructable;\
 SHM_DATA_STRUCTURE_USING_NS::IsHeaderDestructable;\
 SHM_DATA_STRUCTURE_USING_NS::UnsetHeaderDestructable;\
 SHM_DATA_STRUCTURE_USING_NS::WeakCopy;\
-SHM_DATA_STRUCTURE_USING_NS::WeakMove;
+SHM_DATA_STRUCTURE_USING_NS::WeakMove;\
+SHM_INHERIT_CONSTRUCTOR(CLASS_NAME, TYPED_CLASS)\
+SHM_INHERIT_DESTRUCTOR(CLASS_NAME)\
+SHM_INHERIT_MOVE_OPS(CLASS_NAME, TYPED_CLASS)\
+SHM_INHERIT_COPY_OPS(CLASS_NAME, TYPED_CLASS)\
+SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
+
+/**
+ * ShmContainers should define:
+ * CLASS_NAME, TYPED_CLASS, and TYPED_HEADER macros and then
+ * unset them in their respective header files.
+ * */
+
+#define BASIC_SHM_CONTAINER_TEMPLATE \
+  SHM_CONTAINER_TEMPLATE(CLASS_NAME, TYPE_WRAP(TYPED_CLASS))
 
 }  // namespace labstor::ipc
 

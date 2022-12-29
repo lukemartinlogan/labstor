@@ -38,14 +38,23 @@ namespace labstor::ipc {
  * */
 class ShmArchiveable {
   /**
-   * Initialize a SHM data structure in shared-memory.
-   * Constructors may wrap around these.
+   * Initialize a SHM data structure. Constructors may wrap around these.
+   *
+   * @param ar the shared-memory header the "Archiveable" class wraps around.
+   * If null, the allocator "alloc" will be used to allocate the header
+   * internally.
+   *
+   * @param alloc the allocator used internally be the container to allocate
+   * its internal data structures. If "ar" is non-null, allocator should be
+   * the allocator from which "ar" was allocated.
    * */
-  // void shm_init(...);
+  // void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc, ...);
 
   /**
    * Destroys the shared-memory allocated by the object.
    * Destructors may wrap around this.
+   * If "ar" was passed as a parameter to shm_init, shm_destroy must not
+   * free it.
    * */
   // void shm_destroy();
 
@@ -80,8 +89,14 @@ class ShmArchiveable {
 };
 
 /**
- * A wrapper around a process-independent pointer for storing
- * a single complex shared-memory data structure
+ * Contains the process-independent data required to deserialize
+ * a complex data structure from shared memory. This is defined
+ * per-container. We provide containers for strings, vectors,
+ * lists, etc.
+ *
+ * ShmArchives do not exist for data structures
+ * which can be stored directly in shared memory, such as in
+ * int or C-style struct of ints.
  * */
 template<typename T>
 struct ShmArchive;

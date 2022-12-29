@@ -41,6 +41,8 @@ namespace labstor::ipc {
 #define CLASS_NAME ShmStruct
 #define TYPED_CLASS T
 
+/** The base archive used by all ShmStruct objects */
+
 /**
  * Used for storing a simple type (int, double, C-style struct, etc) in shared
  * memory.
@@ -68,10 +70,8 @@ struct ShmStruct : public ShmDataStructure<TYPED_CLASS> {
    * data_structures/data_structure.h
    * */
   template<typename ...Args>
-  void shm_init(Allocator *alloc, Args &&...args) {
-    ShmDataStructure<TYPED_CLASS>::shm_init(alloc);
-    header_ = alloc_->template
-      AllocateConstructObjs<T>(1, header_ptr_, std::forward<Args>(args)...);
+  void shm_init(ShmArchive<T> *ar, Allocator *alloc, Args &&...args) {
+    ShmDataStructure<TYPED_CLASS>::shm_init(ar, alloc);
   }
 
   /** Destroy the contents of the ShmStruct */
@@ -110,20 +110,6 @@ struct ShmStruct : public ShmDataStructure<TYPED_CLASS> {
   T& operator*() {
     return get_ref();
   }
-
-  /** Copy constructor */
-  void StrongCopy(const ShmStruct &other) {
-    WeakCopy(other);
-  }
-
-  /** Move operators */
-  SHM_INHERIT_MOVE_OPS(CLASS_NAME, TYPED_CLASS)
-
-  /** Copy operators */
-  SHM_INHERIT_COPY_OPS(CLASS_NAME, TYPED_CLASS)
-
-  /** Serialize into an archive */
-  SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
 };
 
 }  // namespace labstor::ipc
