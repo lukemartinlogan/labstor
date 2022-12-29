@@ -40,6 +40,7 @@ namespace labstor::ipc {
  * Data required by all ShmArchives inheriting from ShmDataStructure
  * */
 struct ShmDataStructureArchive {
+  int flags_;
   Pointer header_ptr_;
 };
 
@@ -51,21 +52,19 @@ template<typename TYPED_CLASS>
 class ShmDataStructure : public ShmArchiveable {
  protected:
   Pointer header_ptr_;
-  LABSTOR_MEMORY_MANAGER_T mem_mngr_;
   Allocator *alloc_;
   ShmArchive<TYPED_CLASS> *header_;
   int flags_;
 
  public:
   /** Default constructor */
-  ShmDataStructure()
-  : header_ptr_(kNullPointer), mem_mngr_(LABSTOR_MEMORY_MANAGER),
-    alloc_(nullptr), header_(nullptr), flags_(0) {}
+  ShmDataStructure() : header_ptr_(kNullPointer) {}
 
   /** Set the allocator of the data structure */
-  void shm_init(Allocator *alloc, ShmArchive<TYPED_CLASS> *ar) {
+  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc) {
+    flags_ = 0;
     if (alloc == nullptr) {
-      alloc_ = mem_mngr_->GetDefaultAllocator();
+      alloc_ = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
     } else {
       alloc_ = alloc;
     }
@@ -75,22 +74,28 @@ class ShmDataStructure : public ShmArchiveable {
       SetHeaderDestructable();
     } else {
       header_ = ar;
+      header_ptr_ = alloc_->template
+        Convert<ShmArchive<TYPED_CLASS>>(header_);
       UnsetHeaderDestructable();
     }
     SetDestructable();
   }
 
   /** Serialize an object into a raw pointer */
-  void shm_serialize(Pointer &header_ptr) const {
-    header_ptr = header_ptr_;
+  void shm_serialize(ShmDataStructureArchive &ar) const {
+    ar.header_ptr_ = header_ptr_;
+    ar.flags_ = flags_;
   }
 
   /** Deserialize object from a raw pointer */
-  void shm_deserialize(const Pointer &header_ptr) {
-    header_ptr_ = header_ptr;
-    if (header_ptr.is_null()) { return; }
-    alloc_ = mem_mngr_->GetAllocator(header_ptr.allocator_id_);
-    header_ = mem_mngr_->Convert<ShmArchive<TYPED_CLASS>>(header_ptr);
+  void shm_deserialize(const ShmDataStructureArchive &ar) {
+    header_ptr_ = ar.header_ptr_;
+    if (IsNull()) { return; }
+    alloc_ = LABSTOR_MEMORY_MANAGER->
+      GetAllocator(header_ptr_.allocator_id_);
+    header_ = LABSTOR_MEMORY_MANAGER->
+      Convert<ShmArchive<TYPED_CLASS>>(header_ptr_);
+    flags_ = header_->flags_;
   }
 
   /** Copy only pointers */
@@ -128,6 +133,7 @@ class ShmDataStructure : public ShmArchiveable {
   /** Sets this object's header as destructable */
   void SetHeaderDestructable() {
     flags_ |= IS_SHM_HEADER_DESTRUCTABLE;
+    header_->flags_ |= IS_SHM_HEADER_DESTRUCTABLE;
   }
 
   /** Determines if this object is destructable */
@@ -138,6 +144,7 @@ class ShmDataStructure : public ShmArchiveable {
   /** Sets this object as nondestructable */
   void UnsetHeaderDestructable() {
     flags_ &= ~IS_SHM_HEADER_DESTRUCTABLE;
+    header_->flags_ &= IS_SHM_HEADER_DESTRUCTABLE;
   }
 
   /** Set to null */
@@ -171,7 +178,6 @@ class ShmDataStructure : public ShmArchiveable {
 SHM_DATA_STRUCTURE_USING_NS::header_ptr_;\
 SHM_DATA_STRUCTURE_USING_NS::alloc_;\
 SHM_DATA_STRUCTURE_USING_NS::header_;\
-SHM_DATA_STRUCTURE_USING_NS::mem_mngr_;\
 SHM_DATA_STRUCTURE_USING_NS::shm_serialize;\
 SHM_DATA_STRUCTURE_USING_NS::shm_deserialize;\
 SHM_DATA_STRUCTURE_USING_NS::IsNull;\

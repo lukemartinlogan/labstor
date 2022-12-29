@@ -124,7 +124,7 @@ void ListOfIntTest() {
     for (int i = 0; i < 30; ++i) {
       orig.emplace_back(i);
     }
-    labstor::ipc::list<int> cpy(orig);
+    labstor::ipc::list<int> cpy(alloc, orig);
     REQUIRE(cpy.size() == 30);
     int fcur = 0;
     for (auto num : cpy) {
@@ -179,7 +179,7 @@ void ListOfStringTest() {
   // Modify the fourth list entry (move assignment)
   {
     auto iter = lp.begin() + 4;
-    (~iter) = std::move(string("25"));
+    (~iter) = std::move(string(alloc, "25"));
   }
 
   // Verify the modification took place
@@ -191,7 +191,7 @@ void ListOfStringTest() {
   // Modify the fourth list entry (copy assignment)
   {
     auto iter = lp.begin() + 4;
-    string text("50");
+    string text(alloc, "50");
     (~iter) = text;
   }
 

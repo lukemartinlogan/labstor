@@ -55,7 +55,7 @@ void VectorOfIntTest() {
   }
 
   // Forward iterator test
-  /*{
+  {
     int fcur = 0;
     for (auto num : vec) {
       REQUIRE(num == fcur);
@@ -72,7 +72,7 @@ void VectorOfIntTest() {
       --rcur;
     }
     REQUIRE(rcur == -1);
-  }*/
+  }
 
   // Emplace at front of vector
   {
@@ -133,7 +133,7 @@ void VectorOfIntTest() {
     for (int i = 0; i < 30; ++i) {
       orig.emplace_back(i);
     }
-    labstor::ipc::vector<int> cpy(orig);
+    labstor::ipc::vector<int> cpy(nullptr, orig);
     REQUIRE(cpy.size() == 30);
     for (int i = 0; i < cpy.size(); ++i) {
       REQUIRE(cpy[i] == i);
@@ -193,7 +193,7 @@ void VectorOfStringTest() {
   // Modify the fourth list entry (move assignment)
   {
     auto iter = vec.begin() + 4;
-    (~iter) = std::move(string("25"));
+    (~iter) = std::move(string(alloc, "25"));
   }
 
   // Verify the modification took place
@@ -205,7 +205,7 @@ void VectorOfStringTest() {
   // Modify the fourth list entry (copy assignment)
   {
     auto iter = vec.begin() + 4;
-    string text("50");
+    string text(alloc, "50");
     (~iter) = text;
   }
 
@@ -226,7 +226,7 @@ void VectorOfListOfStringTest() {
   Allocator *alloc = alloc_g;
   vector<list<string>> vec(alloc);
 
-  vec.resize(10, alloc);
+  vec.resize(10);
   for (auto bkt : vec) {
     bkt.emplace_back("hello");
   }

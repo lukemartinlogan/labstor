@@ -261,35 +261,32 @@ class list : public ShmContainer<TYPED_CLASS> {
   /** Default constructor */
   list() = default;
 
+  /** list copy constructor */
+  void shm_init(ShmArchive<TYPED_CLASS> *ar,
+                Allocator *alloc,
+                std::list<T> &other) {
+    shm_init(ar, alloc);
+    for (auto &entry : other) {
+      emplace_back(std::move(entry));
+    }
+  }
+
   /** Initialize list in shared memory */
-  void shm_init(Allocator *alloc = nullptr,
-                ShmArchive<TYPED_CLASS> *ar = nullptr) {
-    ShmContainer<TYPED_CLASS>::shm_init(alloc, ar);
+  void shm_init(ShmArchive<TYPED_CLASS> *ar = nullptr,
+                Allocator *alloc = nullptr) {
+    ShmContainer<TYPED_CLASS>::shm_init(ar, alloc);
     header_->head_ptr_.set_null();
     header_->tail_ptr_.set_null();
   }
 
-  /** list copy constructor */
-  void shm_init(std::list<T> &other) {
-    shm_init(nullptr, other);
-  }
-
-  /** list copy constructor */
-  void shm_init(Allocator *alloc, std::list<T> &other) {
-    shm_init(alloc);
-    for (auto &entry : other) {
-      emplace_back(entry);
-    }
-  }
-
   /** Serialize into shared memory */
   void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
-    shm_serialize(ar.header_ptr_);
+    ShmDataStructure<TYPED_CLASS>::shm_serialize(ar);
   }
 
   /** Deserialize from shared memory */
   void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
-    shm_deserialize(ar.header_ptr_);
+    ShmDataStructure<TYPED_CLASS>::shm_deserialize(ar);
   }
 
   /** Destroy all shared memory allocated by the list */
@@ -302,7 +299,7 @@ class list : public ShmContainer<TYPED_CLASS> {
 
   /** Copy constructor */
   void StrongCopy(const list &other) {
-    shm_init(other.alloc_);
+    shm_init(nullptr, other.alloc_);
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back(*iter);
     }
@@ -448,7 +445,13 @@ class list : public ShmContainer<TYPED_CLASS> {
   template<typename ...Args>
   inline list_entry<T>* _create_entry(Pointer &ptr, Args&& ...args) {
     auto entry = alloc_->template
-      AllocateConstructObjs<list_entry<T>>(1, ptr, std::forward<Args>(args)...);
+      AllocateObjs<list_entry<T>>(
+        1, ptr);
+    alloc_->template
+      ConstructObj(*entry,
+                   entry->data_.internal_ptr(),
+                   alloc_,
+                   std::forward<Args>(args)...);
     return entry;
   }
 };

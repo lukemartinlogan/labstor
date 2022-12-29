@@ -42,14 +42,6 @@ namespace labstor::ipc {
 #define TYPED_CLASS T
 
 /**
- * ShmArchive for a ShmStruct
- * */
-template<typename T>
-struct ShmArchive : public ShmDataStructureArchive {
-  T obj_;
-};
-
-/**
  * Used for storing a simple type (int, double, C-style struct, etc) in shared
  * memory.
  *
@@ -125,10 +117,10 @@ struct ShmStruct : public ShmDataStructure<TYPED_CLASS> {
   }
 
   /** Move operators */
-  SHM_INHERIT_MOVE_OPS(CLASS_NAME)
+  SHM_INHERIT_MOVE_OPS(CLASS_NAME, TYPED_CLASS)
 
   /** Copy operators */
-  SHM_INHERIT_COPY_OPS(CLASS_NAME)
+  SHM_INHERIT_COPY_OPS(CLASS_NAME, TYPED_CLASS)
 
   /** Serialize into an archive */
   SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)

@@ -45,7 +45,7 @@ class _shm_ar_shm : public ShmSmartPointer {
   /** Construct + store object */
   template<typename ...Args>
   explicit _shm_ar_shm(Args&& ...args)
-  : obj_(make_shm_ar<T>(std::forward<Args>(args)...)) {
+    : obj_(make_shm_ar<T>(std::forward<Args>(args)...)) {
   }
 
   /** Destructor. */
@@ -61,6 +61,11 @@ class _shm_ar_shm : public ShmSmartPointer {
   /** Returns a reference to the internal object */
   ShmArchive<T>& internal_ref() {
     return obj_;
+  }
+
+  /** Returns a pointer to the internal object */
+  ShmArchive<T>* internal_ptr() {
+    return &obj_;
   }
 
   /** Move constructor */
@@ -85,6 +90,15 @@ class _shm_ar_noshm {
   explicit _shm_ar_noshm(Args&& ...args)
   : obj_(std::forward<Args>(args)...) {}
 
+  /** Construct + store object */
+  template<typename ...Args>
+  explicit _shm_ar_noshm(T *ar,
+                         Allocator *alloc,
+                         Args&& ...args)
+    : obj_(std::forward<Args>(args)...) {
+    (void) ar;
+  }
+
   /** Destructor. Does nothing. */
   ~_shm_ar_noshm() = default;
 
@@ -96,6 +110,11 @@ class _shm_ar_noshm {
   /** Returns a reference to the internal object */
   T& internal_ref() {
     return obj_;
+  }
+
+  /** Returns a pointer to the internal object */
+  T* internal_ptr() {
+    return &obj_;
   }
 
   /** Move constructor */
@@ -112,8 +131,8 @@ class _shm_ar_noshm {
 #define SHM_MAKE_T_OR_ARCHIVE(T) \
   SHM_X_OR_Y(T, _shm_ar_shm<T>, _shm_ar_noshm<T>)
 
-#define SHM_REF_OR_ARCHIVE(T)\
-  SHM_X_OR_Y(T, ShmArchive<T>&, T&)
+#define SHM_ARCHIVE_OR_T(T)\
+  SHM_X_OR_Y(T, ShmArchive<T>, T)
 
 /**
  * Used for data structures which intend to store:
@@ -126,7 +145,7 @@ class _shm_ar_noshm {
 template<typename T>
 class shm_ar {
  public:
-  typedef SHM_REF_OR_ARCHIVE(T) T_Ar;
+  typedef SHM_ARCHIVE_OR_T(T) T_Ar;
   typedef SHM_T_OR_REF_T(T) T_Ref;
 
   SHM_MAKE_T_OR_ARCHIVE(T) obj_;
@@ -147,6 +166,11 @@ class shm_ar {
   /** Returns a reference to the internal object */
   T_Ar& internal_ref() {
     return obj_.internal_ref();
+  }
+
+  /** Returns a pointer to the internal object */
+  T_Ar* internal_ptr() {
+    return obj_.internal_ptr();
   }
 
   /** Move constructor */

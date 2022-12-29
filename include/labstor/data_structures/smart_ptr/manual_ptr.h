@@ -106,17 +106,17 @@ class manual_ptr : public ShmSmartPtr<T> {
 
   /** Constructor. From a ShmArchive<T> */
   template<typename ...Args>
-  explicit manual_ptr(ShmArchive<T> &ar) {
+  explicit manual_ptr(const ShmArchive<T> &ar) {
     shm_deserialize(ar);
   }
 
   /** Constructor. From a ShmArchive<mptr> */
-  explicit manual_ptr(ShmArchive<manual_ptr<T>> &ar) {
+  explicit manual_ptr(const ShmArchive<manual_ptr<T>> &ar) {
     shm_deserialize(ar);
   }
 
   /** Constructor. From a ShmArchive<uptr> */
-  explicit manual_ptr(ShmArchive<uptr<T>> &ar) {
+  explicit manual_ptr(const ShmArchive<uptr<T>> &ar) {
     shm_deserialize(ar);
   }
 

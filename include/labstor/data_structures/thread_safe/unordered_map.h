@@ -304,7 +304,7 @@ class unordered_map : public ShmContainer<TYPED_CLASS> {
                 int num_buckets = 20,
                 int max_collisions = 4,
                 RealNumber growth = RealNumber(5, 4)) {
-    ShmContainer<TYPED_CLASS>::shm_init(alloc, ar);
+    ShmContainer<TYPED_CLASS>::shm_init(ar, alloc);
     auto buckets = make_mptr<vector<BUCKET_T>>(alloc_, num_buckets, alloc_);
     buckets >> header_->buckets_;
     header_->length_ = 0;
@@ -314,12 +314,12 @@ class unordered_map : public ShmContainer<TYPED_CLASS> {
 
   /** Serialize into shared memory */
   void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
-    shm_serialize(ar.header_ptr_);
+    ShmDataStructure<TYPED_CLASS>::shm_serialize(ar);
   }
 
   /** Deserialize from shared memory */
   void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
-    shm_deserialize(ar.header_ptr_);
+    ShmDataStructure<TYPED_CLASS>::shm_deserialize(ar);
   }
 
   /** Copy constructor */

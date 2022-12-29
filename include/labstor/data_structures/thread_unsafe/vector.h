@@ -346,9 +346,9 @@ class vector : public ShmContainer<TYPED_CLASS> {
    * @WRAP_PARAM ar -> nullptr
    * */
   template<typename ...Args>
-  void shm_init(Allocator *alloc, ShmArchive<TYPED_CLASS> *ar,
+  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
                 size_t length, Args&& ...args) {
-    shm_init(alloc);
+    shm_init(ar, alloc);
     resize(length, std::forward<Args>(args)...);
   }
 
@@ -358,9 +358,9 @@ class vector : public ShmContainer<TYPED_CLASS> {
    * @WRAP_PARAM alloc -> nullptr
    * @WRAP_PARAM ar -> nullptr
    * */
-  void shm_init(Allocator *alloc, ShmArchive<TYPED_CLASS> *ar,
+  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
                 std::vector<T> &other) {
-    shm_init(alloc);
+    shm_init(ar, alloc);
     reserve(other.size());
     for (auto &entry : other) {
       emplace_back(entry);
@@ -373,8 +373,8 @@ class vector : public ShmContainer<TYPED_CLASS> {
    * @WRAP_PARAM alloc -> nullptr
    * @WRAP_PARAM ar -> nullptr
    * */
-  void shm_init(Allocator *alloc, ShmArchive<TYPED_CLASS> *ar) {
-    ShmContainer<TYPED_CLASS>::shm_init(alloc, ar);
+  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc) {
+    ShmContainer<TYPED_CLASS>::shm_init(ar, alloc);
     header_->length_ = 0;
     header_->max_length_ = 0;
     header_->vec_ptr_.set_null();
@@ -391,17 +391,17 @@ class vector : public ShmContainer<TYPED_CLASS> {
 
   /** Serialize into shared memory */
   void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
-    shm_serialize(ar.header_ptr_);
+    ShmDataStructure<TYPED_CLASS>::shm_serialize(ar);
   }
 
   /** Deserialize from shared memory */
   void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
-    shm_deserialize(ar.header_ptr_);
+    ShmDataStructure<TYPED_CLASS>::shm_deserialize(ar);
   }
 
   /** Copy a vector */
   void StrongCopy(const vector &other) {
-    shm_init(other.alloc_);
+    shm_init(nullptr, other.alloc_);
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back((*iter));
     }
@@ -416,7 +416,7 @@ class vector : public ShmContainer<TYPED_CLASS> {
    * */
   template<typename ...Args>
   void reserve(size_t length, Args&& ...args) {
-    if (IsNull()) { shm_init(nullptr); }
+    if (IsNull()) { shm_init(nullptr, nullptr); }
     if (length == 0) { return; }
     grow_vector(data_ar(), length, false, std::forward<Args>(args)...);
   }
@@ -430,7 +430,7 @@ class vector : public ShmContainer<TYPED_CLASS> {
    * */
   template<typename ...Args>
   void resize(size_t length, Args&& ...args) {
-    if (IsNull()) { shm_init(nullptr); }
+    if (IsNull()) { shm_init(nullptr, nullptr); }
     if (length == 0) { return; }
     grow_vector(data_ar(), length, true, std::forward<Args>(args)...);
     header_->length_ = length;
@@ -457,6 +457,8 @@ class vector : public ShmContainer<TYPED_CLASS> {
     }
     Allocator::ConstructObj<shm_ar<T>>(
       *(vec + header_->length_),
+      vec[header_->length_].internal_ptr(),
+      alloc_,
       std::forward<Args>(args)...);
     ++header_->length_;
   }
@@ -475,6 +477,8 @@ class vector : public ShmContainer<TYPED_CLASS> {
     shift_right(pos);
     Allocator::ConstructObj<shm_ar<T>>(
       *(vec + pos.i_),
+      vec[header_->length_].internal_ptr(),
+      alloc_,
       std::forward<Args>(args)...);
     ++header_->length_;
   }
@@ -579,6 +583,8 @@ class vector : public ShmContainer<TYPED_CLASS> {
           header_->vec_ptr_,
           header_->length_,
           max_length,
+          vec[header_->length_].internal_ptr(),
+          alloc_,
           std::forward<Args>(args)...);
     } else {
       new_vec = alloc_->template

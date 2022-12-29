@@ -64,48 +64,59 @@ class string : public ShmContainer<TYPED_CLASS> {
   string() = default;
 
   /** Construct from a C-style string with allocator in shared memory */
-  void shm_init(Allocator *alloc, ShmArchive<TYPED_CLASS> *ar,
+  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
                 const char *text) {
     size_t length = strlen(text);
-    shm_init(alloc, ar, length);
+    shm_init(ar, alloc, length);
     _create_str(text, length);
   }
 
   /** Construct for an std::string with allocator in shared-memory */
-  void shm_init(Allocator *alloc, ShmArchive<TYPED_CLASS> *ar,
+  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
                 const std::string &text) {
-    shm_init(alloc, ar, text.size());
+    shm_init(ar, alloc, text.size());
     _create_str(text.data(), text.size());
   }
 
   /** Construct by concatenating two string in shared-memory */
-  void shm_init(Allocator *alloc, ShmArchive<TYPED_CLASS> *ar,
+  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
                 const string &text1, const string &text2) {
     size_t length = text1.size() + text2.size();
-    shm_init(alloc, ar, length);
-    memcpy(text_,
-           text1.data(), text1.size());
-    memcpy(text_ + text1.size(),
-           text2.data(), text2.size());
+    shm_init(ar, alloc, length);
+    size_t off = 0;
+    if (!text1.IsNull() && text1.size()) {
+      memcpy(text_,
+             text1.data(), text1.size());
+      off += text1.size();
+    }
+    if (!text2.IsNull() && text2.size()) {
+      memcpy(text_ + off,
+             text2.data(), text2.size());
+    }
     text_[length] = 0;
   }
 
   /**
    * Construct a string of specific length and allocator in shared memory
    * */
-  void shm_init(Allocator *alloc, ShmArchive<TYPED_CLASS> *ar,
-                size_t length) {
-    ShmContainer<TYPED_CLASS>::shm_init(alloc, ar);
+  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+                size_t length = 0) {
+    ShmContainer<TYPED_CLASS>::shm_init(ar, alloc);
     header_->length_ = length;
     length_ = length;
-    text_ = alloc_->template
-      AllocatePtr<char>(length + 1, header_->text_);
-    text_[length] = 0;
+    if (length) {
+      text_ = alloc_->template
+        AllocatePtr<char>(length + 1, header_->text_);
+      text_[length] = 0;
+    } else {
+      text_ = nullptr;
+      header_->text_.set_null();
+    }
   }
 
   /** Copy constructor */
   void StrongCopy(const string &other) {
-    shm_init(other.alloc_, nullptr, other.size());
+    shm_init(nullptr, other.alloc_, other.size());
     _create_str(other.data(), other.size());
   }
 
@@ -114,7 +125,9 @@ class string : public ShmContainer<TYPED_CLASS> {
    * */
   void shm_destroy() {
     if (IsNull()) { return; }
-    alloc_->Free(header_->text_);
+    if (length_) {
+      alloc_->Free(header_->text_);
+    }
     if (IsHeaderDestructable()) {
       alloc_->Free(header_ptr_);
     }
@@ -123,13 +136,14 @@ class string : public ShmContainer<TYPED_CLASS> {
 
   /** Serialize into shared memory */
   void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
-    shm_serialize(ar.header_ptr_);
+    ShmDataStructure<TYPED_CLASS>::shm_serialize(ar);
     ar.text_ = header_->text_;
   }
 
   /** Deserialize from shared memory */
   void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
-    shm_deserialize(ar.header_ptr_);
+    ShmDataStructure<TYPED_CLASS>::shm_deserialize(ar);
+    if (IsNull()) { return; }
     text_ = alloc_->Convert<char>(ar.text_);
     length_ = ar.length_;
   }
@@ -146,13 +160,13 @@ class string : public ShmContainer<TYPED_CLASS> {
 
   /** Add two strings together */
   string operator+(const std::string &other) {
-    string tmp(GetAllocator(), nullptr, other);
-    return string(GetAllocator(), nullptr, *this, tmp);
+    string tmp(GetAllocator(), other);
+    return string(GetAllocator(), *this, tmp);
   }
 
   /** Add two strings together */
   string operator+(const string &other) {
-    return string(GetAllocator(), nullptr, *this, other);
+    return string(GetAllocator(), *this, other);
   }
 
   /** Get the size of the current string */
@@ -182,8 +196,17 @@ class string : public ShmContainer<TYPED_CLASS> {
    * Comparison operators
    * */
 
+  /**
+   * sum(a) - sum(b)
+   * 0 if sum(a) == sum(b) and len(a) == len(b)
+   * >0 if sum(a) > sum(b) or len(a) > len(b)
+   * <0 if sum(a) < sum(b) or len(a) < len(b)
+   * */
   int _strncmp(const char *a, size_t len_a,
                const char *b, size_t len_b) const {
+    if (a == nullptr && b == nullptr) { return 0; }
+    if (b == nullptr) { return 1; }
+    if (a == nullptr) { return -1; }
     if (len_a != len_b) {
       return int((int64_t)len_a - (int64_t)len_b);
     }
@@ -214,8 +237,10 @@ class string : public ShmContainer<TYPED_CLASS> {
 
  private:
   inline void _create_str(const char *text, size_t length) {
-    memcpy(text_, text, length);
-    text_[length] = 0;
+    if (!IsNull() && length > 0) {
+      memcpy(text_, text, length);
+      text_[length] = 0;
+    }
   }
 };
 
