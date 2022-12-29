@@ -37,7 +37,7 @@ class string;
 
 /** string shared-memory header */
 template<>
-struct ShmArchive<string> : public ShmDataStructureArchive {
+struct ShmArchive<string> : public ShmContainerArchive {
   size_t length_;
   Pointer text_;
 };
@@ -136,13 +136,13 @@ class string : public ShmContainer<TYPED_CLASS> {
 
   /** Serialize into shared memory */
   void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
-    ShmDataStructure<TYPED_CLASS>::shm_serialize(ar);
+    ShmContainer<TYPED_CLASS>::shm_serialize(ar);
     ar.text_ = header_->text_;
   }
 
   /** Deserialize from shared memory */
   void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
-    ShmDataStructure<TYPED_CLASS>::shm_deserialize(ar);
+    ShmContainer<TYPED_CLASS>::shm_deserialize(ar);
     if (IsNull()) { return; }
     text_ = alloc_->Convert<char>(ar.text_);
     length_ = ar.length_;

@@ -239,7 +239,7 @@ using list_citerator = list_iterator_templ<T, true>;
  * The list shared-memory header
  * */
 template<typename T>
-struct ShmArchive<list<T>> : public ShmDataStructureArchive {
+struct ShmArchive<list<T>> : public ShmContainerArchive {
   Pointer head_ptr_, tail_ptr_;
   size_t length_;
 };
@@ -281,12 +281,12 @@ class list : public ShmContainer<TYPED_CLASS> {
 
   /** Serialize into shared memory */
   void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
-    ShmDataStructure<TYPED_CLASS>::shm_serialize(ar);
+    ShmContainer<TYPED_CLASS>::shm_serialize(ar);
   }
 
   /** Deserialize from shared memory */
   void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
-    ShmDataStructure<TYPED_CLASS>::shm_deserialize(ar);
+    ShmContainer<TYPED_CLASS>::shm_deserialize(ar);
   }
 
   /** Destroy all shared memory allocated by the list */

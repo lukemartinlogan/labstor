@@ -319,7 +319,7 @@ using vector_criterator = vector_iterator_templ<T, false, true>;
  * The vector shared-memory header
  * */
 template<typename T>
-struct ShmArchive<vector<T>> : public ShmDataStructureArchive {
+struct ShmArchive<vector<T>> : public ShmContainerArchive {
   Pointer vec_ptr_;
   size_t max_length_, length_;
 };
@@ -391,12 +391,12 @@ class vector : public ShmContainer<TYPED_CLASS> {
 
   /** Serialize into shared memory */
   void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
-    ShmDataStructure<TYPED_CLASS>::shm_serialize(ar);
+    ShmContainer<TYPED_CLASS>::shm_serialize(ar);
   }
 
   /** Deserialize from shared memory */
   void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
-    ShmDataStructure<TYPED_CLASS>::shm_deserialize(ar);
+    ShmContainer<TYPED_CLASS>::shm_deserialize(ar);
   }
 
   /** Copy a vector */

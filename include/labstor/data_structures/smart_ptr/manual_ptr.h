@@ -135,12 +135,12 @@ class manual_ptr : public ShmSmartPtr<T> {
 
   /** Serialize into shared memory into a ShmArchive<mptr<T>> */
   void shm_serialize(ShmArchive<manual_ptr<T>> &ar) const {
-    obj_.shm_serialize(static_cast<ShmArchive<T>>(ar));
+    obj_.shm_serialize(ar);
   }
 
   /** Deserialize from shared memory from a ShmArchive<mptr<T>> */
   void shm_deserialize(const ShmArchive<manual_ptr<T>> &ar) {
-    obj_.shm_deserialize(static_cast<ShmArchive<T>>(ar));
+    obj_.shm_deserialize(ar);
   }
 
   /** (De)serialize the obj from a ShmArchive<mptr<T>> */
@@ -148,7 +148,7 @@ class manual_ptr : public ShmSmartPtr<T> {
 
   /** Serialize into shared memory into a ShmArchive<uptr<T>> */
   void shm_serialize(ShmArchive<uptr<T>> &ar) const {
-    obj_.shm_serialize(static_cast<ShmArchive<T>>(ar));
+    obj_.shm_serialize(ar);
   }
 
   /** Deserialize from shared memory from a ShmArchive<uptr<T>> */

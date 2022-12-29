@@ -256,7 +256,7 @@ struct unordered_map_iterator {
  * The unordered_map shared-memory header
  * */
 template<typename Key, typename T, class Hash>
-struct ShmArchive<TYPED_CLASS> : public ShmDataStructureArchive {
+struct ShmArchive<TYPED_CLASS> : public ShmContainerArchive {
  public:
   using BUCKET_T = unordered_map_bucket<Key, T>;
  public:
@@ -314,12 +314,12 @@ class unordered_map : public ShmContainer<TYPED_CLASS> {
 
   /** Serialize into shared memory */
   void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
-    ShmDataStructure<TYPED_CLASS>::shm_serialize(ar);
+    ShmContainer<TYPED_CLASS>::shm_serialize(ar);
   }
 
   /** Deserialize from shared memory */
   void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
-    ShmDataStructure<TYPED_CLASS>::shm_deserialize(ar);
+    ShmContainer<TYPED_CLASS>::shm_deserialize(ar);
   }
 
   /** Copy constructor */

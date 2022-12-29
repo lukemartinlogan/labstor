@@ -180,24 +180,24 @@ struct ShmArchive;
 /**
  * Enables a specific ShmArchive type to be serialized
  * */
-#define SHM_SERIALIZE_WRAPPER(AR_TYPE)\
-  void operator>>(ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) const {\
+#define SHM_SERIALIZE_WRAPPER(TYPED_CLASS)\
+  void operator>>(ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar) const {\
     shm_serialize(ar);\
   }
 
 /**
  * Enables a specific ShmArchive type to be deserialized
  * */
-#define SHM_DESERIALIZE_WRAPPER(AR_TYPE)\
+#define SHM_DESERIALIZE_WRAPPER(TYPED_CLASS)\
   void operator<<(                      \
-    const labstor::ipc::ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) {\
+    const labstor::ipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar) {\
     shm_deserialize(ar);\
   }
 
 /** Enables serialization + deserialization for data structures */
-#define SHM_SERIALIZE_DESERIALIZE_WRAPPER(AR_TYPE)\
-  SHM_SERIALIZE_WRAPPER(AR_TYPE)\
-  SHM_DESERIALIZE_WRAPPER(AR_TYPE)
+#define SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)\
+  SHM_SERIALIZE_WRAPPER(TYPED_CLASS)\
+  SHM_DESERIALIZE_WRAPPER(TYPED_CLASS)
 
 
 }  // namespace labstor::ipc

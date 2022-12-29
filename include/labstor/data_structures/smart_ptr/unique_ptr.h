@@ -96,7 +96,7 @@ class unique_ptr : public ShmSmartPtr<T> {
 
   /** Serialize into shared memory into a ShmArchive<mptr<T>> */
   void shm_serialize(ShmArchive<unique_ptr<T>> &ar) const {
-    obj_.shm_serialize(static_cast<ShmArchive<T>>(ar));
+    obj_.shm_serialize(ar);
   }
 
   /** Serialize into a ShmArchive<unique_ptr> */

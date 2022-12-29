@@ -33,6 +33,6 @@
 #include "internal/shm_smart_ptr.h"
 #include "internal/shm_macros.h"
 #include "internal/shm_struct.h"
-#include "internal/shm_data_structure.h"
+#include "internal/shm_container.h"
 
 #endif  // LABSTOR_DATA_STRUCTURES_DATA_STRUCTURE_H_

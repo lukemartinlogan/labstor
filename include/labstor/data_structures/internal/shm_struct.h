@@ -30,7 +30,7 @@
 #include "labstor/memory/memory_manager.h"
 #include "shm_macros.h"
 #include "shm_archive.h"
-#include "shm_data_structure.h"
+#include "shm_container.h"
 
 namespace labstor::ipc {
 
@@ -42,17 +42,31 @@ namespace labstor::ipc {
 #define TYPED_CLASS T
 
 /** The base archive used by all ShmStruct objects */
+template<typename T>
+struct ShmStructArchive : public ShmContainerArchive {
+  T obj_;
+  template<typename ...Args>
+  explicit ShmStructArchive(Args &&...args)
+    : obj_(std::forward<Args>(args)...) {}
+};
+#define DEFINE_SHM_STRUCT_ARCHIVE(TYPE) \
+  template<>\
+  struct ShmArchive<TYPE> : public ShmStructArchive<TYPE> {\
+    template<typename ...Args>\
+    ShmArchive(Args&& ...args)\
+    : ShmStructArchive<TYPE>(std::forward<Args>(args)...) {}\
+  };
 
 /**
  * Used for storing a simple type (int, double, C-style struct, etc) in shared
- * memory.
- *
- * Called internally by manual_ptr, unique_ptr, and shared_ptr
+ * memory using a smart pointer (e.g., manual_ptr, unique_ptr, and shared_ptr).
+ * This class is not intended to be used directly, unless you're building a
+ * class which inherits from ShmSmartPtr.
  * */
 template<typename T>
-struct ShmStruct : public ShmDataStructure<TYPED_CLASS> {
+struct ShmStruct : public ShmContainer<TYPED_CLASS> {
  public:
-  SHM_DATA_STRUCTURE_TEMPLATE(TYPED_CLASS)
+  BASIC_SHM_CONTAINER_TEMPLATE
 
   /** Default constructor */
   ShmStruct() = default;
@@ -60,7 +74,16 @@ struct ShmStruct : public ShmDataStructure<TYPED_CLASS> {
   /** Construct pointer in-place (find allocator) */
   template<typename ...Args>
   void shm_init(Args &&...args) {
-    shm_init(reinterpret_cast<Allocator *>(NULL),
+    shm_init(reinterpret_cast<ShmArchive<T>*>(NULL),
+             reinterpret_cast<Allocator*>(NULL),
+             std::forward<Args>(args)...);
+  }
+
+  /** Construct pointer in-place (find allocator) */
+  template<typename ...Args>
+  void shm_init(Allocator *alloc, Args &&...args) {
+    shm_init(reinterpret_cast<ShmArchive<T>*>(NULL),
+             alloc,
              std::forward<Args>(args)...);
   }
 
@@ -71,7 +94,8 @@ struct ShmStruct : public ShmDataStructure<TYPED_CLASS> {
    * */
   template<typename ...Args>
   void shm_init(ShmArchive<T> *ar, Allocator *alloc, Args &&...args) {
-    ShmDataStructure<TYPED_CLASS>::shm_init(ar, alloc);
+    ShmContainer<TYPED_CLASS>::shm_init(ar, alloc,
+                                        std::forward<Args>(args)...);
   }
 
   /** Destroy the contents of the ShmStruct */
@@ -81,9 +105,19 @@ struct ShmStruct : public ShmDataStructure<TYPED_CLASS> {
     SetNull();
   }
 
+  /** Serialize into shared memory */
+  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
+    ShmContainer<TYPED_CLASS>::shm_serialize(ar);
+  }
+
+  /** Deserialize from shared memory */
+  void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
+    ShmContainer<TYPED_CLASS>::shm_deserialize(ar);
+  }
+
   /** Convert the pointer to a pointer */
   T* get() {
-    return header_;
+    return &header_->obj_;
   }
 
   /** Convert into a reference */
@@ -92,12 +126,12 @@ struct ShmStruct : public ShmDataStructure<TYPED_CLASS> {
   }
 
   /** Convert the pointer to const pointer */
-  T* get_const() const {
-    return header_;
+  const T* get_const() const {
+    return &header_->obj_;
   }
 
   /** Convert into a const reference */
-  T& get_ref_const() const {
+  const T& get_ref_const() const {
     return *get_const();
   }
 
@@ -111,6 +145,19 @@ struct ShmStruct : public ShmDataStructure<TYPED_CLASS> {
     return get_ref();
   }
 };
+
+/** Define archives for basic integer types */
+DEFINE_SHM_STRUCT_ARCHIVE(int8_t)
+DEFINE_SHM_STRUCT_ARCHIVE(int16_t)
+DEFINE_SHM_STRUCT_ARCHIVE(int32_t)
+DEFINE_SHM_STRUCT_ARCHIVE(int64_t)
+DEFINE_SHM_STRUCT_ARCHIVE(uint8_t)
+DEFINE_SHM_STRUCT_ARCHIVE(uint16_t)
+DEFINE_SHM_STRUCT_ARCHIVE(uint32_t)
+DEFINE_SHM_STRUCT_ARCHIVE(uint64_t)
+DEFINE_SHM_STRUCT_ARCHIVE(float)
+DEFINE_SHM_STRUCT_ARCHIVE(double)
+DEFINE_SHM_STRUCT_ARCHIVE(long double)
 
 }  // namespace labstor::ipc
 
