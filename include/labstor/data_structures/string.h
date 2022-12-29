@@ -64,25 +64,25 @@ class string : public ShmContainer<TYPED_CLASS> {
   string() = default;
 
   /** Construct from a C-style string with allocator in shared memory */
-  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
-                const char *text) {
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+                     const char *text) {
     size_t length = strlen(text);
-    shm_init(ar, alloc, length);
+    shm_init_main(ar, alloc, length);
     _create_str(text, length);
   }
 
   /** Construct for an std::string with allocator in shared-memory */
-  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
-                const std::string &text) {
-    shm_init(ar, alloc, text.size());
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+                     const std::string &text) {
+    shm_init_main(ar, alloc, text.size());
     _create_str(text.data(), text.size());
   }
 
   /** Construct by concatenating two string in shared-memory */
-  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
-                const string &text1, const string &text2) {
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+                     const string &text1, const string &text2) {
     size_t length = text1.size() + text2.size();
-    shm_init(ar, alloc, length);
+    shm_init_main(ar, alloc, length);
     size_t off = 0;
     if (!text1.IsNull() && text1.size()) {
       memcpy(text_,
@@ -99,9 +99,9 @@ class string : public ShmContainer<TYPED_CLASS> {
   /**
    * Construct a string of specific length and allocator in shared memory
    * */
-  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
-                size_t length = 0) {
-    ShmContainer<TYPED_CLASS>::shm_init(ar, alloc);
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+                     size_t length = 0) {
+    ShmContainer<TYPED_CLASS>::shm_init_header(ar, alloc);;
     header_->length_ = length;
     length_ = length;
     if (length) {
@@ -114,9 +114,16 @@ class string : public ShmContainer<TYPED_CLASS> {
     }
   }
 
+  /** Move construct */
+  void WeakMove(string &other) {
+    ShmContainer<TYPED_CLASS>::WeakMove(other);
+    text_ = other.text_;
+    length_ = other.length_;
+  }
+
   /** Copy constructor */
   void StrongCopy(const string &other) {
-    shm_init(nullptr, other.alloc_, other.size());
+    shm_init(other.alloc_, other.size());
     _create_str(other.data(), other.size());
   }
 

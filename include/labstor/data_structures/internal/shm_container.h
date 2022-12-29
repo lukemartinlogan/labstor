@@ -62,7 +62,8 @@ class ShmContainer : public ShmArchiveable {
 
   /** Set the allocator of the data structure */
   template<typename ...Args>
-  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc, Args&& ...args) {
+  void shm_init_header(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+                        Args&& ...args) {
     flags_ = 0;
     if (alloc == nullptr) {
       alloc_ = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
@@ -199,6 +200,7 @@ class ShmContainer : public ShmArchiveable {
 SHM_CONTAINER_USING_NS_::header_ptr_;\
 SHM_CONTAINER_USING_NS_::alloc_;\
 SHM_CONTAINER_USING_NS_::header_;\
+SHM_CONTAINER_USING_NS_::shm_init_header;\
 SHM_CONTAINER_USING_NS_::shm_serialize;\
 SHM_CONTAINER_USING_NS_::shm_deserialize;\
 SHM_CONTAINER_USING_NS_::IsNull;\

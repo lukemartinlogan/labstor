@@ -71,31 +71,11 @@ struct ShmStruct : public ShmContainer<TYPED_CLASS> {
   /** Default constructor */
   ShmStruct() = default;
 
-  /** Construct pointer in-place (find allocator) */
+  /** Main shm init */
   template<typename ...Args>
-  void shm_init(Args &&...args) {
-    shm_init(reinterpret_cast<ShmArchive<T>*>(NULL),
-             reinterpret_cast<Allocator*>(NULL),
-             std::forward<Args>(args)...);
-  }
-
-  /** Construct pointer in-place (find allocator) */
-  template<typename ...Args>
-  void shm_init(Allocator *alloc, Args &&...args) {
-    shm_init(reinterpret_cast<ShmArchive<T>*>(NULL),
-             alloc,
-             std::forward<Args>(args)...);
-  }
-
-  /**
-   * Constructs and stores a simple C type in shared-memory. E.g., a struct
-   * or union. Complex structures should look at ShmContainer under
-   * data_structures/data_structure.h
-   * */
-  template<typename ...Args>
-  void shm_init(ShmArchive<T> *ar, Allocator *alloc, Args &&...args) {
-    ShmContainer<TYPED_CLASS>::shm_init(ar, alloc,
-                                        std::forward<Args>(args)...);
+  void shm_init_main(ShmArchive<T> *ar, Allocator *alloc, Args&& ...args) {
+    ShmContainer<TYPED_CLASS>::shm_init_header(ar, alloc,
+                                               std::forward<Args>(args)...);
   }
 
   /** Destroy the contents of the ShmStruct */

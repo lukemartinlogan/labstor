@@ -106,12 +106,7 @@ class unique_ptr : public ShmSmartPtr<T> {
 template<typename T>
 using uptr = unique_ptr<T>;
 
-template<typename T, typename ...Args>
-static uptr<T> make_uptr(Args&& ...args) {
-  uptr<T> ptr;
-  ptr.shm_init(std::forward<Args>(args)...);
-  return ptr;
-}
+MAKE_SHM_SMART_PTR(uptr)
 
 }  // namespace labstor::ipc
 

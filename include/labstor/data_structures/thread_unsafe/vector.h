@@ -346,9 +346,9 @@ class vector : public ShmContainer<TYPED_CLASS> {
    * @WRAP_PARAM ar -> nullptr
    * */
   template<typename ...Args>
-  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
                 size_t length, Args&& ...args) {
-    shm_init(ar, alloc);
+    shm_init_main(ar, alloc);
     resize(length, std::forward<Args>(args)...);
   }
 
@@ -358,9 +358,9 @@ class vector : public ShmContainer<TYPED_CLASS> {
    * @WRAP_PARAM alloc -> nullptr
    * @WRAP_PARAM ar -> nullptr
    * */
-  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
-                std::vector<T> &other) {
-    shm_init(ar, alloc);
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+                     std::vector<T> &other) {
+    shm_init_main(ar, alloc);
     reserve(other.size());
     for (auto &entry : other) {
       emplace_back(entry);
@@ -373,8 +373,8 @@ class vector : public ShmContainer<TYPED_CLASS> {
    * @WRAP_PARAM alloc -> nullptr
    * @WRAP_PARAM ar -> nullptr
    * */
-  void shm_init(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc) {
-    ShmContainer<TYPED_CLASS>::shm_init(ar, alloc);
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc) {
+    ShmContainer<TYPED_CLASS>::shm_init_header(ar, alloc);;
     header_->length_ = 0;
     header_->max_length_ = 0;
     header_->vec_ptr_.set_null();
@@ -401,7 +401,7 @@ class vector : public ShmContainer<TYPED_CLASS> {
 
   /** Copy a vector */
   void StrongCopy(const vector &other) {
-    shm_init(nullptr, other.alloc_);
+    shm_init(other.alloc_);
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back((*iter));
     }
@@ -416,7 +416,7 @@ class vector : public ShmContainer<TYPED_CLASS> {
    * */
   template<typename ...Args>
   void reserve(size_t length, Args&& ...args) {
-    if (IsNull()) { shm_init(nullptr, nullptr); }
+    if (IsNull()) { shm_init(); }
     if (length == 0) { return; }
     grow_vector(data_ar(), length, false, std::forward<Args>(args)...);
   }
@@ -430,7 +430,7 @@ class vector : public ShmContainer<TYPED_CLASS> {
    * */
   template<typename ...Args>
   void resize(size_t length, Args&& ...args) {
-    if (IsNull()) { shm_init(nullptr, nullptr); }
+    if (IsNull()) { shm_init(); }
     if (length == 0) { return; }
     grow_vector(data_ar(), length, true, std::forward<Args>(args)...);
     header_->length_ = length;

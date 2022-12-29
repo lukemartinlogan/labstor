@@ -71,7 +71,7 @@ void ManualPtrOfInt() {
 
 void ManualPtrOfString() {
   Allocator *alloc = alloc_g;
-  mptr<string> data = make_mptr<string>(nullptr, alloc, "there");
+  mptr<string> data = make_mptr<string>(alloc, "there");
   REQUIRE(data->str() == "there");
   REQUIRE((*data).str() == "there");
   mptr<string> data2 = std::move(data);

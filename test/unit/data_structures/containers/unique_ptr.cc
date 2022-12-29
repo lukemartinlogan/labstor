@@ -68,6 +68,8 @@ void UniquePtrOfString() {
   REQUIRE((*data).str() == "there");
   unique_ptr<string> data2 = std::move(data);
   REQUIRE(data.IsNull());
+  REQUIRE(data2->IsDestructable());
+  REQUIRE(data2->IsHeaderDestructable());
 
   ShmArchive<unique_ptr<string>> ar;
   data2 >> ar;

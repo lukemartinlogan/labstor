@@ -262,19 +262,19 @@ class list : public ShmContainer<TYPED_CLASS> {
   list() = default;
 
   /** list copy constructor */
-  void shm_init(ShmArchive<TYPED_CLASS> *ar,
-                Allocator *alloc,
-                std::list<T> &other) {
-    shm_init(ar, alloc);
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+                     Allocator *alloc,
+                     std::list<T> &other) {
+    shm_init_main(ar, alloc);
     for (auto &entry : other) {
       emplace_back(std::move(entry));
     }
   }
 
   /** Initialize list in shared memory */
-  void shm_init(ShmArchive<TYPED_CLASS> *ar = nullptr,
-                Allocator *alloc = nullptr) {
-    ShmContainer<TYPED_CLASS>::shm_init(ar, alloc);
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar = nullptr,
+                     Allocator *alloc = nullptr) {
+    shm_init_header(ar, alloc);
     header_->head_ptr_.set_null();
     header_->tail_ptr_.set_null();
   }
@@ -299,7 +299,7 @@ class list : public ShmContainer<TYPED_CLASS> {
 
   /** Copy constructor */
   void StrongCopy(const list &other) {
-    shm_init(nullptr, other.alloc_);
+    shm_init(other.alloc_);
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back(*iter);
     }

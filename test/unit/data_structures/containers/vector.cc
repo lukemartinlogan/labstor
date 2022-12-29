@@ -133,7 +133,7 @@ void VectorOfIntTest() {
     for (int i = 0; i < 30; ++i) {
       orig.emplace_back(i);
     }
-    labstor::ipc::vector<int> cpy(nullptr, orig);
+    labstor::ipc::vector<int> cpy(orig);
     REQUIRE(cpy.size() == 30);
     for (int i = 0; i < cpy.size(); ++i) {
       REQUIRE(cpy[i] == i);

@@ -138,4 +138,20 @@ class ShmSmartPtr : public ShmSmartPointer {
   using ShmSmartPtr<T>::IsNull;\
   using ShmSmartPtr<T>::shm_destroy;
 
+#define MAKE_SHM_SMART_PTR(SMART_PTR_NAME)\
+  template<typename T, typename ...Args>\
+  static SMART_PTR_NAME<T> make_##SMART_PTR_NAME(Args&& ...args) {\
+    SMART_PTR_NAME<T> ptr;\
+    ptr.shm_init(std::forward<Args>(args)...);\
+    return ptr;\
+  }\
+  template<typename T, typename ...Args>\
+  static SMART_PTR_NAME<T> make_##SMART_PTR_NAME(ShmArchive<T> *ar,\
+                                       Allocator *alloc,\
+                                       Args&& ...args) {\
+    SMART_PTR_NAME<T> ptr;\
+    ptr.shm_init_main(ar, alloc, std::forward<Args>(args)...);\
+    return ptr;\
+  }
+
 #endif  // LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_DATA_STRUCTURE_POINTER_H_

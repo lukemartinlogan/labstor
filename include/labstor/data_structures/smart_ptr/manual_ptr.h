@@ -153,7 +153,7 @@ class manual_ptr : public ShmSmartPtr<T> {
 
   /** Deserialize from shared memory from a ShmArchive<uptr<T>> */
   void shm_deserialize(const ShmArchive<uptr<T>> &ar) {
-    obj_.shm_deserialize(static_cast<ShmArchive<T>>(ar));
+    obj_.shm_deserialize(ar);
   }
 
   /** Deserialize the obj from a ShmArchive<uptr<T>> */
@@ -163,12 +163,7 @@ class manual_ptr : public ShmSmartPtr<T> {
 template<typename T>
 using mptr = manual_ptr<T>;
 
-template<typename T, typename ...Args>
-static mptr<T> make_mptr(Args&& ...args) {
-  mptr<T> ptr;
-  ptr.shm_init(std::forward<Args>(args)...);
-  return ptr;
-}
+MAKE_SHM_SMART_PTR(mptr)
 
 }  // namespace labstor::ipc
 

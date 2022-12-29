@@ -299,12 +299,12 @@ class unordered_map : public ShmContainer<TYPED_CLASS> {
    * a growth is triggered
    * @param growth the multiplier to grow the bucket vector size
    * */
-  void shm_init(Allocator *alloc = nullptr,
-                ShmArchive<TYPED_CLASS> *ar = nullptr,
-                int num_buckets = 20,
-                int max_collisions = 4,
-                RealNumber growth = RealNumber(5, 4)) {
-    ShmContainer<TYPED_CLASS>::shm_init(ar, alloc);
+  void shm_init_main(Allocator *alloc,
+                     ShmArchive<TYPED_CLASS> *ar,
+                     int num_buckets = 20,
+                     int max_collisions = 4,
+                     RealNumber growth = RealNumber(5, 4)) {
+    ShmContainer<TYPED_CLASS>::shm_init_header(ar, alloc);;
     auto buckets = make_mptr<vector<BUCKET_T>>(alloc_, num_buckets, alloc_);
     buckets >> header_->buckets_;
     header_->length_ = 0;
