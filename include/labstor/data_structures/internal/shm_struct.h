@@ -80,9 +80,8 @@ struct ShmStruct : public ShmContainer<TYPED_CLASS> {
 
   /** Destroy the contents of the ShmStruct */
   void shm_destroy() {
-    if (IsNull()) { return; }
-    alloc_->Free(header_ptr_);
-    SetNull();
+    SHM_DESTROY_PRIOR
+    SHM_DESTROY_AFTER
   }
 
   /** Serialize into shared memory */

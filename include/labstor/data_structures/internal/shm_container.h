@@ -118,6 +118,11 @@ class ShmContainer : public ShmArchiveable {
     other.SetNull();
   }
 
+  /** Used by shm_destroy operators */
+  void shm_destroy_after() {
+
+  }
+
   /** Sets this object as destructable */
   void SetDestructable() {
     flags_ |= IS_SHM_DESTRUCTABLE;
@@ -178,6 +183,119 @@ class ShmContainer : public ShmArchiveable {
   /** Copy constructor */
   // void StrongCopy(const CLASS_NAME &other);
 };
+
+/** Namespace simplification */
+namespace lipc = labstor::ipc;
+
+/** Wrappers around null pointers to help with template deduction */
+#define SHM_ARCHIVE_NULL(T) reinterpret_cast<ShmArchive<T>*>(NULL)
+#define SHM_ARCHIVE_NULL_T \
+  reinterpret_cast<lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)>*>(NULL)
+#define SHM_ALLOCATOR_NULL reinterpret_cast<lipc::Allocator*>(NULL)
+
+/** Generates the code for constructors */
+#define SHM_INHERIT_CONSTRUCTOR(CLASS_NAME, TYPED_CLASS)\
+  template<typename ...Args>\
+  explicit CLASS_NAME(Args&& ...args) {\
+    shm_init_main(SHM_ARCHIVE_NULL_T, SHM_ALLOCATOR_NULL, \
+                  std::forward<Args>(args)...);\
+  }\
+  template<typename ...Args>\
+  explicit CLASS_NAME(lipc::Allocator *alloc, Args&& ...args) {\
+    shm_init_main(SHM_ARCHIVE_NULL_T, alloc, std::forward<Args>(args)...);\
+  }\
+  template<typename ...Args>\
+  explicit CLASS_NAME(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar,\
+                      Allocator *alloc,\
+                      Args&& ...args) {\
+    shm_init_main(&ar, alloc, std::forward<Args>(args)...);\
+  }\
+  explicit CLASS_NAME(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar) {\
+      shm_deserialize(ar);\
+  }\
+  template<typename ...Args>\
+  void shm_init(Args&& ...args) {\
+    shm_init_main(SHM_ARCHIVE_NULL_T, SHM_ALLOCATOR_NULL,\
+    std::forward<Args>(args)...);\
+  }\
+  template<typename ...Args>\
+  void shm_init(lipc::Allocator *alloc, Args&& ...args) {\
+    shm_init_main(SHM_ARCHIVE_NULL_T, alloc, std::forward<Args>(args)...);\
+  }\
+  template<typename ...Args>\
+  void shm_init(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar,\
+                lipc::Allocator *alloc,\
+                Args&& ...args) {\
+    shm_init_main(&ar, alloc, std::forward<Args>(args)...);\
+  }
+
+/** Generates the code for destructors */
+#define SHM_INHERIT_DESTRUCTOR(CLASS_NAME)\
+  ~CLASS_NAME() {\
+    if (IsDestructable()) {\
+        shm_destroy();\
+    }\
+  }
+
+/** Generates the code for move operators */
+#define SHM_INHERIT_MOVE_OPS(CLASS_NAME, TYPED_CLASS)\
+  CLASS_NAME(CLASS_NAME &&other) noexcept {\
+    WeakMove(other);\
+  }\
+  CLASS_NAME(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar, \
+             lipc::Allocator *alloc, \
+             CLASS_NAME &&other) noexcept {\
+    (void) ar; (void) alloc;\
+    WeakMove(other);\
+  }\
+  CLASS_NAME& operator=(CLASS_NAME &&other) noexcept {\
+    if (this != &other) {\
+      shm_destroy();\
+      WeakMove(other);\
+    }\
+    return *this;\
+  }\
+  void shm_init(CLASS_NAME &&other) noexcept {\
+    shm_destroy();\
+    WeakMove(other);\
+  }
+
+/** Generates the code for copy operators */
+#define SHM_INHERIT_COPY_OPS(CLASS_NAME, TYPED_CLASS)\
+  CLASS_NAME(const CLASS_NAME &other) noexcept {\
+    StrongCopy(other);\
+  }\
+  CLASS_NAME(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar, \
+             lipc::Allocator *alloc, \
+             const CLASS_NAME &other) noexcept {\
+    (void) ar; (void) alloc;\
+    StrongCopy(other);\
+  }\
+  CLASS_NAME& operator=(const CLASS_NAME &other) {\
+    if (this != &other) {\
+      StrongCopy(other);\
+    }\
+    return *this;\
+  }\
+  void shm_init_main(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar,\
+                     lipc::Allocator *alloc, \
+                     const CLASS_NAME &other) noexcept {\
+    (void) ar; (void) alloc;\
+    StrongCopy(other);\
+  }
+
+/**
+ * Macros for simplifying shm_destroy
+ * */
+#define SHM_DESTROY_PRIOR\
+  if (IsNull()) { return; }
+
+#define SHM_DESTROY_AFTER\
+  if (IsHeaderDestructable()) {\
+    alloc_->Free(header_ptr_);\
+    header_ = nullptr;\
+  }\
+  SetNull();
 
 /**
  * Namespace simplification for a SHM data structure

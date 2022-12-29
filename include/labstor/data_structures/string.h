@@ -123,7 +123,12 @@ class string : public ShmContainer<TYPED_CLASS> {
 
   /** Copy constructor */
   void StrongCopy(const string &other) {
-    shm_init(other.alloc_, other.size());
+    if (IsNull()) {
+      shm_init(other.alloc_, other.size());
+    } else {
+      shm_destroy();
+      shm_init_main(header_, alloc_, other.size());
+    }
     _create_str(other.data(), other.size());
   }
 
@@ -131,14 +136,11 @@ class string : public ShmContainer<TYPED_CLASS> {
    * Destroy the shared-memory data.
    * */
   void shm_destroy() {
-    if (IsNull()) { return; }
+    SHM_DESTROY_PRIOR
     if (length_) {
       alloc_->Free(header_->text_);
     }
-    if (IsHeaderDestructable()) {
-      alloc_->Free(header_ptr_);
-    }
-    SetNull();
+    SHM_DESTROY_AFTER
   }
 
   /** Serialize into shared memory */

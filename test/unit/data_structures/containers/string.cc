@@ -46,6 +46,10 @@ void TestString() {
 
   string text4(6);
   memcpy(text4.data_mutable(), "hello4", 6);
+
+  string text5 = std::move(text4);
+
+  string text6(text5);
 }
 
 TEST_CASE("String") {

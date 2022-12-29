@@ -338,12 +338,10 @@ class unordered_map : public ShmContainer<TYPED_CLASS> {
 
   /** Destroy the unordered_map buckets */
   void shm_destroy() {
-    if (IsNull()) { return; }
+    SHM_DESTROY_PRIOR
     mptr<vector<BUCKET_T>> buckets(header_->buckets_);
     buckets->shm_destroy();
-    alloc_->template
-      Free(header_ptr_);
-    SetNull();
+    SHM_DESTROY_AFTER
   }
 
   /**

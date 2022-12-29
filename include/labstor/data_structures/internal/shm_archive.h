@@ -109,102 +109,12 @@ class ShmArchiveable {
 template<typename T>
 struct ShmArchive;
 
-/** Wrappers around null pointers to help with template deduction */
-#define SHM_ARCHIVE_NULL(T) reinterpret_cast<ShmArchive<T>*>(NULL)
-#define SHM_ARCHIVE_NULL_T \
-  reinterpret_cast<ShmArchive<TYPE_UNWRAP(TYPED_CLASS)>*>(NULL)
-#define SHM_ALLOCATOR_NULL reinterpret_cast<Allocator*>(NULL)
-
-/** Generates the code for constructors */
-#define SHM_INHERIT_CONSTRUCTOR(CLASS_NAME, TYPED_CLASS)\
-  template<typename ...Args>\
-  explicit CLASS_NAME(Args&& ...args) {\
-    shm_init_main(SHM_ARCHIVE_NULL_T, SHM_ALLOCATOR_NULL, \
-                  std::forward<Args>(args)...);\
-  }\
-  template<typename ...Args>\
-  explicit CLASS_NAME(Allocator *alloc, Args&& ...args) {\
-    shm_init_main(SHM_ARCHIVE_NULL_T, alloc, std::forward<Args>(args)...);\
-  }\
-  template<typename ...Args>\
-  explicit CLASS_NAME(ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar, \
-                      Args&& ...args) {\
-    shm_init_main(&ar, SHM_ALLOCATOR_NULL, std::forward<Args>(args)...);\
-  }\
-  template<typename ...Args>\
-  void shm_init(Args&& ...args) {\
-    shm_init_main(SHM_ARCHIVE_NULL_T, SHM_ALLOCATOR_NULL,\
-    std::forward<Args>(args)...);\
-  }\
-  template<typename ...Args>\
-  void shm_init(Allocator *alloc, Args&& ...args) {\
-    shm_init_main(SHM_ARCHIVE_NULL_T, alloc, std::forward<Args>(args)...);\
-  }\
-  template<typename ...Args>\
-  void shm_init(ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar, Args&& ...args) {\
-    shm_init_main(&ar, SHM_ALLOCATOR_NULL, std::forward<Args>(args)...);\
-  }
-
-/** Generates the code for destructors */
-#define SHM_INHERIT_DESTRUCTOR(CLASS_NAME)\
-  ~CLASS_NAME() {\
-    if (IsDestructable()) {\
-        shm_destroy();\
-    }\
-  }
-
-/** Generates the code for move operators */
-#define SHM_INHERIT_MOVE_OPS(CLASS_NAME, TYPED_CLASS)\
-  CLASS_NAME(CLASS_NAME &&other) noexcept {\
-    shm_destroy();\
-    WeakMove(other);\
-  }\
-  CLASS_NAME(ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar, Allocator *alloc, \
-             CLASS_NAME &&other) noexcept {\
-    (void) ar; (void) alloc;\
-    shm_destroy();\
-    WeakMove(other);\
-  }\
-  CLASS_NAME& operator=(CLASS_NAME &&other) noexcept {\
-    if (this != &other) {\
-      shm_destroy();\
-      WeakMove(other);\
-    }\
-    return *this;\
-  }\
-  void shm_init(CLASS_NAME &&other) noexcept {\
-    shm_destroy();\
-    WeakMove(other);\
-  }
-
-/** Generates the code for copy operators */
-#define SHM_INHERIT_COPY_OPS(CLASS_NAME, TYPED_CLASS)\
-  CLASS_NAME(const CLASS_NAME &other) noexcept {\
-    StrongCopy(other);\
-  }\
-  CLASS_NAME(ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar, Allocator *alloc, \
-             const CLASS_NAME &other) noexcept {\
-    (void) ar; (void) alloc;\
-    StrongCopy(other);\
-  }\
-  CLASS_NAME& operator=(const CLASS_NAME &other) {\
-    if (this != &other) {\
-      StrongCopy(other);\
-    }\
-    return *this;\
-  }\
-  void shm_init_main(ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar,\
-                     Allocator *alloc, \
-                     const CLASS_NAME &other) noexcept {\
-    (void) ar; (void) alloc;\
-    StrongCopy(other);\
-  }
-
 /**
  * Enables a specific ShmArchive type to be serialized
  * */
 #define SHM_SERIALIZE_WRAPPER(TYPED_CLASS)\
-  void operator>>(ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar) const {\
+  void operator>>(                        \
+    labstor::ipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar) const {\
     shm_serialize(ar);\
   }
 
@@ -212,7 +122,7 @@ struct ShmArchive;
  * Enables a specific ShmArchive type to be deserialized
  * */
 #define SHM_DESERIALIZE_WRAPPER(TYPED_CLASS)\
-  void operator<<(                      \
+  void operator<<( \
     const labstor::ipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar) {\
     shm_deserialize(ar);\
   }

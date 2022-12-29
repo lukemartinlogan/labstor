@@ -34,7 +34,7 @@
 namespace labstor::ipc {
 
 /**
- * Stores a "shared-memory reference". I.e., the result of
+ * Stores a reference to shared memory object. I.e., the result of
  * constructing an object from an archive.
  * */
 template<typename T>
@@ -55,7 +55,8 @@ class _shm_ref_shm {
 
   /** Gets the data in a way that exists after this object is destroyed */
   T export_data() {
-    return *obj_;
+    T ret(obj_ar_);
+    return ret;
   }
 
   /** Return a pointer to the internal object */
@@ -92,6 +93,8 @@ class _shm_ref_shm {
   _shm_ref_shm& operator=(const T &obj) {
     (*obj_) = obj;
     obj_.shm_serialize(obj_ar_);
+    obj_->SetDestructable();
+    obj_->UnsetHeaderDestructable();
     return *this;
   }
 

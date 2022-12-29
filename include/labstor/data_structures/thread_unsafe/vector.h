@@ -382,11 +382,10 @@ class vector : public ShmContainer<TYPED_CLASS> {
 
   /** Destroy all shared memory allocated by the vector */
   void shm_destroy() {
-    if (IsNull()) { return; }
+    SHM_DESTROY_PRIOR
     erase(begin(), end());
     alloc_->Free(header_->vec_ptr_);
-    alloc_->Free(header_ptr_);
-    SetNull();
+    SHM_DESTROY_AFTER
   }
 
   /** Serialize into shared memory */
@@ -401,7 +400,12 @@ class vector : public ShmContainer<TYPED_CLASS> {
 
   /** Copy a vector */
   void StrongCopy(const vector &other) {
-    shm_init(other.alloc_);
+    if (IsNull()) {
+      shm_init(other.alloc_);
+    } else {
+      shm_destroy();
+      shm_init_main(header_, alloc_);
+    }
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back((*iter));
     }

@@ -261,7 +261,7 @@ class list : public ShmContainer<TYPED_CLASS> {
   /** Default constructor */
   list() = default;
 
-  /** list copy constructor */
+  /** Copy from std::list */
   void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
                      Allocator *alloc,
                      std::list<T> &other) {
@@ -272,8 +272,8 @@ class list : public ShmContainer<TYPED_CLASS> {
   }
 
   /** Initialize list in shared memory */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar = nullptr,
-                     Allocator *alloc = nullptr) {
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+                     Allocator *alloc) {
     shm_init_header(ar, alloc);
     header_->head_ptr_.set_null();
     header_->tail_ptr_.set_null();
@@ -291,15 +291,19 @@ class list : public ShmContainer<TYPED_CLASS> {
 
   /** Destroy all shared memory allocated by the list */
   void shm_destroy() {
-    if (IsNull()) { return; }
+    SHM_DESTROY_PRIOR
     clear();
-    alloc_->Free(header_ptr_);
-    SetNull();
+    SHM_DESTROY_AFTER
   }
 
   /** Copy constructor */
   void StrongCopy(const list &other) {
-    shm_init(other.alloc_);
+    if (IsNull()) {
+      shm_init_main(SHM_ARCHIVE_NULL_T, other.alloc_);
+    } else {
+      shm_destroy();
+      shm_init_main(header_, alloc_);
+    }
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back(*iter);
     }
