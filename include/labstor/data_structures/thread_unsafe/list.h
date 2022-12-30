@@ -248,7 +248,7 @@ struct ShmHeader<TYPED_CLASS> {
  * Doubly linked list implementation
  * */
 template<typename T>
-class list : public ShmContainer<TYPED_CLASS> {
+class list : public SHM_CONTAINER(TYPED_CLASS) {
  public:
   BASIC_SHM_CONTAINER_TEMPLATE
 
@@ -259,7 +259,7 @@ class list : public ShmContainer<TYPED_CLASS> {
  public:
   /** Initialize list in shared memory */
   void shm_init_main(Allocator *alloc) {
-    ShmContainer<TYPED_CLASS>::shm_init(alloc);
+    shm_init_header(alloc);
     header_ = alloc_->template
       ClearAllocateObjs<ShmHeader<TYPED_CLASS>>(1, header_ptr_);
     header_->head_ptr_.set_null();

@@ -271,7 +271,7 @@ struct ShmHeader<TYPED_CLASS> {
  * The unordered map implementation
  * */
 template<typename Key, typename T, class Hash>
-class unordered_map : public ShmContainer<TYPED_CLASS> {
+class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
  public:
   BASIC_SHM_CONTAINER_TEMPLATE
   friend unordered_map_iterator<Key, T, Hash>;
@@ -299,7 +299,7 @@ class unordered_map : public ShmContainer<TYPED_CLASS> {
                      int num_buckets = 20,
                      int max_collisions = 4,
                      RealNumber growth = RealNumber(5, 4)) {
-    ShmContainer<TYPED_CLASS>::shm_init(alloc);
+    shm_init_header(alloc);
     header_ = alloc_->template
       AllocateConstructObjs<ShmHeader<TYPED_CLASS>>(1, header_ptr_);
     auto buckets = make_mptr<vector<BUCKET_T>>(alloc_, num_buckets, alloc_);

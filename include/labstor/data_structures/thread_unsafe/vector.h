@@ -328,7 +328,7 @@ struct ShmHeader<TYPED_CLASS> {
  * The vector class
  * */
 template<typename T>
-class vector : public ShmContainer<TYPED_CLASS> {
+class vector : public SHM_CONTAINER(TYPED_CLASS) {
  public:
   BASIC_SHM_CONTAINER_TEMPLATE
 
@@ -345,7 +345,7 @@ class vector : public ShmContainer<TYPED_CLASS> {
 
   /** Construct the vector in shared memory */
   void shm_init_main(Allocator *alloc) {
-    ShmContainer<TYPED_CLASS>::shm_init(alloc);
+    shm_init_header(alloc);
     header_ = alloc_->template
       AllocateObjs<ShmHeader<TYPED_CLASS>>(1, header_ptr_);
     header_->length_ = 0;

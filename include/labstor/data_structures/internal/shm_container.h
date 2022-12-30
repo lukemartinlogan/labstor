@@ -37,22 +37,20 @@ namespace labstor::ipc {
 template<typename T>
 struct ShmHeader;
 
-#define SHM_HEADER_OR_T(T)\
-  typename std::conditional<ARCHIVEABLE,\
-    ShmHeader<T>, T>::type
+/** Simplify ShmContainer inheritance */
+#define SHM_CONTAINER(TYPED_CLASS) \
+  ShmContainer<ShmHeader<TYPE_UNWRAP(TYPED_CLASS)>>
 
 /**
  * ShmContainers all have a header, which is stored in
  * shared memory as a ShmArchive.
  * */
-template<typename TYPED_CLASS, bool ARCHIVEABLE=true>
+template<typename TYPED_HEADER>
 class ShmContainer : public ShmArchiveable {
- public:
-  typedef SHM_HEADER_OR_T(TYPED_CLASS) T_Hdr;
  protected:
   Pointer header_ptr_;
   Allocator *alloc_;
-  T_Hdr *header_;
+  TYPED_HEADER *header_;
   bool destructable_;
 
  public:
@@ -62,7 +60,7 @@ class ShmContainer : public ShmArchiveable {
     alloc_(nullptr), header_(nullptr), destructable_(true) {}
 
   /** Set the allocator of the data structure */
-  void shm_init(Allocator *alloc) {
+  void shm_init_header(Allocator *alloc) {
     if (alloc == nullptr) {
       alloc_ = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
     } else {
@@ -81,7 +79,7 @@ class ShmContainer : public ShmArchiveable {
     if (header_ptr.is_null()) { return; }
     alloc_ = LABSTOR_MEMORY_MANAGER->GetAllocator(header_ptr.allocator_id_);
     header_ = LABSTOR_MEMORY_MANAGER->
-      Convert<T_Hdr>(header_ptr);
+      Convert<TYPED_HEADER>(header_ptr);
   }
 
   /** Copy only pointers */
@@ -140,6 +138,7 @@ class ShmContainer : public ShmArchiveable {
   // void StrongCopy(const CLASS_NAME &other);
 };
 
+/** Typed nullptr for allocator */
 #define SHM_ALLOCATOR_NULL reinterpret_cast<Allocator*>(NULL)
 
 /** Generates the code for constructors  */
@@ -209,8 +208,8 @@ class ShmContainer : public ShmArchiveable {
 /**
  * Namespace simplification for a SHM data structure
  * */
-#define SHM_CONTAINER_USING_NS(ARCHIVEABLE)\
-  using labstor::ipc::ShmContainer<TYPE_UNWRAP(TYPED_CLASS), ARCHIVEABLE>
+#define SHM_CONTAINER_USING_NS(TYPED_HEADER)\
+  using labstor::ipc::ShmContainer<TYPE_UNWRAP(TYPED_HEADER)>
 
 /**
  * Define various functions and variables common across all
@@ -223,30 +222,35 @@ class ShmContainer : public ShmArchiveable {
  * 2. Create Copy constructors + Copy assignment operators.
  * 3. Create shm_serialize and shm_deserialize for archiving data structures.
  * */
-#define SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, ARCHIVEABLE)\
-SHM_CONTAINER_USING_NS(ARCHIVEABLE)::header_ptr_;\
-SHM_CONTAINER_USING_NS(ARCHIVEABLE)::alloc_;\
-SHM_CONTAINER_USING_NS(ARCHIVEABLE)::header_;\
-SHM_CONTAINER_USING_NS(ARCHIVEABLE)::destructable_;\
-SHM_CONTAINER_USING_NS(ARCHIVEABLE)::shm_serialize;\
-SHM_CONTAINER_USING_NS(ARCHIVEABLE)::shm_deserialize;\
-SHM_CONTAINER_USING_NS(ARCHIVEABLE)::IsNull;\
-SHM_CONTAINER_USING_NS(ARCHIVEABLE)::SetNull;            \
-SHM_CONTAINER_USING_NS(ARCHIVEABLE)::SetDestructable;\
-SHM_CONTAINER_USING_NS(ARCHIVEABLE)::UnsetDestructable;\
-SHM_CONTAINER_USING_NS(ARCHIVEABLE)::WeakCopy;\
-SHM_CONTAINER_USING_NS(ARCHIVEABLE)::WeakMove;\
+#define SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)\
+SHM_CONTAINER_USING_NS(TYPED_HEADER)::header_ptr_;\
+SHM_CONTAINER_USING_NS(TYPED_HEADER)::alloc_;\
+SHM_CONTAINER_USING_NS(TYPED_HEADER)::header_;\
+SHM_CONTAINER_USING_NS(TYPED_HEADER)::destructable_;\
+SHM_CONTAINER_USING_NS(TYPED_HEADER)::shm_init_header;\
+SHM_CONTAINER_USING_NS(TYPED_HEADER)::shm_serialize;\
+SHM_CONTAINER_USING_NS(TYPED_HEADER)::shm_deserialize;\
+SHM_CONTAINER_USING_NS(TYPED_HEADER)::IsNull;\
+SHM_CONTAINER_USING_NS(TYPED_HEADER)::SetNull;            \
+SHM_CONTAINER_USING_NS(TYPED_HEADER)::SetDestructable;\
+SHM_CONTAINER_USING_NS(TYPED_HEADER)::UnsetDestructable;\
+SHM_CONTAINER_USING_NS(TYPED_HEADER)::WeakCopy;\
+SHM_CONTAINER_USING_NS(TYPED_HEADER)::WeakMove;\
 SHM_INHERIT_CONSTRUCTORS(CLASS_NAME)\
 SHM_INHERIT_DESTRUCTORS(CLASS_NAME)\
 SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
 SHM_INHERIT_COPY_OPS(CLASS_NAME)\
 SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
 
-#define SHM_CONTAINER_TEMPLATE_NO_SHM_HEADER(CLASS_NAME, TYPED_CLASS) \
-  SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, false)
+/**
+ * ShmContainers should define:
+ * CLASS_NAME and TYPED_CLASS macros and then
+ * unset them in their respective header files.
+ * */
 
 #define SHM_CONTAINER_TEMPLATE(CLASS_NAME, TYPED_CLASS) \
-  SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, true)
+  SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, \
+                           TYPE_WRAP(ShmHeader<TYPE_UNWRAP(TYPED_CLASS)>))
 
 /**
  * ShmContainers should define:

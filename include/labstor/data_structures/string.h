@@ -52,7 +52,7 @@ struct ShmHeader<TYPED_CLASS> {
 /**
  * A string of characters.
  * */
-class string : public ShmContainer<TYPED_CLASS> {
+class string : public SHM_CONTAINER(TYPED_CLASS) {
  public:
   BASIC_SHM_CONTAINER_TEMPLATE
 
@@ -95,7 +95,7 @@ class string : public ShmContainer<TYPED_CLASS> {
    * Construct a string of specific length and allocator in shared memory
    * */
   void shm_init_main(Allocator *alloc, size_t length) {
-    ShmContainer<TYPED_CLASS>::shm_init(alloc);
+    shm_init_header(alloc);
     header_ = alloc_->template
       AllocatePtr<ShmHeader<TYPED_CLASS>>(
       sizeof(ShmHeader<TYPED_CLASS>) + length + 1,

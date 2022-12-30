@@ -48,9 +48,9 @@ namespace labstor::ipc {
  * Called internally by manual_ptr, unique_ptr, and shared_ptr
  * */
 template<typename T>
-struct ShmStruct : public ShmContainer<TYPED_CLASS, false> {
+struct ShmStruct : public ShmContainer<T> {
  public:
-  SHM_CONTAINER_TEMPLATE_NO_SHM_HEADER(CLASS_NAME, TYPED_CLASS)
+  SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, TYPED_CLASS)
 
   /**
    * Constructs and stores a simple C type in shared-memory. E.g., a struct
@@ -59,7 +59,7 @@ struct ShmStruct : public ShmContainer<TYPED_CLASS, false> {
    * */
   template<typename ...Args>
   void shm_init_main(Allocator *alloc, Args &&...args) {
-    ShmContainer<TYPED_CLASS, false>::shm_init(alloc);
+    shm_init_header(alloc);
     header_ = alloc_->template
       AllocateConstructObjs<T>(1, header_ptr_, std::forward<Args>(args)...);
   }
