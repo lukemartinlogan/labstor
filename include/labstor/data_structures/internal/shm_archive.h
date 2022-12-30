@@ -143,7 +143,7 @@ struct ShmArchive {
  * Enables a specific ShmArchive type to be serialized
  * */
 #define SHM_SERIALIZE_OPS(AR_TYPE)\
-  void operator>>(ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) const {\
+  void operator>>(lipc::ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) const {\
     shm_serialize(ar);\
   }
 
@@ -152,7 +152,7 @@ struct ShmArchive {
  * */
 #define SHM_DESERIALIZE_OPS(AR_TYPE)\
   void operator<<(                      \
-    const labstor::ipc::ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) {\
+    const lipc::ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) {\
     shm_deserialize(ar);\
   }
 

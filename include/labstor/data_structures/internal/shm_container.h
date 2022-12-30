@@ -141,7 +141,7 @@ class ShmContainer : public ShmArchiveable {
 };
 
 /** Typed nullptr for allocator */
-#define SHM_ALLOCATOR_NULL reinterpret_cast<Allocator*>(NULL)
+#define SHM_ALLOCATOR_NULL reinterpret_cast<lipc::Allocator*>(NULL)
 
 /** Generates the code for constructors  */
 #define SHM_INHERIT_CONSTRUCTORS(CLASS_NAME)\
