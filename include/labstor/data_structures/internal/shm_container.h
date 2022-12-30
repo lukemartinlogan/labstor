@@ -31,6 +31,8 @@
 #include "shm_macros.h"
 #include "shm_archive.h"
 
+namespace lipc = labstor::ipc;
+
 namespace labstor::ipc {
 
 /** The shared-memory header used for data structures */
@@ -39,7 +41,7 @@ struct ShmHeader;
 
 /** Simplify ShmContainer inheritance */
 #define SHM_CONTAINER(TYPED_CLASS) \
-  ShmContainer<ShmHeader<TYPE_UNWRAP(TYPED_CLASS)>>
+  lipc::ShmContainer<ShmHeader<TYPE_UNWRAP(TYPED_CLASS)>>
 
 /**
  * ShmContainers all have a header, which is stored in
@@ -69,12 +71,12 @@ class ShmContainer : public ShmArchiveable {
   }
 
   /** Serialize an object into a raw pointer */
-  void shm_serialize(Pointer &header_ptr) const {
+  void shm_serialize_header(Pointer &header_ptr) const {
     header_ptr = header_ptr_;
   }
 
   /** Deserialize object from a raw pointer */
-  void shm_deserialize(const Pointer &header_ptr) {
+  void shm_deserialize_header(const Pointer &header_ptr) {
     header_ptr_ = header_ptr;
     if (header_ptr.is_null()) { return; }
     alloc_ = LABSTOR_MEMORY_MANAGER->GetAllocator(header_ptr.allocator_id_);
@@ -149,7 +151,7 @@ class ShmContainer : public ShmArchiveable {
     shm_init_main(SHM_ALLOCATOR_NULL, std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
-  explicit CLASS_NAME(Allocator *alloc, Args&& ...args) {\
+  explicit CLASS_NAME(lipc::Allocator *alloc, Args&& ...args) {\
     shm_init_main(alloc, std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
@@ -157,7 +159,7 @@ class ShmContainer : public ShmArchiveable {
     shm_init_main(SHM_ALLOCATOR_NULL, std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
-  void shm_init(Allocator *alloc, Args&& ...args) {\
+  void shm_init(lipc::Allocator *alloc, Args&& ...args) {\
     shm_init_main(alloc, std::forward<Args>(args)...);\
   }
 
@@ -200,7 +202,7 @@ class ShmContainer : public ShmArchiveable {
     }\
     return *this;\
   }\
-  void shm_init_main(Allocator *alloc, const CLASS_NAME &other) {\
+  void shm_init_main(lipc::Allocator *alloc, const CLASS_NAME &other) {\
     shm_destroy();\
     StrongCopy(other);\
   }
@@ -240,7 +242,7 @@ SHM_INHERIT_CONSTRUCTORS(CLASS_NAME)\
 SHM_INHERIT_DESTRUCTORS(CLASS_NAME)\
 SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
 SHM_INHERIT_COPY_OPS(CLASS_NAME)\
-SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
+SHM_SERIALIZE_DESERIALIZE_OPS(TYPED_CLASS)
 
 /**
  * ShmContainers should define:

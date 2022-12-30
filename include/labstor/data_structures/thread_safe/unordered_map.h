@@ -309,6 +309,16 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
     header_->growth_ = growth;
   }
 
+  /** Store into shared memory */
+  void shm_serialize(labstor::ipc::ShmArchive<TYPED_CLASS> &ar) const {
+    shm_serialize_header(ar.header_ptr_);
+  }
+
+  /** Load from shared memory */
+  void shm_deserialize(const labstor::ipc::ShmArchive<TYPED_CLASS> &ar) {
+    shm_deserialize_header(ar.header_ptr_);
+  }
+
   /** Copy constructor */
   void StrongCopy(const unordered_map &other) {
     if (other.IsNull()) { return; }

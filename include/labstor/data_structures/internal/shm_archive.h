@@ -142,31 +142,24 @@ struct ShmArchive {
 /**
  * Enables a specific ShmArchive type to be serialized
  * */
-#define SHM_SERIALIZE_WRAPPER(AR_TYPE)\
-  void shm_serialize(ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) const {\
-    shm_serialize(ar.header_ptr_);\
-  }\
+#define SHM_SERIALIZE_OPS(AR_TYPE)\
   void operator>>(ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) const {\
-    shm_serialize(ar.header_ptr_);\
+    shm_serialize(ar);\
   }
 
 /**
  * Enables a specific ShmArchive type to be deserialized
  * */
-#define SHM_DESERIALIZE_WRAPPER(AR_TYPE)\
-  void shm_deserialize(                 \
-    const labstor::ipc::ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) {\
-    shm_deserialize(ar.header_ptr_);\
-  }\
+#define SHM_DESERIALIZE_OPS(AR_TYPE)\
   void operator<<(                      \
     const labstor::ipc::ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) {\
-    shm_deserialize(ar.header_ptr_);\
+    shm_deserialize(ar);\
   }
 
 /** Enables serialization + deserialization for data structures */
-#define SHM_SERIALIZE_DESERIALIZE_WRAPPER(AR_TYPE)\
-  SHM_SERIALIZE_WRAPPER(AR_TYPE)\
-  SHM_DESERIALIZE_WRAPPER(AR_TYPE)
+#define SHM_SERIALIZE_DESERIALIZE_OPS(AR_TYPE)\
+  SHM_SERIALIZE_OPS(AR_TYPE)\
+  SHM_DESERIALIZE_OPS(AR_TYPE)
 
 
 }  // namespace labstor::ipc

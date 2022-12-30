@@ -371,6 +371,16 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
     SetNull();
   }
 
+  /** Store into shared memory */
+  void shm_serialize(labstor::ipc::ShmArchive<TYPED_CLASS> &ar) const {
+    shm_serialize_header(ar.header_ptr_);
+  }
+
+  /** Load from shared memory */
+  void shm_deserialize(const labstor::ipc::ShmArchive<TYPED_CLASS> &ar) {
+    shm_deserialize_header(ar.header_ptr_);
+  }
+
   /** Copy a vector */
   void StrongCopy(const vector &other) {
     shm_init(other.alloc_);

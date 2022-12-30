@@ -40,6 +40,12 @@
 namespace labstor::ipc {
 
 /**
+ * A macro for defining shared memory serializations
+ * */
+#define SHM_SERIALIZE_WRAPPER(AR_TYPE)
+  void
+
+/**
  * Indicates a data structure represents a memory paradigm for Shm.
  * */
 class ShmSmartPointer : public ShmArchiveable {};
@@ -118,16 +124,6 @@ class ShmSmartPtr : public ShmSmartPointer {
   /** Destroy the data allocated by this pointer */
   void shm_destroy() {
     obj_.shm_destroy();
-  }
-
-  /** Serialize into a raw pointer */
-  void shm_serialize(Pointer &header_ptr) const {
-    obj_.shm_serialize(header_ptr);
-  }
-
-  /** Deserialize from a raw pointer */
-  void shm_deserialize(const Pointer &header_ptr) {
-    obj_.shm_deserialize(header_ptr);
   }
 };
 
