@@ -30,8 +30,16 @@
 #include "labstor/memory/memory.h"
 #include "labstor/data_structures/data_structure.h"
 #include "labstor/data_structures/smart_ptr/manual_ptr.h"
+#include "labstor/util/type_switch.h"
 
 namespace labstor::ipc {
+
+/**
+ * A data structure is a struct around shm_ar objects, which
+ * are not directly archiveable, but still use the "Allocator" parameter
+ * internally to allocate shared objects.
+ * */
+class ShmArchiveableWrapper {};
 
 /**
  * Constructs a ShmArchive in-place
@@ -45,8 +53,20 @@ class _shm_ar_shm : public ShmSmartPointer {
   /** Construct + store object */
   template<typename ...Args>
   explicit _shm_ar_shm(Args&& ...args)
-    : obj_(make_shm_ar<T>(std::forward<Args>(args)...)) {
+    : obj_(make_shm_ar<T>(internal_ref(), std::forward<Args>(args)...)) {
   }
+
+  /** Move object here */
+  explicit _shm_ar_shm(Allocator *alloc, ShmMove<T> other)
+    : obj_(make_shm_ar<T>(internal_ref(), alloc, ShmMove(other.obj_))) {
+  }
+
+  /** Move other archive here */
+  _shm_ar_shm(Allocator *alloc, ShmMove<_shm_ar_shm> other) noexcept
+    : obj_(make_shm_ar<T>(internal_ref(), alloc, ShmMove(other.obj_))) {}
+
+  /** Copy constructor */
+  _shm_ar_shm(const _shm_ar_shm &other) = delete;
 
   /** Destructor. */
   ~_shm_ar_shm() {
@@ -55,7 +75,7 @@ class _shm_ar_shm : public ShmSmartPointer {
 
   /** Returns copy of the deserialized ShmArchive (just a few pointers) */
   T data() {
-    return mptr<T>(obj_).get_ref();
+    return T(obj_);
   }
 
   /** Returns a reference to the internal object */
@@ -67,13 +87,51 @@ class _shm_ar_shm : public ShmSmartPointer {
   ShmArchive<T>* internal_ptr() {
     return &obj_;
   }
+};
 
-  /** Move constructor */
-  _shm_ar_shm(_shm_ar_shm &&other) noexcept
-  : obj_(std::move(other.obj_)) {}
+/**
+ * Constructs a wrapper around shm_ar in-place
+ * */
+template<typename T>
+class _shm_ar_shm_wrap {
+ public:
+  T obj_;
+
+ public:
+  /** Construct + store object */
+  template<typename ...Args>
+  explicit _shm_ar_shm_wrap(Args&& ...args)
+    : obj_(std::forward<Args>(args)...) {}
+
+  /** Move object here */
+  explicit _shm_ar_shm_wrap(Allocator *alloc, ShmMove<T> other)
+    : obj_(alloc, other) {
+  }
+
+  /** Move other archive here */
+  explicit _shm_ar_shm_wrap(Allocator *alloc, ShmMove<_shm_ar_shm_wrap> other) noexcept
+    : obj_(alloc, ShmMove(other.obj_)) {}
 
   /** Copy constructor */
-  _shm_ar_shm(const _shm_ar_shm &other) = delete;
+  _shm_ar_shm_wrap(const _shm_ar_shm_wrap &other) = delete;
+
+  /** Destructor. Does nothing. */
+  ~_shm_ar_shm_wrap() = default;
+
+  /** Gets the object */
+  T& data() {
+    return obj_;
+  }
+
+  /** Returns a reference to the internal object */
+  T& internal_ref() {
+    return obj_;
+  }
+
+  /** Returns a pointer to the internal object */
+  T* internal_ptr() {
+    return &obj_;
+  }
 };
 
 /**
@@ -90,14 +148,28 @@ class _shm_ar_noshm {
   explicit _shm_ar_noshm(Args&& ...args)
   : obj_(std::forward<Args>(args)...) {}
 
-  /** Construct + store object */
+  /** Construct + store object (ignore alloc param) */
   template<typename ...Args>
-  explicit _shm_ar_noshm(T *ar,
-                         Allocator *alloc,
+  explicit _shm_ar_noshm(Allocator *alloc,
                          Args&& ...args)
-    : obj_(std::forward<Args>(args)...) {
-    (void) ar;
+    : _shm_ar_noshm(std::forward<Args>(args)...) {
+    (void) alloc;
   }
+
+  /** Move object here */
+  explicit _shm_ar_noshm(ShmMove<T> other)
+    : obj_(std::move(other.obj_)) {}
+
+  /** Move other archive here */
+  explicit _shm_ar_noshm(ShmMove<_shm_ar_noshm> other)
+    : obj_(std::move(other.obj_)) {}
+
+  /** Move other archive here */
+  explicit _shm_ar_noshm(ShmMove<_shm_ar_shm<T>> other)
+    : obj_(std::move(other.obj_.obj_)) {}
+
+  /** Copy constructor */
+  _shm_ar_noshm(const _shm_ar_noshm &other) = delete;
 
   /** Destructor. Does nothing. */
   ~_shm_ar_noshm() = default;
@@ -116,20 +188,18 @@ class _shm_ar_noshm {
   T* internal_ptr() {
     return &obj_;
   }
-
-  /** Move constructor */
-  _shm_ar_noshm(_shm_ar_noshm &&other) noexcept
-  : obj_(std::move(other.obj_)) {}
-
-  /** Copy constructor */
-  _shm_ar_noshm(const _shm_ar_noshm &other) = delete;
 };
 
 /**
  * Whether or not to use _shm_ar_shm or _shm_ar_noshm
  * */
-#define SHM_MAKE_T_OR_ARCHIVE(T) \
-  SHM_X_OR_Y(T, _shm_ar_shm<T>, _shm_ar_noshm<T>)
+#define SHM_SELECT_AR_TYPE(T)\
+  typename static_switch<\
+    T,\
+    static_case<ShmArchiveable, _shm_ar_shm<T>>,\
+    static_case<ShmArchiveableWrapper, _shm_ar_shm_wrap<T>>,\
+    static_case<_shm_ar_noshm<T>>\
+  >::type
 
 #define SHM_ARCHIVE_OR_T(T)\
   SHM_X_OR_Y(T, ShmArchive<T>, T)
@@ -148,12 +218,19 @@ class shm_ar {
   typedef SHM_ARCHIVE_OR_T(T) T_Ar;
   typedef SHM_T_OR_REF_T(T) T_Ref;
 
-  SHM_MAKE_T_OR_ARCHIVE(T) obj_;
+  SHM_SELECT_AR_TYPE(T) obj_;
 
   /** Construct + store object */
   template<typename ...Args>
   explicit shm_ar(Args&& ...args)
   : obj_(std::forward<Args>(args)...) {}
+
+  /** Move constructor */
+  explicit shm_ar(Allocator *alloc, ShmMove<shm_ar> other) noexcept
+    : obj_(alloc, ShmMove(other.obj_)) {}
+
+  /** Copy constructor */
+  shm_ar(const shm_ar &other) = delete;
 
   /** Destructor */
   ~shm_ar() = default;
@@ -172,13 +249,6 @@ class shm_ar {
   T_Ar* internal_ptr() {
     return obj_.internal_ptr();
   }
-
-  /** Move constructor */
-  shm_ar(shm_ar &&other) noexcept
-  : obj_(std::move(other.obj_)) {}
-
-  /** Copy constructor */
-  shm_ar(const shm_ar &other) = delete;
 };
 
 }  // namespace labstor::ipc

@@ -78,6 +78,16 @@ struct ShmStruct : public ShmContainer<TYPED_CLASS> {
                                                std::forward<Args>(args)...);
   }
 
+  /** Copy a ShmStruct */
+  void StrongCopy(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+                  const ShmStruct &other) {
+    if (IsNull()) {
+      SHM_STRONG_COPY_CONSTRUCT_M(other.header_->obj_)
+    } else {
+      SHM_STRONG_COPY_RECONSTRUCT_M(other.header_->obj_)
+    }
+  }
+
   /** Destroy the contents of the ShmStruct */
   void shm_destroy() {
     SHM_DESTROY_PRIOR

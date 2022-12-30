@@ -39,7 +39,7 @@ static ShmArchive<T> make_shm_ar(Args&& ...args) {
   ShmArchive<T> ar;
   if constexpr(IS_SHM_SERIALIZEABLE(T)) {
     T obj;
-    obj.shm_init_main(std::forward<Args>(args)...);
+    obj.shm_init(std::forward<Args>(args)...);
     if constexpr(!IS_SHM_SMART_POINTER(T)) {
       obj.UnsetDestructable();
     }

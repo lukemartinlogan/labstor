@@ -40,22 +40,18 @@ namespace labstor::ipc {
 template<typename T>
 class _shm_ref_shm {
  public:
-  ShmArchive<T> &obj_ar_;
   mptr<T> obj_;
 
   /** Deserializes shared-memory data structure from an archive */
-  explicit _shm_ref_shm(shm_ar<T> &obj_ar) : obj_ar_(obj_ar.internal_ref()) {
-    obj_.shm_deserialize(obj_ar_);
+  explicit _shm_ref_shm(shm_ar<T> &obj_ar) : obj_(obj_ar.internal_ref()) {
   }
 
   /** Deserializes shared-memory data structure from an archive */
-  explicit _shm_ref_shm(ShmArchive<T> &obj_ar) : obj_ar_(obj_ar) {
-    obj_.shm_deserialize(obj_ar_);
+  explicit _shm_ref_shm(ShmArchive<T> &obj_ar) : obj_(obj_ar) {
   }
 
   /** Gets the data in a way that exists after this object is destroyed */
   T export_data() {
-    T ret(obj_ar_);
     return ret;
   }
 

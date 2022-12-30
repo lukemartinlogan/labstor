@@ -64,25 +64,25 @@ class string : public ShmContainer<TYPED_CLASS> {
   string() = default;
 
   /** Construct from a C-style string with allocator in shared memory */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+  void shm_init_main(Allocator *alloc,
                      const char *text) {
     size_t length = strlen(text);
-    shm_init_main(ar, alloc, length);
+    shm_init_main(alloc, length);
     _create_str(text, length);
   }
 
   /** Construct for an std::string with allocator in shared-memory */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+  void shm_init_main(Allocator *alloc,
                      const std::string &text) {
-    shm_init_main(ar, alloc, text.size());
+    shm_init_main(alloc, text.size());
     _create_str(text.data(), text.size());
   }
 
   /** Construct by concatenating two string in shared-memory */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+  void shm_init_main(Allocator *alloc,
                      const string &text1, const string &text2) {
     size_t length = text1.size() + text2.size();
-    shm_init_main(ar, alloc, length);
+    shm_init_main(alloc, length);
     size_t off = 0;
     if (!text1.IsNull() && text1.size()) {
       memcpy(text_,
@@ -99,35 +99,39 @@ class string : public ShmContainer<TYPED_CLASS> {
   /**
    * Construct a string of specific length and allocator in shared memory
    * */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+  void shm_init_main(Allocator *alloc,
                      size_t length = 0) {
-    ShmContainer<TYPED_CLASS>::shm_init_header(ar, alloc);;
-    header_->length_ = length;
+    ShmContainer<TYPED_CLASS>::shm_init_header(alloc);;
+    header_.length_ = length;
     length_ = length;
     if (length) {
       text_ = alloc_->template
-        AllocatePtr<char>(length + 1, header_->text_);
+        AllocatePtr<char>(length + 1, header_.text_);
       text_[length] = 0;
     } else {
       text_ = nullptr;
-      header_->text_.set_null();
+      header_.text_.set_null();
     }
   }
 
   /** Move construct */
-  void WeakMove(string &other) {
-    ShmContainer<TYPED_CLASS>::WeakMove(other);
+  void WeakMove(Allocator *alloc, string &other) {
+    if (IsNull()) {
+      SHM_WEAK_MOVE_CONSTRUCT_E()
+    } else {
+      SHM_WEAK_MOVE_RECONSTRUCT_E()
+    }
     text_ = other.text_;
     length_ = other.length_;
   }
 
   /** Copy constructor */
-  void StrongCopy(const string &other) {
+  void StrongCopy(Allocator *alloc,
+                  const string &other) {
     if (IsNull()) {
-      shm_init(other.alloc_, other.size());
+      SHM_STRONG_COPY_CONSTRUCT_M(other.size())
     } else {
-      shm_destroy();
-      shm_init_main(header_, alloc_, other.size());
+      SHM_STRONG_COPY_RECONSTRUCT_M(other.size())
     }
     _create_str(other.data(), other.size());
   }

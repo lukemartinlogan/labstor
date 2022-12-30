@@ -398,14 +398,18 @@ class vector : public ShmContainer<TYPED_CLASS> {
     ShmContainer<TYPED_CLASS>::shm_deserialize(ar);
   }
 
+  /** Move construct */
+  SHM_DEFAULT_WEAK_MOVE(TYPED_CLASS)
+
   /** Copy a vector */
-  void StrongCopy(const vector &other) {
+  void StrongCopy(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+                  const vector &other) {
     if (IsNull()) {
-      shm_init(other.alloc_);
+      SHM_STRONG_COPY_CONSTRUCT_E()
     } else {
-      shm_destroy();
-      shm_init_main(header_, alloc_);
+      SHM_STRONG_COPY_RECONSTRUCT_E()
     }
+    reserve(other.size());
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back((*iter));
     }
@@ -461,7 +465,6 @@ class vector : public ShmContainer<TYPED_CLASS> {
     }
     Allocator::ConstructObj<shm_ar<T>>(
       *(vec + header_->length_),
-      vec[header_->length_].internal_ptr(),
       alloc_,
       std::forward<Args>(args)...);
     ++header_->length_;
@@ -481,7 +484,6 @@ class vector : public ShmContainer<TYPED_CLASS> {
     shift_right(pos);
     Allocator::ConstructObj<shm_ar<T>>(
       *(vec + pos.i_),
-      vec[header_->length_].internal_ptr(),
       alloc_,
       std::forward<Args>(args)...);
     ++header_->length_;
@@ -587,7 +589,6 @@ class vector : public ShmContainer<TYPED_CLASS> {
           header_->vec_ptr_,
           header_->length_,
           max_length,
-          vec[header_->length_].internal_ptr(),
           alloc_,
           std::forward<Args>(args)...);
     } else {

@@ -69,18 +69,20 @@ class ShmArchiveable {
   /**
    * Deep copy of an object. Wrapped by copy constructor
    * */
-  // void StrongCopy(const CLASS_NAME &other);
+  // void StrongCopy(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+  //                 const CLASS_NAME &other);
   // SHM_INHERIT_COPY_OPS(CLASS_NAME)
 
   /**
-   * Copies only the object's pointers.
+   * Copies only the object's pointers. Assumes object is already initialized.
    * */
   // void WeakCopy(const CLASS_NAME &other);
 
   /**
    * Moves the object's contents into another object
    * */
-  // void WeakMove(CLASS_NAME &other);
+  // void WeakMove(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+  //               CLASS_NAME &other);
   // SHM_INHERIT_MOVE_OPS(CLASS_NAME)
 
   /**

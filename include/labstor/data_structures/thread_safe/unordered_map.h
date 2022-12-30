@@ -50,7 +50,7 @@ class unordered_map_bucket;
  * Represents a the combination of a Key and Value
  * */
 template<typename Key, typename T>
-struct unordered_map_pair {
+struct unordered_map_pair : public ShmArchiveableWrapper {
  public:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
   typedef SHM_T_OR_ARCHIVE(Key) Key_Ar;
@@ -62,12 +62,14 @@ struct unordered_map_pair {
  public:
   /** Constructor */
   template<typename ...Args>
-  explicit unordered_map_pair(Key key, Args&& ...args)
-  : key_(std::move(key)), val_(std::forward<Args>(args)...) {}
+  explicit unordered_map_pair(Allocator *alloc, Key key, Args&& ...args)
+  : key_(alloc, ShmMove(key)),
+    val_(alloc, std::forward<Args>(args)...) {}
 
   /** Move constructor */
-  unordered_map_pair(unordered_map_pair&& other) noexcept
-  : key_(std::move(other.key_)), val_(std::move(other.val_)) {}
+  unordered_map_pair(Allocator *alloc, ShmMove<unordered_map_pair> other) noexcept
+  : key_(alloc, ShmMove(other.obj_.key_)),
+    val_(alloc, ShmMove(other.obj_.val_)) {}
 
   /** Destructor */
   ~unordered_map_pair() = default;
@@ -96,7 +98,7 @@ struct unordered_map_pair_ret {
  * A bucket which contains a list of <Key, Obj> pairs
  * */
 template<typename Key, typename T>
-class unordered_map_bucket {
+class unordered_map_bucket : public ShmArchiveableWrapper {
  public:
   typedef SHM_T_OR_ARCHIVE(T) T_Ar;
   typedef SHM_T_OR_REF_T(T) T_Ref;
@@ -104,11 +106,11 @@ class unordered_map_bucket {
 
  public:
   RwLock lock_;
-  ShmArchive<mptr<list<COLLISION_T>>> collisions_;
+  ShmArchive<list<COLLISION_T>> collisions_;
 
   /** Constructs the collision list in shared memory */
   explicit unordered_map_bucket(Allocator *alloc)
-  : collisions_(make_shm_ar<mptr<list<COLLISION_T>>>(alloc)) {}
+  : collisions_(make_shm_ar<list<COLLISION_T>>(alloc)) {}
 
   ~unordered_map_bucket() {
     mptr<list<COLLISION_T>> collisions(collisions_);
@@ -299,13 +301,13 @@ class unordered_map : public ShmContainer<TYPED_CLASS> {
    * a growth is triggered
    * @param growth the multiplier to grow the bucket vector size
    * */
-  void shm_init_main(Allocator *alloc,
-                     ShmArchive<TYPED_CLASS> *ar,
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+                     Allocator *alloc,
                      int num_buckets = 20,
                      int max_collisions = 4,
                      RealNumber growth = RealNumber(5, 4)) {
-    ShmContainer<TYPED_CLASS>::shm_init_header(ar, alloc);;
-    auto buckets = make_mptr<vector<BUCKET_T>>(alloc_, num_buckets, alloc_);
+    ShmContainer<TYPED_CLASS>::shm_init_header(ar, alloc);
+    auto buckets = make_mptr<vector<BUCKET_T>>(alloc_, num_buckets);
     buckets >> header_->buckets_;
     header_->length_ = 0;
     header_->max_collisions_ = max_collisions;
@@ -322,14 +324,21 @@ class unordered_map : public ShmContainer<TYPED_CLASS> {
     ShmContainer<TYPED_CLASS>::shm_deserialize(ar);
   }
 
+  /** Move construct */
+  SHM_DEFAULT_WEAK_MOVE(TYPE_WRAP(TYPED_CLASS))
+
   /** Copy constructor */
-  void StrongCopy(const unordered_map &other) {
+  void StrongCopy(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+                  const unordered_map &other) {
     if (other.IsNull()) { return; }
     auto num_buckets = other.get_num_buckets();
     auto max_collisions = other.header_->max_collisions_;
     auto growth = other.header_->growth_;
-    auto alloc = other.alloc_;
-    shm_init(alloc, num_buckets, max_collisions, growth);
+    if (IsNull()) {
+      SHM_STRONG_COPY_CONSTRUCT_M(num_buckets, max_collisions, growth)
+    } else {
+      SHM_STRONG_COPY_RECONSTRUCT_M(num_buckets, max_collisions, growth)
+    }
     for (auto entry : other) {
       emplace_templ<false, true>(
         *entry.key_, *entry.val_);
@@ -374,7 +383,6 @@ class unordered_map : public ShmContainer<TYPED_CLASS> {
    * Erase an object indexable by \a key key
    * */
   void erase(const Key &key) {
-    if (header_ == nullptr) { shm_init(); }
     // Acquire the header lock for a read (not modifying bucket vec)
     ScopedRwReadLock header_lock(header_->lock_);
     header_lock.Lock();
@@ -514,7 +522,8 @@ class unordered_map : public ShmContainer<TYPED_CLASS> {
    * */
   template<bool growth, bool modify_existing, typename ...Args>
   bool emplace_templ(const Key &key, Args&&... args) {
-    COLLISION_T entry_shm(key, std::forward<Args>(args)...);
+    COLLISION_T entry_shm(alloc_,
+                          key, std::forward<Args>(args)...);
     return insert_templ<growth, modify_existing>(entry_shm);
   }
 
@@ -554,11 +563,11 @@ class unordered_map : public ShmContainer<TYPED_CLASS> {
         return false;
       } else {
         collisions->erase(has_key);
-        collisions->emplace_back(std::move(entry_shm));
+        collisions->emplace_back(ShmMove(entry_shm));
         return true;
       }
     }
-    collisions->emplace_back(std::move(entry_shm));
+    collisions->emplace_back(ShmMove(entry_shm));
 
     // Get the number of buckets now to ensure repetitive growths don't happen
     size_t cur_num_buckets;
@@ -584,14 +593,13 @@ class unordered_map : public ShmContainer<TYPED_CLASS> {
 
   bool insert_simple(COLLISION_T &&entry_shm,
                      mptr<vector<BUCKET_T>> &buckets) {
-    if (header_ == nullptr) { shm_init(); }
     COLLISION_RET_T entry(entry_shm);
     auto &key = *entry.key_;
     auto &val = *entry.val_;
     size_t bkt_id = Hash{}(key) % buckets->size();
     BUCKET_T &bkt = (*buckets)[bkt_id];
     mptr<list<COLLISION_T>> collisions(bkt.collisions_);
-    collisions->emplace_back(std::move(entry_shm));
+    collisions->emplace_back(ShmMove(entry_shm));
     return true;
   }
 

@@ -27,21 +27,47 @@
 #ifndef LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_CONTAINER_H_
 #define LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_CONTAINER_H_
 
+#include "labstor/constants/macros.h"
 #include "labstor/memory/memory_manager.h"
 #include "shm_macros.h"
 #include "shm_archive.h"
 
 namespace labstor::ipc {
 
-#define IS_SHM_DESTRUCTABLE 0x1
-#define IS_SHM_HEADER_DESTRUCTABLE 0x2
+#define SHM_CONTAINER_IS_INITIALIZED 0x1
 
 /**
  * Data required by all ShmArchives inheriting from ShmContainer
  * */
 struct ShmContainerArchive {
   int flags_;
-  Pointer header_ptr_;
+  allocator_id_t allocator_id_;
+
+  ShmContainerArchive() = default;
+
+  ShmContainerArchive(int flags) : flags_(flags) {}
+};
+
+/**
+ * Indicates that the object should be moved,
+ * as opposed to copied.
+ * */
+template<typename TYPED_CLASS>
+struct ShmMove {
+  TYPED_CLASS &obj_;
+  ShmMove(TYPED_CLASS &obj)
+    : obj_(obj) {}
+};
+
+/**
+ * Indicates that the object should be copied,
+ * as opposed to moved.
+ * */
+template<typename TYPED_CLASS>
+struct ShmCopy {
+  TYPED_CLASS &obj_;
+  ShmCopy(TYPED_CLASS &obj)
+    : obj_(obj) {}
 };
 
 /**
@@ -51,118 +77,61 @@ struct ShmContainerArchive {
 template<typename TYPED_CLASS>
 class ShmContainer : public ShmArchiveable {
  protected:
-  Pointer header_ptr_;
   Allocator *alloc_;
   ShmArchive<TYPED_CLASS> *header_;
-  int flags_;
 
  public:
   /** Default constructor */
-  ShmContainer() : header_ptr_(kNullPointer) {}
+  ShmContainer() : header_(nullptr) {}
 
   /** Set the allocator of the data structure */
-  template<typename ...Args>
-  void shm_init_header(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
-                        Args&& ...args) {
-    flags_ = 0;
+  void shm_init_header(Allocator *alloc) {
     if (alloc == nullptr) {
       alloc_ = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
     } else {
       alloc_ = alloc;
     }
-    if (ar == nullptr) {
-      header_ = alloc_->template
-          AllocateConstructObjs<ShmArchive<TYPED_CLASS>>(
-            1, header_ptr_, std::forward<Args>(args)...);
-      SetHeaderDestructable();
-    } else {
-      header_ = ar;
-      header_ptr_ = alloc_->template
-        Convert<ShmArchive<TYPED_CLASS>>(header_);
-      UnsetHeaderDestructable();
-    }
-    SetDestructable();
+    SetInitialized();
   }
 
   /** Serialize an object into a raw pointer */
   void shm_serialize(ShmContainerArchive &ar) const {
-    ar.header_ptr_ = header_ptr_;
-    ar.flags_ = flags_;
+    ar.allocator_id_ = GetAllocatorId();
   }
 
   /** Deserialize object from a raw pointer */
   void shm_deserialize(const ShmContainerArchive &ar) {
-    header_ptr_ = ar.header_ptr_;
-    if (IsNull()) { return; }
     alloc_ = LABSTOR_MEMORY_MANAGER->
-      GetAllocator(header_ptr_.allocator_id_);
-    header_ = LABSTOR_MEMORY_MANAGER->
-      Convert<ShmArchive<TYPED_CLASS>>(header_ptr_);
-    flags_ = header_->flags_;
+      GetAllocator(header_->allocator_id_);
+    header_ = ar;
   }
 
   /** Copy only pointers */
   void WeakCopy(const ShmContainer &other) {
-    header_ptr_ = other.header_ptr_;
     header_ = other.header_;
     alloc_ = other.alloc_;
-    flags_ = other.flags_;
   }
 
   /** Move only pointers */
   void WeakMove(ShmContainer &other) {
-    header_ptr_ = std::move(other.header_ptr_);
-    header_ = std::move(other.header_);
+    header_ = other.header_;
     alloc_ = other.alloc_;
-    flags_ = other.flags_;
     other.SetNull();
   }
 
-  /** Used by shm_destroy operators */
-  void shm_destroy_after() {
-
-  }
-
-  /** Sets this object as destructable */
-  void SetDestructable() {
-    flags_ |= IS_SHM_DESTRUCTABLE;
-  }
-
-  /** Determines if this object is destructable */
-  bool IsDestructable() {
-    return flags_ & IS_SHM_DESTRUCTABLE;
-  }
-
-  /** Sets this object as nondestructable */
-  void UnsetDestructable() {
-    flags_ &= ~IS_SHM_DESTRUCTABLE;
-  }
-
-  /** Sets this object's header as destructable */
-  void SetHeaderDestructable() {
-    flags_ |= IS_SHM_HEADER_DESTRUCTABLE;
-    header_->flags_ |= IS_SHM_HEADER_DESTRUCTABLE;
-  }
-
-  /** Determines if this object is destructable */
-  bool IsHeaderDestructable() {
-    return flags_ & IS_SHM_HEADER_DESTRUCTABLE;
-  }
-
-  /** Sets this object as nondestructable */
-  void UnsetHeaderDestructable() {
-    flags_ &= ~IS_SHM_HEADER_DESTRUCTABLE;
-    header_->flags_ &= IS_SHM_HEADER_DESTRUCTABLE;
+  /** Set as initialized */
+  void SetInitialized() {
+    header_->flags_ |= SHM_CONTAINER_IS_INITIALIZED;
   }
 
   /** Set to null */
   void SetNull() {
-    header_ptr_.set_null();
+    header_->flags_ &= ~SHM_CONTAINER_IS_INITIALIZED;
   }
 
   /** Check if null */
   bool IsNull() const {
-    return header_ptr_.is_null();
+    return header_->flags_ & SHM_CONTAINER_IS_INITIALIZED;
   }
 
   /** Get the allocator for this pointer */
@@ -188,100 +157,100 @@ class ShmContainer : public ShmArchiveable {
 namespace lipc = labstor::ipc;
 
 /** Wrappers around null pointers to help with template deduction */
-#define SHM_ARCHIVE_NULL(T) reinterpret_cast<ShmArchive<T>*>(NULL)
-#define SHM_ARCHIVE_NULL_T \
-  reinterpret_cast<lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)>*>(NULL)
 #define SHM_ALLOCATOR_NULL reinterpret_cast<lipc::Allocator*>(NULL)
 
 /** Generates the code for constructors */
 #define SHM_INHERIT_CONSTRUCTOR(CLASS_NAME, TYPED_CLASS)\
   template<typename ...Args>\
   explicit CLASS_NAME(Args&& ...args) {\
-    shm_init_main(SHM_ARCHIVE_NULL_T, SHM_ALLOCATOR_NULL, \
+    shm_init_main(SHM_ALLOCATOR_NULL, \
                   std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
   explicit CLASS_NAME(lipc::Allocator *alloc, Args&& ...args) {\
-    shm_init_main(SHM_ARCHIVE_NULL_T, alloc, std::forward<Args>(args)...);\
+    shm_init_main(alloc, std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
-  explicit CLASS_NAME(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar,\
-                      Allocator *alloc,\
-                      Args&& ...args) {\
-    shm_init_main(&ar, alloc, std::forward<Args>(args)...);\
-  }\
   explicit CLASS_NAME(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar) {\
       shm_deserialize(ar);\
   }\
   template<typename ...Args>\
   void shm_init(Args&& ...args) {\
-    shm_init_main(SHM_ARCHIVE_NULL_T, SHM_ALLOCATOR_NULL,\
+    shm_init_main(SHM_ALLOCATOR_NULL,\
     std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
   void shm_init(lipc::Allocator *alloc, Args&& ...args) {\
-    shm_init_main(SHM_ARCHIVE_NULL_T, alloc, std::forward<Args>(args)...);\
+    shm_init_main(alloc, std::forward<Args>(args)...);\
   }\
-  template<typename ...Args>\
-  void shm_init(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar,\
-                lipc::Allocator *alloc,\
-                Args&& ...args) {\
-    shm_init_main(&ar, alloc, std::forward<Args>(args)...);\
-  }
+  template<typename ...Args>
 
 /** Generates the code for destructors */
 #define SHM_INHERIT_DESTRUCTOR(CLASS_NAME)\
   ~CLASS_NAME() {\
-    if (IsDestructable()) {\
-        shm_destroy();\
-    }\
+    shm_destroy();
   }
 
 /** Generates the code for move operators */
 #define SHM_INHERIT_MOVE_OPS(CLASS_NAME, TYPED_CLASS)\
-  CLASS_NAME(CLASS_NAME &&other) noexcept {\
-    WeakMove(other);\
-  }\
-  CLASS_NAME(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar, \
-             lipc::Allocator *alloc, \
-             CLASS_NAME &&other) noexcept {\
-    (void) ar; (void) alloc;\
-    WeakMove(other);\
+  CLASS_NAME(CLASS_NAME &&other) {\
+    WeakMove(SHM_ALLOCATOR_NULL, other);\
   }\
   CLASS_NAME& operator=(CLASS_NAME &&other) noexcept {\
     if (this != &other) {\
-      shm_destroy();\
-      WeakMove(other);\
+      WeakMove(SHM_ALLOCATOR_NULL, other);\
     }\
     return *this;\
   }\
-  void shm_init(CLASS_NAME &&other) noexcept {\
-    shm_destroy();\
-    WeakMove(other);\
+  void shm_init_main(lipc::Allocator *alloc, \
+                     CLASS_NAME &&other) noexcept {\
+    WeakMove(alloc, other);\
+  }\
+  explicit CLASS_NAME(lipc::Allocator *alloc, \
+                      lipc::ShmMove<TYPE_UNWRAP(TYPED_CLASS)> other) {\
+    WeakMove(alloc, other.obj_);\
+  }\
+  CLASS_NAME& operator=(lipc::ShmMove<TYPE_UNWRAP(TYPED_CLASS)> other) \
+  noexcept {\
+    if (this != &other.obj_) {\
+      WeakMove(SHM_ALLOCATOR_NULL, other.obj_);\
+    }\
+    return *this;\
+  }\
+  void shm_init_main(lipc::Allocator *alloc, \
+                     lipc::ShmMove<CLASS_NAME> other) noexcept {\
+    WeakMove(alloc, other.obj_);\
   }
 
 /** Generates the code for copy operators */
 #define SHM_INHERIT_COPY_OPS(CLASS_NAME, TYPED_CLASS)\
-  CLASS_NAME(const CLASS_NAME &other) noexcept {\
-    StrongCopy(other);\
-  }\
-  CLASS_NAME(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar, \
-             lipc::Allocator *alloc, \
-             const CLASS_NAME &other) noexcept {\
-    (void) ar; (void) alloc;\
-    StrongCopy(other);\
+  CLASS_NAME(const CLASS_NAME &other) {\
+    StrongCopy(SHM_ALLOCATOR_NULL, other);\
   }\
   CLASS_NAME& operator=(const CLASS_NAME &other) {\
     if (this != &other) {\
-      StrongCopy(other);\
+      StrongCopy(SHM_ALLOCATOR_NULL, other);\
     }\
     return *this;\
   }\
-  void shm_init_main(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar,\
-                     lipc::Allocator *alloc, \
+  void shm_init_main(lipc::Allocator *alloc, \
                      const CLASS_NAME &other) noexcept {\
-    (void) ar; (void) alloc;\
-    StrongCopy(other);\
+    StrongCopy(alloc, other);\
+  }\
+  explicit CLASS_NAME(lipc::Allocator *alloc, \
+                      lipc::ShmCopy<TYPE_UNWRAP(TYPED_CLASS)> other) {\
+    StrongCopy(alloc, other.obj_);\
+  }\
+  CLASS_NAME& operator=(lipc::ShmCopy<TYPE_UNWRAP(TYPED_CLASS)> other) \
+  noexcept {\
+    if (this != &other.obj_) {\
+      StrongCopy(SHM_ALLOCATOR_NULL, other.obj_);\
+    }\
+    return *this;\
+  }\
+  void shm_init_main(lipc::Allocator *alloc, \
+                     lipc::ShmCopy<CLASS_NAME> other) noexcept {\
+    StrongCopy(alloc, other.obj_);\
   }
 
 /**
@@ -291,11 +260,51 @@ namespace lipc = labstor::ipc;
   if (IsNull()) { return; }
 
 #define SHM_DESTROY_AFTER\
-  if (IsHeaderDestructable()) {\
-    alloc_->Free(header_ptr_);\
-    header_ = nullptr;\
-  }\
   SetNull();
+
+/**
+ * Macros for simplifying StrongCopy
+ * */
+#define SHM_STRONG_COPY_CONSTRUCT_M(...)\
+  if (alloc == nullptr) { alloc = other.alloc_; }\
+  shm_init_main(alloc, __VA_ARGS__);
+
+#define SHM_STRONG_COPY_RECONSTRUCT_M(...)\
+  shm_destroy();\
+  shm_init_main(alloc_, __VA_ARGS__);
+
+#define SHM_STRONG_COPY_CONSTRUCT_E()\
+  if (alloc == nullptr) { alloc = other.alloc_; }\
+  shm_init_main(alloc);
+
+#define SHM_STRONG_COPY_RECONSTRUCT_E()\
+  shm_destroy();\
+  shm_init_main(alloc_);
+
+/**
+ * Macros for simplifying WeakMove
+ * */
+#define SHM_WEAK_MOVE_CONSTRUCT_M(...)\
+  SHM_STRONG_COPY_CONSTRUCT_M(__VA_ARGS__)
+
+#define SHM_WEAK_MOVE_RECONSTRUCT_M(...) \
+  SHM_STRONG_COPY_RECONSTRUCT_M(__VA_ARGS__)
+
+#define SHM_WEAK_MOVE_CONSTRUCT_E() SHM_STRONG_COPY_CONSTRUCT_E()
+
+#define SHM_WEAK_MOVE_RECONSTRUCT_E() SHM_STRONG_COPY_RECONSTRUCT_E()
+
+#define SHM_DEFAULT_WEAK_MOVE(TYPED_CLASS)\
+  void WeakMove(ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar,\
+                Allocator *alloc,\
+                TYPE_UNWRAP(TYPED_CLASS) &other) {\
+    if (IsNull()) {\
+      SHM_WEAK_MOVE_CONSTRUCT_E()\
+    } else {\
+      SHM_WEAK_MOVE_RECONSTRUCT_E()\
+    }\
+    ShmContainer<TYPE_UNWRAP(TYPED_CLASS)>::WeakMove(other);\
+  }
 
 /**
  * Namespace simplification for a SHM data structure
@@ -322,13 +331,7 @@ SHM_CONTAINER_USING_NS_::shm_init_header;\
 SHM_CONTAINER_USING_NS_::shm_serialize;\
 SHM_CONTAINER_USING_NS_::shm_deserialize;\
 SHM_CONTAINER_USING_NS_::IsNull;\
-SHM_CONTAINER_USING_NS_::SetNull;            \
-SHM_CONTAINER_USING_NS_::SetDestructable;\
-SHM_CONTAINER_USING_NS_::IsDestructable;\
-SHM_CONTAINER_USING_NS_::UnsetDestructable; \
-SHM_CONTAINER_USING_NS_::SetHeaderDestructable;\
-SHM_CONTAINER_USING_NS_::IsHeaderDestructable;\
-SHM_CONTAINER_USING_NS_::UnsetHeaderDestructable;\
+SHM_CONTAINER_USING_NS_::SetNull;\
 SHM_CONTAINER_USING_NS_::WeakCopy;\
 SHM_CONTAINER_USING_NS_::WeakMove;\
 SHM_INHERIT_CONSTRUCTOR(CLASS_NAME, TYPED_CLASS)\

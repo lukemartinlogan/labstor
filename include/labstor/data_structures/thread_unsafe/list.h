@@ -42,7 +42,7 @@ class list;
 
 /** represents an object within a list */
 template<typename T>
-struct list_entry {
+struct list_entry : public ShmArchiveableWrapper {
  public:
   Pointer next_ptr_, prior_ptr_;
   shm_ar<T> data_;
@@ -51,7 +51,7 @@ struct list_entry {
    * Constructor.
    * */
   template<typename ...Args>
-  explicit list_entry(Args ...args) : data_(std::forward<Args>(args)...) {}
+  explicit list_entry(Args&& ...args) : data_(std::forward<Args>(args)...) {}
 
   /**
    * Returns the element stored in the list
@@ -296,13 +296,16 @@ class list : public ShmContainer<TYPED_CLASS> {
     SHM_DESTROY_AFTER
   }
 
+  /** Move construct */
+  SHM_DEFAULT_WEAK_MOVE(TYPED_CLASS)
+
   /** Copy constructor */
-  void StrongCopy(const list &other) {
+  void StrongCopy(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc,
+                  const list &other) {
     if (IsNull()) {
-      shm_init_main(SHM_ARCHIVE_NULL_T, other.alloc_);
+      SHM_STRONG_COPY_CONSTRUCT_E()
     } else {
-      shm_destroy();
-      shm_init_main(header_, alloc_);
+      SHM_STRONG_COPY_RECONSTRUCT_E()
     }
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back(*iter);
@@ -453,7 +456,6 @@ class list : public ShmContainer<TYPED_CLASS> {
         1, ptr);
     alloc_->template
       ConstructObj(*entry,
-                   entry->data_.internal_ptr(),
                    alloc_,
                    std::forward<Args>(args)...);
     return entry;
