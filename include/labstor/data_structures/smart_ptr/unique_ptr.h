@@ -50,7 +50,7 @@ namespace labstor::ipc {
 template<typename T>
 class unique_ptr : public ShmSmartPtr<T> {
  public:
-  SHM_DATA_STRUCTURE_POINTER_TEMPLATE(T);
+  SHM_SMART_PTR_TEMPLATE(T);
 
  public:
   /** Default constructor */

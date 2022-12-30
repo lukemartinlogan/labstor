@@ -64,6 +64,16 @@ struct ShmStruct : public ShmContainer<T> {
       AllocateConstructObjs<T>(1, header_ptr_, std::forward<Args>(args)...);
   }
 
+  /** Store into shared memory */
+  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
+    shm_serialize_header(ar.header_ptr_);
+  }
+
+  /** Load from shared memory */
+  void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
+    shm_deserialize_header(ar.header_ptr_);
+  }
+
   /** Destroy the contents of the ShmStruct */
   void shm_destroy() {
     if (IsNull()) { return; }

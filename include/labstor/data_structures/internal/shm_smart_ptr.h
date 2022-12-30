@@ -40,12 +40,6 @@
 namespace labstor::ipc {
 
 /**
- * A macro for defining shared memory serializations
- * */
-#define SHM_SERIALIZE_WRAPPER(AR_TYPE)
-  void
-
-/**
  * Indicates a data structure represents a memory paradigm for Shm.
  * */
 class ShmSmartPointer : public ShmArchiveable {};
@@ -134,16 +128,41 @@ class ShmSmartPtr : public ShmSmartPointer {
 /**
  * Namespace simplification for a SHM data structure pointer
  * */
-#define SHM_DATA_STRUCTURE_POINTER_TEMPLATE(T) \
+#define SHM_SMART_PTR_TEMPLATE(T) \
+  using ShmSmartPtr<T>::shm_destroy;\
   using ShmSmartPtr<T>::obj_;\
   using ShmSmartPtr<T>::get;\
   using ShmSmartPtr<T>::get_ref;\
   using ShmSmartPtr<T>::get_const;\
   using ShmSmartPtr<T>::get_ref_const;\
   using ShmSmartPtr<T>::SetNull;\
-  using ShmSmartPtr<T>::IsNull;\
-  using ShmSmartPtr<T>::shm_destroy;\
-  using ShmSmartPtr<T>::shm_serialize;\
-  using ShmSmartPtr<T>::shm_deserialize;
+  using ShmSmartPtr<T>::IsNull;
+
+/**
+ * A macro for defining shared memory serializations
+ * */
+#define SHM_SERIALIZE_WRAPPER(AR_TYPE)\
+  void shm_serialize(ShmArchive<AR_TYPE> &type) const {\
+    auto cast = reinterpret_cast<ShmArchive<T>&>(type);\
+    obj_.shm_serialize(cast);\
+  }\
+  SHM_SERIALIZE_OPS(AR_TYPE)
+
+/**
+ * A macro for defining shared memory deserializations
+ * */
+#define SHM_DESERIALIZE_WRAPPER(AR_TYPE)\
+  void shm_deserialize(const ShmArchive<AR_TYPE> &type) {\
+    auto cast = reinterpret_cast<const ShmArchive<T>&>(type);\
+    obj_.shm_deserialize(cast);\
+  }\
+  SHM_DESERIALIZE_OPS(AR_TYPE)
+
+/**
+ * A macro for defining shared memory (de)serializations
+ * */
+#define SHM_SERIALIZE_DESERIALIZE_WRAPPER(AR_TYPE)\
+  SHM_SERIALIZE_WRAPPER(AR_TYPE)\
+  SHM_DESERIALIZE_WRAPPER(AR_TYPE)
 
 #endif  // LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_DATA_STRUCTURE_POINTER_H_

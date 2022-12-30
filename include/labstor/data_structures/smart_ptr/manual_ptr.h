@@ -46,7 +46,7 @@ namespace labstor::ipc {
 template<typename T>
 class manual_ptr : public ShmSmartPtr<T> {
  public:
-  SHM_DATA_STRUCTURE_POINTER_TEMPLATE(T);
+  SHM_SMART_PTR_TEMPLATE(T);
 
  public:
   /** Default constructor does nothing */
@@ -110,10 +110,10 @@ class manual_ptr : public ShmSmartPtr<T> {
   }
 
   /** (De)serialize the obj from a ShmArchive<T> */
-  SHM_SERIALIZE_DESERIALIZE_OPS(T);
+  SHM_SERIALIZE_DESERIALIZE_WRAPPER(T);
 
   /** (De)serialize the obj from a ShmArchive<mptr<T>> */
-  SHM_SERIALIZE_DESERIALIZE_OPS(manual_ptr<T>);
+  SHM_SERIALIZE_DESERIALIZE_WRAPPER(manual_ptr<T>);
 
   /** Deserialize the obj from a ShmArchive<uptr<T>> */
   SHM_DESERIALIZE_WRAPPER(uptr<T>);
