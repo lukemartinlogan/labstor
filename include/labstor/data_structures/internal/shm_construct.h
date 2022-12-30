@@ -37,7 +37,7 @@ namespace labstor::ipc {
 template<typename T, typename ...Args>
 static ShmArchive<T> make_shm_ar(Args&& ...args) {
   ShmArchive<T> ar;
-  if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+  if constexpr(IS_SHM_ARCHIVEABLE(T)) {
     T obj;
     obj.shm_init(std::forward<Args>(args)...);
     if constexpr(!IS_SHM_SMART_POINTER(T)) {

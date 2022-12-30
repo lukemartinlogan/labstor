@@ -24,37 +24,112 @@
  */
 
 
-#ifndef LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_DATA_STRUCTURE_H_
-#define LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_DATA_STRUCTURE_H_
+#ifndef LABSTOR_DATA_STRUCTURES_SHM_SERIALIZE_H_
+#define LABSTOR_DATA_STRUCTURES_SHM_SERIALIZE_H_
 
-#include "labstor/memory/memory.h"
-#include "labstor/memory/allocator/allocator.h"
 #include "labstor/memory/memory_manager.h"
-#include <labstor/constants/data_structure_singleton_macros.h>
-
-#include "labstor/data_structures/internal/shm_macros.h"
-#include "labstor/data_structures/internal/shm_archive.h"
-#include "labstor/data_structures/internal/shm_data_structure.h"
-#include "labstor/data_structures/internal/shm_construct.h"
+#include "shm_macros.h"
+#include "shm_archive.h"
 
 namespace labstor::ipc {
 
+/** The shared-memory header used for data structures */
+template<typename T>
+struct ShmHeader;
+
+#define SHM_HEADER_OR_T(T)\
+  typename std::conditional<ARCHIVEABLE,\
+    ShmHeader<T>, T>::type
+
 /**
- * The general base class of a shared-memory data structure
- *
- * There are no virtual functions, but all base classes must
- * implement certain methods which are indicated below in the
- * section "REQUIRED METHODS"
+ * ShmContainers all have a header, which is stored in
+ * shared memory as a ShmArchive.
  * */
-template<typename TYPED_CLASS, typename TYPED_HEADER>
-class ShmContainer : public ShmDataStructure<TYPED_HEADER> {
+template<typename TYPED_CLASS, bool ARCHIVEABLE=true>
+class ShmContainer : public ShmArchiveable {
  public:
-  SHM_DATA_STRUCTURE_TEMPLATE(TYPED_HEADER)
-  typedef TYPED_HEADER header_t;
+  typedef SHM_HEADER_OR_T(TYPED_CLASS) T_Hdr;
+ protected:
+  Pointer header_ptr_;
+  Allocator *alloc_;
+  T_Hdr *header_;
+  bool destructable_;
 
  public:
   /** Default constructor */
-  ShmContainer() = default;
+  ShmContainer()
+  : header_ptr_(kNullPointer),
+    alloc_(nullptr), header_(nullptr), destructable_(true) {}
+
+  /** Set the allocator of the data structure */
+  void shm_init(Allocator *alloc) {
+    if (alloc == nullptr) {
+      alloc_ = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
+    } else {
+      alloc_ = alloc;
+    }
+  }
+
+  /** Serialize an object into a raw pointer */
+  void shm_serialize(Pointer &header_ptr) const {
+    header_ptr = header_ptr_;
+  }
+
+  /** Deserialize object from a raw pointer */
+  void shm_deserialize(const Pointer &header_ptr) {
+    header_ptr_ = header_ptr;
+    if (header_ptr.is_null()) { return; }
+    alloc_ = LABSTOR_MEMORY_MANAGER->GetAllocator(header_ptr.allocator_id_);
+    header_ = LABSTOR_MEMORY_MANAGER->
+      Convert<T_Hdr>(header_ptr);
+  }
+
+  /** Copy only pointers */
+  void WeakCopy(const ShmContainer &other) {
+    header_ptr_ = other.header_ptr_;
+    header_ = other.header_;
+    alloc_ = other.alloc_;
+    destructable_ = other.destructable_;
+  }
+
+  /** Move only pointers */
+  void WeakMove(ShmContainer &other) {
+    header_ptr_ = std::move(other.header_ptr_);
+    header_ = std::move(other.header_);
+    alloc_ = other.alloc_;
+    destructable_ = other.destructable_;
+    other.SetNull();
+  }
+
+  /** Sets this object as destructable */
+  void SetDestructable() {
+    destructable_ = true;
+  }
+
+  /** Sets this object as nondestructable */
+  void UnsetDestructable() {
+    destructable_ = false;
+  }
+
+  /** Set to null */
+  void SetNull() {
+    header_ptr_.set_null();
+  }
+
+  /** Check if null */
+  bool IsNull() const {
+    return header_ptr_.is_null();
+  }
+
+  /** Get the allocator for this pointer */
+  Allocator* GetAllocator() {
+    return alloc_;
+  }
+
+  /** Get the shared-memory allocator id */
+  allocator_id_t GetAllocatorId() const {
+    return alloc_->GetId();
+  }
 
  public:
   ////////////////////////////////
@@ -65,7 +140,47 @@ class ShmContainer : public ShmDataStructure<TYPED_HEADER> {
   // void StrongCopy(const CLASS_NAME &other);
 };
 
-}  // namespace labstor::ipc
+/** Generates the code for move operators */
+#define SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
+  CLASS_NAME(CLASS_NAME &&other) noexcept {\
+    shm_destroy();\
+    WeakMove(other);\
+  }\
+  CLASS_NAME& operator=(CLASS_NAME &&other) noexcept {\
+    if (this != &other) {\
+      shm_destroy();\
+      WeakMove(other);\
+    }\
+    return *this;\
+  }\
+  void shm_init(CLASS_NAME &&other) noexcept {\
+    shm_destroy();\
+    WeakMove(other);\
+  }
+
+/** Generates the code for copy operators */
+#define SHM_INHERIT_COPY_OPS(CLASS_NAME)\
+  CLASS_NAME(const CLASS_NAME &other) noexcept {\
+    shm_destroy();\
+    shm_init(other);\
+  }\
+  CLASS_NAME& operator=(const CLASS_NAME &other) {\
+    if (this != &other) {\
+      shm_destroy();\
+      shm_init(other);\
+    }\
+    return *this;\
+  }\
+  void shm_init(const CLASS_NAME &other) {\
+    shm_destroy();\
+    StrongCopy(other);\
+  }
+
+/**
+ * Namespace simplification for a SHM data structure
+ * */
+#define SHM_CONTAINER_USING_NS(ARCHIVEABLE)\
+  using labstor::ipc::ShmContainer<TYPE_UNWRAP(TYPED_CLASS), ARCHIVEABLE>
 
 /**
  * Define various functions and variables common across all
@@ -78,20 +193,38 @@ class ShmContainer : public ShmDataStructure<TYPED_HEADER> {
  * 2. Create Copy constructors + Copy assignment operators.
  * 3. Create shm_serialize and shm_deserialize for archiving data structures.
  * */
-#define SHM_CONTAINER_TEMPLATE(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)\
-  SHM_DATA_STRUCTURE_TEMPLATE(TYPED_HEADER)\
-  SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
-  SHM_INHERIT_COPY_OPS(CLASS_NAME)\
-  SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
+#define SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, ARCHIVEABLE)\
+SHM_CONTAINER_USING_NS(ARCHIVEABLE)::header_ptr_;\
+SHM_CONTAINER_USING_NS(ARCHIVEABLE)::alloc_;\
+SHM_CONTAINER_USING_NS(ARCHIVEABLE)::header_;\
+SHM_CONTAINER_USING_NS(ARCHIVEABLE)::destructable_;\
+SHM_CONTAINER_USING_NS(ARCHIVEABLE)::shm_serialize;\
+SHM_CONTAINER_USING_NS(ARCHIVEABLE)::shm_deserialize;\
+SHM_CONTAINER_USING_NS(ARCHIVEABLE)::IsNull;\
+SHM_CONTAINER_USING_NS(ARCHIVEABLE)::SetNull;            \
+SHM_CONTAINER_USING_NS(ARCHIVEABLE)::SetDestructable;\
+SHM_CONTAINER_USING_NS(ARCHIVEABLE)::UnsetDestructable;\
+SHM_CONTAINER_USING_NS(ARCHIVEABLE)::WeakCopy;\
+SHM_CONTAINER_USING_NS(ARCHIVEABLE)::WeakMove;\
+SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
+SHM_INHERIT_COPY_OPS(CLASS_NAME)\
+SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
+
+#define SHM_CONTAINER_TEMPLATE_NO_SHM_HEADER(CLASS_NAME, TYPED_CLASS) \
+  SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, false)
+
+#define SHM_CONTAINER_TEMPLATE(CLASS_NAME, TYPED_CLASS) \
+  SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, true)
 
 /**
  * ShmContainers should define:
- * CLASS_NAME, TYPED_CLASS, and TYPED_HEADER macros and then
+ * CLASS_NAME and TYPED_CLASS macros and then
  * unset them in their respective header files.
  * */
 
 #define BASIC_SHM_CONTAINER_TEMPLATE \
-  SHM_CONTAINER_TEMPLATE(CLASS_NAME, \
-    TYPE_WRAP(TYPED_CLASS), TYPE_WRAP(TYPED_HEADER))
+  SHM_CONTAINER_TEMPLATE(CLASS_NAME, TYPE_WRAP(TYPED_CLASS))
 
-#endif  // LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_DATA_STRUCTURE_H_
+}  // namespace labstor::ipc
+
+#endif  // LABSTOR_DATA_STRUCTURES_SHM_SERIALIZE_H_

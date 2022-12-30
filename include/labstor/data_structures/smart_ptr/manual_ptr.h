@@ -60,7 +60,7 @@ class manual_ptr : public ShmSmartPtr<T> {
 
   /** Destructor. Does not free data. */
   ~manual_ptr() {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
       obj_.UnsetDestructable();
     }
   }

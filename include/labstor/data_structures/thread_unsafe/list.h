@@ -62,15 +62,6 @@ struct list_entry {
 };
 
 /**
- * The list shared-memory header
- * */
-template<typename T>
-struct list_header {
-  Pointer head_ptr_, tail_ptr_;
-  size_t length_;
-};
-
-/**
  * The list iterator
  * */
 template<typename T, bool CONST_ITER>
@@ -243,13 +234,21 @@ using list_citerator = list_iterator_templ<T, true>;
  * */
 #define CLASS_NAME list
 #define TYPED_CLASS list<T>
-#define TYPED_HEADER list_header<T>
+
+/**
+ * The list shared-memory header
+ * */
+template<typename T>
+struct ShmHeader<TYPED_CLASS> {
+  Pointer head_ptr_, tail_ptr_;
+  size_t length_;
+};
 
 /**
  * Doubly linked list implementation
  * */
 template<typename T>
-class list : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
+class list : public ShmContainer<TYPED_CLASS> {
  public:
   BASIC_SHM_CONTAINER_TEMPLATE
 
@@ -290,9 +289,9 @@ class list : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
 
   /** Initialize list in shared memory */
   void shm_init(Allocator *alloc) {
-    ShmContainer<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
+    ShmContainer<TYPED_CLASS>::shm_init(alloc);
     header_ = alloc_->template
-      ClearAllocateObjs<TYPED_HEADER>(1, header_ptr_);
+      ClearAllocateObjs<ShmHeader<TYPED_CLASS>>(1, header_ptr_);
     header_->head_ptr_.set_null();
     header_->tail_ptr_.set_null();
   }
@@ -475,6 +474,5 @@ class list : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
 
 #undef CLASS_NAME
 #undef TYPED_CLASS
-#undef TYPED_HEADER
 
 #endif  // LABSTOR_DATA_STRUCTURES_LOCKLESS_LIST_H_

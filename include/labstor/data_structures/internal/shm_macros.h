@@ -33,7 +33,7 @@
  * Determine whether or not \a T type is a SHM serializeable data structure
  * */
 
-#define IS_SHM_SERIALIZEABLE(T) \
+#define IS_SHM_ARCHIVEABLE(T) \
   std::is_base_of<labstor::ipc::ShmArchiveable, T>::value
 
 /**
@@ -49,7 +49,7 @@
 
 #define SHM_X_OR_Y(T, X, Y) \
   typename std::conditional<         \
-    IS_SHM_SERIALIZEABLE(T), \
+    IS_SHM_ARCHIVEABLE(T), \
     X, Y>::type
 
 /**

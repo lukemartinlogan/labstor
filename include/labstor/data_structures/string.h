@@ -35,24 +35,24 @@ namespace labstor::ipc {
 /** forward declaration for string */
 class string;
 
-/** string shared-memory header */
-struct string_header {
-  size_t length_;
-  char text_[];
-};
-
 /**
  * MACROS used to simplify the string namespace
  * Used as inputs to the SHM_CONTAINER_TEMPLATE
  * */
 #define CLASS_NAME string
 #define TYPED_CLASS string
-#define TYPED_HEADER string_header
+
+/** string shared-memory header */
+template<>
+struct ShmHeader<TYPED_CLASS> {
+  size_t length_;
+  char text_[];
+};
 
 /**
  * A string of characters.
  * */
-class string : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
+class string : public ShmContainer<TYPED_CLASS> {
  public:
   BASIC_SHM_CONTAINER_TEMPLATE
 
@@ -158,10 +158,10 @@ class string : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
    * Construct a string of specific length and allocator in shared memory
    * */
   void shm_init(Allocator *alloc, size_t length) {
-    ShmContainer<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
+    ShmContainer<TYPED_CLASS>::shm_init(alloc);
     header_ = alloc_->template
-      AllocatePtr<TYPED_HEADER>(
-      sizeof(TYPED_HEADER) + length + 1,
+      AllocatePtr<ShmHeader<TYPED_CLASS>>(
+      sizeof(ShmHeader<TYPED_CLASS>) + length + 1,
       header_ptr_);
     header_->length_ = length;
     header_->text_[length] = 0;

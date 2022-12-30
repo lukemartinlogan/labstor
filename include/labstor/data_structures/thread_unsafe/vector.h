@@ -41,15 +41,6 @@ template<typename T>
 class vector;
 
 /**
- * The vector shared-memory header
- * */
-template<typename T>
-struct vector_header {
-  Pointer vec_ptr_;
-  size_t max_length_, length_;
-};
-
-/**
  * The vector iterator implementation
  * */
 template<typename T, bool FORWARD_ITER, bool CONST_ITER>
@@ -323,13 +314,21 @@ using vector_criterator = vector_iterator_templ<T, false, true>;
  * */
 #define CLASS_NAME vector
 #define TYPED_CLASS vector<T>
-#define TYPED_HEADER vector_header<T>
+
+/**
+ * The vector shared-memory header
+ * */
+template<typename T>
+struct ShmHeader<TYPED_CLASS> {
+  Pointer vec_ptr_;
+  size_t max_length_, length_;
+};
 
 /**
  * The vector class
  * */
 template<typename T>
-class vector : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
+class vector : public ShmContainer<TYPED_CLASS> {
  public:
   BASIC_SHM_CONTAINER_TEMPLATE
 
@@ -392,9 +391,9 @@ class vector : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
 
   /** Construct the vector in shared memory */
   void shm_init(Allocator *alloc) {
-    ShmContainer<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
+    ShmContainer<TYPED_CLASS>::shm_init(alloc);
     header_ = alloc_->template
-      AllocateObjs<TYPED_HEADER>(1, header_ptr_);
+      AllocateObjs<ShmHeader<TYPED_CLASS>>(1, header_ptr_);
     header_->length_ = 0;
     header_->max_length_ = 0;
     header_->vec_ptr_.set_null();
@@ -724,6 +723,5 @@ class vector : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
 
 #undef CLASS_NAME
 #undef TYPED_CLASS
-#undef TYPED_HEADER
 
 #endif  // LABSTOR_DATA_STRUCTURES_LOCKLESS_VECTOR_H_

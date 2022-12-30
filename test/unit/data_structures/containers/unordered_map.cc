@@ -40,7 +40,7 @@ using labstor::ipc::unordered_map;
 using labstor::ipc::string;
 
 #define SET_VAR_TO_INT_OR_STRING(TYPE, VAR, VAL)\
-  if constexpr(IS_SHM_SERIALIZEABLE(TYPE)) {\
+  if constexpr(IS_SHM_ARCHIVEABLE(TYPE)) {\
     VAR = string(std::to_string(VAL));\
   } else {\
     VAR = VAL;\
@@ -48,7 +48,7 @@ using labstor::ipc::string;
 
 #define GET_INT_FROM_VAR(TYPE, RET, VAR) \
   int RET; \
-  if constexpr(IS_SHM_SERIALIZEABLE(TYPE)) {\
+  if constexpr(IS_SHM_ARCHIVEABLE(TYPE)) {\
     RET = atoi((VAR).str().c_str());\
   } else {\
     RET = VAR;\

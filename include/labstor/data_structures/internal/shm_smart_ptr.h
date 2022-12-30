@@ -71,7 +71,7 @@ class ShmSmartPtr : public ShmSmartPointer {
 
   /** Gets a pointer to the internal object */
   T* get() {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
       return &obj_;
     } else {
       return obj_.get();
@@ -80,7 +80,7 @@ class ShmSmartPtr : public ShmSmartPointer {
 
   /** Gets a pointer to the internal object */
   const T* get_const() const {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
       return &obj_;
     } else {
       return obj_.get_const();
@@ -89,7 +89,7 @@ class ShmSmartPtr : public ShmSmartPointer {
 
   /** Gets a reference to the internal object */
   T& get_ref() {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
       return obj_;
     } else {
       return obj_.get_ref();
@@ -98,7 +98,7 @@ class ShmSmartPtr : public ShmSmartPointer {
 
   /** Gets a reference to the internal object */
   const T& get_ref_const() const {
-    if constexpr(IS_SHM_SERIALIZEABLE(T)) {
+    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
       return obj_;
     } else {
       return obj_.get_ref_const();

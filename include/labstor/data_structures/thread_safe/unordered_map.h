@@ -47,21 +47,6 @@ template<typename Key, typename T>
 class unordered_map_bucket;
 
 /**
- * The unordered_map shared-memory header
- * */
-template<typename Key, typename T>
-struct unordered_map_header {
- public:
-  using BUCKET_T = unordered_map_bucket<Key, T>;
- public:
-  ShmArchive<mptr<vector<BUCKET_T>>> buckets_;
-  int max_collisions_;
-  RealNumber growth_;
-  std::atomic<size_t> length_;
-  RwLock lock_;
-};
-
-/**
  * Represents a the combination of a Key and Value
  * */
 template<typename Key, typename T>
@@ -266,13 +251,27 @@ struct unordered_map_iterator {
  * */
 #define CLASS_NAME unordered_map
 #define TYPED_CLASS unordered_map<Key, T, Hash>
-#define TYPED_HEADER unordered_map_header<Key, T>
+
+/**
+ * The unordered_map shared-memory header
+ * */
+template<typename Key, typename T, class Hash>
+struct ShmHeader<TYPED_CLASS> {
+ public:
+  using BUCKET_T = unordered_map_bucket<Key, T>;
+ public:
+  ShmArchive<mptr<vector<BUCKET_T>>> buckets_;
+  int max_collisions_;
+  RealNumber growth_;
+  std::atomic<size_t> length_;
+  RwLock lock_;
+};
 
 /**
  * The unordered map implementation
  * */
 template<typename Key, typename T, class Hash>
-class unordered_map : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
+class unordered_map : public ShmContainer<TYPED_CLASS> {
  public:
   BASIC_SHM_CONTAINER_TEMPLATE
   friend unordered_map_iterator<Key, T, Hash>;
@@ -316,9 +315,9 @@ class unordered_map : public ShmContainer<TYPED_CLASS, TYPED_HEADER> {
                 int num_buckets = 20,
                 int max_collisions = 4,
                 RealNumber growth = RealNumber(5, 4)) {
-    ShmContainer<TYPED_CLASS, TYPED_HEADER>::shm_init(alloc);
+    ShmContainer<TYPED_CLASS>::shm_init(alloc);
     header_ = alloc_->template
-      AllocateConstructObjs<TYPED_HEADER>(1, header_ptr_);
+      AllocateConstructObjs<ShmHeader<TYPED_CLASS>>(1, header_ptr_);
     auto buckets = make_mptr<vector<BUCKET_T>>(alloc_, num_buckets, alloc_);
     buckets >> header_->buckets_;
     header_->length_ = 0;

@@ -139,42 +139,6 @@ struct ShmArchive {
   }
 };
 
-/** Generates the code for move operators */
-#define SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
-  CLASS_NAME(CLASS_NAME &&other) noexcept {\
-    shm_destroy();\
-    WeakMove(other);\
-  }\
-  CLASS_NAME& operator=(CLASS_NAME &&other) noexcept {\
-    if (this != &other) {\
-      shm_destroy();\
-      WeakMove(other);\
-    }\
-    return *this;\
-  }\
-  void shm_init(CLASS_NAME &&other) noexcept {\
-    shm_destroy();\
-    WeakMove(other);\
-  }
-
-/** Generates the code for copy operators */
-#define SHM_INHERIT_COPY_OPS(CLASS_NAME)\
-  CLASS_NAME(const CLASS_NAME &other) noexcept {\
-    shm_destroy();\
-    shm_init(other);\
-  }\
-  CLASS_NAME& operator=(const CLASS_NAME &other) {\
-    if (this != &other) {\
-      shm_destroy();\
-      shm_init(other);\
-    }\
-    return *this;\
-  }\
-  void shm_init(const CLASS_NAME &other) {\
-    shm_destroy();\
-    StrongCopy(other);\
-  }
-
 /**
  * Enables a specific ShmArchive type to be serialized
  * */

@@ -30,7 +30,7 @@
 #include "labstor/memory/memory_manager.h"
 #include "shm_macros.h"
 #include "shm_archive.h"
-#include "shm_data_structure.h"
+#include "shm_container.h"
 
 namespace labstor::ipc {
 
@@ -40,7 +40,6 @@ namespace labstor::ipc {
  * */
 #define CLASS_NAME ShmStruct
 #define TYPED_CLASS T
-#define TYPED_HEADER T
 
 /**
  * Used for storing a simple type (int, double, C-style struct, etc) in shared
@@ -49,9 +48,9 @@ namespace labstor::ipc {
  * Called internally by manual_ptr, unique_ptr, and shared_ptr
  * */
 template<typename T>
-struct ShmStruct : public ShmDataStructure<TYPED_CLASS> {
+struct ShmStruct : public ShmContainer<TYPED_CLASS, false> {
  public:
-  SHM_DATA_STRUCTURE_TEMPLATE(TYPED_HEADER)
+  SHM_CONTAINER_TEMPLATE_NO_SHM_HEADER(CLASS_NAME, TYPED_CLASS)
 
   /** Default constructor */
   ShmStruct() = default;
@@ -70,7 +69,7 @@ struct ShmStruct : public ShmDataStructure<TYPED_CLASS> {
    * */
   template<typename ...Args>
   void shm_init(Allocator *alloc, Args &&...args) {
-    ShmDataStructure<TYPED_CLASS>::shm_init(alloc);
+    ShmContainer<TYPED_CLASS, false>::shm_init(alloc);
     header_ = alloc_->template
       AllocateConstructObjs<T>(1, header_ptr_, std::forward<Args>(args)...);
   }
@@ -116,21 +115,11 @@ struct ShmStruct : public ShmDataStructure<TYPED_CLASS> {
   void StrongCopy(const ShmStruct &other) {
     WeakCopy(other);
   }
-
-  /** Move operators */
-  SHM_INHERIT_MOVE_OPS(CLASS_NAME)
-
-  /** Copy operators */
-  SHM_INHERIT_COPY_OPS(CLASS_NAME)
-
-  /** Serialize into an archive */
-  SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
 };
 
 }  // namespace labstor::ipc
 
 #undef CLASS_NAME
 #undef TYPED_CLASS
-#undef TYPED_HEADER
 
 #endif  // LABSTOR_DATA_STRUCTURES_SHM_POINTER_H_

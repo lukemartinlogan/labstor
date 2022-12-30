@@ -50,7 +50,7 @@ void TestString() {
 
 TEST_CASE("String") {
   Allocator *alloc = alloc_g;
-  REQUIRE(IS_SHM_SERIALIZEABLE(string));
+  REQUIRE(IS_SHM_ARCHIVEABLE(string));
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   TestString();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
