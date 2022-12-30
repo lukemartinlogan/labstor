@@ -143,7 +143,7 @@ class ShmSmartPtr : public ShmSmartPointer {
  * */
 #define SHM_SERIALIZE_WRAPPER(AR_TYPE)\
   void shm_serialize(ShmArchive<AR_TYPE> &type) const {\
-    auto cast = reinterpret_cast<ShmArchive<T>&>(type);\
+    auto &cast = reinterpret_cast<ShmArchive<T>&>(type);\
     obj_.shm_serialize(cast);\
   }\
   SHM_SERIALIZE_OPS(AR_TYPE)
@@ -153,7 +153,7 @@ class ShmSmartPtr : public ShmSmartPointer {
  * */
 #define SHM_DESERIALIZE_WRAPPER(AR_TYPE)\
   void shm_deserialize(const ShmArchive<AR_TYPE> &type) {\
-    auto cast = reinterpret_cast<const ShmArchive<T>&>(type);\
+    auto &cast = reinterpret_cast<const ShmArchive<T>&>(type);\
     obj_.shm_deserialize(cast);\
   }\
   SHM_DESERIALIZE_OPS(AR_TYPE)
