@@ -24,8 +24,8 @@
  */
 
 
-#ifndef LABSTOR_DATA_STRUCTURES_SHM_SERIALIZE_H_
-#define LABSTOR_DATA_STRUCTURES_SHM_SERIALIZE_H_
+#ifndef LABSTOR_SHM_CONTAINER_H_
+#define LABSTOR_SHM_CONTAINER_H_
 
 #include "labstor/memory/memory_manager.h"
 #include "shm_macros.h"
@@ -259,4 +259,4 @@ SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)
 
 }  // namespace labstor::ipc
 
-#endif  // LABSTOR_DATA_STRUCTURES_SHM_SERIALIZE_H_
+#endif  // LABSTOR_SHM_CONTAINER_H_
