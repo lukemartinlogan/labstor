@@ -58,75 +58,17 @@ class string : public ShmContainer<TYPED_CLASS> {
 
  public:
   /** Default constructor */
-  string() = default;
-
-  /** Destructor */
-  ~string() {
-    if (destructable_) {
-      shm_destroy();
-    }
-  }
-
-  /** Construct for a C-style string in shared memory */
-  explicit string(const char *text) {
-    shm_init(text);
-  }
+  void shm_init_main(Allocator *alloc) {}
 
   /** Construct from a C-style string with allocator in shared memory */
-  explicit string(Allocator *alloc, const char *text) {
-    shm_init(alloc, text);
-  }
-
-  /** Construct for a std::string in shared-memory */
-  explicit string(const std::string &text) {
-    shm_init(text);
-  }
-
-  /** Construct for an std::string with allocator in shared-memory */
-  explicit string(Allocator *alloc, const std::string &text) {
-    shm_init(alloc, text);
-  }
-
-  /** Construct by concatenating two string in shared-memory */
-  explicit string(Allocator *alloc, const string &text1, const string &text2) {
-    shm_init(alloc, text1, text2);
-  }
-
-  /** Construct a string of a specific length in shared memory */
-  explicit string(size_t length) {
-    shm_init(length);
-  }
-
-  /** Construct a string of specific length and allocator in shared memory */
-  explicit string(Allocator *alloc, size_t length) {
-    shm_init(alloc, length);
-  }
-
-  /** Default constructor */
-  void shm_init() {}
-
-  /** Construct for a C-style string in shared memory */
-  void shm_init(const char *text) {
-    size_t length = strlen(text);
-    shm_init(nullptr, length);
-    _create_str(text, length);
-  }
-
-  /** Construct from a C-style string with allocator in shared memory */
-  void shm_init(Allocator *alloc, const char *text) {
+  void shm_init_main(Allocator *alloc, const char *text) {
     size_t length = strlen(text);
     shm_init(alloc, length);
     _create_str(text, length);
   }
 
-  /** Construct for a std::string in shared-memory */
-  void shm_init(const std::string &text) {
-    shm_init(nullptr, text.size());
-    _create_str(text.data(), text.size());
-  }
-
   /** Construct for an std::string with allocator in shared-memory */
-  void shm_init(Allocator *alloc, const std::string &text) {
+  void shm_init_main(Allocator *alloc, const std::string &text) {
     shm_init(alloc, text.size());
     _create_str(text.data(), text.size());
   }
@@ -138,7 +80,8 @@ class string : public ShmContainer<TYPED_CLASS> {
   }
 
   /** Construct by concatenating two string in shared-memory */
-  void shm_init(Allocator *alloc, const string &text1, const string &text2) {
+  void shm_init_main(Allocator *alloc,
+                     const string &text1, const string &text2) {
     size_t length = text1.size() + text2.size();
     shm_init(alloc, length);
     memcpy(header_->text_,
@@ -148,16 +91,10 @@ class string : public ShmContainer<TYPED_CLASS> {
     header_->text_[length] = 0;
   }
 
-  /** Construct a string of a specific length in shared memory */
-  void shm_init(size_t length) {
-    shm_init(nullptr, length);
-    header_->text_[length] = 0;
-  }
-
   /**
    * Construct a string of specific length and allocator in shared memory
    * */
-  void shm_init(Allocator *alloc, size_t length) {
+  void shm_init_main(Allocator *alloc, size_t length) {
     ShmContainer<TYPED_CLASS>::shm_init(alloc);
     header_ = alloc_->template
       AllocatePtr<ShmHeader<TYPED_CLASS>>(

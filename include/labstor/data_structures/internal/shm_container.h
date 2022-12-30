@@ -140,6 +140,36 @@ class ShmContainer : public ShmArchiveable {
   // void StrongCopy(const CLASS_NAME &other);
 };
 
+#define SHM_ALLOCATOR_NULL reinterpret_cast<Allocator*>(NULL)
+
+/** Generates the code for constructors  */
+#define SHM_INHERIT_CONSTRUCTORS(CLASS_NAME)\
+  CLASS_NAME() = default;\
+  template<typename ...Args>\
+  explicit CLASS_NAME(Args&& ...args) {\
+    shm_init_main(SHM_ALLOCATOR_NULL, std::forward<Args>(args)...);\
+  }\
+  template<typename ...Args>\
+  explicit CLASS_NAME(Allocator *alloc, Args&& ...args) {\
+    shm_init_main(alloc, std::forward<Args>(args)...);\
+  }\
+  template<typename ...Args>\
+  void shm_init(Args&& ...args) {\
+    shm_init_main(SHM_ALLOCATOR_NULL, std::forward<Args>(args)...);\
+  }\
+  template<typename ...Args>\
+  void shm_init(Allocator *alloc, Args&& ...args) {\
+    shm_init_main(alloc, std::forward<Args>(args)...);\
+  }
+
+/** Generates the code for destructors  */
+#define SHM_INHERIT_DESTRUCTORS(CLASS_NAME)\
+  ~CLASS_NAME() {\
+    if (destructable_) {\
+      shm_destroy();\
+    }\
+  }
+
 /** Generates the code for move operators */
 #define SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
   CLASS_NAME(CLASS_NAME &&other) noexcept {\
@@ -171,7 +201,7 @@ class ShmContainer : public ShmArchiveable {
     }\
     return *this;\
   }\
-  void shm_init(const CLASS_NAME &other) {\
+  void shm_init_main(Allocator *alloc, const CLASS_NAME &other) {\
     shm_destroy();\
     StrongCopy(other);\
   }
@@ -206,6 +236,8 @@ SHM_CONTAINER_USING_NS(ARCHIVEABLE)::SetDestructable;\
 SHM_CONTAINER_USING_NS(ARCHIVEABLE)::UnsetDestructable;\
 SHM_CONTAINER_USING_NS(ARCHIVEABLE)::WeakCopy;\
 SHM_CONTAINER_USING_NS(ARCHIVEABLE)::WeakMove;\
+SHM_INHERIT_CONSTRUCTORS(CLASS_NAME)\
+SHM_INHERIT_DESTRUCTORS(CLASS_NAME)\
 SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
 SHM_INHERIT_COPY_OPS(CLASS_NAME)\
 SHM_SERIALIZE_DESERIALIZE_WRAPPER(TYPED_CLASS)

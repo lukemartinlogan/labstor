@@ -336,61 +336,15 @@ class vector : public ShmContainer<TYPED_CLASS> {
   typedef SHM_T_OR_REF_T(T) T_Ref;
 
  public:
-  /** Default constructor */
-  vector() = default;
-
-  /** Destructor */
-  ~vector() {
-    if (destructable_) {
-      shm_destroy();
-    }
-  }
-
-  /** Default shared-memory constructor */
-  explicit vector(Allocator *alloc) {
-    shm_init(alloc);
-  }
-
-  /**
-   * Construct a vector of a certain length in shared memory
-   *
-   * @param length the size the vector should be
-   * @param alloc the allocator to reserve memory from
-   * @param args the parameters of the elements to construct
-   * */
-  template<typename ...Args>
-  explicit vector(Allocator *alloc, size_t length, Args&& ...args) {
-    shm_init(alloc, length, std::forward<Args>(args)...);
-  }
-
-  /** Copy a standard vector to a shm vector */
-  explicit vector(std::vector<T> &other) {
-    shm_init(other);
-  }
-
-  /** Copy a standard vector to a shm vector, new allocator  */
-  explicit vector(Allocator *alloc, std::vector<T> &other) {
-    shm_init(alloc, other);
-  }
-
-  /** Initialize list in shared memory (default allocator) */
-  void shm_init(size_t length = 0) {
-    if (length > 0) {
-      shm_init(nullptr, length);
-    } else {
-      shm_init(nullptr);
-    }
-  }
-
   /** Construct the vector in shared memory */
   template<typename ...Args>
-  void shm_init(Allocator *alloc, size_t length, Args&& ...args) {
+  void shm_init_main(Allocator *alloc, size_t length, Args&& ...args) {
     shm_init(alloc);
     resize(length, std::forward<Args>(args)...);
   }
 
   /** Construct the vector in shared memory */
-  void shm_init(Allocator *alloc) {
+  void shm_init_main(Allocator *alloc) {
     ShmContainer<TYPED_CLASS>::shm_init(alloc);
     header_ = alloc_->template
       AllocateObjs<ShmHeader<TYPED_CLASS>>(1, header_ptr_);
@@ -399,13 +353,8 @@ class vector : public ShmContainer<TYPED_CLASS> {
     header_->vec_ptr_.set_null();
   }
 
-  /** Construct the vector in shared memory */
-  void shm_init(std::vector<T> &other) {
-    shm_init(nullptr, other);
-  }
-
-  /** Construct the vector in shared memory */
-  void shm_init(Allocator *alloc, std::vector<T> &other) {
+  /** Copy from std::vector */
+  void shm_init_main(Allocator *alloc, std::vector<T> &other) {
     shm_init(alloc);
     reserve(other.size());
     for (auto &entry : other) {
@@ -425,6 +374,7 @@ class vector : public ShmContainer<TYPED_CLASS> {
   /** Copy a vector */
   void StrongCopy(const vector &other) {
     shm_init(other.alloc_);
+    reserve(other.size());
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back((*iter));
     }
@@ -439,7 +389,7 @@ class vector : public ShmContainer<TYPED_CLASS> {
    * */
   template<typename ...Args>
   void reserve(size_t length, Args&& ...args) {
-    if (IsNull()) { shm_init(nullptr); }
+    if (IsNull()) { shm_init(); }
     if (length == 0) { return; }
     grow_vector(data_ar(), length, false, std::forward<Args>(args)...);
   }
@@ -453,7 +403,7 @@ class vector : public ShmContainer<TYPED_CLASS> {
    * */
   template<typename ...Args>
   void resize(size_t length, Args&& ...args) {
-    if (IsNull()) { shm_init(nullptr); }
+    if (IsNull()) { shm_init(); }
     if (length == 0) { return; }
     grow_vector(data_ar(), length, true, std::forward<Args>(args)...);
     header_->length_ = length;

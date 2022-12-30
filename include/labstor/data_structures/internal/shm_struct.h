@@ -52,23 +52,13 @@ struct ShmStruct : public ShmContainer<TYPED_CLASS, false> {
  public:
   SHM_CONTAINER_TEMPLATE_NO_SHM_HEADER(CLASS_NAME, TYPED_CLASS)
 
-  /** Default constructor */
-  ShmStruct() = default;
-
-  /** Construct pointer in-place (find allocator) */
-  template<typename ...Args>
-  void shm_init(Args &&...args) {
-    shm_init(reinterpret_cast<Allocator *>(NULL),
-             std::forward<Args>(args)...);
-  }
-
   /**
    * Constructs and stores a simple C type in shared-memory. E.g., a struct
    * or union. Complex structures should look at ShmContainer under
    * data_structures/data_structure.h
    * */
   template<typename ...Args>
-  void shm_init(Allocator *alloc, Args &&...args) {
+  void shm_init_main(Allocator *alloc, Args &&...args) {
     ShmContainer<TYPED_CLASS, false>::shm_init(alloc);
     header_ = alloc_->template
       AllocateConstructObjs<T>(1, header_ptr_, std::forward<Args>(args)...);

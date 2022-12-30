@@ -257,38 +257,8 @@ class list : public ShmContainer<TYPED_CLASS> {
   typedef SHM_T_OR_REF_T(T) T_Ref;
 
  public:
-  /** Default constructor */
-  list() = default;
-
-  /** Destructor */
-  ~list() {
-    if (destructable_) {
-      shm_destroy();
-    }
-  }
-
-  /** Default shared-memory constructor */
-  explicit list(Allocator *alloc) {
-    shm_init(alloc);
-  }
-
-  /** Copy constructor (std::list) with default allocator */
-  explicit list(std::list<T> &other) {
-    shm_init(nullptr, other);
-  }
-
-  /** Copy constructor (std::list) with allocator */
-  explicit list(Allocator *alloc, std::list<T> &other) {
-    shm_init(alloc, other);
-  }
-
-  /** Initialize list in shared memory (default allocator) */
-  void shm_init() {
-    shm_init(nullptr);
-  }
-
   /** Initialize list in shared memory */
-  void shm_init(Allocator *alloc) {
+  void shm_init_main(Allocator *alloc) {
     ShmContainer<TYPED_CLASS>::shm_init(alloc);
     header_ = alloc_->template
       ClearAllocateObjs<ShmHeader<TYPED_CLASS>>(1, header_ptr_);
@@ -296,13 +266,8 @@ class list : public ShmContainer<TYPED_CLASS> {
     header_->tail_ptr_.set_null();
   }
 
-  /** list copy constructor */
-  void shm_init(std::list<T> &other) {
-    shm_init(nullptr, other);
-  }
-
-  /** list copy constructor */
-  void shm_init(Allocator *alloc, std::list<T> &other) {
+  /** Copy from std::list */
+  void shm_init_main(Allocator *alloc, std::list<T> &other) {
     shm_init(alloc);
     for (auto &entry : other) {
       emplace_back(entry);

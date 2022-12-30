@@ -286,22 +286,6 @@ class unordered_map : public ShmContainer<TYPED_CLASS> {
   using COLLISION_RET_T = unordered_map_pair_ret<Key, T>;
 
  public:
-  /** Default constructor */
-  unordered_map() = default;
-
-  /** Destructor */
-  ~unordered_map() {
-    if (destructable_) {
-      shm_destroy();
-    }
-  }
-
-  /** Construct the unordered_map in shared-memory */
-  template<typename ...Args>
-  explicit unordered_map(Allocator *alloc, Args&& ...args) {
-    shm_init(alloc, std::forward<Args>(args)...);
-  }
-
   /**
    * Initialize unordered map
    *
@@ -311,10 +295,10 @@ class unordered_map : public ShmContainer<TYPED_CLASS> {
    * a growth is triggered
    * @param growth the multiplier to grow the bucket vector size
    * */
-  void shm_init(Allocator *alloc = nullptr,
-                int num_buckets = 20,
-                int max_collisions = 4,
-                RealNumber growth = RealNumber(5, 4)) {
+  void shm_init_main(Allocator *alloc,
+                     int num_buckets = 20,
+                     int max_collisions = 4,
+                     RealNumber growth = RealNumber(5, 4)) {
     ShmContainer<TYPED_CLASS>::shm_init(alloc);
     header_ = alloc_->template
       AllocateConstructObjs<ShmHeader<TYPED_CLASS>>(1, header_ptr_);
