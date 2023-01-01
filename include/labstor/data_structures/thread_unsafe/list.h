@@ -212,7 +212,7 @@ struct list_iterator_templ {
   /** Determine whether this iterator is the begin iterator */
   bool is_begin() const {
     if (list_ && entry_) {
-      return entry_->prior_ptr_.is_null();
+      return entry_->prior_ptr_.IsNull();
     } else {
       return false;
     }
@@ -239,7 +239,7 @@ using list_citerator = list_iterator_templ<T, true>;
  * The list shared-memory header
  * */
 template<typename T>
-struct ShmHeader<TYPED_CLASS> {
+struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
   Pointer head_ptr_, tail_ptr_;
   size_t length_;
 };
@@ -258,16 +258,18 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
 
  public:
   /** Initialize list in shared memory */
-  void shm_init_main(Allocator *alloc) {
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+                     Allocator *alloc) {
     shm_init_header(alloc);
     header_ = alloc_->template
       ClearAllocateObjs<ShmHeader<TYPED_CLASS>>(1, header_ptr_);
-    header_->head_ptr_.set_null();
-    header_->tail_ptr_.set_null();
+    header_->head_ptr_.SetNull();
+    header_->tail_ptr_.SetNull();
   }
 
   /** Copy from std::list */
-  void shm_init_main(Allocator *alloc, std::list<T> &other) {
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+                     Allocator *alloc, std::list<T> &other) {
     shm_init(alloc);
     for (auto &entry : other) {
       emplace_back(entry);
@@ -318,12 +320,12 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
     Pointer entry_ptr;
     auto entry = _create_entry(entry_ptr, std::forward<Args>(args)...);
     if (size() == 0) {
-      entry->prior_ptr_.set_null();
-      entry->next_ptr_.set_null();
+      entry->prior_ptr_.SetNull();
+      entry->next_ptr_.SetNull();
       header_->head_ptr_ = entry_ptr;
       header_->tail_ptr_ = entry_ptr;
     } else if (pos.is_begin()) {
-      entry->prior_ptr_.set_null();
+      entry->prior_ptr_.SetNull();
       entry->next_ptr_ = header_->head_ptr_;
       auto head = alloc_->template
         Convert<list_entry<T>>(header_->tail_ptr_);
@@ -331,7 +333,7 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
       header_->head_ptr_ = entry_ptr;
     } else if (pos.is_end()) {
       entry->prior_ptr_ = header_->tail_ptr_;
-      entry->next_ptr_.set_null();
+      entry->next_ptr_.SetNull();
       auto tail = alloc_->template
         Convert<list_entry<T>>(header_->tail_ptr_);
       tail->next_ptr_ = entry_ptr;
@@ -368,7 +370,7 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
       pos = next;
     }
 
-    if (first_prior_ptr.is_null()) {
+    if (first_prior_ptr.IsNull()) {
       header_->head_ptr_ = last.entry_ptr_;
     } else {
       auto first_prior = alloc_->template
@@ -376,7 +378,7 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
       first_prior->next_ptr_ = last.entry_ptr_;
     }
 
-    if (last.entry_ptr_.is_null()) {
+    if (last.entry_ptr_.IsNull()) {
       header_->tail_ptr_ = first_prior_ptr;
     } else {
       last.entry_->prior_ptr_ = first_prior_ptr;

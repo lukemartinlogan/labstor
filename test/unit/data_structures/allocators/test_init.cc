@@ -28,7 +28,7 @@
 
 Allocator* Pretest(AllocatorType type) {
   std::string shm_url = "test_allocators";
-  allocator_id_t alloc_id(0, 0);
+  allocator_id_t alloc_id(0, 1);
   auto mem_mngr = LABSTOR_MEMORY_MANAGER;
   mem_mngr->CreateBackend(MemoryBackendType::kPosixShmMmap,
                           MemoryManager::kDefaultBackendSize,

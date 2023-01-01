@@ -118,7 +118,7 @@ class array_queue {
   array_queue(array_queue&& source) {
     header_ptr_ = source.header_ptr_;
     header_ = source.header_;
-    source.header_ptr_.set_null();
+    source.header_ptr_.SetNull();
   }
 
   /** Disable copying  */
@@ -143,7 +143,7 @@ class array_queue {
 
   /** Destroy all shared memory allocated by the array_queue */
   void shm_destroy() {
-    if (header_ptr_.is_null()) { return; }
+    if (header_ptr_.IsNull()) { return; }
     erase(begin(), end());
     alloc_->Free(header_->vec_ptr_);
     alloc_->Free(header_ptr_);

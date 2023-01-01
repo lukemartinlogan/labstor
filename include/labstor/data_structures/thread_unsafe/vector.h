@@ -319,7 +319,7 @@ using vector_criterator = vector_iterator_templ<T, false, true>;
  * The vector shared-memory header
  * */
 template<typename T>
-struct ShmHeader<TYPED_CLASS> {
+struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
   Pointer vec_ptr_;
   size_t max_length_, length_;
 };
@@ -338,23 +338,26 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
  public:
   /** Construct the vector in shared memory */
   template<typename ...Args>
-  void shm_init_main(Allocator *alloc, size_t length, Args&& ...args) {
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+                     Allocator *alloc, size_t length, Args&& ...args) {
     shm_init(alloc);
     resize(length, std::forward<Args>(args)...);
   }
 
   /** Construct the vector in shared memory */
-  void shm_init_main(Allocator *alloc) {
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+                     Allocator *alloc) {
     shm_init_header(alloc);
     header_ = alloc_->template
       AllocateObjs<ShmHeader<TYPED_CLASS>>(1, header_ptr_);
     header_->length_ = 0;
     header_->max_length_ = 0;
-    header_->vec_ptr_.set_null();
+    header_->vec_ptr_.SetNull();
   }
 
   /** Copy from std::vector */
-  void shm_init_main(Allocator *alloc, std::vector<T> &other) {
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+                     Allocator *alloc, std::vector<T> &other) {
     shm_init(alloc);
     reserve(other.size());
     for (auto &entry : other) {

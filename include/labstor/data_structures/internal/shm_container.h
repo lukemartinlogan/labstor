@@ -35,38 +35,85 @@ namespace lipc = labstor::ipc;
 
 namespace labstor::ipc {
 
+/** Bits used for determining how to destroy an object */
+#define SHM_CONTAINER_VALID BIT_OPT(uint16_t, 0)
+#define SHM_CONTAINER_DATA_VALID BIT_OPT(uint16_t, 1)
+#define SHM_CONTAINER_HEADER_DESTRUCTABLE BIT_OPT(uint16_t, 2)
+#define SHM_CONTAINER_DESTRUCTABLE BIT_OPT(uint16_t, 3)
+
 /** The shared-memory header used for data structures */
 template<typename T>
 struct ShmHeader;
 
+/** The base ShmHeader used for all containers */
+struct ShmBaseHeader {
+  bitfield16_t flags_;
+
+  ShmBaseHeader() = default;
+
+  /** Publicize bitfield operations */
+  INHERIT_BITFIELD_OPS(flags_, uint16_t)
+};
+
 /** Simplify ShmContainer inheritance */
 #define SHM_CONTAINER(TYPED_CLASS) \
-  lipc::ShmContainer<ShmHeader<TYPE_UNWRAP(TYPED_CLASS)>>
+  lipc::ShmContainer<TYPE_UNWRAP(TYPED_CLASS), \
+    ShmHeader<TYPE_UNWRAP(TYPED_CLASS)>>
 
 /**
  * ShmContainers all have a header, which is stored in
  * shared memory as a ShmArchive.
  * */
-template<typename TYPED_HEADER>
+template<typename TYPED_CLASS, typename TYPED_HEADER>
 class ShmContainer : public ShmArchiveable {
  protected:
   Pointer header_ptr_;
   Allocator *alloc_;
   TYPED_HEADER *header_;
-  bool destructable_;
+  bitfield16_t flags_;
 
  public:
   /** Default constructor */
   ShmContainer()
-  : header_ptr_(kNullPointer),
-    alloc_(nullptr), header_(nullptr), destructable_(true) {}
+  : header_ptr_(kNullPointer) {}
 
-  /** Set the allocator of the data structure */
-  void shm_init_header(Allocator *alloc) {
+  /**
+   * Initialize a data structure's header + allocator.
+   * A container will never re-set or re-allocate its header once it has
+   * been set the first time.
+   * */
+  template<typename ...Args>
+  void shm_init_header(ShmArchive<TYPED_CLASS> *ar,
+                       Allocator *alloc,
+                       Args&& ...args) {
     if (alloc == nullptr) {
       alloc_ = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
     } else {
       alloc_ = alloc;
+    }
+
+    if (flags_.CheckBits(SHM_CONTAINER_VALID)) {
+      return;
+    } else if (ar == nullptr) {
+      header_ = alloc_->template
+        AllocateConstructObjs<TYPED_HEADER>(
+          1, header_ptr_,
+          std::forward<Args>(args)...);
+      header_->SetBits(
+        SHM_CONTAINER_DATA_VALID |
+        SHM_CONTAINER_HEADER_DESTRUCTABLE);
+      flags_.SetBits(
+        SHM_CONTAINER_VALID |
+        SHM_CONTAINER_DESTRUCTABLE);
+    } else {
+      header_ptr_ = ar->header_ptr_;
+      header_ = LABSTOR_MEMORY_MANAGER->template
+        Convert<TYPED_HEADER>(ar->header_ptr_);
+      header_->SetBits(
+        SHM_CONTAINER_DATA_VALID);
+      flags_.SetBits(
+        SHM_CONTAINER_VALID |
+        SHM_CONTAINER_DESTRUCTABLE);
     }
   }
 
@@ -78,47 +125,39 @@ class ShmContainer : public ShmArchiveable {
   /** Deserialize object from a raw pointer */
   void shm_deserialize_header(const Pointer &header_ptr) {
     header_ptr_ = header_ptr;
-    if (header_ptr.is_null()) { return; }
+    if (IsNull()) { return; }
     alloc_ = LABSTOR_MEMORY_MANAGER->GetAllocator(header_ptr.allocator_id_);
     header_ = LABSTOR_MEMORY_MANAGER->
       Convert<TYPED_HEADER>(header_ptr);
-  }
-
-  /** Copy only pointers */
-  void WeakCopy(const ShmContainer &other) {
-    header_ptr_ = other.header_ptr_;
-    header_ = other.header_;
-    alloc_ = other.alloc_;
-    destructable_ = other.destructable_;
-  }
-
-  /** Move only pointers */
-  void WeakMove(ShmContainer &other) {
-    header_ptr_ = std::move(other.header_ptr_);
-    header_ = std::move(other.header_);
-    alloc_ = other.alloc_;
-    destructable_ = other.destructable_;
-    other.SetNull();
+    UnsetDestructable();
   }
 
   /** Sets this object as destructable */
   void SetDestructable() {
-    destructable_ = true;
+    flags_.SetBits(SHM_CONTAINER_DESTRUCTABLE);
   }
 
-  /** Sets this object as nondestructable */
+  /** Sets this object as indestructable */
   void UnsetDestructable() {
-    destructable_ = false;
+    flags_.UnsetBits(SHM_CONTAINER_DESTRUCTABLE);
+  }
+
+  /** Check if this container is destructable */
+  bool IsDestructable() {
+    return flags_.CheckBits(SHM_CONTAINER_DESTRUCTABLE);
   }
 
   /** Set to null */
   void SetNull() {
-    header_ptr_.set_null();
+    if (flags_.CheckBits(SHM_CONTAINER_VALID)) {
+      header_->UnsetBits(SHM_CONTAINER_DATA_VALID);
+    }
   }
 
   /** Check if null */
   bool IsNull() const {
-    return header_ptr_.is_null();
+    return !flags_.CheckBits(SHM_CONTAINER_VALID) ||
+           !header_->CheckBits(SHM_CONTAINER_DATA_VALID);
   }
 
   /** Get the allocator for this pointer */
@@ -143,75 +182,125 @@ class ShmContainer : public ShmArchiveable {
 /** Typed nullptr for allocator */
 #define SHM_ALLOCATOR_NULL reinterpret_cast<lipc::Allocator*>(NULL)
 
+/** Typed nullptr for ShmArchive */
+#define SHM_ARCHIVE_NULL reinterpret_cast<lipc::ShmArchive<TYPED_CLASS>*>(NULL)
+
 /** Generates the code for constructors  */
-#define SHM_INHERIT_CONSTRUCTORS(CLASS_NAME)\
-  CLASS_NAME() = default;\
+#define SHM_INHERIT_CONSTRUCTORS(CLASS_NAME, TYPED_CLASS)\
   template<typename ...Args>\
   explicit CLASS_NAME(Args&& ...args) {\
-    shm_init_main(SHM_ALLOCATOR_NULL, std::forward<Args>(args)...);\
+    shm_init_main(SHM_ARCHIVE_NULL, SHM_ALLOCATOR_NULL,  \
+                  std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
   explicit CLASS_NAME(lipc::Allocator *alloc, Args&& ...args) {\
-    shm_init_main(alloc, std::forward<Args>(args)...);\
+    shm_init_main(SHM_ARCHIVE_NULL, alloc, std::forward<Args>(args)...);\
+  }\
+  template<typename ...Args>\
+  explicit CLASS_NAME(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar,\
+                      lipc::Allocator *alloc, Args&& ...args) {\
+    shm_init_main(&ar, alloc, std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
   void shm_init(Args&& ...args) {\
-    shm_init_main(SHM_ALLOCATOR_NULL, std::forward<Args>(args)...);\
+    shm_init_main(SHM_ARCHIVE_NULL, SHM_ALLOCATOR_NULL,  \
+                  std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
   void shm_init(lipc::Allocator *alloc, Args&& ...args) {\
-    shm_init_main(alloc, std::forward<Args>(args)...);\
+    shm_init_main(SHM_ARCHIVE_NULL,                      \
+                  alloc, std::forward<Args>(args)...);\
+  }\
+  template<typename ...Args>\
+  void shm_init(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar,\
+                lipc::Allocator *alloc, Args&& ...args) {\
+    shm_init_main(&ar, alloc, std::forward<Args>(args)...);\
   }
 
 /** Generates the code for destructors  */
 #define SHM_INHERIT_DESTRUCTORS(CLASS_NAME)\
-  ~CLASS_NAME() {\
-    if (destructable_) {\
-      shm_destroy();\
+  ~TYPE_UNWRAP(CLASS_NAME)() {\
+    if (IsDestructable()) {\
+      shm_destroy(true);\
     }\
   }
 
 /** Generates the code for move operators */
 #define SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
-  CLASS_NAME(CLASS_NAME &&other) noexcept {\
-    shm_destroy();\
+  TYPE_UNWRAP(CLASS_NAME)(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
+    shm_destroy(false);\
     WeakMove(other);\
   }\
-  CLASS_NAME& operator=(CLASS_NAME &&other) noexcept {\
+  TYPE_UNWRAP(CLASS_NAME)& operator=(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
     if (this != &other) {\
-      shm_destroy();\
+      shm_destroy(false);\
       WeakMove(other);\
     }\
     return *this;\
   }\
-  void shm_init(CLASS_NAME &&other) noexcept {\
-    shm_destroy();\
+  void shm_init(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
+    shm_destroy(false);\
     WeakMove(other);\
   }
 
 /** Generates the code for copy operators */
 #define SHM_INHERIT_COPY_OPS(CLASS_NAME)\
-  CLASS_NAME(const CLASS_NAME &other) noexcept {\
-    shm_destroy();\
+  TYPE_UNWRAP(CLASS_NAME)(const TYPE_UNWRAP(CLASS_NAME) &other) noexcept {\
+    shm_destroy(false);\
     shm_init(other);\
   }\
-  CLASS_NAME& operator=(const CLASS_NAME &other) {\
+  TYPE_UNWRAP(CLASS_NAME)& operator=(const TYPE_UNWRAP(CLASS_NAME) &other) {\
     if (this != &other) {\
-      shm_destroy();\
+      shm_destroy(false);\
       shm_init(other);\
     }\
     return *this;\
   }\
-  void shm_init_main(lipc::Allocator *alloc, const CLASS_NAME &other) {\
-    shm_destroy();\
+  void shm_init_main(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar,\
+        lipc::Allocator *alloc, \
+        const TYPE_UNWRAP(CLASS_NAME) &other) {\
+    shm_destroy(false);\
     StrongCopy(other);\
   }
 
 /**
+ * Simplify shm_destroy
+ * */
+#define SHM_DESTROY_START\
+  if (IsNull()) { return; }
+#define SHM_DESTROY_END \
+  if (destroy_header && \
+      header_->CheckBits(SHM_CONTAINER_HEADER_DESTRUCTABLE)) {\
+    auto alloc = LABSTOR_MEMORY_MANAGER->\
+      GetAllocator(header_ptr_.allocator_id_);\
+    alloc->Free(header_ptr_);\
+  }\
+  SetNull();
+
+/** Simplify WeakMove + StrongCopy */
+#define SHM_WEAK_COPY\
+  if (other.IsNull()) {\
+    SetNull();\
+    return;\
+  }\
+  alloc_ = other.alloc_;
+
+/** Simplify WeakMove */
+#define SHM_WEAK_MOVE_START \
+  SHM_WEAK_COPY\
+  other.SetNull();
+
+/** Simplify StrongCopy */
+#define SHM_STRONG_COPY_START \
+  SHM_WEAK_COPY\
+  flags_.SetBits(SHM_CONTAINER_DESTRUCTABLE);
+
+/**
  * Namespace simplification for a SHM data structure
  * */
-#define SHM_CONTAINER_USING_NS(TYPED_HEADER)\
-  using labstor::ipc::ShmContainer<TYPE_UNWRAP(TYPED_HEADER)>
+#define SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)\
+  using labstor::ipc::ShmContainer<TYPE_UNWRAP(TYPED_CLASS), \
+    TYPE_UNWRAP(TYPED_HEADER)>
 
 /**
  * Define various functions and variables common across all
@@ -225,20 +314,18 @@ class ShmContainer : public ShmArchiveable {
  * 3. Create shm_serialize and shm_deserialize for archiving data structures.
  * */
 #define SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)\
-SHM_CONTAINER_USING_NS(TYPED_HEADER)::header_ptr_;\
-SHM_CONTAINER_USING_NS(TYPED_HEADER)::alloc_;\
-SHM_CONTAINER_USING_NS(TYPED_HEADER)::header_;\
-SHM_CONTAINER_USING_NS(TYPED_HEADER)::destructable_;\
-SHM_CONTAINER_USING_NS(TYPED_HEADER)::shm_init_header;\
-SHM_CONTAINER_USING_NS(TYPED_HEADER)::shm_serialize_header;\
-SHM_CONTAINER_USING_NS(TYPED_HEADER)::shm_deserialize_header;\
-SHM_CONTAINER_USING_NS(TYPED_HEADER)::IsNull;\
-SHM_CONTAINER_USING_NS(TYPED_HEADER)::SetNull;            \
-SHM_CONTAINER_USING_NS(TYPED_HEADER)::SetDestructable;\
-SHM_CONTAINER_USING_NS(TYPED_HEADER)::UnsetDestructable;\
-SHM_CONTAINER_USING_NS(TYPED_HEADER)::WeakCopy;\
-SHM_CONTAINER_USING_NS(TYPED_HEADER)::WeakMove;\
-SHM_INHERIT_CONSTRUCTORS(CLASS_NAME)\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::header_ptr_;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::alloc_;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::header_;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::shm_init_header;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::shm_serialize_header;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::shm_deserialize_header;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::IsNull;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::SetNull;            \
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::SetDestructable;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::UnsetDestructable;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::IsDestructable;\
+SHM_INHERIT_CONSTRUCTORS(CLASS_NAME, TYPED_CLASS)\
 SHM_INHERIT_DESTRUCTORS(CLASS_NAME)\
 SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
 SHM_INHERIT_COPY_OPS(CLASS_NAME)\
@@ -249,7 +336,6 @@ SHM_SERIALIZE_DESERIALIZE_OPS(TYPED_CLASS)
  * CLASS_NAME and TYPED_CLASS macros and then
  * unset them in their respective header files.
  * */
-
 #define SHM_CONTAINER_TEMPLATE(CLASS_NAME, TYPED_CLASS) \
   SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, \
                            TYPE_WRAP(ShmHeader<TYPE_UNWRAP(TYPED_CLASS)>))
@@ -259,7 +345,6 @@ SHM_SERIALIZE_DESERIALIZE_OPS(TYPED_CLASS)
  * CLASS_NAME and TYPED_CLASS macros and then
  * unset them in their respective header files.
  * */
-
 #define BASIC_SHM_CONTAINER_TEMPLATE \
   SHM_CONTAINER_TEMPLATE(CLASS_NAME, TYPE_WRAP(TYPED_CLASS))
 

@@ -119,7 +119,7 @@ struct ShmArchive {
   /** Move constructor */
   ShmArchive(ShmArchive&& other) noexcept
     : header_ptr_(other.header_ptr_) {
-    other.header_ptr_.set_null();
+    other.header_ptr_.SetNull();
   }
 
   /** Copy assignmnet operator */

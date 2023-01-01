@@ -45,7 +45,7 @@ TEST_CASE("MemoryManager") {
   size_t page_size = KILOBYTES(4);
   std::string shm_url = "test_mem_backend";
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  allocator_id_t alloc_id(0, 0);
+  allocator_id_t alloc_id(0, 1);
 
   LABSTOR_ERROR_HANDLE_START()
   auto mem_mngr = LABSTOR_MEMORY_MANAGER;

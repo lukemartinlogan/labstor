@@ -128,7 +128,7 @@ class Allocator {
    * @return true if p was modified.
    * */
   inline bool Reallocate(Pointer &p, size_t new_size) {
-    if (p.is_null()) {
+    if (p.IsNull()) {
       p = Allocate(new_size);
       return true;
     }
@@ -149,7 +149,7 @@ class Allocator {
    * */
 
   void Free(Pointer &ptr) {
-    if (ptr.is_null()) {
+    if (ptr.IsNull()) {
       throw INVALID_FREE.format();
     }
     FreeNoNullCheck(ptr);
@@ -188,7 +188,7 @@ class Allocator {
   template<typename T>
   T* AllocatePtr(size_t size, Pointer &p, size_t alignment = 0) {
     p = Allocate(size, alignment);
-    if (p.is_null()) { return nullptr; }
+    if (p.IsNull()) { return nullptr; }
     return reinterpret_cast<T*>(backend_->data_ + p.off_);
   }
 
@@ -217,7 +217,7 @@ class Allocator {
   template<typename T>
   T* ClearAllocatePtr(size_t size, Pointer &p, size_t alignment = 0) {
     p = Allocate(size, alignment);
-    if (p.is_null()) { return nullptr; }
+    if (p.IsNull()) { return nullptr; }
     auto ptr = reinterpret_cast<T*>(backend_->data_ + p.off_);
     if (ptr) {
       memset(ptr, 0, size);
@@ -454,7 +454,7 @@ class Allocator {
    * */
   template<typename T>
   T* Convert(const Pointer &p) {
-    if (p.is_null()) { return nullptr; }
+    if (p.IsNull()) { return nullptr; }
     return reinterpret_cast<T*>(backend_->data_ + p.off_);
   }
 

@@ -30,7 +30,7 @@
 #include <labstor/types/basic.h>
 #include <labstor/constants/data_structure_singleton_macros.h>
 #include <labstor/introspect/system_info.h>
-
+#include <labstor/types/bitfield.h>
 #include <atomic>
 
 namespace labstor::ipc {
@@ -48,7 +48,7 @@ union allocator_id_t {
   /**
    * Null allocator ID is -1 (for now)
    * */
-  allocator_id_t() : int_(-1) {}
+  allocator_id_t() : int_(0) {}
 
   /**
    * Constructor which sets major & minor
@@ -61,14 +61,14 @@ union allocator_id_t {
   /**
    * Set this allocator to null
    * */
-  void set_null() {
-    int_ = -1;
+  void SetNull() {
+    int_ = 0;
   }
 
   /**
    * Check if this is the null allocator
    * */
-  bool is_null() const { return int_ == -1; }
+  bool IsNull() const { return int_ == 0; }
 
   /** Equality check */
   bool operator==(const allocator_id_t &other) const {
@@ -81,9 +81,9 @@ union allocator_id_t {
   }
 
   /** Get the null allocator */
-  static allocator_id_t null() {
+  static allocator_id_t GetNull() {
     allocator_id_t alloc;
-    alloc.set_null();
+    alloc.SetNull();
     return alloc;
   }
 };
@@ -112,7 +112,7 @@ struct Pointer {
   /** Move constructor */
   Pointer(Pointer &&other) noexcept
   : allocator_id_(other.allocator_id_), off_(other.off_.load()) {
-    other.set_null();
+    other.SetNull();
   }
 
   /** Copy assignment operator */
@@ -129,7 +129,7 @@ struct Pointer {
     if (this != &other) {
       allocator_id_ = other.allocator_id_;
       off_ = other.off_.load();
-      other.set_null();
+      other.SetNull();
     }
     return *this;
   }
@@ -163,19 +163,19 @@ struct Pointer {
   }
 
   /** Set to null */
-  void set_null() {
-    allocator_id_.set_null();
+  void SetNull() {
+    allocator_id_.SetNull();
   }
 
   /** Check if null */
-  bool is_null() const {
-    return allocator_id_.is_null();
+  bool IsNull() const {
+    return allocator_id_.IsNull();
   }
 
   /** Get the null pointer */
-  static Pointer null() {
+  static Pointer GetNull() {
     Pointer p;
-    p.set_null();
+    p.SetNull();
     return p;
   }
 
@@ -191,7 +191,7 @@ struct Pointer {
 };
 
 /** The null process-indepent pointer */
-static const Pointer kNullPointer = Pointer::null();
+static const Pointer kNullPointer = Pointer::GetNull();
 
 /** Round up to the nearest multiple of the alignment */
 static size_t NextAlignmentMultiple(size_t alignment, size_t size) {

@@ -106,7 +106,7 @@ Pointer PageAllocator::Allocate(size_t size) {
     if (free_list.free_size_ < header_->page_size_) continue;
     if (list_lock.TryLock()) {
       Pointer p = _Allocate(free_list);
-      if (!p.is_null()) return p;
+      if (!p.IsNull()) return p;
       _Borrow(&free_list, tid, false);
       p = _Allocate(free_list);
       return p;

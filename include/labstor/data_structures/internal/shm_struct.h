@@ -48,7 +48,7 @@ namespace labstor::ipc {
  * Called internally by manual_ptr, unique_ptr, and shared_ptr
  * */
 template<typename T>
-struct ShmStruct : public ShmContainer<T> {
+struct ShmStruct : public ShmContainer<T, T> {
  public:
   SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, TYPED_CLASS)
 
@@ -58,10 +58,9 @@ struct ShmStruct : public ShmContainer<T> {
    * data_structures/data_structure.h
    * */
   template<typename ...Args>
-  void shm_init_main(Allocator *alloc, Args &&...args) {
-    shm_init_header(alloc);
-    header_ = alloc_->template
-      AllocateConstructObjs<T>(1, header_ptr_, std::forward<Args>(args)...);
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+                     Allocator *alloc, Args &&...args) {
+    shm_init_header(ar, alloc, std::forward<Args>(args)...);
   }
 
   /** Store into shared memory */

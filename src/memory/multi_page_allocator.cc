@@ -147,7 +147,7 @@ Pointer MultiPageAllocator::Allocate(size_t size) {
       all_locks_held = false;
       if (mp_free_list.free_size_ < page_size) continue;
       Pointer p = _Allocate(mp_free_list, page_size_idx, page_size);
-      if (p.is_null()) { continue; }
+      if (p.IsNull()) { continue; }
       _AllocateHeader(p, mp_free_list,
                       page_size, page_size_idx, sizeof(MpPage));
       p += sizeof(MpPage);
@@ -168,7 +168,7 @@ Pointer MultiPageAllocator::Allocate(size_t size) {
     if (mp_free_list.free_size_ < size) continue;
     list_lock.Lock();
     Pointer p = _Allocate(mp_free_list, page_size_idx, page_size);
-    if (p.is_null()) { continue; }
+    if (p.IsNull()) { continue; }
     _AllocateHeader(p, mp_free_list,
                     page_size, page_size_idx, sizeof(MpPage));
     p += sizeof(MpPage);
@@ -186,7 +186,7 @@ Pointer MultiPageAllocator::AlignedAllocate(size_t size, size_t alignment) {
   // Add alignment to size to guarantee the ability to shift
   size += alignment;
   Pointer p = Allocate(size);
-  if (p.is_null()) { return p; }
+  if (p.IsNull()) { return p; }
   // Get the current header statistics
   auto hdr = Convert<MpPage>(p - sizeof(MpPage));
   size_t page_idx = hdr->page_idx_;

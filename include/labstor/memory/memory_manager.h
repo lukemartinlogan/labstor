@@ -114,7 +114,7 @@ class MemoryManager {
                              size_t custom_header_size,
                              Args&& ...args) {
     auto backend = GetBackend(url);
-    if (alloc_id.is_null()) {
+    if (alloc_id.IsNull()) {
       alloc_id = allocator_id_t(LABSTOR_SYSTEM_INFO->pid_,
                                 allocators_.size());
     }
@@ -130,7 +130,7 @@ class MemoryManager {
    * */
   template<typename T = Allocator>
   T* GetAllocator(allocator_id_t alloc_id) {
-    if (alloc_id.is_null()) {
+    if (alloc_id.IsNull()) {
       return nullptr;
     }
     auto iter = allocators_.find(alloc_id);
@@ -161,7 +161,7 @@ class MemoryManager {
    * */
   template<typename T>
   T* Convert(const Pointer &p) {
-    if (p.is_null()) {
+    if (p.IsNull()) {
       return nullptr;
     }
     return GetAllocator(p.allocator_id_)->Convert<T>(p);

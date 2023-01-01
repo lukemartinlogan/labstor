@@ -256,7 +256,7 @@ struct unordered_map_iterator {
  * The unordered_map shared-memory header
  * */
 template<typename Key, typename T, class Hash>
-struct ShmHeader<TYPED_CLASS> {
+struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
  public:
   using BUCKET_T = unordered_map_bucket<Key, T>;
  public:
@@ -295,7 +295,8 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
    * a growth is triggered
    * @param growth the multiplier to grow the bucket vector size
    * */
-  void shm_init_main(Allocator *alloc,
+  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+                     Allocator *alloc,
                      int num_buckets = 20,
                      int max_collisions = 4,
                      RealNumber growth = RealNumber(5, 4)) {
