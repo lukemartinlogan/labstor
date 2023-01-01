@@ -30,7 +30,6 @@
 #include "labstor/data_structures/data_structure.h"
 #include "labstor/data_structures/smart_ptr/manual_ptr.h"
 #include "labstor/data_structures/internal/shm_ar.h"
-#include "labstor/data_structures/internal/shm_ref.h"
 
 #include <list>
 
@@ -44,6 +43,9 @@ class list;
 template<typename T>
 struct list_entry {
  public:
+  typedef SHM_T_OR_REF_T(T) T_Ref;
+
+ public:
   Pointer next_ptr_, prior_ptr_;
   shm_ar<T> data_;
 
@@ -56,8 +58,8 @@ struct list_entry {
   /**
    * Returns the element stored in the list
    * */
-  shm_ref<T> data() {
-    return shm_ref<T>(data_);
+  T_Ref data() {
+    return data_.data();
   }
 };
 
@@ -114,11 +116,6 @@ struct list_iterator_templ {
 
   /** Get the object the iterator points to */
   T_Ref_Const operator*() const {
-    return entry_->data().export_data();
-  }
-
-  /** Get the reference object the iterator points to */
-  shm_ref<T> operator~() {
     return entry_->data();
   }
 
@@ -288,8 +285,9 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Destroy all shared memory allocated by the list */
   void shm_destroy(bool destroy_header = true) {
-    SHM_DESTROY_START
+    SHM_DESTROY_DATA_START
     clear();
+    SHM_DESTROY_DATA_END
     SHM_DESTROY_END
   }
 

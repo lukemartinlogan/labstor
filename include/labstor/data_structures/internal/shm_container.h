@@ -79,9 +79,8 @@ class ShmContainer : public ShmArchiveable {
   bitfield16_t flags_;
 
  public:
-  /** Default constructor */
-  ShmContainer()
-  : header_ptr_(kNullPointer) {}
+  /** Default constructor (flags are cleared) */
+  ShmContainer() = default;
 
   /**
    * Initialize a data structure's header + allocator.
@@ -131,7 +130,8 @@ class ShmContainer : public ShmArchiveable {
   /** Deserialize object from a raw pointer */
   void shm_deserialize_header(const Pointer &header_ptr) {
     header_ptr_ = header_ptr;
-    if (IsNull()) { return; }
+    flags_.UnsetBits(SHM_CONTAINER_VALID);
+    if (header_ptr_.IsNull()) { return; }
     alloc_ = LABSTOR_MEMORY_MANAGER->GetAllocator(header_ptr.allocator_id_);
     header_ = LABSTOR_MEMORY_MANAGER->
       Convert<TYPED_HEADER>(header_ptr);
@@ -165,9 +165,14 @@ class ShmContainer : public ShmArchiveable {
     return flags_.CheckBits(SHM_CONTAINER_VALID);
   }
 
+  /** Check if header's data is valid */
+  bool IsDataValid() const {
+    return header_->CheckBits(SHM_CONTAINER_DATA_VALID);
+  }
+
   /** Check if null */
   bool IsNull() const {
-    return !IsValid() || !header_->CheckBits(SHM_CONTAINER_DATA_VALID);
+    return !IsValid() || !IsDataValid();
   }
 
   /** Get the allocator for this pointer */
@@ -210,6 +215,10 @@ class ShmContainer : public ShmArchiveable {
   explicit CLASS_NAME(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar,\
                       lipc::Allocator *alloc, Args&& ...args) {\
     shm_init_main(&ar, alloc, std::forward<Args>(args)...);\
+  }\
+  template<typename ...Args>\
+  explicit CLASS_NAME(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar) {\
+    shm_deserialize(ar);\
   }\
   template<typename ...Args>\
   void shm_init(Args&& ...args) {\
@@ -276,8 +285,11 @@ class ShmContainer : public ShmArchiveable {
 /**
  * Simplify shm_destroy
  * */
-#define SHM_DESTROY_START\
-  if (IsNull()) { return; }
+#define SHM_DESTROY_DATA_START\
+  if (!IsValid()) { return; } \
+  if (IsDataValid()) {
+#define SHM_DESTROY_DATA_END\
+  }
 #define SHM_DESTROY_END \
   if (destroy_header && \
       header_->CheckBits(SHM_CONTAINER_HEADER_DESTRUCTABLE)) {\
@@ -341,6 +353,7 @@ SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::flags_;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::shm_init_header;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::shm_serialize_header;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::shm_deserialize_header;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::IsDataValid;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::IsValid;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::IsNull;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::SetNull;\

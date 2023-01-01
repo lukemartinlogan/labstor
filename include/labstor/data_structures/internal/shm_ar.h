@@ -55,7 +55,7 @@ class _shm_ar_shm : public ShmSmartPointer {
 
   /** Returns copy of the deserialized ShmArchive (just a few pointers) */
   T data() {
-    return mptr<T>(obj_).get_ref();
+    return T(obj_);
   }
 
   /** Returns a reference to the internal object */

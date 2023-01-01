@@ -43,7 +43,7 @@ void ListOfIntTest() {
   REQUIRE(lp.size() == 30);
 
   // Check full iterator
-  /*{
+  {
     int fcur = 0;
     for (auto num : lp) {
       REQUIRE(num == fcur);
@@ -59,7 +59,7 @@ void ListOfIntTest() {
       REQUIRE(num == fcur);
       ++fcur;
     }
-  }*/
+  }
 
   // Copy list (assign)
   {
@@ -73,7 +73,7 @@ void ListOfIntTest() {
   }
 
   // move vector
-  /*{
+  {
     list<int> cpy(std::move(lp));
     int fcur = 0;
     for (auto num : lp) {
@@ -90,7 +90,7 @@ void ListOfIntTest() {
   }
 
   // emplace_front and erase front
-  {
+  /*{
     lp.emplace_front(100);
     REQUIRE(lp.front() == 100);
     REQUIRE(lp.size() == 31);
@@ -109,7 +109,7 @@ void ListOfIntTest() {
   // Modify the fourth list entry
   {
     auto iter = lp.begin() + 4;
-    (~iter) = 25;
+    (*iter) = 25;
   }
 
   // Verify the modification took place
@@ -179,7 +179,7 @@ void ListOfStringTest() {
   // Modify the fourth list entry (move assignment)
   {
     auto iter = lp.begin() + 4;
-    (~iter) = std::move(string("25"));
+    (*iter) = std::move(string("25"));
   }
 
   // Verify the modification took place
@@ -192,7 +192,7 @@ void ListOfStringTest() {
   {
     auto iter = lp.begin() + 4;
     string text("50");
-    (~iter) = text;
+    (*iter) = text;
   }
 
   // Verify the modification took place

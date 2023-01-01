@@ -132,8 +132,9 @@ class string : public SHM_CONTAINER(TYPED_CLASS) {
    * Destroy the shared-memory data.
    * */
   void shm_destroy(bool destroy_header = true) {
-    SHM_DESTROY_START
+    SHM_DESTROY_DATA_START
     alloc_->Free(header_->text_);
+    SHM_DESTROY_DATA_END
     SHM_DESTROY_END
   }
 
