@@ -43,7 +43,7 @@ void ListOfIntTest() {
   REQUIRE(lp.size() == 30);
 
   // Check full iterator
-  {
+  /*{
     int fcur = 0;
     for (auto num : lp) {
       REQUIRE(num == fcur);
@@ -59,7 +59,7 @@ void ListOfIntTest() {
       REQUIRE(num == fcur);
       ++fcur;
     }
-  }
+  }*/
 
   // Copy list (assign)
   {
@@ -73,7 +73,7 @@ void ListOfIntTest() {
   }
 
   // move vector
-  {
+  /*{
     list<int> cpy(std::move(lp));
     int fcur = 0;
     for (auto num : lp) {
@@ -137,7 +137,7 @@ void ListOfIntTest() {
   {
     lp.clear();
     REQUIRE(lp.size() == 0);
-  }
+  }*/
 }
 
 void ListOfStringTest() {

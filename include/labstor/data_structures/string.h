@@ -83,19 +83,21 @@ class string : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Move constructor */
   void WeakMove(string &other) {
-    SHM_WEAK_MOVE_START
+    SHM_WEAK_MOVE_START(SHM_WEAK_COPY_DEFAULT)
     header_->length_ = other.header_->length_;
     header_->text_ = other.header_->text_;
     length_ = other.length_;
     text_ = other.text_;
     alloc_ = other.alloc_;
+    SHM_WEAK_MOVE_END()
   }
 
   /** Copy constructor */
   void StrongCopy(const string &other) {
-    SHM_WEAK_COPY
+    SHM_WEAK_COPY(SHM_WEAK_COPY_DEFAULT)
     shm_init(other.alloc_, other.size());
     _create_str(other.data(), other.size());
+    SHM_STRONG_COPY_END();
   }
 
   /** Construct by concatenating two string in shared-memory */

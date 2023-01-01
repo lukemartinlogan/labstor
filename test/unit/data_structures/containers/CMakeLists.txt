@@ -7,8 +7,8 @@ add_executable(test_data_structure_exec
         ${TEST_MAIN}/main.cc
         test_init.cc
         string.cc
+        list.cc
         #vector.cc
-        #list.cc
         #manual_ptr.cc
         #unique_ptr.cc
         #unordered_map.cc

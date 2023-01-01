@@ -51,6 +51,12 @@ struct ShmBaseHeader {
 
   ShmBaseHeader() = default;
 
+  /**
+   * Disable copying of the flag field, as all flags
+   * pertain to a particular ShmHeader allocation.
+   * */
+  ShmBaseHeader(const ShmBaseHeader &other) = delete;
+
   /** Publicize bitfield operations */
   INHERIT_BITFIELD_OPS(flags_, uint16_t)
 };
@@ -93,7 +99,7 @@ class ShmContainer : public ShmArchiveable {
     }
 
     if (flags_.CheckBits(SHM_CONTAINER_VALID)) {
-      return;
+      header_->SetBits(SHM_CONTAINER_DATA_VALID);
     } else if (ar == nullptr) {
       header_ = alloc_->template
         AllocateConstructObjs<TYPED_HEADER>(
@@ -129,7 +135,7 @@ class ShmContainer : public ShmArchiveable {
     alloc_ = LABSTOR_MEMORY_MANAGER->GetAllocator(header_ptr.allocator_id_);
     header_ = LABSTOR_MEMORY_MANAGER->
       Convert<TYPED_HEADER>(header_ptr);
-    UnsetDestructable();
+    flags_.SetBits(SHM_CONTAINER_VALID);
   }
 
   /** Sets this object as destructable */
@@ -155,9 +161,13 @@ class ShmContainer : public ShmArchiveable {
   }
 
   /** Check if null */
+  bool IsValid() const {
+    return flags_.CheckBits(SHM_CONTAINER_VALID);
+  }
+
+  /** Check if null */
   bool IsNull() const {
-    return !flags_.CheckBits(SHM_CONTAINER_VALID) ||
-           !header_->CheckBits(SHM_CONTAINER_DATA_VALID);
+    return !IsValid() || !header_->CheckBits(SHM_CONTAINER_DATA_VALID);
   }
 
   /** Get the allocator for this pointer */
@@ -278,22 +288,32 @@ class ShmContainer : public ShmArchiveable {
   SetNull();
 
 /** Simplify WeakMove + StrongCopy */
-#define SHM_WEAK_COPY\
+#define SHM_WEAK_COPY(...)\
   if (other.IsNull()) {\
     SetNull();\
     return;\
   }\
+  if (!IsValid()) {\
+    shm_init_main(SHM_ARCHIVE_NULL, __VA_ARGS__);\
+  }\
   alloc_ = other.alloc_;
+#define SHM_WEAK_COPY_END\
+  header_->SetBits(SHM_CONTAINER_DATA_VALID);
+#define SHM_WEAK_COPY_DEFAULT other.alloc_
 
 /** Simplify WeakMove */
-#define SHM_WEAK_MOVE_START \
-  SHM_WEAK_COPY\
-  other.SetNull();
+#define SHM_WEAK_MOVE_START(...) \
+  SHM_WEAK_COPY(__VA_ARGS__)
+#define SHM_WEAK_MOVE_END()\
+  other.SetNull();\
+  SHM_WEAK_COPY_END
 
 /** Simplify StrongCopy */
-#define SHM_STRONG_COPY_START \
-  SHM_WEAK_COPY\
+#define SHM_STRONG_COPY_START(...) \
+  SHM_WEAK_COPY(__VA_ARGS__)\
   flags_.SetBits(SHM_CONTAINER_DESTRUCTABLE);
+#define SHM_STRONG_COPY_END() \
+  SHM_WEAK_COPY_END
 
 /**
  * Namespace simplification for a SHM data structure
@@ -317,11 +337,13 @@ class ShmContainer : public ShmArchiveable {
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::header_ptr_;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::alloc_;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::header_;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::flags_;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::shm_init_header;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::shm_serialize_header;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::shm_deserialize_header;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::IsValid;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::IsNull;\
-SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::SetNull;            \
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::SetNull;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::SetDestructable;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::UnsetDestructable;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::IsDestructable;\

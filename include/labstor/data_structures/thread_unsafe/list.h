@@ -242,6 +242,14 @@ template<typename T>
 struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
   Pointer head_ptr_, tail_ptr_;
   size_t length_;
+
+  ShmHeader() = default;
+
+  ShmHeader(const ShmHeader &other) {
+    head_ptr_ = other.head_ptr_;
+    tail_ptr_ = other.tail_ptr_;
+    length_ = other.length_;
+  }
 };
 
 /**
@@ -257,12 +265,14 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
   typedef SHM_T_OR_REF_T(T) T_Ref;
 
  public:
+  /** Default constructor */
+  //list() = default;
+
   /** Initialize list in shared memory */
   void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
                      Allocator *alloc) {
-    shm_init_header(alloc);
-    header_ = alloc_->template
-      ClearAllocateObjs<ShmHeader<TYPED_CLASS>>(1, header_ptr_);
+    shm_init_header(ar, alloc);
+    header_->length_ = 0;
     header_->head_ptr_.SetNull();
     header_->tail_ptr_.SetNull();
   }
@@ -270,18 +280,17 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
   /** Copy from std::list */
   void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
                      Allocator *alloc, std::list<T> &other) {
-    shm_init(alloc);
+    shm_init_header(ar, alloc);
     for (auto &entry : other) {
       emplace_back(entry);
     }
   }
 
   /** Destroy all shared memory allocated by the list */
-  void shm_destroy() {
-    if (IsNull()) { return; }
+  void shm_destroy(bool destroy_header = true) {
+    SHM_DESTROY_START
     clear();
-    alloc_->Free(header_ptr_);
-    SetNull();
+    SHM_DESTROY_END
   }
 
   /** Store into shared memory */
@@ -294,12 +303,20 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
     shm_deserialize_header(ar.header_ptr_);
   }
 
+  /** Move constructor */
+  void WeakMove(list &other) {
+    SHM_WEAK_MOVE_START(SHM_WEAK_COPY_DEFAULT)
+    *header_ = *(other.header_);
+    SHM_WEAK_MOVE_END()
+  }
+
   /** Copy constructor */
   void StrongCopy(const list &other) {
-    shm_init(other.alloc_);
+    SHM_STRONG_COPY_START(SHM_WEAK_COPY_DEFAULT)
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back(*iter);
     }
+    SHM_STRONG_COPY_END();
   }
 
   /** Construct an element at the back of the list */
