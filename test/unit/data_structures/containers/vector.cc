@@ -165,8 +165,7 @@ void VectorOfStringTest() {
     }
     REQUIRE(vec.size() == max_count);
     for (int i = 0; i < max_count; ++i) {
-      vec[i];
-      // REQUIRE(vec[i] == std::to_string(i));
+      REQUIRE(vec[i] == std::to_string(i));
     }
   }
 
