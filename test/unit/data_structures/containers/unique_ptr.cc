@@ -71,7 +71,7 @@ void UniquePtrOfString() {
 
   ShmArchive<unique_ptr<string>> ar;
   data2 >> ar;
-  REQUIRE(data2.obj_.header_ptr_ == ar.header_ptr_);
+  REQUIRE(data2.obj_.ar_.header_ptr_ == ar.header_ptr_);
   mptr<string> from_ar(ar);
   REQUIRE(*from_ar == "there");
 }

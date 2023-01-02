@@ -10,8 +10,8 @@ add_executable(test_data_structure_exec
         list.cc
         vector.cc
         manual_ptr.cc
-        #unique_ptr.cc
-        #unordered_map.cc
+        unique_ptr.cc
+        unordered_map.cc
         #unordered_map_thread.cc
 )
 

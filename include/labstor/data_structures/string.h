@@ -134,9 +134,17 @@ class string : public SHM_CONTAINER(TYPED_CLASS) {
    * */
   void shm_destroy(bool destroy_header = true) {
     SHM_DESTROY_DATA_START
-    alloc_->Free(header_->text_);
+    if (length_) {
+      alloc_->Free(header_->text_);
+      length_ = 0;
+    }
     SHM_DESTROY_DATA_END
-    SHM_DESTROY_END
+    if (destroy_header && header_->CheckBits(SHM_CONTAINER_HEADER_DESTRUCTABLE)) {
+      auto alloc = LABSTOR_MEMORY_MANAGER->
+        GetAllocator(ar_.header_ptr_.allocator_id_);
+      alloc->Free(ar_.header_ptr_);
+      UnsetValid();
+    }
   }
 
   /** Store into shared memory */
@@ -146,7 +154,7 @@ class string : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Load from shared memory */
   void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
-    shm_deserialize_header(ar.header_ptr_);
+    if(!shm_deserialize_header(ar.header_ptr_)) { return; }
     text_ = alloc_->template
       Convert<char>(header_->text_);
     length_ = header_->length_;

@@ -263,7 +263,7 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
 
  public:
   /** Default constructor */
-  //list() = default;
+  list() = default;
 
   /** Initialize list in shared memory */
   void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
@@ -298,7 +298,7 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Load from shared memory */
   void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
-    shm_deserialize_header(ar.header_ptr_);
+    if(!shm_deserialize_header(ar.header_ptr_)) { return; }
   }
 
   /** Move constructor */

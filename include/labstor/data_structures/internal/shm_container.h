@@ -133,14 +133,15 @@ class ShmContainer : public ShmArchiveable {
   }
 
   /** Deserialize object from a raw pointer */
-  void shm_deserialize_header(const Pointer &header_ptr) {
+  bool shm_deserialize_header(const Pointer &header_ptr) {
     ar_.header_ptr_ = header_ptr;
     flags_.UnsetBits(SHM_CONTAINER_VALID | SHM_CONTAINER_DESTRUCTABLE);
-    if (ar_.header_ptr_.IsNull()) { return; }
+    if (ar_.header_ptr_.IsNull()) { return false; }
     alloc_ = LABSTOR_MEMORY_MANAGER->GetAllocator(header_ptr.allocator_id_);
     header_ = LABSTOR_MEMORY_MANAGER->
       Convert<TYPED_HEADER>(header_ptr);
     flags_.SetBits(SHM_CONTAINER_VALID);
+    return true;
   }
 
   /** Sets this object as destructable */
@@ -254,10 +255,11 @@ class ShmContainer : public ShmArchiveable {
 
 /** Generates the code for move operators */
 #define SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
-  TYPE_UNWRAP(CLASS_NAME)(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
+  explicit TYPE_UNWRAP(CLASS_NAME)(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
     WeakMove(other);\
   }\
-  TYPE_UNWRAP(CLASS_NAME)& operator=(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
+  TYPE_UNWRAP(CLASS_NAME)& operator=(   \
+      TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
     if (this != &other) {\
       WeakMove(other);\
     }\
@@ -313,7 +315,7 @@ class ShmContainer : public ShmArchiveable {
 /** Simplify WeakMove */
 #define SHM_WEAK_MOVE_START(...) \
   SHM_WEAK_COPY_START()\
-  shm_init_main(__VA_ARGS__);
+  shm_init_header(__VA_ARGS__);
 #define SHM_WEAK_MOVE_END()\
   if (!IsDestructable() || !other.IsDestructable()) {\
     UnsetDestructable();\

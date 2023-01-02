@@ -33,7 +33,6 @@
 #include "labstor/data_structures/thread_unsafe/list.h"
 #include "labstor/data_structures/data_structure.h"
 #include "labstor/data_structures/smart_ptr/manual_ptr.h"
-#include "labstor/data_structures/internal/shm_ref.h"
 
 
 namespace labstor::ipc {
@@ -79,11 +78,13 @@ struct unordered_map_pair {
 template<typename Key, typename T>
 struct unordered_map_pair_ret {
  public:
+  typedef SHM_T_OR_REF_T(Key) Key_Ref;
+  typedef SHM_T_OR_REF_T(T) T_Ref;
   using COLLISION_T = unordered_map_pair<Key, T>;
 
  public:
-  shm_ref<Key> key_;
-  shm_ref<T> val_;
+  Key_Ref key_;
+  T_Ref val_;
 
  public:
   /** Constructor */
@@ -104,11 +105,11 @@ class unordered_map_bucket {
 
  public:
   RwLock lock_;
-  ShmArchive<mptr<list<COLLISION_T>>> collisions_;
+  ShmArchive<list<COLLISION_T>> collisions_;
 
   /** Constructs the collision list in shared memory */
   explicit unordered_map_bucket(Allocator *alloc)
-  : collisions_(make_shm_ar<mptr<list<COLLISION_T>>>(alloc)) {}
+  : collisions_(make_shm_ar<list<COLLISION_T>>(alloc)) {}
 
   ~unordered_map_bucket() {
     mptr<list<COLLISION_T>> collisions(collisions_);
@@ -145,20 +146,20 @@ struct unordered_map_iterator {
 
   /** Copy constructor  */
   unordered_map_iterator(const unordered_map_iterator &other) {
-    shm_init(other);
+    StrongCopy(other);
   }
 
   /** Assign one iterator into another */
   unordered_map_iterator<Key, T, Hash>&
   operator=(const unordered_map_iterator<Key, T, Hash> &other) {
     if (this != &other) {
-      shm_init(other);
+      StrongCopy(other);
     }
     return *this;
   }
 
   /** Copy an iterator */
-  void shm_init(const unordered_map_iterator<Key, T, Hash> &other) {
+  void StrongCopy(const unordered_map_iterator<Key, T, Hash> &other) {
     map_ = other.map_;
     buckets_ = other.buckets_;
     collisions_ = other.collisions_;
@@ -170,11 +171,6 @@ struct unordered_map_iterator {
 
   /** Get the pointed object */
   COLLISION_RET_T operator*() const {
-    return COLLISION_RET_T(*collision_);
-  }
-
-  /** Get the reference object the iterator points to */
-  shm_ref<T> operator~() {
     return COLLISION_RET_T(*collision_);
   }
 
@@ -265,6 +261,25 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
   RealNumber growth_;
   std::atomic<size_t> length_;
   RwLock lock_;
+
+  ShmHeader() = default;
+
+  ShmHeader(const ShmHeader &other) {
+    buckets_ = other.buckets_;
+    max_collisions_ = other.max_collisions_;
+    growth_ = other.growth_;
+    length_ = other.length_;
+  }
+
+  ShmHeader& operator=(const ShmHeader &other) {
+    if (this != &other) {
+      buckets_ = other.buckets_;
+      max_collisions_ = other.max_collisions_;
+      growth_ = other.growth_;
+      length_ = other.length_.load();
+    }
+    return *this;
+  }
 };
 
 /**
@@ -300,9 +315,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
                      int num_buckets = 20,
                      int max_collisions = 4,
                      RealNumber growth = RealNumber(5, 4)) {
-    shm_init_header(alloc);
-    header_ = alloc_->template
-      AllocateConstructObjs<ShmHeader<TYPED_CLASS>>(1, header_ptr_);
+    shm_init_header(ar, alloc);
     auto buckets = make_mptr<vector<BUCKET_T>>(alloc_, num_buckets, alloc_);
     buckets >> header_->buckets_;
     header_->length_ = 0;
@@ -317,31 +330,37 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
 
   /** Load from shared memory */
   void shm_deserialize(const labstor::ipc::ShmArchive<TYPED_CLASS> &ar) {
-    shm_deserialize_header(ar.header_ptr_);
+    if(!shm_deserialize_header(ar.header_ptr_)) { return; }
+  }
+
+  /** Move constructor */
+  void WeakMove(unordered_map &other) {
+    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT)
+    *header_ = *(other.header_);
+    SHM_WEAK_MOVE_END()
   }
 
   /** Copy constructor */
   void StrongCopy(const unordered_map &other) {
-    if (other.IsNull()) { return; }
     auto num_buckets = other.get_num_buckets();
     auto max_collisions = other.header_->max_collisions_;
     auto growth = other.header_->growth_;
-    auto alloc = other.alloc_;
-    shm_init(alloc, num_buckets, max_collisions, growth);
+    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT,
+      num_buckets, max_collisions, growth)
     for (auto entry : other) {
       emplace_templ<false, true>(
-        *entry.key_, *entry.val_);
+        entry.key_, entry.val_);
     }
+    SHM_STRONG_COPY_END()
   }
 
   /** Destroy the unordered_map buckets */
-  void shm_destroy() {
-    if (IsNull()) { return; }
+  void shm_destroy(bool destroy_header = true) {
+    SHM_DESTROY_DATA_START
     mptr<vector<BUCKET_T>> buckets(header_->buckets_);
-    buckets->shm_destroy();
-    alloc_->template
-      Free(header_ptr_);
-    SetNull();
+    buckets->shm_destroy(true);
+    SHM_DESTROY_DATA_END
+    SHM_DESTROY_END
   }
 
   /**
@@ -440,6 +459,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
   T_Ref operator[](const Key &key) {
     auto iter = find(key);
     if (iter != end()) {
+      // NOTE(llogan): I've seen this call move constructor when it's implicit?
       return (*iter).val_;
     }
     throw UNORDERED_MAP_CANT_FIND.format();
@@ -498,7 +518,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
     auto iter_end = collisions->end();
     for (; iter != iter_end; ++iter) {
       COLLISION_RET_T entry(*iter);
-      if (*entry.key_ == key) {
+      if (entry.key_ == key) {
         return iter;
       }
     }
@@ -530,8 +550,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
   bool insert_templ(COLLISION_T &entry_shm) {
     if (header_ == nullptr) { shm_init(); }
     COLLISION_RET_T entry(entry_shm);
-    auto &key = *entry.key_;
-    auto &val = *entry.val_;
+    Key_Ref key = entry.key_;
 
     // Acquire the header lock for a read (not modifying bucket vec)
     ScopedRwReadLock header_lock(header_->lock_);
@@ -586,8 +605,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
                      mptr<vector<BUCKET_T>> &buckets) {
     if (header_ == nullptr) { shm_init(); }
     COLLISION_RET_T entry(entry_shm);
-    auto &key = *entry.key_;
-    auto &val = *entry.val_;
+    Key_Ref key = entry.key_;
     size_t bkt_id = Hash{}(key) % buckets->size();
     BUCKET_T &bkt = (*buckets)[bkt_id];
     mptr<list<COLLISION_T>> collisions(bkt.collisions_);

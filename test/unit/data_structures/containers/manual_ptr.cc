@@ -49,6 +49,18 @@ void ManualPtrOfInt() {
   REQUIRE(std::hash<mptr<int>>{}(data2) == std::hash<int>{}(25));
 
   {
+    mptr<int> data3(data2);
+    REQUIRE(*data2 == 25);
+    REQUIRE(*data3 == 25);
+  }
+
+  {
+    mptr<int> data3 = data2;
+    REQUIRE(*data2 == 25);
+    REQUIRE(*data3 == 25);
+  }
+
+  {
     ShmArchive<int> ar;
     data2 >> ar;
     REQUIRE(ar.header_ptr_ == data2.obj_.ar_.header_ptr_);
@@ -73,6 +85,18 @@ void ManualPtrOfString() {
   REQUIRE(data->str() == "there");
   REQUIRE((*data).str() == "there");
   mptr<string> data2 = std::move(data);
+
+  {
+    mptr<string> data3(data2);
+    REQUIRE(*data2 == "there");
+    REQUIRE(*data3 == "there");
+  }
+
+  {
+    mptr<string> data3 = data2;
+    REQUIRE(*data2 == "there");
+    REQUIRE(*data3 == "there");
+  }
 
   ShmArchive<mptr<string>> ar;
   data2 >> ar;

@@ -88,8 +88,7 @@ void UnorderedMapOpTest() {
     for (int i = 0; i < 20; ++i) {
       CREATE_KV_PAIR(i, i);
       auto iter = map.find(key);
-      auto entry = *iter;
-      REQUIRE(*entry.val_ == val);
+      REQUIRE((*iter).val_ == val);
     }
   }
 
@@ -99,8 +98,8 @@ void UnorderedMapOpTest() {
     prep.Lock();
     int i = 0;
     for (auto entry : map) {
-      GET_INT_FROM_KEY(*entry.key_);
-      GET_INT_FROM_VAL(*entry.val_);
+      GET_INT_FROM_KEY(entry.key_);
+      GET_INT_FROM_VAL(entry.val_);
       REQUIRE((0 <= key_ret && key_ret < 20));
       REQUIRE((0 <= val_ret && val_ret < 20));
       ++i;
@@ -121,9 +120,8 @@ void UnorderedMapOpTest() {
   {
     CREATE_KV_PAIR(4, 25);
     auto iter = map.find(key);
-    auto val_ref = (*iter).val_;
-    val_ref = std::move(val);
-    REQUIRE((*val_ref) == val);
+    (*iter).val_ = std::move(val);
+    REQUIRE((*iter).val_ == val);
   }
 
   // Verify the modification took place
@@ -136,9 +134,8 @@ void UnorderedMapOpTest() {
   {
     CREATE_KV_PAIR(4, 50);
     auto iter = map.find(key);
-    auto val_ref = (*iter).val_;
-    val_ref = val;
-    REQUIRE((*val_ref) == val);
+    (*iter).val_ = val;
+    REQUIRE((*iter).val_ == val);
   }
 
   // Verify the modification took place

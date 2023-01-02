@@ -65,10 +65,17 @@ class manual_ptr : public ShmSmartPtr<T> {
   }
 
   /** Copy constructor */
-  manual_ptr(const manual_ptr &other) = delete;
+  manual_ptr(const manual_ptr &other) {
+    obj_.shm_deserialize(other.obj_.ar_);
+  }
 
   /** Copy assignment operator */
-  manual_ptr<T>& operator=(const manual_ptr<T> &other) = delete;
+  manual_ptr<T>& operator=(const manual_ptr<T> &other) {
+    if (this != &other) {
+      obj_.shm_deserialize(other.obj_.ar_);
+    }
+    return *this;
+  }
 
   /** Move constructor */
   manual_ptr(manual_ptr&& source) noexcept {

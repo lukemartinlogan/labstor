@@ -82,7 +82,7 @@ struct ShmStruct : public ShmContainer<T, ShmSimpleHeader<T>> {
 
   /** Load from shared memory */
   void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
-    shm_deserialize_header(ar.header_ptr_);
+    if(!shm_deserialize_header(ar.header_ptr_)) { return; }
   }
 
   /** Destroy the contents of the ShmStruct */
