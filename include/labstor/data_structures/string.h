@@ -139,12 +139,7 @@ class string : public SHM_CONTAINER(TYPED_CLASS) {
       length_ = 0;
     }
     SHM_DESTROY_DATA_END
-    if (destroy_header && header_->CheckBits(SHM_CONTAINER_HEADER_DESTRUCTABLE)) {
-      auto alloc = LABSTOR_MEMORY_MANAGER->
-        GetAllocator(ar_.header_ptr_.allocator_id_);
-      alloc->Free(ar_.header_ptr_);
-      UnsetValid();
-    }
+    SHM_DESTROY_END
   }
 
   /** Store into shared memory */
