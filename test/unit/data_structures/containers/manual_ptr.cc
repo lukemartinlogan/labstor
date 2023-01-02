@@ -40,11 +40,9 @@ using labstor::ipc::ShmArchive;
 void ManualPtrOfInt() {
   Allocator *alloc = alloc_g;
   mptr<int> data = make_mptr<int>(25);
-  int x = data.get_ref();
   REQUIRE(data.get_ref() == 25);
   REQUIRE(data.get_ref_const() == 25);
   REQUIRE(*data == 25);
-  // TestCopy(hello);
 
   mptr<int> data2 = std::move(data);
   REQUIRE(data.IsNull());

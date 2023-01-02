@@ -56,41 +56,29 @@ class manual_ptr : public ShmSmartPtr<T> {
   template<typename ...Args>
   void shm_init(Args&& ...args) {
     obj_.shm_init(std::forward<Args>(args)...);
+    obj_.UnsetDestructable();
   }
 
   /** Destructor. Does not free data. */
   ~manual_ptr() {
-    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
-      obj_.UnsetDestructable();
-    }
+    obj_.UnsetDestructable();
   }
 
   /** Copy constructor */
-  manual_ptr(const manual_ptr &other) {
-    WeakCopy(other);
-  }
+  manual_ptr(const manual_ptr &other) = delete;
+
+  /** Copy assignment operator */
+  manual_ptr<T>& operator=(const manual_ptr<T> &other) = delete;
 
   /** Move constructor */
   manual_ptr(manual_ptr&& source) noexcept {
     WeakMove(source);
   }
 
-  /** Copy assignment operator */
-  manual_ptr<T>& operator=(const manual_ptr<T> &other) {
-    if (this != &other) {
-      WeakCopy(other);
-    }
-    return *this;
-  }
-
   /** Move assignment operator */
   void WeakMove(manual_ptr &other) {
-    obj_.WeakMove(other.obj_);
-  }
-
-  /** Copy a manual_ptr */
-  void WeakCopy(const manual_ptr &other) {
-    obj_.WeakCopy(other.obj_);
+    obj_ = std::move(other.obj_);
+    other.obj_.shm_destroy(true);
   }
 
   /** Constructor. From a ShmArchive<T> */

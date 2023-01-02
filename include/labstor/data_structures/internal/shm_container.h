@@ -115,6 +115,8 @@ class ShmContainer : public ShmArchiveable {
     } else {
       // Initialize the input header
       ar_.header_ptr_ = ar->header_ptr_;
+      Allocator::ConstructObj<TYPED_HEADER>(
+        *header_, std::forward<Args>(args)...);
       header_ = LABSTOR_MEMORY_MANAGER->template
         Convert<TYPED_HEADER>(ar->header_ptr_);
       header_->SetBits(
@@ -168,7 +170,7 @@ class ShmContainer : public ShmArchiveable {
 
   /** Set container header invalid */
   void UnsetValid() {
-    flags_.UnsetBits(SHM_CONTAINER_VALID);
+    flags_.UnsetBits(SHM_CONTAINER_VALID | SHM_CONTAINER_DESTRUCTABLE);
   }
 
   /** Check if header's data is valid */
@@ -289,41 +291,42 @@ class ShmContainer : public ShmArchiveable {
   if (!IsValid()) { return; } \
   if (IsDataValid()) {
 #define SHM_DESTROY_DATA_END\
-  }
+  }\
+  UnsetDataValid();
 #define SHM_DESTROY_END \
   if (destroy_header && \
       header_->CheckBits(SHM_CONTAINER_HEADER_DESTRUCTABLE)) {\
     auto alloc = LABSTOR_MEMORY_MANAGER->\
       GetAllocator(ar_.header_ptr_.allocator_id_);\
     alloc->Free(ar_.header_ptr_);\
-  }\
-  UnsetDataValid();
+    UnsetValid();\
+  }
 
 /** Simplify WeakMove + StrongCopy */
-#define SHM_WEAK_COPY_START(...)\
+#define SHM_WEAK_COPY_START()\
   shm_destroy(false);\
-  if (other.IsNull()) {\
-    return;\
-  }\
-  alloc_ = other.alloc_;\
-  shm_init_main(__VA_ARGS__);
+  if (other.IsNull()) { return; }\
+  alloc_ = other.alloc_;
 #define SHM_WEAK_COPY_END\
   header_->SetBits(SHM_CONTAINER_DATA_VALID);
 
 /** Simplify WeakMove */
 #define SHM_WEAK_MOVE_START(...) \
-  SHM_WEAK_COPY_START(__VA_ARGS__)
+  SHM_WEAK_COPY_START()\
+  shm_init_main(__VA_ARGS__);
 #define SHM_WEAK_MOVE_END()\
   if (!IsDestructable() || !other.IsDestructable()) {\
     UnsetDestructable();\
   }\
   other.UnsetDataValid();\
+  other.shm_destroy(true);\
   SHM_WEAK_COPY_END
 #define SHM_WEAK_MOVE_DEFAULT SHM_ARCHIVE_NULL, other.alloc_
 
 /** Simplify StrongCopy */
 #define SHM_STRONG_COPY_START(...) \
-  SHM_WEAK_COPY_START(__VA_ARGS__)
+  SHM_WEAK_COPY_START()\
+  shm_init_main(__VA_ARGS__);
 #define SHM_STRONG_COPY_END() \
   SHM_WEAK_COPY_END
 #define SHM_STRONG_COPY_DEFAULT SHM_ARCHIVE_NULL, other.alloc_

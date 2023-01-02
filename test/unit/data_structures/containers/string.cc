@@ -53,7 +53,6 @@ void TestString() {
 
   string text6 = std::move(text5);
   REQUIRE(text6 == "hello4");
-  REQUIRE(text6.ar_.header_ptr_ == text5.ar_.header_ptr_);
 }
 
 TEST_CASE("String") {

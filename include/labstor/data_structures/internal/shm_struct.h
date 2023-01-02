@@ -34,6 +34,15 @@
 
 namespace labstor::ipc {
 
+/** Create a ShmHeader for the simple type */
+template<typename T>
+struct ShmSimpleHeader : public lipc::ShmBaseHeader {
+  T obj_;
+
+  template<typename ...Args>
+  ShmSimpleHeader(Args&& ...args) : obj_(std::forward<Args>(args)...) {}
+};
+
 /**
  * MACROS used to simplify the vector namespace
  * Used as inputs to the SHM_CONTAINER_TEMPLATE
@@ -48,9 +57,12 @@ namespace labstor::ipc {
  * Called internally by manual_ptr, unique_ptr, and shared_ptr
  * */
 template<typename T>
-struct ShmStruct : public ShmContainer<T, T> {
+struct ShmStruct : public ShmContainer<T, ShmSimpleHeader<T>> {
  public:
-  SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, TYPED_CLASS)
+  SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, ShmSimpleHeader<T>)
+
+  /** Default constructor. Does nothing. */
+  ShmStruct() = default;
 
   /**
    * Constructs and stores a simple C type in shared-memory. E.g., a struct
@@ -82,7 +94,7 @@ struct ShmStruct : public ShmContainer<T, T> {
 
   /** Convert the pointer to a pointer */
   T* get() {
-    return header_;
+    return &header_->obj_;
   }
 
   /** Convert into a reference */
@@ -92,7 +104,7 @@ struct ShmStruct : public ShmContainer<T, T> {
 
   /** Convert the pointer to const pointer */
   T* get_const() const {
-    return header_;
+    return &header_->obj_;
   }
 
   /** Convert into a const reference */
@@ -110,9 +122,18 @@ struct ShmStruct : public ShmContainer<T, T> {
     return get_ref();
   }
 
+  /** Move constructor */
+  void WeakMove(ShmStruct &other) {
+    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT)
+    *header_ = *(other.header_);
+    SHM_WEAK_MOVE_END()
+  }
+
   /** Copy constructor */
   void StrongCopy(const ShmStruct &other) {
-    WeakCopy(other);
+    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT)
+    *header_ = *(other.header_);
+    SHM_STRONG_COPY_END()
   }
 };
 
