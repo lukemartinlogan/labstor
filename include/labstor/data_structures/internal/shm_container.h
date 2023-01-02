@@ -73,7 +73,7 @@ struct ShmBaseHeader {
 template<typename TYPED_CLASS, typename TYPED_HEADER>
 class ShmContainer : public ShmArchiveable {
  protected:
-  Pointer header_ptr_;
+  ShmArchive<TYPED_CLASS> ar_;
   Allocator *alloc_;
   TYPED_HEADER *header_;
   bitfield16_t flags_;
@@ -97,12 +97,14 @@ class ShmContainer : public ShmArchiveable {
       alloc_ = alloc;
     }
 
-    if (flags_.CheckBits(SHM_CONTAINER_VALID)) {
+    if (IsValid()) {
+      // The container already has a valid header
       header_->SetBits(SHM_CONTAINER_DATA_VALID);
     } else if (ar == nullptr) {
+      // Allocate and initialize a new header
       header_ = alloc_->template
         AllocateConstructObjs<TYPED_HEADER>(
-          1, header_ptr_,
+          1, ar_.header_ptr_,
           std::forward<Args>(args)...);
       header_->SetBits(
         SHM_CONTAINER_DATA_VALID |
@@ -111,7 +113,8 @@ class ShmContainer : public ShmArchiveable {
         SHM_CONTAINER_VALID |
         SHM_CONTAINER_DESTRUCTABLE);
     } else {
-      header_ptr_ = ar->header_ptr_;
+      // Initialize the input header
+      ar_.header_ptr_ = ar->header_ptr_;
       header_ = LABSTOR_MEMORY_MANAGER->template
         Convert<TYPED_HEADER>(ar->header_ptr_);
       header_->SetBits(
@@ -124,14 +127,14 @@ class ShmContainer : public ShmArchiveable {
 
   /** Serialize an object into a raw pointer */
   void shm_serialize_header(Pointer &header_ptr) const {
-    header_ptr = header_ptr_;
+    header_ptr = ar_.header_ptr_;
   }
 
   /** Deserialize object from a raw pointer */
   void shm_deserialize_header(const Pointer &header_ptr) {
-    header_ptr_ = header_ptr;
-    flags_.UnsetBits(SHM_CONTAINER_VALID);
-    if (header_ptr_.IsNull()) { return; }
+    ar_.header_ptr_ = header_ptr;
+    flags_.UnsetBits(SHM_CONTAINER_VALID | SHM_CONTAINER_DESTRUCTABLE);
+    if (ar_.header_ptr_.IsNull()) { return; }
     alloc_ = LABSTOR_MEMORY_MANAGER->GetAllocator(header_ptr.allocator_id_);
     header_ = LABSTOR_MEMORY_MANAGER->
       Convert<TYPED_HEADER>(header_ptr);
@@ -153,14 +156,7 @@ class ShmContainer : public ShmArchiveable {
     return flags_.CheckBits(SHM_CONTAINER_DESTRUCTABLE);
   }
 
-  /** Set to null */
-  void SetNull() {
-    if (flags_.CheckBits(SHM_CONTAINER_VALID)) {
-      header_->UnsetBits(SHM_CONTAINER_DATA_VALID);
-    }
-  }
-
-  /** Check if null */
+  /** Check if container has a valid header */
   bool IsValid() const {
     return flags_.CheckBits(SHM_CONTAINER_VALID);
   }
@@ -168,6 +164,16 @@ class ShmContainer : public ShmArchiveable {
   /** Check if header's data is valid */
   bool IsDataValid() const {
     return header_->CheckBits(SHM_CONTAINER_DATA_VALID);
+  }
+
+  /** Set container header invalid */
+  void UnsetValid() {
+    flags_.UnsetBits(SHM_CONTAINER_VALID);
+  }
+
+  /** Check if header's data is valid */
+  void UnsetDataValid() const {
+    header_->UnsetBits(SHM_CONTAINER_DATA_VALID);
   }
 
   /** Check if null */
@@ -247,30 +253,25 @@ class ShmContainer : public ShmArchiveable {
 /** Generates the code for move operators */
 #define SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
   TYPE_UNWRAP(CLASS_NAME)(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
-    shm_destroy(false);\
     WeakMove(other);\
   }\
   TYPE_UNWRAP(CLASS_NAME)& operator=(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
     if (this != &other) {\
-      shm_destroy(false);\
       WeakMove(other);\
     }\
     return *this;\
   }\
   void shm_init(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
-    shm_destroy(false);\
     WeakMove(other);\
   }
 
 /** Generates the code for copy operators */
 #define SHM_INHERIT_COPY_OPS(CLASS_NAME)\
   TYPE_UNWRAP(CLASS_NAME)(const TYPE_UNWRAP(CLASS_NAME) &other) noexcept {\
-    shm_destroy(false);\
     shm_init(other);\
   }\
   TYPE_UNWRAP(CLASS_NAME)& operator=(const TYPE_UNWRAP(CLASS_NAME) &other) {\
     if (this != &other) {\
-      shm_destroy(false);\
       shm_init(other);\
     }\
     return *this;\
@@ -278,7 +279,6 @@ class ShmContainer : public ShmArchiveable {
   void shm_init_main(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar,\
         lipc::Allocator *alloc, \
         const TYPE_UNWRAP(CLASS_NAME) &other) {\
-    shm_destroy(false);\
     StrongCopy(other);\
   }
 
@@ -294,38 +294,39 @@ class ShmContainer : public ShmArchiveable {
   if (destroy_header && \
       header_->CheckBits(SHM_CONTAINER_HEADER_DESTRUCTABLE)) {\
     auto alloc = LABSTOR_MEMORY_MANAGER->\
-      GetAllocator(header_ptr_.allocator_id_);\
-    alloc->Free(header_ptr_);\
+      GetAllocator(ar_.header_ptr_.allocator_id_);\
+    alloc->Free(ar_.header_ptr_);\
   }\
-  SetNull();
+  UnsetDataValid();
 
 /** Simplify WeakMove + StrongCopy */
-#define SHM_WEAK_COPY(...)\
+#define SHM_WEAK_COPY_START(...)\
+  shm_destroy(false);\
   if (other.IsNull()) {\
-    SetNull();\
     return;\
   }\
-  if (!IsValid()) {\
-    shm_init_main(SHM_ARCHIVE_NULL, __VA_ARGS__);\
-  }\
-  alloc_ = other.alloc_;
+  alloc_ = other.alloc_;\
+  shm_init_main(__VA_ARGS__);
 #define SHM_WEAK_COPY_END\
   header_->SetBits(SHM_CONTAINER_DATA_VALID);
-#define SHM_WEAK_COPY_DEFAULT other.alloc_
 
 /** Simplify WeakMove */
 #define SHM_WEAK_MOVE_START(...) \
-  SHM_WEAK_COPY(__VA_ARGS__)
+  SHM_WEAK_COPY_START(__VA_ARGS__)
 #define SHM_WEAK_MOVE_END()\
-  other.SetNull();\
+  if (!IsDestructable() || !other.IsDestructable()) {\
+    UnsetDestructable();\
+  }\
+  other.UnsetDataValid();\
   SHM_WEAK_COPY_END
+#define SHM_WEAK_MOVE_DEFAULT SHM_ARCHIVE_NULL, other.alloc_
 
 /** Simplify StrongCopy */
 #define SHM_STRONG_COPY_START(...) \
-  SHM_WEAK_COPY(__VA_ARGS__)\
-  flags_.SetBits(SHM_CONTAINER_DESTRUCTABLE);
+  SHM_WEAK_COPY_START(__VA_ARGS__)
 #define SHM_STRONG_COPY_END() \
   SHM_WEAK_COPY_END
+#define SHM_STRONG_COPY_DEFAULT SHM_ARCHIVE_NULL, other.alloc_
 
 /**
  * Namespace simplification for a SHM data structure
@@ -346,7 +347,7 @@ class ShmContainer : public ShmArchiveable {
  * 3. Create shm_serialize and shm_deserialize for archiving data structures.
  * */
 #define SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, TYPED_HEADER)\
-SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::header_ptr_;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::ar_;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::alloc_;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::header_;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::flags_;\
@@ -356,7 +357,8 @@ SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::shm_deserialize_header;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::IsDataValid;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::IsValid;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::IsNull;\
-SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::SetNull;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::UnsetValid;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::UnsetDataValid;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::SetDestructable;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::UnsetDestructable;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::IsDestructable;\

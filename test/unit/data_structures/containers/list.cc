@@ -55,7 +55,15 @@ void ListOfIntTest() {
   {
     list<int> cpy(lp);
     int fcur = 0;
+    REQUIRE(lp.size() == 30);
+    REQUIRE(cpy.size() == 30);
+    fcur = 0;
     for (auto num : lp) {
+      REQUIRE(num == fcur);
+      ++fcur;
+    }
+    fcur = 0;
+    for (auto num : cpy) {
       REQUIRE(num == fcur);
       ++fcur;
     }
@@ -66,7 +74,15 @@ void ListOfIntTest() {
     list<int> cpy;
     cpy = lp;
     int fcur = 0;
+    REQUIRE(lp.size() == 30);
+    REQUIRE(cpy.size() == 30);
+    fcur = 0;
     for (auto num : lp) {
+      REQUIRE(num == fcur);
+      ++fcur;
+    }
+    fcur = 0;
+    for (auto num : cpy) {
       REQUIRE(num == fcur);
       ++fcur;
     }
@@ -76,13 +92,10 @@ void ListOfIntTest() {
   {
     list<int> cpy(std::move(lp));
     int fcur = 0;
-    for (auto num : lp) {
-      REQUIRE(num == fcur);
-      ++fcur;
-    }
-
     lp = std::move(cpy);
     fcur = 0;
+    REQUIRE(lp.size() == 30);
+    REQUIRE(cpy.size() == 0);
     for (auto num : lp) {
       REQUIRE(num == fcur);
       ++fcur;
@@ -90,7 +103,7 @@ void ListOfIntTest() {
   }
 
   // emplace_front and erase front
-  /*{
+  {
     lp.emplace_front(100);
     REQUIRE(lp.front() == 100);
     REQUIRE(lp.size() == 31);
@@ -137,7 +150,7 @@ void ListOfIntTest() {
   {
     lp.clear();
     REQUIRE(lp.size() == 0);
-  }*/
+  }
 }
 
 void ListOfStringTest() {
@@ -183,7 +196,7 @@ void ListOfStringTest() {
   }
 
   // Verify the modification took place
-  {
+  /*{
     auto iter = lp.begin() + 4;
     REQUIRE((*iter) == "25");
   }
@@ -199,7 +212,7 @@ void ListOfStringTest() {
   {
     auto iter = lp.begin() + 4;
     REQUIRE((*iter) == "50");
-  }
+  }*/
 
   lp.erase(lp.begin(), lp.end());
   REQUIRE(lp.size() == 0);

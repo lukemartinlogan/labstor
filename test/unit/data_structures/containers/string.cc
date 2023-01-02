@@ -33,7 +33,7 @@ using labstor::ipc::string;
 void TestString() {
   Allocator *alloc = alloc_g;
 
-  /*auto text1 = string("hello1");
+  auto text1 = string("hello1");
   REQUIRE(text1 == "hello1");
   REQUIRE(text1 != "h");
   REQUIRE(text1 != "asdfklaf");
@@ -42,10 +42,18 @@ void TestString() {
   REQUIRE(text2 == "hello2");
 
   string text3 = text1 + text2;
-  REQUIRE(text3 == "hello1hello2");*/
+  REQUIRE(text3 == "hello1hello2");
 
   string text4(6);
   memcpy(text4.data_mutable(), "hello4", strlen("hello4"));
+
+  string text5 = text4;
+  REQUIRE(text5 == "hello4");
+  REQUIRE(text5.ar_.header_ptr_ != text4.ar_.header_ptr_);
+
+  string text6 = std::move(text5);
+  // REQUIRE(text6 == "hello4");
+  // REQUIRE(text6.ar_.header_ptr_ == text5.ar_.header_ptr_);
 }
 
 TEST_CASE("String") {

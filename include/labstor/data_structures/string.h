@@ -64,7 +64,9 @@ class string : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Default shm constructor */
   void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
-                     Allocator *alloc) {}
+                     Allocator *alloc) {
+    shm_init_header(ar, alloc);
+  }
 
   /** Construct from a C-style string with allocator in shared memory */
   void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
@@ -83,7 +85,7 @@ class string : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Move constructor */
   void WeakMove(string &other) {
-    SHM_WEAK_MOVE_START(SHM_WEAK_COPY_DEFAULT)
+    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT)
     header_->length_ = other.header_->length_;
     header_->text_ = other.header_->text_;
     length_ = other.length_;
@@ -94,10 +96,9 @@ class string : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Copy constructor */
   void StrongCopy(const string &other) {
-    SHM_WEAK_COPY(SHM_WEAK_COPY_DEFAULT)
-    shm_init(other.alloc_, other.size());
+    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT, other.size())
     _create_str(other.data(), other.size());
-    SHM_STRONG_COPY_END();
+    SHM_STRONG_COPY_END()
   }
 
   /** Construct by concatenating two string in shared-memory */

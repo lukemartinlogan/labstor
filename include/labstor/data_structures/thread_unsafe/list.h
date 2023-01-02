@@ -303,14 +303,14 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Move constructor */
   void WeakMove(list &other) {
-    SHM_WEAK_MOVE_START(SHM_WEAK_COPY_DEFAULT)
+    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT)
     *header_ = *(other.header_);
     SHM_WEAK_MOVE_END()
   }
 
   /** Copy constructor */
   void StrongCopy(const list &other) {
-    SHM_STRONG_COPY_START(SHM_WEAK_COPY_DEFAULT)
+    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT)
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back(*iter);
     }
@@ -417,10 +417,10 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Get the number of elements in the list */
   inline size_t size() const {
-    if (header_ == nullptr) {
-      return 0;
+    if (!IsNull()) {
+      return header_->length_;
     }
-    return header_->length_;
+    return 0;
   }
 
   /**

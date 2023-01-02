@@ -32,6 +32,10 @@ struct bitfield {
     return bits_ & mask;
   }
 
+  inline void CopyBits(bitfield field, T mask) {
+    bits_ &= (field.bits_ & mask);
+  }
+
   inline void Clear() {
     bits_ = 0;
   }
@@ -52,8 +56,12 @@ typedef bitfield<uint32_t> bitfield32_t;
   }\
   inline void Clear() {\
     BITFIELD_VAR.Clear();\
+  }\
+  template<typename BITFIELD_T>\
+  inline void CopyBits(BITFIELD_T field, MASK_T mask) {\
+    BITFIELD_VAR.CopyBits(field, mask);\
   }
 
-}
+}  // namespace labstor
 
 #endif //LABSTOR_INCLUDE_LABSTOR_TYPES_BITFIELD_H_

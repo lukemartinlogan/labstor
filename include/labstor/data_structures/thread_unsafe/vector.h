@@ -349,7 +349,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
                      Allocator *alloc) {
     shm_init_header(alloc);
     header_ = alloc_->template
-      AllocateObjs<ShmHeader<TYPED_CLASS>>(1, header_ptr_);
+      AllocateObjs<ShmHeader<TYPED_CLASS>>(1, ar_.header_ptr_);
     header_->length_ = 0;
     header_->max_length_ = 0;
     header_->vec_ptr_.SetNull();
@@ -366,12 +366,12 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   }
 
   /** Destroy all shared memory allocated by the vector */
-  void shm_destroy() {
-    if (IsNull()) { return; }
+  void shm_destroy(bool destroy_header = true) {
+    SHM_DESTROY_DATA_START
     erase(begin(), end());
     alloc_->Free(header_->vec_ptr_);
-    alloc_->Free(header_ptr_);
-    SetNull();
+    SHM_DESTROY_DATA_END
+    SHM_DESTROY_END
   }
 
   /** Store into shared memory */
@@ -386,11 +386,12 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Copy a vector */
   void StrongCopy(const vector &other) {
-    shm_init(other.alloc_);
+    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT)
     reserve(other.size());
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back((*iter));
     }
+    SHM_STRONG_COPY_END()
   }
 
   /**

@@ -74,10 +74,10 @@ struct ShmStruct : public ShmContainer<T, T> {
   }
 
   /** Destroy the contents of the ShmStruct */
-  void shm_destroy() {
-    if (IsNull()) { return; }
-    alloc_->Free(header_ptr_);
-    SetNull();
+  void shm_destroy(bool destroy_header = true) {
+    SHM_DESTROY_DATA_START
+    SHM_DESTROY_DATA_END
+    SHM_DESTROY_END
   }
 
   /** Convert the pointer to a pointer */

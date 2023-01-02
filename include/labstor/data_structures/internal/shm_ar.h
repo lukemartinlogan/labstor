@@ -50,7 +50,7 @@ class _shm_ar_shm : public ShmSmartPointer {
 
   /** Destructor. */
   ~_shm_ar_shm() {
-    mptr<T>(obj_).shm_destroy();
+    T(obj_).shm_destroy();
   }
 
   /** Returns copy of the deserialized ShmArchive (just a few pointers) */
