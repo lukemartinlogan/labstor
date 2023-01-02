@@ -55,7 +55,7 @@ void VectorOfIntTest() {
   }
 
   // Forward iterator test
-  /*{
+  {
     int fcur = 0;
     for (auto num : vec) {
       REQUIRE(num == fcur);
@@ -72,7 +72,7 @@ void VectorOfIntTest() {
       --rcur;
     }
     REQUIRE(rcur == -1);
-  }*/
+  }
 
   // Emplace at front of vector
   {
@@ -158,7 +158,6 @@ void VectorOfStringTest() {
     REQUIRE(vec.size() == 0);
   }
 
-
   // Emplace 30 elements into the vector (forces growth)
   {
     for (int i = 0; i < max_count; ++i) {
@@ -243,13 +242,13 @@ TEST_CASE("VectorOfInt") {
 TEST_CASE("VectorOfString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  //VectorOfStringTest();
+  VectorOfStringTest();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
 
 TEST_CASE("VectorOfListOfString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  //VectorOfListOfStringTest();
+  VectorOfListOfStringTest();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }

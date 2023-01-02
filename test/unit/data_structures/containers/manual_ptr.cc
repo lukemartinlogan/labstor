@@ -53,7 +53,7 @@ void ManualPtrOfInt() {
   {
     ShmArchive<int> ar;
     data2 >> ar;
-    REQUIRE(ar.header_ptr_ == data2.obj_.header_ptr_);
+    REQUIRE(ar.header_ptr_ == data2.obj_.ar_.header_ptr_);
     mptr<int> from_ar(ar);
     REQUIRE(*from_ar == 25);
   }
@@ -61,7 +61,7 @@ void ManualPtrOfInt() {
   {
     ShmArchive<mptr<int>> ar;
     data2 >> ar;
-    REQUIRE(ar.header_ptr_ == data2.obj_.header_ptr_);
+    REQUIRE(ar.header_ptr_ == data2.obj_.ar_.header_ptr_);
     mptr<int> from_ar(ar);
     REQUIRE(*from_ar == 25);
   }

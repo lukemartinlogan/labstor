@@ -196,7 +196,7 @@ void ListOfStringTest() {
   }
 
   // Verify the modification took place
-  /*{
+  {
     auto iter = lp.begin() + 4;
     REQUIRE((*iter) == "25");
   }
@@ -212,7 +212,7 @@ void ListOfStringTest() {
   {
     auto iter = lp.begin() + 4;
     REQUIRE((*iter) == "50");
-  }*/
+  }
 
   lp.erase(lp.begin(), lp.end());
   REQUIRE(lp.size() == 0);

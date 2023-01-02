@@ -322,6 +322,14 @@ template<typename T>
 struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
   Pointer vec_ptr_;
   size_t max_length_, length_;
+
+  ShmHeader() = default;
+
+  ShmHeader(const ShmHeader &other) {
+    vec_ptr_ = other.vec_ptr_;
+    max_length_ = other.max_length_;
+    length_ = other.length_;
+  }
 };
 
 /**
@@ -336,20 +344,20 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   typedef SHM_T_OR_REF_T(T) T_Ref;
 
  public:
+  vector() = default;
+
   /** Construct the vector in shared memory */
   template<typename ...Args>
   void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
                      Allocator *alloc, size_t length, Args&& ...args) {
-    shm_init(alloc);
+    shm_init_header(ar, alloc);
     resize(length, std::forward<Args>(args)...);
   }
 
   /** Construct the vector in shared memory */
   void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
                      Allocator *alloc) {
-    shm_init_header(alloc);
-    header_ = alloc_->template
-      AllocateObjs<ShmHeader<TYPED_CLASS>>(1, ar_.header_ptr_);
+    shm_init_header(ar, alloc);
     header_->length_ = 0;
     header_->max_length_ = 0;
     header_->vec_ptr_.SetNull();
@@ -358,7 +366,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   /** Copy from std::vector */
   void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
                      Allocator *alloc, std::vector<T> &other) {
-    shm_init(alloc);
+    shm_init_header(ar, alloc);
     reserve(other.size());
     for (auto &entry : other) {
       emplace_back(entry);
@@ -382,6 +390,13 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   /** Load from shared memory */
   void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
     shm_deserialize_header(ar.header_ptr_);
+  }
+
+  /** Move constructor */
+  void WeakMove(vector &other) {
+    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT)
+    *header_ = *(other.header_);
+    SHM_WEAK_MOVE_END()
   }
 
   /** Copy a vector */
