@@ -30,7 +30,6 @@
 #include "labstor/data_structures/data_structure.h"
 #include "labstor/data_structures/smart_ptr/manual_ptr.h"
 #include "labstor/data_structures/internal/shm_ar.h"
-#include "labstor/data_structures/internal/shm_ref.h"
 
 #include <vector>
 
@@ -50,7 +49,6 @@ struct vector_iterator_templ {
 
   typedef SHM_CONST_T_OR_T(T_Ref, CONST_ITER) T_Ref_Const;
   typedef SHM_CONST_T_OR_T(vector<T>, CONST_ITER) VecT_Const;
-  typedef SHM_CONST_T_OR_T(shm_ref<T>, CONST_ITER) shmrefT_Const;
 
  public:
   VecT_Const *vec_;
@@ -110,11 +108,6 @@ struct vector_iterator_templ {
     } else {
       return vec_->data_ar_const()[i_].data();
     }
-  }
-
-  /** Get the reference object the iterator points to */
-  shmrefT_Const operator~() {
-    return shm_ref<T>(vec_->data_ar_const()[i_]);
   }
 
   /** Increment iterator in-place */

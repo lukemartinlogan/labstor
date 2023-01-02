@@ -192,7 +192,7 @@ void VectorOfStringTest() {
   // Modify the fourth list entry (move assignment)
   {
     auto iter = vec.begin() + 4;
-    (~iter) = std::move(string("25"));
+    (*iter) = std::move(string("25"));
   }
 
   // Verify the modification took place
@@ -205,7 +205,7 @@ void VectorOfStringTest() {
   {
     auto iter = vec.begin() + 4;
     string text("50");
-    (~iter) = text;
+    (*iter) = text;
   }
 
   // Verify the modification took place
