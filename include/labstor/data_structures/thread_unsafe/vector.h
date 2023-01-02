@@ -387,14 +387,14 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Move constructor */
   void WeakMove(vector &other) {
-    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT)
+    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS))
     *header_ = *(other.header_);
     SHM_WEAK_MOVE_END()
   }
 
   /** Copy a vector */
   void StrongCopy(const vector &other) {
-    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT)
+    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS))
     reserve(other.size());
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back((*iter));

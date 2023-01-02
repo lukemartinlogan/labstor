@@ -303,14 +303,14 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Move constructor */
   void WeakMove(list &other) {
-    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT)
+    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS))
     *header_ = *(other.header_);
     SHM_WEAK_MOVE_END()
   }
 
   /** Copy constructor */
   void StrongCopy(const list &other) {
-    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT)
+    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS))
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back(*iter);
     }

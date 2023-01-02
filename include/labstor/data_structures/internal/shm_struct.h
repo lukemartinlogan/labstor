@@ -124,14 +124,14 @@ struct ShmStruct : public ShmContainer<T, ShmSimpleHeader<T>> {
 
   /** Move constructor */
   void WeakMove(ShmStruct &other) {
-    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT)
+    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS))
     *header_ = *(other.header_);
     SHM_WEAK_MOVE_END()
   }
 
   /** Copy constructor */
   void StrongCopy(const ShmStruct &other) {
-    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT)
+    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS))
     *header_ = *(other.header_);
     SHM_STRONG_COPY_END()
   }

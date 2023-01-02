@@ -245,6 +245,7 @@ struct unordered_map_iterator {
  * MACROS to simplify the unordered_map namespace
  * Used as inputs to the SHM_CONTAINER_TEMPLATE
  * */
+
 #define CLASS_NAME unordered_map
 #define TYPED_CLASS unordered_map<Key, T, Hash>
 
@@ -335,7 +336,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
 
   /** Move constructor */
   void WeakMove(unordered_map &other) {
-    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT)
+    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT((TYPED_CLASS)))
     *header_ = *(other.header_);
     SHM_WEAK_MOVE_END()
   }
@@ -345,7 +346,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
     auto num_buckets = other.get_num_buckets();
     auto max_collisions = other.header_->max_collisions_;
     auto growth = other.header_->growth_;
-    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT,
+    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT((TYPED_CLASS)),
       num_buckets, max_collisions, growth)
     for (auto entry : other) {
       emplace_templ<false, true>(

@@ -85,7 +85,7 @@ class string : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Move constructor */
   void WeakMove(string &other) {
-    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT)
+    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS))
     header_->length_ = other.header_->length_;
     header_->text_ = other.header_->text_;
     length_ = other.length_;
@@ -96,7 +96,7 @@ class string : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Copy constructor */
   void StrongCopy(const string &other) {
-    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT, other.size())
+    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS), other.size())
     _create_str(other.data(), other.size());
     SHM_STRONG_COPY_END()
   }

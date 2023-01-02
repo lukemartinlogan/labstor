@@ -207,18 +207,21 @@ class ShmContainer : public ShmArchiveable {
 #define SHM_ALLOCATOR_NULL reinterpret_cast<lipc::Allocator*>(NULL)
 
 /** Typed nullptr for ShmArchive */
-#define SHM_ARCHIVE_NULL reinterpret_cast<lipc::ShmArchive<TYPED_CLASS>*>(NULL)
+#define SHM_ARCHIVE_NULL(TYPED_CLASS) \
+  reinterpret_cast<lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)>*>(NULL)
 
 /** Generates the code for constructors  */
 #define SHM_INHERIT_CONSTRUCTORS(CLASS_NAME, TYPED_CLASS)\
   template<typename ...Args>\
   explicit CLASS_NAME(Args&& ...args) {\
-    shm_init_main(SHM_ARCHIVE_NULL, SHM_ALLOCATOR_NULL,  \
+    shm_init_main(SHM_ARCHIVE_NULL(TYPED_CLASS), \
+                  SHM_ALLOCATOR_NULL,  \
                   std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
   explicit CLASS_NAME(lipc::Allocator *alloc, Args&& ...args) {\
-    shm_init_main(SHM_ARCHIVE_NULL, alloc, std::forward<Args>(args)...);\
+    shm_init_main(SHM_ARCHIVE_NULL(TYPED_CLASS), alloc,  \
+        std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
   explicit CLASS_NAME(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar,\
@@ -231,12 +234,12 @@ class ShmContainer : public ShmArchiveable {
   }\
   template<typename ...Args>\
   void shm_init(Args&& ...args) {\
-    shm_init_main(SHM_ARCHIVE_NULL, SHM_ALLOCATOR_NULL,  \
+    shm_init_main(SHM_ARCHIVE_NULL(TYPED_CLASS), SHM_ALLOCATOR_NULL,  \
                   std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
   void shm_init(lipc::Allocator *alloc, Args&& ...args) {\
-    shm_init_main(SHM_ARCHIVE_NULL,                      \
+    shm_init_main(SHM_ARCHIVE_NULL(TYPED_CLASS),  \
                   alloc, std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
@@ -323,7 +326,8 @@ class ShmContainer : public ShmArchiveable {
   other.UnsetDataValid();\
   other.shm_destroy(true);\
   SHM_WEAK_COPY_END
-#define SHM_WEAK_MOVE_DEFAULT SHM_ARCHIVE_NULL, other.alloc_
+#define SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS) \
+  SHM_ARCHIVE_NULL(TYPED_CLASS), other.alloc_
 
 /** Simplify StrongCopy */
 #define SHM_STRONG_COPY_START(...) \
@@ -331,7 +335,8 @@ class ShmContainer : public ShmArchiveable {
   shm_init_main(__VA_ARGS__);
 #define SHM_STRONG_COPY_END() \
   SHM_WEAK_COPY_END
-#define SHM_STRONG_COPY_DEFAULT SHM_ARCHIVE_NULL, other.alloc_
+#define SHM_STRONG_COPY_DEFAULT(TYPED_CLASS)\
+  SHM_ARCHIVE_NULL(TYPED_CLASS), other.alloc_
 
 /**
  * Namespace simplification for a SHM data structure
