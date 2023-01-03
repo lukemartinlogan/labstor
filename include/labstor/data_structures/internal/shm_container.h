@@ -448,7 +448,7 @@ class ShmContainer : public ShmArchiveable {
 #define SHM_STRONG_COPY_END() \
   SHM_WEAK_COPY_END
 #define SHM_STRONG_COPY_DEFAULT(TYPED_CLASS)\
-  SHM_ARCHIVE_NULL(TYPED_CLASS), other.alloc_
+  SHM_ARCHIVE_NULL(TYPED_CLASS), alloc_
 
 /**
  * Namespace simplification for a SHM data structure
