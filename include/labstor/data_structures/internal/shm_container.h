@@ -331,7 +331,7 @@ class ShmContainer : public ShmArchiveable {
   }
 
 /** Generates the code for move operators */
-#define SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
+#define SHM_INHERIT_MOVE_OPS(CLASS_NAME, TYPED_CLASS)\
   explicit TYPE_UNWRAP(CLASS_NAME)(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
     WeakMove(other);\
   }\
@@ -357,7 +357,7 @@ class ShmContainer : public ShmArchiveable {
   }
 
 /** Generates the code for copy operators */
-#define SHM_INHERIT_COPY_OPS(TYPED_CLASS, CLASS_NAME)\
+#define SHM_INHERIT_COPY_OPS(CLASS_NAME, TYPED_CLASS)\
   TYPE_UNWRAP(CLASS_NAME)(const TYPE_UNWRAP(CLASS_NAME) &other) noexcept {\
     shm_init(other);\
   }\
@@ -468,8 +468,8 @@ SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::UnsetDestructable;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::IsDestructable;\
 SHM_INHERIT_CONSTRUCTORS(CLASS_NAME, TYPED_CLASS)\
 SHM_INHERIT_DESTRUCTORS(CLASS_NAME)\
-SHM_INHERIT_MOVE_OPS(CLASS_NAME)\
-SHM_INHERIT_COPY_OPS(TYPED_CLASS, CLASS_NAME)\
+SHM_INHERIT_MOVE_OPS(CLASS_NAME, TYPED_CLASS)\
+SHM_INHERIT_COPY_OPS(CLASS_NAME, TYPED_CLASS)\
 SHM_SERIALIZE_DESERIALIZE_OPS(TYPED_CLASS)
 
 /**
