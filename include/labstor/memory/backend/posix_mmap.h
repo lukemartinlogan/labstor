@@ -52,9 +52,17 @@ class PosixMmap : public MemoryBackend {
  public:
   PosixMmap() = default;
 
-  ~PosixMmap() override { _Detach(); }
+  ~PosixMmap() override {
+    if (IsOwned()) {
+      _Destroy();
+    } else {
+      _Detach();
+    }
+  }
 
   bool shm_init(size_t size) {
+    SetInitialized();
+    Own();
     total_size_ = sizeof(MemoryBackendHeader) + size;
     char *ptr = _Map(total_size_);
     header_ = reinterpret_cast<MemoryBackendHeader*>(ptr);
@@ -91,11 +99,15 @@ class PosixMmap : public MemoryBackend {
   }
 
   void _Detach() {
+    if (!IsInitialized()) { return; }
     munmap(reinterpret_cast<void*>(header_), total_size_);
+    UnsetInitialized();
   }
 
   void _Destroy() {
+    if (!IsInitialized()) { return; }
     _Detach();
+    UnsetInitialized();
   }
 };
 

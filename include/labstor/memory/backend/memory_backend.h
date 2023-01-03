@@ -44,16 +44,50 @@ enum class MemoryBackendType {
   kPosixShmMmap,
 };
 
+#define MEMORY_BACKEND_INITIALIZED 0x1
+#define MEMORY_BACKEND_OWNED 0x2
+
 class MemoryBackend {
  public:
   MemoryBackendHeader *header_;
   char *data_;
   size_t data_size_;
+  bitfield32_t flags_;
 
  public:
   MemoryBackend() = default;
 
   virtual ~MemoryBackend() = default;
+
+  /** Mark data as valid */
+  void SetInitialized() {
+    flags_.SetBits(MEMORY_BACKEND_INITIALIZED);
+  }
+
+  /** Check if data is valid */
+  bool IsInitialized() {
+    return flags_.CheckBits(MEMORY_BACKEND_INITIALIZED);
+  }
+
+  /** Mark data as invalid */
+  bool UnsetInitialized() {
+    flags_.UnsetBits(MEMORY_BACKEND_INITIALIZED);
+  }
+
+  /** This is the process which destroys the backend */
+  void Own() {
+    flags_.SetBits(MEMORY_BACKEND_OWNED);
+  }
+
+  /** This is owned */
+  bool IsOwned() {
+    return flags_.CheckBits(MEMORY_BACKEND_OWNED);
+  }
+
+  /** This is not the process which destroys the backend */
+  void Disown() {
+    flags_.UnsetBits(MEMORY_BACKEND_OWNED);
+  }
 
   /// Each allocator must define its own shm_init.
   // virtual bool shm_init(size_t size, ...) = 0;

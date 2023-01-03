@@ -48,12 +48,14 @@ class MemoryManager {
 
   /**
    * Constructor. Create the root allocator and backend, which is used
-   * until the user specifies a new default.
+   * until the user specifies a new default. The root allocator stores
+   * only private memory.
    * */
   MemoryManager() {
     root_allocator_id_.bits_.major_ = 0;
     root_allocator_id_.bits_.minor_ = -1;
     root_backend_.shm_init(LABSTOR_SYSTEM_INFO->ram_size_);
+    root_backend_.Own();
     root_allocator_.shm_init(&root_backend_, root_allocator_id_);
     default_allocator_ = &root_allocator_;
   }
@@ -68,6 +70,7 @@ class MemoryManager {
                                size_t size, const std::string &url) {
     backends_.emplace(url, MemoryBackendFactory::shm_init(type, size, url));
     auto backend = backends_[url].get();
+    backend->Own();
     return backend;
   }
 
@@ -79,6 +82,7 @@ class MemoryManager {
     backends_.emplace(url, MemoryBackendFactory::shm_deserialize(type, url));
     auto backend = backends_[url].get();
     ScanBackends();
+    backend->Disown();
     return backend;
   }
 

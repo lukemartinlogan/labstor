@@ -55,9 +55,17 @@ class PosixShmMmap : public MemoryBackend {
  public:
   PosixShmMmap() : fd_(-1) {}
 
-  ~PosixShmMmap() override { _Detach(); }
+  ~PosixShmMmap() override {
+    if (IsOwned()) {
+      _Destroy();
+    } else {
+      _Detach();
+    }
+  }
 
   bool shm_init(size_t size, std::string url) {
+    SetInitialized();
+    Own();
     url_ = std::move(url);
     fd_ = shm_open(url_.c_str(), O_CREAT | O_RDWR, 0666);
     if (fd_ < 0) {
@@ -72,6 +80,8 @@ class PosixShmMmap : public MemoryBackend {
   }
 
   bool shm_deserialize(std::string url) override {
+    SetInitialized();
+    Disown();
     url_ = std::move(url);
     fd_ = shm_open(url_.c_str(), O_RDWR, 0666);
     if (fd_ < 0) {
@@ -108,14 +118,18 @@ class PosixShmMmap : public MemoryBackend {
   }
 
   void _Detach() {
+    if (!IsInitialized()) { return; }
     munmap(data_, data_size_);
     munmap(header_, LABSTOR_SYSTEM_INFO->page_size_);
     close(fd_);
+    UnsetInitialized();
   }
 
   void _Destroy() {
+    if (!IsInitialized()) { return; }
     _Detach();
     shm_unlink(url_.c_str());
+    UnsetInitialized();
   }
 };
 
