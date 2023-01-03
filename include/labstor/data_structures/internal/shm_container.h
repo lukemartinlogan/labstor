@@ -287,19 +287,16 @@ class ShmContainer : public ShmArchiveable {
 #define SHM_INHERIT_CONSTRUCTORS(CLASS_NAME, TYPED_CLASS)\
   template<typename ...Args>\
   explicit CLASS_NAME(Args&& ...args) {\
-    shm_init_main(SHM_ARCHIVE_NULL(TYPED_CLASS), \
-                  SHM_ALLOCATOR_NULL,  \
-                  std::forward<Args>(args)...);\
+    shm_init(std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
   explicit CLASS_NAME(lipc::Allocator *alloc, Args&& ...args) {\
-    shm_init_main(SHM_ARCHIVE_NULL(TYPED_CLASS), alloc,  \
-        std::forward<Args>(args)...);\
+    shm_init(alloc, std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
   explicit CLASS_NAME(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar,\
                       lipc::Allocator *alloc, Args&& ...args) {\
-    shm_init_main(&ar, alloc, std::forward<Args>(args)...);\
+    shm_init(ar, alloc, std::forward<Args>(args)...);\
   }\
   template<typename ...Args>\
   explicit CLASS_NAME(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar) {\
