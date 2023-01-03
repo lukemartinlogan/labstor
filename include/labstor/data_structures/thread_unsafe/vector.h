@@ -102,11 +102,20 @@ struct vector_iterator_templ {
   }
 
   /** Dereference the iterator */
-  T_Ref_Const operator*() const {
+  Ref<T> operator*() {
     if constexpr(!CONST_ITER) {
-      return vec_->data_ar()[i_].data();
+      return Ref<T>(vec_->data_ar()[i_].internal_ref());
     } else {
-      return vec_->data_ar_const()[i_].data();
+      return Ref<T>(vec_->data_ar_const()[i_].internal_ref());
+    }
+  }
+
+  /** Dereference the iterator */
+  const Ref<T> operator*() const {
+    if constexpr(!CONST_ITER) {
+      return Ref<T>(vec_->data_ar()[i_].internal_ref());
+    } else {
+      return Ref<T>(vec_->data_ar_const()[i_].internal_ref());
     }
   }
 
@@ -397,7 +406,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
     SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS))
     reserve(other.size());
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
-      emplace_back((*iter));
+      emplace_back((**iter));
     }
     SHM_STRONG_COPY_END()
   }
@@ -432,15 +441,15 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   }
 
   /** Index the vector at position i */
-  T_Ref operator[](const size_t i) {
+  lipc::Ref<T> operator[](const size_t i) {
     shm_ar<T> *vec = data_ar();
-    return vec[i].data();
+    return lipc::Ref<T>(vec[i].internal_ref());
   }
 
   /** Index the vector at position i */
-  const T_Ref operator[](const size_t i) const {
+  const lipc::Ref<T> operator[](const size_t i) const {
     shm_ar<T> *vec = data_ar_const();
-    return vec[i].data();
+    return lipc::Ref<T>(vec[i].internal_ref());
   }
 
   /** Construct an element at the back of the vector */

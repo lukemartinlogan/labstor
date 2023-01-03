@@ -86,7 +86,7 @@ void UnorderedMapParallelInsert() {
   for (int i = 0; i < total_entries; ++i) {
     auto key = string(std::to_string(i));
     auto val = string(std::to_string(2*i));
-    REQUIRE(map[key] == val);
+    REQUIRE(*(map[key]) == val);
   }
 }
 

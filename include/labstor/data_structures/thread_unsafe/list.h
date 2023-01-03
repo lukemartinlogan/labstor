@@ -43,7 +43,7 @@ class list;
 template<typename T>
 struct list_entry {
  public:
-  typedef SHM_T_OR_REF_T(T) T_Ref;
+  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
 
  public:
   Pointer next_ptr_, prior_ptr_;
@@ -58,8 +58,8 @@ struct list_entry {
   /**
    * Returns the element stored in the list
    * */
-  T_Ref data() {
-    return data_.data();
+  Ref<T> internal_ref() {
+    return Ref<T>(data_.internal_ref());
   }
 };
 
@@ -115,8 +115,13 @@ struct list_iterator_templ {
   }
 
   /** Get the object the iterator points to */
-  T_Ref_Const operator*() const {
-    return entry_->data();
+  Ref<T> operator*() {
+    return entry_->internal_ref();
+  }
+
+  /** Get the object the iterator points to */
+  const Ref<T> operator*() const {
+    return entry_->internal_ref();
   }
 
   /** Get the next iterator (in place) */
@@ -312,7 +317,7 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
   void StrongCopy(const list &other) {
     SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS))
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
-      emplace_back(*iter);
+      emplace_back(**iter);
     }
     SHM_STRONG_COPY_END();
   }
@@ -406,12 +411,12 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
   }
 
   /** Get the object at the front of the list */
-  inline T_Ref front() {
+  inline Ref<T> front() {
     return *begin();
   }
 
   /** Get the object at the back of the list */
-  inline T_Ref back() {
+  inline Ref<T> back() {
     return *end();
   }
 

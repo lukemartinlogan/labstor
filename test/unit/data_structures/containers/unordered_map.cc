@@ -79,7 +79,7 @@ void UnorderedMapOpTest() {
   {
     for (int i = 0; i < 20; ++i) {
       CREATE_KV_PAIR(i, i);
-      REQUIRE(map[key] == val);
+      REQUIRE(*(map[key]) == val);
     }
   }
 
@@ -88,7 +88,7 @@ void UnorderedMapOpTest() {
     for (int i = 0; i < 20; ++i) {
       CREATE_KV_PAIR(i, i);
       auto iter = map.find(key);
-      REQUIRE((*iter).val_ == val);
+      REQUIRE(*((*iter).val_) == val);
     }
   }
 
@@ -98,8 +98,8 @@ void UnorderedMapOpTest() {
     prep.Lock();
     int i = 0;
     for (auto entry : map) {
-      GET_INT_FROM_KEY(entry.key_);
-      GET_INT_FROM_VAL(entry.val_);
+      GET_INT_FROM_KEY(*(entry.key_));
+      GET_INT_FROM_VAL(*(entry.val_));
       REQUIRE((0 <= key_ret && key_ret < 20));
       REQUIRE((0 <= val_ret && val_ret < 20));
       ++i;
@@ -112,7 +112,7 @@ void UnorderedMapOpTest() {
     for (int i = 0; i < 20; ++i) {
       CREATE_KV_PAIR(i, i + 100);
       map.emplace(key, val);
-      REQUIRE(map[key] == val);
+      REQUIRE(*(map[key]) == val);
     }
   }
 
@@ -120,28 +120,41 @@ void UnorderedMapOpTest() {
   {
     CREATE_KV_PAIR(4, 25);
     auto iter = map.find(key);
-    (*iter).val_ = std::move(val);
-    REQUIRE((*iter).val_ == val);
+    *((*iter).val_) = std::move(val);
+    REQUIRE(*((*iter).val_) == val);
   }
 
   // Verify the modification took place
   {
     CREATE_KV_PAIR(4, 25);
-    REQUIRE(map[key] == val);
+    REQUIRE(*(map[key]) == val);
   }
 
   // Modify the fourth map entry (copy assignment)
   {
     CREATE_KV_PAIR(4, 50);
     auto iter = map.find(key);
-    (*iter).val_ = val;
-    REQUIRE((*iter).val_ == val);
+    *((*iter).val_) = val;
+    REQUIRE(*((*iter).val_) == val);
   }
 
   // Verify the modification took place
   {
     CREATE_KV_PAIR(4, 50);
-    REQUIRE(map[key] == val);
+    REQUIRE(*(map[key]) == val);
+  }
+
+  // Modify the fourth map entry (copy assignment)
+  {
+    CREATE_KV_PAIR(4, 100);
+    auto x = map[key];
+    (*x) = val;
+  }
+
+  // Verify the modification took place
+  {
+    CREATE_KV_PAIR(4, 100);
+    REQUIRE(*map[key] == val);
   }
 
   // Remove 15 entries from the map
@@ -165,7 +178,7 @@ void UnorderedMapOpTest() {
     }
     for (int i = 15; i < 20; ++i) {
       CREATE_KV_PAIR(i, 100);
-      REQUIRE(map[key] != val);
+      REQUIRE(*map[key] != val);
     }
   }
 

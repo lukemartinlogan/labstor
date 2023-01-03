@@ -45,6 +45,79 @@ namespace labstor::ipc {
 template<typename T>
 struct ShmHeader;
 
+/**
+ * A reference to a shared-memory object are a simple object
+ * stored in shared-memory.
+ * */
+template<typename T>
+struct Ref {
+  typedef SHM_T_OR_PTR_T(T) T_Ptr;
+  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
+  T_Ptr obj_;
+
+  explicit Ref(T_Ar &other) {
+    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
+      obj_.shm_deserialize(other);
+    } else {
+      obj_ = &other;
+    }
+  }
+
+  Ref(const Ref &other) {
+    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
+      obj_.shm_deserialize(other.obj_.ar_);
+    } else {
+      obj_ = other.obj_;
+    }
+  }
+
+  Ref(Ref &&other) noexcept {
+    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
+      obj_.shm_deserialize(other.obj_.ar_);
+    } else {
+      obj_ = other.obj_;
+    }
+  }
+
+  T& get_ref() {
+    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
+      return obj_;
+    } else {
+      return *obj_;
+    }
+  }
+
+  const T& get_ref_const() {
+    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
+      return obj_;
+    } else {
+      return *obj_;
+    }
+  }
+
+  T& operator*() {
+    return get_ref();
+  }
+
+  const T& operator*() const {
+    return get_ref_const();
+  }
+};
+
+/** Force a StrongCopy of a container to occur */
+template<typename T>
+struct Copy {
+  const T &obj_;
+  Copy(const T &other) : obj_(other) {}
+};
+
+/** Force a WeakMove of a container to occur */
+template<typename T>
+struct Move {
+  T &obj_;
+  Move(const T &other) : obj_(other) {}
+};
+
 /** The base ShmHeader used for all containers */
 struct ShmBaseHeader {
   bitfield16_t flags_;
@@ -246,6 +319,10 @@ class ShmContainer : public ShmArchiveable {
   void shm_init(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> &ar,\
                 lipc::Allocator *alloc, Args&& ...args) {\
     shm_init_main(&ar, alloc, std::forward<Args>(args)...);\
+  }\
+  template<typename ...Args>\
+  void shm_init(lipc::Ref<TYPE_UNWRAP(TYPED_CLASS)> &ref) {\
+    shm_deserialize(ref.obj_.ar_);\
   }
 
 /** Generates the code for destructors  */
@@ -270,6 +347,16 @@ class ShmContainer : public ShmArchiveable {
   }\
   void shm_init(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
     WeakMove(other);\
+  }\
+  TYPE_UNWRAP(CLASS_NAME)& operator=(                \
+      const lipc::Move<TYPE_UNWRAP(CLASS_NAME)> &other) {\
+    WeakMove(other.obj_);\
+    return *this;\
+  }\
+  void shm_init_main(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar,\
+        lipc::Allocator *alloc, \
+        lipc::Move<TYPE_UNWRAP(CLASS_NAME)> &other) {\
+    WeakMove(other.obj_);\
   }
 
 /** Generates the code for copy operators */
@@ -279,7 +366,7 @@ class ShmContainer : public ShmArchiveable {
   }\
   TYPE_UNWRAP(CLASS_NAME)& operator=(const TYPE_UNWRAP(CLASS_NAME) &other) {\
     if (this != &other) {\
-      shm_init(other);\
+      StrongCopy(other);\
     }\
     return *this;\
   }\
@@ -287,6 +374,16 @@ class ShmContainer : public ShmArchiveable {
         lipc::Allocator *alloc, \
         const TYPE_UNWRAP(CLASS_NAME) &other) {\
     StrongCopy(other);\
+  }\
+  TYPE_UNWRAP(CLASS_NAME)& operator=(                \
+      const lipc::Copy<TYPE_UNWRAP(CLASS_NAME)> &other) {\
+    StrongCopy(other.obj_);\
+    return *this;\
+  }\
+  void shm_init_main(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar,\
+        lipc::Allocator *alloc, \
+        lipc::Copy<TYPE_UNWRAP(CLASS_NAME)> &other) {\
+    StrongCopy(other.obj_);\
   }
 
 /**

@@ -50,7 +50,7 @@ void VectorOfIntTest() {
     }
     REQUIRE(vec.size() == 30);
     for (int i = 0; i < 30; ++i) {
-      REQUIRE(vec[i] == i);
+      REQUIRE(*vec[i] == i);
     }
   }
 
@@ -58,7 +58,7 @@ void VectorOfIntTest() {
   {
     int fcur = 0;
     for (auto num : vec) {
-      REQUIRE(num == fcur);
+      REQUIRE(*num == fcur);
       ++fcur;
     }
     REQUIRE(fcur == vec.size());
@@ -68,7 +68,7 @@ void VectorOfIntTest() {
   {
     int rcur = (int) vec.size() - 1;
     for (auto num_iter = vec.rbegin(); num_iter != vec.rend(); ++num_iter) {
-      REQUIRE((*num_iter) == rcur);
+      REQUIRE((**num_iter) == rcur);
       --rcur;
     }
     REQUIRE(rcur == -1);
@@ -77,10 +77,10 @@ void VectorOfIntTest() {
   // Emplace at front of vector
   {
     vec.emplace(vec.begin(), 100);
-    REQUIRE(vec[0] == 100);
+    REQUIRE(*vec[0] == 100);
     REQUIRE(vec.size() == 31);
     for (int i = 1; i < vec.size(); ++i) {
-      REQUIRE(vec[i] == i - 1);
+      REQUIRE(*vec[i] == i - 1);
     }
   }
 
@@ -89,7 +89,7 @@ void VectorOfIntTest() {
     vec.erase(vec.begin(), vec.begin() + 1);
     REQUIRE(vec.size() == 30);
     for (int i = 0; i < vec.size(); ++i) {
-      REQUIRE(vec[i] == i);
+      REQUIRE(*vec[i] == i);
     }
   }
 
@@ -98,7 +98,7 @@ void VectorOfIntTest() {
     labstor::ipc::vector<int> cpy(vec);
     REQUIRE(cpy.size() == 30);
     for (int i = 0; i < cpy.size(); ++i) {
-      REQUIRE(cpy[i] == i);
+      REQUIRE(*cpy[i] == i);
     }
   }
 
@@ -108,7 +108,7 @@ void VectorOfIntTest() {
     cpy = vec;
     REQUIRE(cpy.size() == 30);
     for (int i = 0; i < cpy.size(); ++i) {
-      REQUIRE(cpy[i] == i);
+      REQUIRE(*cpy[i] == i);
     }
   }
 
@@ -117,13 +117,13 @@ void VectorOfIntTest() {
     labstor::ipc::vector<int> cpy(std::move(vec));
     REQUIRE(cpy.size() == 30);
     for (int i = 0; i < cpy.size(); ++i) {
-      REQUIRE(cpy[i] == i);
+      REQUIRE(*cpy[i] == i);
     }
 
     vec = std::move(cpy);
     REQUIRE(vec.size() == 30);
     for (int i = 0; i < vec.size(); ++i) {
-      REQUIRE(vec[i] == i);
+      REQUIRE(*vec[i] == i);
     }
   }
 
@@ -136,7 +136,7 @@ void VectorOfIntTest() {
     labstor::ipc::vector<int> cpy(orig);
     REQUIRE(cpy.size() == 30);
     for (int i = 0; i < cpy.size(); ++i) {
-      REQUIRE(cpy[i] == i);
+      REQUIRE(*cpy[i] == i);
     }
   }
 
@@ -165,17 +165,17 @@ void VectorOfStringTest() {
     }
     REQUIRE(vec.size() == max_count);
     for (int i = 0; i < max_count; ++i) {
-      REQUIRE(vec[i] == std::to_string(i));
+      REQUIRE(*vec[i] == std::to_string(i));
     }
   }
 
   // Forward iterator test
   {
     vec.emplace(vec.begin(), "100");
-    REQUIRE(vec[0] == "100");
+    REQUIRE(*vec[0] == "100");
     REQUIRE(vec.size() == max_count + 1);
     for (int i = 1; i < vec.size(); ++i) {
-      REQUIRE(vec[i] == std::to_string(i - 1));
+      REQUIRE(*vec[i] == std::to_string(i - 1));
     }
   }
 
@@ -184,33 +184,33 @@ void VectorOfStringTest() {
     vec.erase(vec.begin(), vec.begin() + 1);
     REQUIRE(vec.size() == max_count);
     for (int i = 0; i < vec.size(); ++i) {
-      REQUIRE(vec[i] == std::to_string(i));
+      REQUIRE(*vec[i] == std::to_string(i));
     }
   }
 
   // Modify the fourth list entry (move assignment)
   {
     auto iter = vec.begin() + 4;
-    (*iter) = std::move(string("25"));
+    (**iter) = std::move(string("25"));
   }
 
   // Verify the modification took place
   {
     auto iter = vec.begin() + 4;
-    REQUIRE((*iter) == "25");
+    REQUIRE((**iter) == "25");
   }
 
   // Modify the fourth list entry (copy assignment)
   {
     auto iter = vec.begin() + 4;
     string text("50");
-    (*iter) = text;
+    (**iter) = text;
   }
 
   // Verify the modification took place
   {
     auto iter = vec.begin() + 4;
-    REQUIRE((*iter) == "50");
+    REQUIRE((**iter) == "50");
   }
 
   // Erase entire vector
@@ -226,7 +226,7 @@ void VectorOfListOfStringTest() {
 
   vec.resize(10, alloc);
   for (auto bkt : vec) {
-    bkt.emplace_back("hello");
+    (*bkt).emplace_back("hello");
   }
   vec.clear();
 }

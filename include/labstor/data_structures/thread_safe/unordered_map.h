@@ -78,13 +78,11 @@ struct unordered_map_pair {
 template<typename Key, typename T>
 struct unordered_map_pair_ret {
  public:
-  typedef SHM_T_OR_REF_T(Key) Key_Ref;
-  typedef SHM_T_OR_REF_T(T) T_Ref;
   using COLLISION_T = unordered_map_pair<Key, T>;
 
  public:
-  Key_Ref key_;
-  T_Ref val_;
+  Ref<Key> key_;
+  Ref<T> val_;
 
  public:
   /** Constructor */
@@ -350,7 +348,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
       num_buckets, max_collisions, growth)
     for (auto entry : other) {
       emplace_templ<false, true>(
-        entry.key_, entry.val_);
+        *entry.key_, entry.val_);
     }
     SHM_STRONG_COPY_END()
   }
@@ -457,10 +455,9 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
    * @return the object pointed by key
    * @exception UNORDERED_MAP_CANT_FIND the key was not in the map
    * */
-  T_Ref operator[](const Key &key) {
+  Ref<T> operator[](const Key &key) {
     auto iter = find(key);
     if (iter != end()) {
-      // NOTE(llogan): I've seen this call move constructor when it's implicit?
       return (*iter).val_;
     }
     throw UNORDERED_MAP_CANT_FIND.format();
@@ -519,7 +516,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
     auto iter_end = collisions->end();
     for (; iter != iter_end; ++iter) {
       COLLISION_RET_T entry(*iter);
-      if (entry.key_ == key) {
+      if (*entry.key_ == key) {
         return iter;
       }
     }
@@ -551,7 +548,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
   bool insert_templ(COLLISION_T &entry_shm) {
     if (header_ == nullptr) { shm_init(); }
     COLLISION_RET_T entry(entry_shm);
-    Key_Ref key = entry.key_;
+    Key_Ref key = *(entry.key_);
 
     // Acquire the header lock for a read (not modifying bucket vec)
     ScopedRwReadLock header_lock(header_->lock_);
@@ -606,7 +603,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
                      mptr<vector<BUCKET_T>> &buckets) {
     if (header_ == nullptr) { shm_init(); }
     COLLISION_RET_T entry(entry_shm);
-    Key_Ref key = entry.key_;
+    Key_Ref key = *entry.key_;
     size_t bkt_id = Hash{}(key) % buckets->size();
     BUCKET_T &bkt = (*buckets)[bkt_id];
     mptr<list<COLLISION_T>> collisions(bkt.collisions_);

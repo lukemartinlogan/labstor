@@ -53,11 +53,6 @@ class _shm_ar_shm : public ShmSmartPointer {
     T(obj_).shm_destroy();
   }
 
-  /** Returns copy of the deserialized ShmArchive (just a few pointers) */
-  T data() {
-    return T(obj_);
-  }
-
   /** Returns a reference to the internal object */
   ShmArchive<T>& internal_ref() {
     return obj_;
@@ -87,11 +82,6 @@ class _shm_ar_noshm {
 
   /** Destructor. Does nothing. */
   ~_shm_ar_noshm() = default;
-
-  /** Gets the object */
-  T& data() {
-    return obj_;
-  }
 
   /** Returns a reference to the internal object */
   T& internal_ref() {
@@ -138,11 +128,6 @@ class shm_ar {
 
   /** Destructor */
   ~shm_ar() = default;
-
-  /** Returns the data represented by the archive */
-  T_Ref data() {
-    return obj_.data();
-  }
 
   /** Returns a reference to the internal object */
   T_Ar& internal_ref() {
