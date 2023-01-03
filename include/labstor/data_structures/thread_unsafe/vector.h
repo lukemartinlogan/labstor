@@ -340,6 +340,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   BASIC_SHM_CONTAINER_TEMPLATE
 
  public:
+  /** Default constructor */
   vector() = default;
 
   /** Construct the vector in shared memory */

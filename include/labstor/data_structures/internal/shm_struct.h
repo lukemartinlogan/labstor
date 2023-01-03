@@ -61,7 +61,7 @@ struct ShmStruct : public ShmContainer<T, ShmSimpleHeader<T>> {
  public:
   SHM_CONTAINER_TEMPLATE_X(CLASS_NAME, TYPED_CLASS, ShmSimpleHeader<T>)
 
-  /** Default constructor. Does nothing. */
+  /** Default constructor */
   ShmStruct() = default;
 
   /**

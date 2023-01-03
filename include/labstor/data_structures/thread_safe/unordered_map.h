@@ -294,6 +294,9 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
   using COLLISION_RET_T = unordered_map_pair_ret<Key, T>;
 
  public:
+  /** Default constructor */
+  unordered_map() = default;
+
   /**
    * Initialize unordered map
    *
