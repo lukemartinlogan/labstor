@@ -102,6 +102,14 @@ struct Ref {
   const T& operator*() const {
     return get_ref_const();
   }
+
+  T* operator->() {
+    return &get_ref();
+  }
+
+  const T* operator->() const {
+    return &get_ref_const();
+  }
 };
 
 /** Force a StrongCopy of a container to occur */
@@ -448,7 +456,7 @@ class ShmContainer : public ShmArchiveable {
 #define SHM_STRONG_COPY_END() \
   SHM_WEAK_COPY_END
 #define SHM_STRONG_COPY_DEFAULT(TYPED_CLASS)\
-  SHM_ARCHIVE_NULL(TYPED_CLASS), alloc_
+  SHM_ARCHIVE_NULL(TYPED_CLASS), SHM_ALLOCATOR_NULL
 
 /**
  * Namespace simplification for a SHM data structure
