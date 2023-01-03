@@ -70,7 +70,7 @@ class MemoryBackend {
   }
 
   /** Mark data as invalid */
-  bool UnsetInitialized() {
+  void UnsetInitialized() {
     flags_.UnsetBits(MEMORY_BACKEND_INITIALIZED);
   }
 
