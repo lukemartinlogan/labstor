@@ -374,7 +374,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   void shm_destroy(bool destroy_header = true) {
     SHM_DESTROY_DATA_START
     erase(begin(), end());
-    if (!header_vec_ptr_.IsNull()) {
+    if (!header_->vec_ptr_.IsNull()) {
       alloc_->Free(header_->vec_ptr_);
     }
     SHM_DESTROY_DATA_END
