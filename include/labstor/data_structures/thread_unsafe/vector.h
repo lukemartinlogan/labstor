@@ -45,9 +45,6 @@ class vector;
 template<typename T, bool FORWARD_ITER, bool CONST_ITER>
 struct vector_iterator_templ {
  public:
-  typedef SHM_T_OR_REF_T(T) T_Ref;
-
-  typedef SHM_CONST_T_OR_T(T_Ref, CONST_ITER) T_Ref_Const;
   typedef SHM_CONST_T_OR_T(vector<T>, CONST_ITER) VecT_Const;
 
  public:
@@ -341,9 +338,6 @@ template<typename T>
 class vector : public SHM_CONTAINER(TYPED_CLASS) {
  public:
   BASIC_SHM_CONTAINER_TEMPLATE
-
- public:
-  typedef SHM_T_OR_REF_T(T) T_Ref;
 
  public:
   vector() = default;

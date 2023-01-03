@@ -52,7 +52,7 @@ struct ShmHeader;
 template<typename T>
 struct Ref {
   typedef SHM_T_OR_PTR_T(T) T_Ptr;
-  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
+  typedef SHM_ARCHIVE_OR_T(T) T_Ar;
   T_Ptr obj_;
 
   explicit Ref(T_Ar &other) {

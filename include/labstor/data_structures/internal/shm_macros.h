@@ -53,45 +53,30 @@
     X, Y>::type
 
 /**
- * SHM_T_OR_ARCHIVE: Determines the type of the internal pointer used
- * to store data in a shared-memory data structure. For example,
- * let's say there are two vectors: vector<int> V1 and vector<vector<int>> V2.
- * V1 should store internally a pointer int *vec_
- * V2 should store internally a pointer ShmArchive<vector<int>> *vec_ and
- * then deserialize this pointer at every index operation.
- * */
-
-#define SHM_T_OR_ARCHIVE(T) \
-  SHM_X_OR_Y(T, ShmArchive<T>, T)
-
-/**
- * SHM_T_OR_REF_T: Determines the return value of an index operation on
- * a shared-memory data structure. For example, let's say there
- * are two vectors: vector<int> V1 and vector<vector<int>> V2.
- * V1[0] should return an int&
- * V2[1] should return a vector<int> (not &)
- * This is because V2 needs to shm_deserialize vector<int> from shared
- * memory.
+ * SHM_T_OR_PTR_T: Returns T if SHM_ARCHIVEABLE, and T* otherwise. Used
+ * internally by lipc::Ref<T>.
  *
- * @T: The type being stored in the shmem data structure
- * */
-
-#define SHM_T_OR_REF_T(T) \
-  SHM_X_OR_Y(T, T, T&)
-/**
- * SHM_T_OR_PTR_T: Used by shm_ref.
- *
- * @T: The type being stored in the shmem data structure
+ * @param T: The type being stored in the shmem data structure
  * */
 
 #define SHM_T_OR_PTR_T(T) \
   SHM_X_OR_Y(T, T, T*)
 
 /**
+ * SHM_ARCHIVE_OR_T: Returns ShmArchive<T> if SHM_ARCHIVEABLE, and T
+ * otherwise. Used to construct an lipc::Ref<T>.
+ *
+ * @param T The type being stored in the shmem data structure
+ * */
+
+#define SHM_ARCHIVE_OR_T(T) \
+  SHM_X_OR_Y(T, lipc::ShmArchive<T>, T)
+
+/**
  * SHM_T_OR_PTR_T: Used by unique_ptr and shared_ptr to determine how to
  * best store the underlying object.
  *
- * @T: The type being stored in the shmem data structure
+ * @param T: The type being stored in the shmem data structure
  * */
 
 #define SHM_T_OR_SHM_PTR_T(T) \

@@ -51,10 +51,6 @@ class unordered_map_bucket;
 template<typename Key, typename T>
 struct unordered_map_pair {
  public:
-  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
-  typedef SHM_T_OR_ARCHIVE(Key) Key_Ar;
-
- public:
   shm_ar<Key> key_;  /**< The key. Either a ShmArchive<T> or T*/
   shm_ar<T> val_;    /**< The value. Either a ShmArchive<T> or T*/
 
@@ -97,8 +93,6 @@ struct unordered_map_pair_ret {
 template<typename Key, typename T>
 class unordered_map_bucket {
  public:
-  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
-  typedef SHM_T_OR_REF_T(T) T_Ref;
   using COLLISION_T = unordered_map_pair<Key, T>;
 
  public:
@@ -121,8 +115,6 @@ class unordered_map_bucket {
 template<typename Key, typename T, class Hash>
 struct unordered_map_iterator {
  public:
-  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
-  typedef SHM_T_OR_REF_T(T) T_Ref;
   using BUCKET_T = unordered_map_bucket<Key, T>;
   using COLLISION_T = unordered_map_pair<Key, T>;
   using COLLISION_RET_T = unordered_map_pair_ret<Key, T>;
@@ -297,10 +289,6 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
   friend unordered_map_iterator<Key, T, Hash>;
 
  public:
-  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
-  typedef SHM_T_OR_REF_T(T) T_Ref;
-  typedef SHM_T_OR_ARCHIVE(Key) Key_Ar;
-  typedef SHM_T_OR_REF_T(Key) Key_Ref;
   using BUCKET_T = unordered_map_bucket<Key, T>;
   using COLLISION_T = unordered_map_pair<Key, T>;
   using COLLISION_RET_T = unordered_map_pair_ret<Key, T>;
@@ -554,7 +542,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
   bool insert_templ(COLLISION_T &entry_shm) {
     if (header_ == nullptr) { shm_init(); }
     COLLISION_RET_T entry(entry_shm);
-    Key_Ref key = *(entry.key_);
+    Key &key = *(entry.key_);
 
     // Acquire the header lock for a read (not modifying bucket vec)
     ScopedRwReadLock header_lock(header_->lock_);
@@ -609,7 +597,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
                      mptr<vector<BUCKET_T>> &buckets) {
     if (header_ == nullptr) { shm_init(); }
     COLLISION_RET_T entry(entry_shm);
-    Key_Ref key = *entry.key_;
+    Key &key = *entry.key_;
     size_t bkt_id = Hash{}(key) % buckets->size();
     BUCKET_T &bkt = *(*buckets)[bkt_id];
     mptr<list<COLLISION_T>> collisions(bkt.collisions_);

@@ -43,9 +43,6 @@ class list;
 template<typename T>
 struct list_entry {
  public:
-  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
-
- public:
   Pointer next_ptr_, prior_ptr_;
   shm_ar<T> data_;
 
@@ -69,10 +66,6 @@ struct list_entry {
 template<typename T, bool CONST_ITER>
 struct list_iterator_templ {
  public:
-  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
-  typedef SHM_T_OR_REF_T(T) T_Ref;
-  typedef SHM_CONST_T_OR_T(T_Ar, CONST_ITER) T_Ar_Const;
-  typedef SHM_CONST_T_OR_T(T_Ref, CONST_ITER) T_Ref_Const;
   typedef SHM_CONST_T_OR_T(list<T>, CONST_ITER) ListT_Const;
 
  public:
@@ -261,10 +254,6 @@ template<typename T>
 class list : public SHM_CONTAINER(TYPED_CLASS) {
  public:
   BASIC_SHM_CONTAINER_TEMPLATE
-
- public:
-  typedef SHM_T_OR_ARCHIVE(T) T_Ar;
-  typedef SHM_T_OR_REF_T(T) T_Ref;
 
  public:
   /** Default constructor */

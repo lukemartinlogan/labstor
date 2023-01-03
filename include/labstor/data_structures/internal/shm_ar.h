@@ -117,7 +117,6 @@ template<typename T>
 class shm_ar {
  public:
   typedef SHM_REF_OR_ARCHIVE(T) T_Ar;
-  typedef SHM_T_OR_REF_T(T) T_Ref;
 
   SHM_MAKE_T_OR_ARCHIVE(T) obj_;
 
