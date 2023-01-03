@@ -130,8 +130,8 @@ class MemoryManager {
   template<typename T = Allocator>
   T* GetAllocator(allocator_id_t alloc_id) {
     if (alloc_id.IsNull()) { return nullptr; }
-    if (alloc_id == default_allocator_->GetId()) {
-      return default_allocator_;
+    if (alloc_id == root_allocator_.GetId()) {
+      return &root_allocator_;
     }
     auto iter = allocators_.find(alloc_id);
     if (iter == allocators_.end()) {
