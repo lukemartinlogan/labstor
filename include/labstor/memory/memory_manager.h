@@ -52,7 +52,7 @@ class MemoryManager {
    * */
   MemoryManager() {
     root_allocator_id_.bits_.major_ = 0;
-    root_allocator_id_.bits_.minor_ = 0;
+    root_allocator_id_.bits_.minor_ = -1;
     root_backend_.shm_init(LABSTOR_SYSTEM_INFO->ram_size_);
     root_allocator_.shm_init(&root_backend_, root_allocator_id_);
     default_allocator_ = &root_allocator_;
@@ -129,8 +129,9 @@ class MemoryManager {
    * */
   template<typename T = Allocator>
   T* GetAllocator(allocator_id_t alloc_id) {
-    if (alloc_id.IsNull()) {
-      return nullptr;
+    if (alloc_id.IsNull()) { return nullptr; }
+    if (alloc_id == default_allocator_->GetId()) {
+      return default_allocator_;
     }
     auto iter = allocators_.find(alloc_id);
     if (iter == allocators_.end()) {
