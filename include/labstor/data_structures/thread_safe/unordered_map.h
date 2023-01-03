@@ -168,8 +168,13 @@ struct unordered_map_iterator {
   }
 
   /** Get the pointed object */
-  COLLISION_RET_T operator*() const {
-    return COLLISION_RET_T(*collision_);
+  COLLISION_RET_T operator*() {
+    return COLLISION_RET_T(**collision_);
+  }
+
+  /** Get the pointed object */
+  const COLLISION_RET_T operator*() const {
+    return COLLISION_RET_T(**collision_);
   }
 
   /** Go to the next object */
@@ -195,7 +200,7 @@ struct unordered_map_iterator {
       if (bucket_ == buckets_->end()) {
         return false;
       }
-      auto &bkt = (*bucket_);
+      BUCKET_T& bkt = (**bucket_);
       collisions_ << bkt.collisions_;
       if (collision_ != collisions_->end()) {
         return true;
@@ -204,7 +209,8 @@ struct unordered_map_iterator {
         if (bucket_ == buckets_->end()) {
           return false;
         }
-        collisions_ << (*bucket_).collisions_;
+        BUCKET_T& bkt = (**bucket_);
+        collisions_ << bkt.collisions_;
         collision_ = collisions_->begin();
       }
     } while (true);
@@ -348,7 +354,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
       num_buckets, max_collisions, growth)
     for (auto entry : other) {
       emplace_templ<false, true>(
-        *entry.key_, entry.val_);
+        *entry.key_, *entry.val_);
     }
     SHM_STRONG_COPY_END()
   }
@@ -400,7 +406,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
     // Get the bucket the key belongs to
     mptr<vector<BUCKET_T>> buckets(header_->buckets_);
     size_t bkt_id = Hash{}(key) % buckets->size();
-    BUCKET_T &bkt = (*buckets)[bkt_id];
+    BUCKET_T &bkt = *(*buckets)[bkt_id];
     ScopedRwWriteLock bkt_lock(bkt.lock_);
     bkt_lock.Lock();
 
@@ -426,7 +432,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
     header_lock.Lock();
 
     // Acquire the bucket lock for a write (modifying collisions)
-    auto &bkt = (*iter.bucket_);
+    auto &bkt = (**iter.bucket_);
     ScopedRwWriteLock bkt_lock(bkt.lock_);
     bkt_lock.Lock();
 
@@ -477,7 +483,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
     iter.buckets_ << header_->buckets_;
     size_t bkt_id = Hash{}(key) % iter.buckets_->size();
     iter.bucket_ = iter.buckets_->begin() + bkt_id;
-    BUCKET_T &bkt = (*iter.bucket_);
+    BUCKET_T &bkt = (**iter.bucket_);
 
     // Acquire the bucket lock
     ScopedRwReadLock bkt_lock(bkt.lock_);
@@ -515,7 +521,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
     auto iter = collisions->begin();
     auto iter_end = collisions->end();
     for (; iter != iter_end; ++iter) {
-      COLLISION_RET_T entry(*iter);
+      COLLISION_RET_T entry(**iter);
       if (*entry.key_ == key) {
         return iter;
       }
@@ -557,7 +563,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
     // Hash the key to a bucket
     mptr<vector<BUCKET_T>> buckets(header_->buckets_);
     size_t bkt_id = Hash{}(key) % buckets->size();
-    BUCKET_T &bkt = (*buckets)[bkt_id];
+    BUCKET_T &bkt = *(*buckets)[bkt_id];
 
     // Prepare bucket for write
     ScopedRwWriteLock bkt_lock(bkt.lock_);
@@ -605,7 +611,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
     COLLISION_RET_T entry(entry_shm);
     Key_Ref key = *entry.key_;
     size_t bkt_id = Hash{}(key) % buckets->size();
-    BUCKET_T &bkt = (*buckets)[bkt_id];
+    BUCKET_T &bkt = *(*buckets)[bkt_id];
     mptr<list<COLLISION_T>> collisions(bkt.collisions_);
     collisions->emplace_back(std::move(entry_shm));
     return true;
@@ -634,8 +640,8 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
       if (!is_locked_) {
         map_.header_->lock_.ReadLock();
         mptr<vector<BUCKET_T>> buckets(map_.header_->buckets_);
-        for (auto &bkt : *buckets) {
-          bkt.lock_.ReadLock();
+        for (auto bkt : *buckets) {
+          (*bkt).lock_.ReadLock();
         }
         is_locked_ = true;
       }
@@ -646,8 +652,8 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
       if (is_locked_) {
         map_.header_->lock_.ReadUnlock();
         mptr<vector<BUCKET_T>> buckets(map_.header_->buckets_);
-        for (auto &bkt : *buckets) {
-          bkt.lock_.ReadUnlock();
+        for (auto bkt : *buckets) {
+          (*bkt).lock_.ReadUnlock();
         }
         is_locked_ = false;
       }
@@ -666,8 +672,8 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
     if (iter.buckets_->size() == 0) {
       return iter;
     }
-    auto &bkt = (*iter.buckets_)[0];
-    iter.collisions_ << bkt.collisions_;
+    auto bkt = (*iter.buckets_)[0];
+    iter.collisions_ << (*bkt).collisions_;
     iter.bucket_ = iter.buckets_->begin();
     iter.collision_ = iter.collisions_->begin();
     iter.make_correct();
@@ -703,10 +709,10 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
 
     // Copy-paste the map
     for (size_t i = 0; i < num_buckets; ++i) {
-      auto &bkt = (*buckets)[i];
+      BUCKET_T &bkt = *(*buckets)[i];
       mptr<list<COLLISION_T>> collisions(bkt.collisions_);
-      for (auto& entry : *collisions) {
-        insert_simple(std::move(entry), new_buckets);
+      for (auto entry : *collisions) {
+        insert_simple(std::move(*entry), new_buckets);
       }
     }
 
