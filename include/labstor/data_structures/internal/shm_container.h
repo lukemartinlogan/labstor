@@ -106,17 +106,35 @@ struct Ref {
 
 /** Force a StrongCopy of a container to occur */
 template<typename T>
-struct Copy {
+struct CopyWrapper {
   const T &obj_;
-  Copy(const T &other) : obj_(other) {}
+
+  CopyWrapper() = delete;
+  CopyWrapper(T &&other) = delete;
+  explicit CopyWrapper(const T &other) : obj_(other) {}
 };
+template<typename T>
+inline CopyWrapper<T> Copy(const T &other) {
+  return CopyWrapper<T>(other);
+}
 
 /** Force a WeakMove of a container to occur */
 template<typename T>
-struct Move {
+struct MoveWrapper {
   T &obj_;
-  Move(const T &other) : obj_(other) {}
+
+  MoveWrapper() = delete;
+  MoveWrapper(const T &other) = delete;
+  explicit MoveWrapper(T &other) : obj_(other) {}
 };
+template<typename T>
+inline MoveWrapper<T> Move(T &other) {
+  return MoveWrapper<T>(other);
+}
+template<typename T>
+inline MoveWrapper<T> Move(T &&other) {
+  return MoveWrapper<T>(other);
+}
 
 /** The base ShmHeader used for all containers */
 struct ShmBaseHeader {
@@ -346,13 +364,13 @@ class ShmContainer : public ShmArchiveable {
     WeakMove(other);\
   }\
   TYPE_UNWRAP(CLASS_NAME)& operator=(                \
-      const lipc::Move<TYPE_UNWRAP(CLASS_NAME)> &other) {\
+      const lipc::MoveWrapper<TYPE_UNWRAP(CLASS_NAME)> &other) {\
     WeakMove(other.obj_);\
     return *this;\
   }\
   void shm_init_main(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar,\
         lipc::Allocator *alloc, \
-        lipc::Move<TYPE_UNWRAP(CLASS_NAME)> &other) {\
+        lipc::MoveWrapper<TYPE_UNWRAP(CLASS_NAME)> &other) {\
     WeakMove(other.obj_);\
   }
 
@@ -373,13 +391,13 @@ class ShmContainer : public ShmArchiveable {
     StrongCopy(other);\
   }\
   TYPE_UNWRAP(CLASS_NAME)& operator=(                \
-      const lipc::Copy<TYPE_UNWRAP(CLASS_NAME)> &other) {\
+      const lipc::CopyWrapper<TYPE_UNWRAP(CLASS_NAME)> &other) {\
     StrongCopy(other.obj_);\
     return *this;\
   }\
   void shm_init_main(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar,\
         lipc::Allocator *alloc, \
-        lipc::Copy<TYPE_UNWRAP(CLASS_NAME)> &other) {\
+        lipc::CopyWrapper<TYPE_UNWRAP(CLASS_NAME)> &other) {\
     StrongCopy(other.obj_);\
   }
 
