@@ -87,7 +87,7 @@ struct Ref {
     }
   }
 
-  const T& get_ref_const() {
+  const T& get_ref_const() const {
     if constexpr(IS_SHM_ARCHIVEABLE(T)) {
       return obj_;
     } else {

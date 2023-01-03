@@ -63,7 +63,7 @@ void save(A &ar, lipc::vector<T> &vec) {
   ar << vec.GetAllocatorId();
   ar << vec.size();
   for (auto iter = vec.cbegin(); iter != vec.cend(); ++iter) {
-    ar << (*iter);
+    ar << *(*iter);
   }
 }
 
@@ -85,9 +85,7 @@ void load(A &ar, lipc::vector<T> &vec) {
   vec.shm_init(alloc);
   vec.resize(size);
   for (auto iter = vec.begin(); iter != vec.end(); ++iter) {
-    T obj;
-    ar >> obj;
-    ~(iter) = std::move(obj);
+    vec.emplace_back(std::move(**iter));
   }
 }
 
