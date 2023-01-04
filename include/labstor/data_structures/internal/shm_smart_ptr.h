@@ -105,14 +105,24 @@ class ShmSmartPtr : public ShmSmartPointer {
     }
   }
 
-  /** Gets a reference to the internal object using * */
+  /** Dereference operator */
   T& operator*() {
     return get_ref();
   }
 
-  /** Gets a pointer to the internal object */
+  /** Constant dereference operator */
+  const T& operator*() const {
+    return get_ref_const();
+  }
+
+  /** Pointer operator */
   T* operator->() {
     return get();
+  }
+
+  /** Constant pointer operator */
+  const T* operator->() const {
+    return get_const();
   }
 
   /** Destroy the data allocated by this pointer */

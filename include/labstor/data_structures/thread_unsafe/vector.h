@@ -329,6 +329,30 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
     max_length_ = other.max_length_;
     length_ = other.length_;
   }
+
+  ShmHeader(ShmHeader &&other) {
+    vec_ptr_ = other.vec_ptr_;
+    max_length_ = other.max_length_;
+    length_ = other.length_;
+  }
+
+  ShmHeader& operator=(const ShmHeader &other) {
+    if (this != &other) {
+      vec_ptr_ = other.vec_ptr_;
+      max_length_ = other.max_length_;
+      length_ = other.length_;
+    }
+    return *this;
+  }
+
+  ShmHeader& operator=(ShmHeader &&other) {
+    if (this != &other) {
+      vec_ptr_ = other.vec_ptr_;
+      max_length_ = other.max_length_;
+      length_ = other.length_;
+    }
+    return *this;
+  }
 };
 
 /**

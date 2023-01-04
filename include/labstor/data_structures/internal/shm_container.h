@@ -55,6 +55,10 @@ struct Ref {
   typedef SHM_ARCHIVE_OR_T(T) T_Ar;
   T_Ptr obj_;
 
+  /**
+   * Constructor. Either reference a SHM_ARCHIVE or a reference to a
+   * data type. Deserializes the object if it's archiveable.
+   * */
   explicit Ref(T_Ar &other) {
     if constexpr(IS_SHM_ARCHIVEABLE(T)) {
       obj_.shm_deserialize(other);
@@ -63,6 +67,7 @@ struct Ref {
     }
   }
 
+  /** Copy constructor */
   Ref(const Ref &other) {
     if constexpr(IS_SHM_ARCHIVEABLE(T)) {
       obj_.shm_deserialize(other.obj_.ar_);
@@ -71,6 +76,7 @@ struct Ref {
     }
   }
 
+  /** Move constructor */
   Ref(Ref &&other) noexcept {
     if constexpr(IS_SHM_ARCHIVEABLE(T)) {
       obj_.shm_deserialize(other.obj_.ar_);
@@ -79,6 +85,7 @@ struct Ref {
     }
   }
 
+  /** Get reference to the internal data structure */
   T& get_ref() {
     if constexpr(IS_SHM_ARCHIVEABLE(T)) {
       return obj_;
@@ -87,6 +94,7 @@ struct Ref {
     }
   }
 
+  /** Get a constant reference */
   const T& get_ref_const() const {
     if constexpr(IS_SHM_ARCHIVEABLE(T)) {
       return obj_;
@@ -95,18 +103,22 @@ struct Ref {
     }
   }
 
+  /** Dereference operator */
   T& operator*() {
     return get_ref();
   }
 
+  /** Constant dereference operator */
   const T& operator*() const {
     return get_ref_const();
   }
 
+  /** Pointer operator */
   T* operator->() {
     return &get_ref();
   }
 
+  /** Constant pointer operator */
   const T* operator->() const {
     return &get_ref_const();
   }
