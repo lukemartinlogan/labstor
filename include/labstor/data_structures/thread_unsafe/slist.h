@@ -24,8 +24,8 @@
  */
 
 
-#ifndef LABSTOR_DATA_STRUCTURES_THREAD_UNSAFE_LIST_H_
-#define LABSTOR_DATA_STRUCTURES_THREAD_UNSAFE_LIST_H_
+#ifndef LABSTOR_DATA_STRUCTURES_THREAD_UNSAFE_SLIST_H_
+#define LABSTOR_DATA_STRUCTURES_THREAD_UNSAFE_SLIST_H_
 
 #include "labstor/data_structures/data_structure.h"
 #include "labstor/data_structures/smart_ptr/manual_ptr.h"
@@ -37,20 +37,20 @@ namespace labstor::ipc {
 
 /** forward pointer for list */
 template<typename T>
-class list;
+class slist;
 
 /** represents an object within a list */
 template<typename T>
-struct list_entry {
+struct slist_entry {
  public:
-  Pointer next_ptr_, prior_ptr_;
+  Pointer next_ptr_;
   shm_ar<T> data_;
 
   /**
    * Constructor.
    * */
   template<typename ...Args>
-  explicit list_entry(Args ...args) : data_(std::forward<Args>(args)...) {}
+  explicit slist_entry(Args ...args) : data_(std::forward<Args>(args)...) {}
 
   /**
    * Returns the element stored in the list
@@ -64,36 +64,36 @@ struct list_entry {
  * The list iterator
  * */
 template<typename T, bool CONST_ITER>
-struct list_iterator_templ {
+struct slist_iterator_templ {
  public:
-  typedef SHM_CONST_T_OR_T(list<T>, CONST_ITER) ListT_Const;
+  typedef SHM_CONST_T_OR_T(slist<T>, CONST_ITER) ListT_Const;
 
  public:
   ListT_Const *list_;
-  list_entry<T> *entry_;
+  slist_entry<T> *entry_;
   Pointer entry_ptr_;
 
   /** Default constructor */
-  list_iterator_templ() = default;
+  slist_iterator_templ() = default;
 
   /** Construct an iterator  */
-  explicit list_iterator_templ(ListT_Const *list) : list_(list) {}
+  explicit slist_iterator_templ(ListT_Const *list) : list_(list) {}
 
   /** Construct an iterator  */
-  explicit list_iterator_templ(ListT_Const *list,
-                               list_entry<T> *entry,
-                               Pointer entry_ptr)
+  explicit slist_iterator_templ(ListT_Const *list,
+                                slist_entry<T> *entry,
+                                Pointer entry_ptr)
     : list_(list), entry_(entry), entry_ptr_(entry_ptr) {}
 
   /** Copy constructor */
-  list_iterator_templ(const list_iterator_templ &other) {
+  slist_iterator_templ(const slist_iterator_templ &other) {
     list_ = other.list_;
     entry_ = other.entry_;
     entry_ptr_ = other.entry_ptr_;
   }
 
   /** Assign this iterator from another iterator */
-  list_iterator_templ& operator=(const list_iterator_templ &other) {
+  slist_iterator_templ& operator=(const slist_iterator_templ &other) {
     if (this != &other) {
       list_ = other.list_;
       entry_ = other.entry_;
@@ -118,40 +118,40 @@ struct list_iterator_templ {
   }
 
   /** Get the next iterator (in place) */
-  list_iterator_templ& operator++() {
+  slist_iterator_templ& operator++() {
     if (is_end()) { return *this; }
     entry_ptr_ = entry_->next_ptr_;
     entry_ = list_->alloc_->template
-      Convert<list_entry<T>>(entry_->next_ptr_);
+      Convert<slist_entry<T>>(entry_->next_ptr_);
     return *this;
   }
 
   /** Get the prior iterator (in place) */
-  list_iterator_templ& operator--() {
+  slist_iterator_templ& operator--() {
     if (is_end() || is_begin()) { return *this; }
     entry_ptr_ = entry_->prior_ptr_;
     entry_ = list_->alloc_->template
-      Convert<list_entry<T>>(entry_->prior_ptr_);
+      Convert<slist_entry<T>>(entry_->prior_ptr_);
     return *this;
   }
 
   /** Return the next iterator */
-  list_iterator_templ operator++(int) const {
-    list_iterator_templ next_iter(*this);
+  slist_iterator_templ operator++(int) const {
+    slist_iterator_templ next_iter(*this);
     ++next_iter;
     return next_iter;
   }
 
   /** Return the prior iterator */
-  list_iterator_templ operator--(int) const {
-    list_iterator_templ prior_iter(*this);
+  slist_iterator_templ operator--(int) const {
+    slist_iterator_templ prior_iter(*this);
     --prior_iter;
     return prior_iter;
   }
 
   /** Return the iterator at count after this one */
-  list_iterator_templ operator+(size_t count) const {
-    list_iterator_templ pos(*this);
+  slist_iterator_templ operator+(size_t count) const {
+    slist_iterator_templ pos(*this);
     for (size_t i = 0; i < count; ++i) {
       ++pos;
     }
@@ -159,8 +159,8 @@ struct list_iterator_templ {
   }
 
   /** Return the iterator at count before this one */
-  list_iterator_templ operator-(size_t count) const {
-    list_iterator_templ pos(*this);
+  slist_iterator_templ operator-(size_t count) const {
+    slist_iterator_templ pos(*this);
     for (size_t i = 0; i < count; ++i) {
       --pos;
     }
@@ -169,33 +169,33 @@ struct list_iterator_templ {
 
   /** Get the iterator at count after this one (in-place) */
   void operator+=(size_t count) {
-    list_iterator_templ pos = (*this) + count;
+    slist_iterator_templ pos = (*this) + count;
     entry_ = pos.entry_;
     entry_ptr_ = pos.entry_ptr_;
   }
 
   /** Get the iterator at count before this one (in-place) */
   void operator-=(size_t count) {
-    list_iterator_templ pos = (*this) - count;
+    slist_iterator_templ pos = (*this) - count;
     entry_ = pos.entry_;
     entry_ptr_ = pos.entry_ptr_;
   }
 
   /** Determine if two iterators are equal */
-  friend bool operator==(const list_iterator_templ &a,
-                         const list_iterator_templ &b) {
+  friend bool operator==(const slist_iterator_templ &a,
+                         const slist_iterator_templ &b) {
     return (a.is_end() && b.is_end()) || (a.entry_ == b.entry_);
   }
 
   /** Determine if two iterators are inequal */
-  friend bool operator!=(const list_iterator_templ &a,
-                         const list_iterator_templ &b) {
+  friend bool operator!=(const slist_iterator_templ &a,
+                         const slist_iterator_templ &b) {
     return !(a.is_end() && b.is_end()) && (a.entry_ != b.entry_);
   }
 
   /** Create the end iterator */
-  static list_iterator_templ const end() {
-    static list_iterator_templ end_iter(nullptr);
+  static slist_iterator_templ const end() {
+    static slist_iterator_templ end_iter(nullptr);
     return end_iter;
   }
 
@@ -216,19 +216,19 @@ struct list_iterator_templ {
 
 /** forward iterator typedef */
 template<typename T>
-using list_iterator = list_iterator_templ<T, false>;
+using slist_iterator = slist_iterator_templ<T, false>;
 
 /** const forward iterator typedef */
 template<typename T>
-using list_citerator = list_iterator_templ<T, true>;
+using list_citerator = slist_iterator_templ<T, true>;
 
 
 /**
  * MACROS used to simplify the list namespace
  * Used as inputs to the SHM_CONTAINER_TEMPLATE
  * */
-#define CLASS_NAME list
-#define TYPED_CLASS list<T>
+#define CLASS_NAME slist
+#define TYPED_CLASS slist<T>
 
 /**
  * The list shared-memory header
@@ -251,13 +251,13 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
  * Doubly linked list implementation
  * */
 template<typename T>
-class list : public SHM_CONTAINER(TYPED_CLASS) {
+class slist : public SHM_CONTAINER(TYPED_CLASS) {
  public:
   BASIC_SHM_CONTAINER_TEMPLATE
 
  public:
   /** Default constructor */
-  list() = default;
+  slist() = default;
 
   /** Initialize list in shared memory */
   void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
@@ -296,14 +296,14 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
   }
 
   /** Move constructor */
-  void WeakMove(list &other) {
+  void WeakMove(slist &other) {
     SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS))
     *header_ = *(other.header_);
     SHM_WEAK_MOVE_END()
   }
 
   /** Copy constructor */
-  void StrongCopy(const list &other) {
+  void StrongCopy(const slist &other) {
     SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS))
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back(**iter);
@@ -325,55 +325,42 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Construct an element at \a pos position in the list */
   template<typename ...Args>
-  void emplace(list_iterator<T> pos, Args&&... args) {
+  void emplace(slist_iterator<T> pos, Args&&... args) {
     Pointer entry_ptr;
     auto entry = _create_entry(entry_ptr, std::forward<Args>(args)...);
     if (size() == 0) {
-      entry->prior_ptr_.SetNull();
       entry->next_ptr_.SetNull();
       header_->head_ptr_ = entry_ptr;
       header_->tail_ptr_ = entry_ptr;
     } else if (pos.is_begin()) {
-      entry->prior_ptr_.SetNull();
       entry->next_ptr_ = header_->head_ptr_;
-      auto head = alloc_->template
-        Convert<list_entry<T>>(header_->tail_ptr_);
-      head->prior_ptr_ = entry_ptr;
       header_->head_ptr_ = entry_ptr;
     } else if (pos.is_end()) {
-      entry->prior_ptr_ = header_->tail_ptr_;
       entry->next_ptr_.SetNull();
       auto tail = alloc_->template
-        Convert<list_entry<T>>(header_->tail_ptr_);
+        Convert<slist_entry<T>>(header_->tail_ptr_);
       tail->next_ptr_ = entry_ptr;
       header_->tail_ptr_ = entry_ptr;
     } else {
-      auto next = alloc_->template
-        Convert<list_entry<T>>(pos.entry_->next_ptr_);
-      auto prior = alloc_->template
-        Convert<list_entry<T>>(pos.entry_->prior_ptr_);
       entry->next_ptr_ = pos.entry_->next_ptr_;
-      entry->prior_ptr_ = pos.entry_->prior_ptr_;
-      next->prior_ptr_ = entry_ptr;
-      prior->next_ptr_ = entry_ptr;
     }
     ++header_->length_;
   }
 
   /** Erase the element at pos */
-  void erase(list_iterator<T> pos) {
+  void erase(slist_iterator<T> pos) {
     erase(pos, pos+1);
   }
 
   /** Erase all elements between first and last */
-  void erase(list_iterator<T> first,
-             list_iterator<T> last) {
+  void erase(slist_iterator<T> first,
+             slist_iterator<T> last) {
     if (first.is_end()) { return; }
     auto first_prior_ptr = first.entry_->prior_ptr_;
     auto pos = first;
     while (pos != last) {
       auto next = pos + 1;
-      Allocator::DestructObj<list_entry<T>>(*pos.entry_);
+      Allocator::DestructObj<slist_entry<T>>(*pos.entry_);
       alloc_->Free(pos.entry_ptr_);
       --header_->length_;
       pos = next;
@@ -383,14 +370,12 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
       header_->head_ptr_ = last.entry_ptr_;
     } else {
       auto first_prior = alloc_->template
-        Convert<list_entry<T>>(first_prior_ptr);
+        Convert<slist_entry<T>>(first_prior_ptr);
       first_prior->next_ptr_ = last.entry_ptr_;
     }
 
     if (last.entry_ptr_.IsNull()) {
       header_->tail_ptr_ = first_prior_ptr;
-    } else {
-      last.entry_->prior_ptr_ = first_prior_ptr;
     }
   }
 
@@ -461,4 +446,4 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
 #undef CLASS_NAME
 #undef TYPED_CLASS
 
-#endif  // LABSTOR_DATA_STRUCTURES_THREAD_UNSAFE_LIST_H_
+#endif  // LABSTOR_DATA_STRUCTURES_THREAD_UNSAFE_SLIST_H_

@@ -91,7 +91,102 @@ union allocator_id_t {
 typedef uint32_t slot_id_t;  // Uniquely ids a MemoryBackend slot
 
 /**
- * A process-independent pointer
+ * Stores an offset into a memory region. Assumes the developer knows
+ * which allocator the pointer comes from.
+ * */
+struct OffsetPointer {
+  std::atomic<size_t> off_;       // Offset within the allocator's slot
+
+  /** Default constructor */
+  OffsetPointer() = default;
+
+  /** Full constructor */
+  explicit OffsetPointer(size_t off) : off_(off) {}
+
+  /** Copy constructor */
+  OffsetPointer(const OffsetPointer &other) : off_(other.off_.load()) {
+  }
+
+  /** Move constructor */
+  OffsetPointer(OffsetPointer &&other) noexcept
+    : off_(other.off_.load()) {
+    other.SetNull();
+  }
+
+  /** Copy assignment operator */
+  OffsetPointer& operator=(const OffsetPointer &other) {
+    if (this != &other) {
+      off_ = other.off_.load();
+    }
+    return *this;
+  }
+
+  /** Move assignment operator */
+  OffsetPointer& operator=(OffsetPointer &&other) {
+    if (this != &other) {
+      off_ = other.off_.load();
+      other.SetNull();
+    }
+    return *this;
+  }
+
+  /** Addition operator */
+  OffsetPointer operator+(size_t size) const {
+    OffsetPointer p;
+    p.off_ = off_ + size;
+    return p;
+  }
+
+  /** Subtraction operator */
+  OffsetPointer operator-(size_t size) const {
+    OffsetPointer p;
+    p.off_ = off_ - size;
+    return p;
+  }
+
+  /** Addition assignment operator */
+  OffsetPointer& operator+=(size_t size) {
+    off_ += size;
+    return *this;
+  }
+
+  /** Subtraction assignment operator */
+  OffsetPointer& operator-=(size_t size) {
+    off_ -= size;
+    return *this;
+  }
+
+  /** Set to null */
+  void SetNull() {
+    off_ = -1;
+  }
+
+  /** Check if null */
+  bool IsNull() const {
+    return off_ == -1;
+  }
+
+  /** Get the null pointer */
+  static OffsetPointer GetNull() {
+    OffsetPointer p;
+    p.SetNull();
+    return p;
+  }
+
+  /** Equality check */
+  bool operator==(const OffsetPointer &other) const {
+    return (other.off_ == off_);
+  }
+
+  /** Inequality check */
+  bool operator!=(const OffsetPointer &other) const {
+    return (other.off_ != off_);
+  }
+};
+
+/**
+ * A process-independent pointer, which stores both the allocator's
+ * information and the offset within the allocator's region
  * */
 struct Pointer {
   allocator_id_t allocator_id_;   // allocator pointer is attached to

@@ -5,12 +5,21 @@ set(CMAKE_CXX_STANDARD 17)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
+###################OPTIONS
 option(BUILD_SHARED_LIBS "Build shared libraries (.dll/.so) instead of static ones (.lib/.a)" ON)
 option(BUILD_MPI_TESTS "Build tests which depend on MPI" ON)
 option(BUILD_OpenMP_TESTS "Build tests which depend on OpenMP" ON)
 option(LABSTOR_RPC_THALLIUM "Enable compatability for mochi" ON)
+option(LABSTOR_ENABLE_COVERAGE "Check how well tests cover code" ON)
+option(LABSTOR_ENABLE_DOXYGEN "Check how well the code is documented" ON)
 
-set(CMAKE_CXX_FLAGS "-O0")
+##################CMAKE MODULES
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
+
+##################OPTIMIZATION
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(CMAKE_CXX_FLAGS "-O3")
+endif()
 
 ##################REQUIRED EXTERNAL LIBRARIES
 
@@ -42,12 +51,42 @@ if(LABSTOR_RPC_THALLIUM)
     endif()
 endif()
 
+##################CODE COVERAGE
+if(LABSTOR_ENABLE_COVERAGE)
+    set(COVERAGE_FLAGS "-fprofile-arcs -ftest-coverage" CACHE STRING
+        "Flags to the coverage program to perform coverage inspection")
+    mark_as_advanced(COVERAGE_FLAGS)
+
+    macro(set_coverage_flags target)
+        set_target_properties(${target}
+                PROPERTIES
+                COMPILE_FLAGS ${COVERAGE_FLAGS}
+                LINK_FLAGS ${COVERAGE_FLAGS}
+                )
+    endmacro()
+endif()
+
+##################DOCUMENTATION
+if(LABSTOR_ENABLE_DOXYGEN)
+    include(UseDoxygenDoc)
+
+    add_doxygen_doc(
+            BUILD_DIR
+            ${CMAKE_CURRENT_BINARY_DIR}/_build
+            DOXY_FILE
+            ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in
+            TARGET_NAME
+            dox
+            COMMENT
+            "HTML documentation"
+    )
+endif()
+
 ##################Build LabStor main packages
 
 add_subdirectory(src)
 
 add_custom_target(lint COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/lint.sh ${CMAKE_SOURCE_DIR})
-
 add_custom_target(preamble COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/preamble.py ${CMAKE_SOURCE_DIR})
 
 ##################MODULES & TESTS

@@ -42,3 +42,8 @@ install(
 install(
         TARGETS labstor_runtime
         DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+
+##################COVERAGE
+if(LABSTOR_ENABLE_COVERAGE)
+    set_coverage_flags(labstor_data_structures)
+endif()
