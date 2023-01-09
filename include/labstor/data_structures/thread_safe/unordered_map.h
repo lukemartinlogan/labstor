@@ -254,7 +254,7 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
   using BUCKET_T = unordered_map_bucket<Key, T>;
  public:
   ShmArchive<mptr<vector<BUCKET_T>>> buckets_;
-  int max_collisions_;
+  RealNumber max_capacity_;
   RealNumber growth_;
   std::atomic<size_t> length_;
   RwLock lock_;
@@ -263,7 +263,7 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
 
   ShmHeader(const ShmHeader &other) {
     buckets_ = other.buckets_;
-    max_collisions_ = other.max_collisions_;
+    max_capacity_ = other.max_capacity_;
     growth_ = other.growth_;
     length_ = other.length_;
   }
@@ -271,7 +271,7 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
   ShmHeader& operator=(const ShmHeader &other) {
     if (this != &other) {
       buckets_ = other.buckets_;
-      max_collisions_ = other.max_collisions_;
+      max_capacity_ = other.max_capacity_;
       growth_ = other.growth_;
       length_ = other.length_.load();
     }
@@ -302,20 +302,20 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
    *
    * @param alloc the shared-memory allocator
    * @param num_buckets the number of buckets to create
-   * @param max_collisions the maximum number of collisions per-bucket before
-   * a growth is triggered
+   * @param max_capacity the maximum number of elements before a growth is
+   * triggered
    * @param growth the multiplier to grow the bucket vector size
    * */
   void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
                      Allocator *alloc,
                      int num_buckets = 20,
-                     int max_collisions = 4,
+                     RealNumber max_capacity = RealNumber(4,5),
                      RealNumber growth = RealNumber(5, 4)) {
     shm_init_header(ar, alloc);
     auto buckets = make_mptr<vector<BUCKET_T>>(alloc_, num_buckets, alloc_);
     buckets >> header_->buckets_;
     header_->length_ = 0;
-    header_->max_collisions_ = max_collisions;
+    header_->max_capacity_ = max_capacity;
     header_->growth_ = growth;
   }
 
@@ -339,10 +339,10 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
   /** Copy constructor */
   void StrongCopy(const unordered_map &other) {
     auto num_buckets = other.get_num_buckets();
-    auto max_collisions = other.header_->max_collisions_;
+    auto max_capacity = other.header_->max_capacity_;
     auto growth = other.header_->growth_;
     SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT((TYPED_CLASS)),
-      num_buckets, max_collisions, growth)
+      num_buckets, max_capacity, growth)
     for (auto entry : other) {
       emplace_templ<false, true>(
         *entry.key_, *entry.val_);
@@ -586,7 +586,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
 
     // Grow vector if necessary
     if constexpr(growth) {
-      if (collisions->size() > header_->max_collisions_) {
+      if (size() > (header_->max_capacity_ * buckets->size()).as_int()) {
         grow_map(cur_num_buckets);
       }
     }
