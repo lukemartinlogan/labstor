@@ -419,6 +419,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   void WeakMove(vector &other) {
     SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS))
     *header_ = *(other.header_);
+    other.header_->length_ = 0;
     SHM_WEAK_MOVE_END()
   }
 
@@ -467,6 +468,16 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
     return lipc::Ref<T>(vec[i].internal_ref());
   }
 
+  /** Get first element of vector */
+  lipc::Ref<T> front() {
+    return (*this)[0];
+  }
+
+  /** Get last element of vector */
+  lipc::Ref<T> back() {
+    return (*this)[size() - 1];
+  }
+
   /** Index the vector at position i */
   const lipc::Ref<T> operator[](const size_t i) const {
     shm_ar<T> *vec = data_ar_const();
@@ -475,7 +486,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Construct an element at the back of the vector */
   template<typename... Args>
-  void emplace_back(Args&&... args) {
+  void emplace_back(Args&& ...args) {
     shm_ar<T> *vec = data_ar();
     if (header_->length_ == header_->max_length_) {
       vec = grow_vector(vec, 0, false);
@@ -484,6 +495,12 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
       *(vec + header_->length_),
       std::forward<Args>(args)...);
     ++header_->length_;
+  }
+
+  /** Construct an element in the front of the vector */
+  template<typename ...Args>
+  void emplace_front(Args&& ...args) {
+    emplace(begin(), std::forward<Args>(args)...);
   }
 
   /** Construct an element at an arbitrary position in the vector */
