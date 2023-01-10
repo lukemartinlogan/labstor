@@ -37,7 +37,7 @@ void ListTest() {
   Allocator *alloc = alloc_g;
   list<T> lp(alloc);
   ListTestSuite<T, list<T>> test(lp, alloc);
-  
+
   test.EmplaceTest(30);
   test.ForwardIteratorTest();
   test.CopyConstructorTest();
@@ -61,5 +61,12 @@ TEST_CASE("ListOfString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   ListTest<lipc::string>();
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+}
+
+TEST_CASE("ListOfStdString") {
+  Allocator *alloc = alloc_g;
+  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+  ListTest<std::string>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }

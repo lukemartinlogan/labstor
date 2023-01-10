@@ -103,7 +103,10 @@ class PosixShmMmap : public MemoryBackend {
 
  protected:
   void _Reserve(size_t size) {
-    ftruncate64(fd_, static_cast<off64_t>(size));
+    int ret = ftruncate64(fd_, static_cast<off64_t>(size));
+    if (ret < 0) {
+      throw SHMEM_RESERVE_FAILED;
+    }
   }
 
   template<typename T=char>
