@@ -114,7 +114,6 @@ struct MultiPageAllocatorHeader : public AllocatorHeader {
 class MultiPageAllocator : public Allocator {
  private:
   MultiPageAllocatorHeader *header_;
-  char *custom_header_;
   _array<MultiPageFreeList> mp_free_lists_;
 
  public:
@@ -122,7 +121,7 @@ class MultiPageAllocator : public Allocator {
    * Allocator constructor
    * */
   MultiPageAllocator()
-    : header_(nullptr), custom_header_(nullptr) {}
+    : header_(nullptr) {}
 
   /**
    * Determine the size of the shared-memory header

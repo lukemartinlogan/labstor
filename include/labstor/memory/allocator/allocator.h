@@ -39,7 +39,8 @@ namespace labstor::ipc {
 enum class AllocatorType {
   kPageAllocator,
   kMultiPageAllocator,
-  kStackAllocator
+  kStackAllocator,
+  kMallocAllocator,
 };
 
 /**
@@ -68,12 +69,13 @@ struct AllocatorHeader {
 class Allocator {
  protected:
   MemoryBackend *backend_;
+  char *custom_header_;
 
  public:
   /**
    * Constructor
    * */
-  Allocator() = default;
+  Allocator() : custom_header_(nullptr) {}
 
   /**
    * Destructor
@@ -441,9 +443,9 @@ class Allocator {
    *
    * @return Custom header pointer
    * */
-  template<typename HEAD>
-  HEAD* GetCustomHeader() {
-    return reinterpret_cast<HEAD*>(backend_->data_ + GetInternalHeaderSize());
+  template<typename HEADER_T>
+  HEADER_T* GetCustomHeader() {
+    return reinterpret_cast<HEADER_T*>(custom_header_);
   }
 
   /**

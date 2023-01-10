@@ -31,6 +31,7 @@
 #include "stack_allocator.h"
 #include "page_allocator.h"
 #include "multi_page_allocator.h"
+#include "malloc_allocator.h"
 
 namespace labstor::ipc {
 
@@ -46,6 +47,7 @@ class AllocatorFactory {
                                              size_t custom_header_size,
                                              Args&& ...args) {
     switch (type) {
+      // PageAllocator
       case AllocatorType::kPageAllocator: {
         auto alloc = std::make_unique<PageAllocator>();
         alloc->shm_init(backend,
@@ -54,6 +56,7 @@ class AllocatorFactory {
                         std::forward<Args>(args)...);
         return alloc;
       }
+      // MultiPageAllocator
       case AllocatorType::kMultiPageAllocator: {
         auto alloc = std::make_unique<MultiPageAllocator>();
         alloc->shm_init(backend,
@@ -62,6 +65,7 @@ class AllocatorFactory {
                         std::forward<Args>(args)...);
         return alloc;
       }
+      // StackAllocator
       case AllocatorType::kStackAllocator: {
         auto alloc = std::make_unique<StackAllocator>();
         alloc->shm_init(backend,
@@ -70,6 +74,16 @@ class AllocatorFactory {
                         std::forward<Args>(args)...);
         return alloc;
       }
+      // Malloc Allocator
+      case AllocatorType::kMallocAllocator: {
+        auto alloc = std::make_unique<MallocAllocator>();
+        alloc->shm_init(backend,
+                        alloc_id,
+                        custom_header_size,
+                        std::forward<Args>(args)...);
+        return alloc;
+      }
+      // Default
       default: return nullptr;
     }
   }
@@ -80,18 +94,27 @@ class AllocatorFactory {
   static std::unique_ptr<Allocator> shm_deserialize(MemoryBackend *backend) {
     auto header_ = reinterpret_cast<AllocatorHeader*>(backend->data_);
     switch (static_cast<AllocatorType>(header_->allocator_type_)) {
+      // PageAllocator
       case AllocatorType::kPageAllocator: {
         auto alloc = std::make_unique<PageAllocator>();
         alloc->shm_deserialize(backend);
         return alloc;
       }
+      // MultiPageAllocator
       case AllocatorType::kMultiPageAllocator: {
         auto alloc = std::make_unique<MultiPageAllocator>();
         alloc->shm_deserialize(backend);
         return alloc;
       }
+      // Stack Allocator
       case AllocatorType::kStackAllocator: {
         auto alloc = std::make_unique<StackAllocator>();
+        alloc->shm_deserialize(backend);
+        return alloc;
+      }
+      // Malloc Allocator
+      case AllocatorType::kMallocAllocator: {
+        auto alloc = std::make_unique<MallocAllocator>();
         alloc->shm_deserialize(backend);
         return alloc;
       }

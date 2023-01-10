@@ -46,7 +46,7 @@ struct SimpleAllocatorHeader {
   int checksum_;
 };
 
-Allocator* Pretest(AllocatorType type);
+Allocator* Pretest(AllocatorType alloc_type, MemoryBackendType backend_type);
 void Posttest();
 void PageAllocationTest(Allocator *alloc);
 

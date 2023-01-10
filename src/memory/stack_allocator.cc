@@ -34,7 +34,7 @@ void StackAllocator::shm_init(MemoryBackend *backend,
                              size_t custom_header_size) {
   backend_ = backend;
   header_ = reinterpret_cast<StackAllocatorHeader*>(backend_->data_);
-  custom_header_ = GetCustomHeader<char>();
+  custom_header_ = reinterpret_cast<char*>(header_ + 1);
   size_t region_off = (custom_header_ - backend_->data_) + custom_header_size;
   size_t region_size = backend_->data_size_ - region_off;
   header_->Configure(id, custom_header_size, region_off, region_size);
@@ -43,7 +43,7 @@ void StackAllocator::shm_init(MemoryBackend *backend,
 void StackAllocator::shm_deserialize(MemoryBackend *backend) {
   backend_ = backend;
   header_ = reinterpret_cast<StackAllocatorHeader*>(backend_->data_);
-  custom_header_ = GetCustomHeader<char>();
+  custom_header_ = reinterpret_cast<char*>(header_ + 1);
 }
 
 size_t StackAllocator::GetCurrentlyAllocatedSize() {

@@ -57,14 +57,13 @@ struct StackAllocatorHeader : public AllocatorHeader {
 class StackAllocator : public Allocator {
  private:
   StackAllocatorHeader *header_;
-  char *custom_header_;
 
  public:
   /**
    * Allocator constructor
    * */
   StackAllocator()
-  : header_(nullptr), custom_header_(nullptr) {}
+  : header_(nullptr) {}
 
   /**
    * Determine the size of the shared-memory header

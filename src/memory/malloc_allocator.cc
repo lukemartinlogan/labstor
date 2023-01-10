@@ -28,12 +28,17 @@
 
 namespace labstor::ipc {
 
+struct MallocPage {
+  size_t page_size_;
+};
+
 void MallocAllocator::shm_init(MemoryBackend *backend,
                                allocator_id_t id,
                                size_t custom_header_size) {
   backend_ = backend;
-  header_ = reinterpret_cast<MallocAllocatorHeader*>(backend_->data_);
-  custom_header_ = GetCustomHeader<char>();
+  header_ = reinterpret_cast<MallocAllocatorHeader*>(
+    malloc(sizeof(MallocAllocatorHeader) + custom_header_size));
+  custom_header_ = reinterpret_cast<char*>(header_ + 1);
   header_->Configure(id, custom_header_size);
 }
 
@@ -42,25 +47,47 @@ void MallocAllocator::shm_deserialize(MemoryBackend *backend) {
 }
 
 size_t MallocAllocator::GetCurrentlyAllocatedSize() {
-  throw NOT_IMPLEMENTED.format("MallocAllocator");
+  return header_->total_alloc_size_;
 }
 
 Pointer MallocAllocator::Allocate(size_t size) {
-  return Pointer(GetId(), (size_t)malloc(size));
+  auto page = reinterpret_cast<MallocPage*>(
+    malloc(sizeof(MallocPage) + size));
+  page->page_size_ = size;
+  header_->total_alloc_size_ += size;
+  return Pointer(GetId(), size_t(page + 1));
 }
 
 Pointer MallocAllocator::AlignedAllocate(size_t size, size_t alignment) {
-  return Pointer(GetId(), (size_t)aligned_alloc(alignment, size));
+  auto page = reinterpret_cast<MallocPage*>(
+    aligned_alloc(alignment, sizeof(MallocPage) + size));
+  page->page_size_ = size;
+  header_->total_alloc_size_ += size;
+  return Pointer(GetId(), size_t(page + 1));
 }
 
 bool MallocAllocator::ReallocateNoNullCheck(Pointer &p, size_t new_size) {
+  // Get the input page
+  auto page = reinterpret_cast<MallocPage*>(
+    p.off_.load() - sizeof(MallocPage));
+  header_->total_alloc_size_ += new_size - page->page_size_;
   Pointer old_p = p;
-  p = Pointer(GetId(), (size_t)realloc((void*)p.off_.load(), new_size));
+
+  // Reallocate the input page
+  auto new_page = reinterpret_cast<MallocPage*>(
+    realloc(page, sizeof(MallocPage) + new_size));
+  new_page->page_size_ = new_size;
+
+  // Create the pointer
+  p = Pointer(GetId(), size_t(new_page + 1));
   return p.off_ == old_p.off_;
 }
 
 void MallocAllocator::FreeNoNullCheck(Pointer &p) {
-  free((void*)p.off_.load());
+  auto page = reinterpret_cast<MallocPage*>(
+    p.off_.load() - sizeof(MallocPage));
+  header_->total_alloc_size_ -= page->page_size_;
+  free(page);
 }
 
 }  // namespace labstor::ipc

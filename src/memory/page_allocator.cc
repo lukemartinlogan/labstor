@@ -44,7 +44,7 @@ void PageAllocator::shm_init(MemoryBackend *backend,
   header_ = reinterpret_cast<PageAllocatorHeader*>(backend_->data_);
   header_->Configure(id, custom_header_size, page_size,
                      thread_table_size, concurrency, min_free_count);
-  custom_header_ = GetCustomHeader<char>();
+  custom_header_ = reinterpret_cast<char*>(header_ + 1);
   void *free_list_start = GetFreeListStart();
   // Create the array of free lists (which are queues)
   free_lists_.shm_init(free_list_start, header_->thread_table_size_);
@@ -73,7 +73,7 @@ void PageAllocator::shm_init(MemoryBackend *backend,
 void PageAllocator::shm_deserialize(MemoryBackend *backend) {
   backend_ = backend;
   header_ = reinterpret_cast<PageAllocatorHeader*>(backend_->data_);
-  custom_header_ = GetCustomHeader<char>();
+  custom_header_ = reinterpret_cast<char*>(header_ + 1);
   void *free_list_start = GetFreeListStart();
   free_lists_.shm_deserialize(free_list_start);
 }

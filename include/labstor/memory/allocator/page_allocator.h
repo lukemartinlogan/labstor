@@ -70,7 +70,6 @@ struct PageAllocatorHeader : public AllocatorHeader {
 class PageAllocator : public Allocator {
  private:
   PageAllocatorHeader *header_;
-  char *custom_header_;
   _array<PageFreeList> free_lists_;
 
  public:
@@ -78,7 +77,7 @@ class PageAllocator : public Allocator {
    * Allocator constructor
    * */
   PageAllocator()
-  : header_(nullptr), custom_header_(nullptr) {}
+  : header_(nullptr) {}
 
   /**
    * Determine the size of the shared-memory header

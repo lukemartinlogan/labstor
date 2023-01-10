@@ -58,7 +58,7 @@ void MultiPageAllocator::shm_init(MemoryBackend *backend,
   header_->Configure(alloc_id, custom_header_size, min_page_size,
                      max_page_size, growth_rate, coalesce_min_size,
                      coalesce_frac, thread_table_size, concurrency);
-  custom_header_ = GetCustomHeader<char>();
+  custom_header_ = reinterpret_cast<char*>(header_ + 1);
   // Get the number of page sizes to cache per MultiPageFreeList
   size_t round;
   header_->min_page_log_ = CountLogarithm(growth_rate, min_page_size, round);
@@ -93,7 +93,7 @@ void MultiPageAllocator::shm_init(MemoryBackend *backend,
 void MultiPageAllocator::shm_deserialize(MemoryBackend *backend) {
   backend_ = backend;
   header_ = reinterpret_cast<MultiPageAllocatorHeader*>(backend_->data_);
-  custom_header_ = GetCustomHeader<char>();
+  custom_header_ = reinterpret_cast<char*>(header_ + 1);
   void *free_list_start = GetMpFreeListStart();
   mp_free_lists_.shm_deserialize(free_list_start);
 }

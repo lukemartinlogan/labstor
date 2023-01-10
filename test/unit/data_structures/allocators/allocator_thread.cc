@@ -40,7 +40,8 @@ void MultiThreadedPageAllocationTest(Allocator *alloc) {
 }
 
 TEST_CASE("PageAllocatorMultithreaded") {
-  auto alloc = Pretest(AllocatorType::kPageAllocator);
+  auto alloc = Pretest(AllocatorType::kPageAllocator,
+                       MemoryBackendType::kPosixShmMmap);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   MultiThreadedPageAllocationTest(alloc);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
@@ -48,7 +49,8 @@ TEST_CASE("PageAllocatorMultithreaded") {
 }
 
 TEST_CASE("StackAllocatorMultithreaded") {
-  auto alloc = Pretest(AllocatorType::kStackAllocator);
+  auto alloc = Pretest(AllocatorType::kStackAllocator,
+                       MemoryBackendType::kPosixShmMmap);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   MultiThreadedPageAllocationTest(alloc);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
@@ -56,7 +58,8 @@ TEST_CASE("StackAllocatorMultithreaded") {
 }
 
 TEST_CASE("MultiPageAllocatorMultithreaded") {
-  auto alloc = Pretest(AllocatorType::kMultiPageAllocator);
+  auto alloc = Pretest(AllocatorType::kMultiPageAllocator,
+                       MemoryBackendType::kPosixShmMmap);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   MultiThreadedPageAllocationTest(alloc);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);

@@ -34,26 +34,28 @@
 namespace labstor::ipc {
 
 struct MallocAllocatorHeader : public AllocatorHeader {
+  std::atomic<size_t> total_alloc_size_;
+
   MallocAllocatorHeader() = default;
 
   void Configure(allocator_id_t alloc_id,
                  size_t custom_header_size) {
     AllocatorHeader::Configure(alloc_id, AllocatorType::kStackAllocator,
                                custom_header_size);
+    total_alloc_size_ = 0;
   }
 };
 
 class MallocAllocator : public Allocator {
  private:
   MallocAllocatorHeader *header_;
-  char *custom_header_;
 
  public:
   /**
    * Allocator constructor
    * */
   MallocAllocator()
-  : header_(nullptr), custom_header_(nullptr) {}
+  : header_(nullptr) {}
 
   /**
    * Determine the size of the shared-memory header
