@@ -39,13 +39,12 @@ using labstor::ipc::Pointer;
 using labstor::ipc::unordered_map;
 using labstor::ipc::string;
 
-#define GET_INT_FROM_KEY(VAR) GET_INT_FROM_VAR(Key, key_ret, VAR)
-#define GET_INT_FROM_VAL(VAR) GET_INT_FROM_VAR(Val, val_ret, VAR)
+#define GET_INT_FROM_KEY(VAR) CREATE_GET_INT_FROM_VAR(Key, key_ret, VAR)
+#define GET_INT_FROM_VAL(VAR) CREATE_GET_INT_FROM_VAR(Val, val_ret, VAR)
 
 #define CREATE_KV_PAIR(KEY, VAL)\
-  Key key; Val val;             \
-  SET_VAR_TO_INT_OR_STRING(Key, key, KEY); \
-  SET_VAR_TO_INT_OR_STRING(Val, val, VAL);
+  CREATE_SET_VAR_TO_INT_OR_STRING(Key, key, KEY); \
+  CREATE_SET_VAR_TO_INT_OR_STRING(Val, val, VAL);
 
 template<typename Key, typename Val>
 void UnorderedMapOpTest() {

@@ -32,13 +32,15 @@
 using labstor::ipc::list;
 using labstor::ipc::string;
 
-void ListOfIntTest() {
+template<typename T>
+void ListTest() {
   Allocator *alloc = alloc_g;
-  list<int> lp(alloc);
+  list<T> lp(alloc);
 
   // Emplace 30 elements
   for (int i = 0; i < 30; ++i) {
-    lp.emplace_back(i);
+    CREATE_SET_VAR_TO_INT_OR_STRING(T, var, i);
+    lp.emplace_back(var);
   }
   REQUIRE(lp.size() == 30);
 
@@ -46,66 +48,73 @@ void ListOfIntTest() {
   {
     int fcur = 0;
     for (auto num : lp) {
-      REQUIRE(*num == fcur);
+      CREATE_SET_VAR_TO_INT_OR_STRING(T, fcur_conv, fcur);
+      REQUIRE(*num == fcur_conv);
       ++fcur;
     }
   }
 
   // Copy list (constructor)
   {
-    list<int> cpy(lp);
+    list<T> cpy(lp);
     int fcur = 0;
     REQUIRE(lp.size() == 30);
     REQUIRE(cpy.size() == 30);
     fcur = 0;
     for (auto num : lp) {
-      REQUIRE(*num == fcur);
+      CREATE_SET_VAR_TO_INT_OR_STRING(T, fcur_conv, fcur);
+      REQUIRE(*num == fcur_conv);
       ++fcur;
     }
     fcur = 0;
     for (auto num : cpy) {
-      REQUIRE(*num == fcur);
+      CREATE_SET_VAR_TO_INT_OR_STRING(T, fcur_conv, fcur);
+      REQUIRE(*num == fcur_conv);
       ++fcur;
     }
   }
 
   // Copy list (assign)
   {
-    list<int> cpy;
+    list<T> cpy;
     cpy = lp;
     int fcur = 0;
     REQUIRE(lp.size() == 30);
     REQUIRE(cpy.size() == 30);
     fcur = 0;
     for (auto num : lp) {
-      REQUIRE(*num == fcur);
+      CREATE_SET_VAR_TO_INT_OR_STRING(T, fcur_conv, fcur);
+      REQUIRE(*num == fcur_conv);
       ++fcur;
     }
     fcur = 0;
     for (auto num : cpy) {
-      REQUIRE(*num == fcur);
+      CREATE_SET_VAR_TO_INT_OR_STRING(T, fcur_conv, fcur);
+      REQUIRE(*num == fcur_conv);
       ++fcur;
     }
   }
 
   // move vector
   {
-    list<int> cpy(std::move(lp));
+    list<T> cpy(std::move(lp));
     int fcur = 0;
     lp = std::move(cpy);
     fcur = 0;
     REQUIRE(lp.size() == 30);
     REQUIRE(cpy.size() == 0);
     for (auto num : lp) {
-      REQUIRE(*num == fcur);
+      CREATE_SET_VAR_TO_INT_OR_STRING(T, fcur_conv, fcur);
+      REQUIRE(*num == fcur_conv);
       ++fcur;
     }
   }
 
   // emplace_front and erase front
   {
-    lp.emplace_front(100);
-    REQUIRE(*lp.front() == 100);
+    CREATE_SET_VAR_TO_INT_OR_STRING(T, i0, 100);
+    lp.emplace_front(i0);
+    REQUIRE(*lp.front() == i0);
     REQUIRE(lp.size() == 31);
     lp.erase(lp.begin(), lp.begin() + 1);
   }
@@ -114,34 +123,39 @@ void ListOfIntTest() {
   {
     int fcur = 0;
     for (auto num : lp) {
-      REQUIRE(*num == fcur);
+      CREATE_SET_VAR_TO_INT_OR_STRING(T, fcur_conv, fcur);
+      REQUIRE(*num == fcur_conv);
       ++fcur;
     }
   }
 
   // Modify the fourth list entry
   {
+    CREATE_SET_VAR_TO_INT_OR_STRING(T, i4, 25);
     auto iter = lp.begin() + 4;
-    (**iter) = 25;
+    (**iter) = i4;
   }
 
   // Verify the modification took place
   {
+    CREATE_SET_VAR_TO_INT_OR_STRING(T, i4, 25);
     auto iter = lp.begin() + 4;
-    REQUIRE((**iter) == 25);
+    REQUIRE((**iter) == i4);
   }
 
   // Copy list (copy constructor)
   {
-    std::list<int> orig;
+    std::list<T> orig;
     for (int i = 0; i < 30; ++i) {
-      orig.emplace_back(i);
+      CREATE_SET_VAR_TO_INT_OR_STRING(T, var, i);
+      orig.emplace_back(var);
     }
-    labstor::ipc::list<int> cpy(orig);
+    labstor::ipc::list<T> cpy(orig);
     REQUIRE(cpy.size() == 30);
     int fcur = 0;
     for (auto num : cpy) {
-      REQUIRE(*num == fcur);
+      CREATE_SET_VAR_TO_INT_OR_STRING(T, fcur_conv, fcur);
+      REQUIRE(*num == fcur_conv);
       ++fcur;
     }
   }
@@ -153,81 +167,16 @@ void ListOfIntTest() {
   }
 }
 
-void ListOfStringTest() {
-  Allocator *alloc = alloc_g;
-  list<string> lp(alloc);
-
-  // Emplace 30 elements into the list
-  for (int i = 0; i < 30; ++i) {
-    lp.emplace_back(std::to_string(i));
-  }
-  REQUIRE(lp.size() == 30);
-
-  // Verify forward iterator
-  {
-    int fcur = 0;
-    for (auto num : lp) {
-      REQUIRE(*num == std::to_string(fcur));
-      ++fcur;
-    }
-  }
-
-  // Verify emplace_front and erase front
-  {
-    lp.emplace_front("100");
-    REQUIRE(*lp.front() == "100");
-    REQUIRE(lp.size() == 31);
-    lp.erase(lp.begin(), lp.begin() + 1);
-  }
-
-  // Verify the list is still unchanged
-  {
-    int fcur = 0;
-    for (auto num : lp) {
-      REQUIRE(*num == std::to_string(fcur));
-      ++fcur;
-    }
-  }
-
-  // Modify the fourth list entry (move assignment)
-  {
-    auto iter = lp.begin() + 4;
-    (**iter) = std::move(string("25"));
-  }
-
-  // Verify the modification took place
-  {
-    auto iter = lp.begin() + 4;
-    REQUIRE((**iter) == "25");
-  }
-
-  // Modify the fourth list entry (copy assignment)
-  {
-    auto iter = lp.begin() + 4;
-    string text("50");
-    (**iter) = text;
-  }
-
-  // Verify the modification took place
-  {
-    auto iter = lp.begin() + 4;
-    REQUIRE((**iter) == "50");
-  }
-
-  lp.erase(lp.begin(), lp.end());
-  REQUIRE(lp.size() == 0);
-}
-
 TEST_CASE("ListOfInt") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  ListOfIntTest();
+  ListTest<int>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
 
 TEST_CASE("ListOfString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  ListOfStringTest();
+  ListTest<lipc::string>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
