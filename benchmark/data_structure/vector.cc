@@ -23,27 +23,28 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+// Boost interprocess
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/containers/vector.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
 
+// Boost private
 #include <boost/container/scoped_allocator.hpp>
 #include <boost/container/string.hpp>
 #include <boost/container/vector.hpp>
 
+// Std
 #include <string>
 #include <vector>
 
+// LabStor
 #include <labstor/data_structures/string.h>
 #include <labstor/data_structures/thread_unsafe/vector.h>
 
 #include "basic_test.h"
 #include "test_init.h"
-
-#include <labstor/util/timer.h>
-using Timer = labstor::HighResMonotonicTimer;
 
 namespace bipc = boost::interprocess;
 

@@ -31,16 +31,8 @@ using labstor::ipc::Allocator;
 using labstor::ipc::MemoryManager;
 using labstor::ipc::Pointer;
 
-namespace bipc = boost::interprocess;
-
-typedef bipc::managed_shared_memory::segment_manager segment_manager_t;
-typedef boost::container::scoped_allocator_adaptor<
-bipc::allocator<void, segment_manager_t>>
-  void_allocator;
-
-extern std::unique_ptr<void_allocator> alloc_inst_g;
-extern std::unique_ptr<bipc::managed_shared_memory> segment_g;
-
 using Timer = labstor::HighResMonotonicTimer;
+
+extern std::string shm_url;
 
 #endif //LABSTOR_BENCHMARK_DATA_STRUCTURE_TEST_INIT_H_
