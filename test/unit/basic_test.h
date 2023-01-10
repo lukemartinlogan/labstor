@@ -45,6 +45,25 @@ static bool VerifyBuffer(char *ptr, size_t size, char nonce) {
   return true;
 }
 
+#define SET_VAR_TO_INT_OR_STRING(TYPE, VAR, VAL)\
+  if constexpr(std::is_same_v<TYPE, lipc::string>) {\
+    VAR = lipc::string(std::to_string(VAL));\
+  } else if constexpr(std::is_same_v<TYPE, std::string>) {\
+    VAR = std::string(std::to_string(VAL));\
+  } else {\
+    VAR = VAL;\
+  }
+
+#define GET_INT_FROM_VAR(TYPE, RET, VAR)\
+  int RET;\
+  if constexpr(std::is_same_v<TYPE, lipc::string>) {\
+    RET = atoi((VAR).str().c_str());\
+  } else if constexpr(std::is_same_v<TYPE, std::string>) {\
+    RET = atoi((VAR).c_str());\
+  } else {\
+    RET = VAR;\
+  }
+
 void MainPretest();
 void MainPosttest();
 

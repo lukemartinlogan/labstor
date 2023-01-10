@@ -3,21 +3,26 @@ project(labstor)
 
 set(CMAKE_CXX_STANDARD 17)
 
+include_directories( ${Boost_INCLUDE_DIRS} )
+include_directories( ${TEST_MAIN} )
 add_executable(benchmark_data_structures
         ${TEST_MAIN}/main.cc
         test_init.cc
         string.cc
         list.cc
         vector.cc
-        manual_ptr.cc
-        unique_ptr.cc
+        # manual_ptr.cc
+        # unique_ptr.cc
         unordered_map.cc
-        unordered_map_thread.cc
+        # unordered_map_thread.cc
 )
-
-add_dependencies(test_data_structure_exec labstor_data_structures)
-target_link_libraries(test_data_structure_exec
-        labstor_data_structures Catch2::Catch2 MPI::MPI_CXX OpenMP::OpenMP_CXX)
+add_dependencies(benchmark_data_structures labstor_data_structures)
+target_link_libraries(benchmark_data_structures
+        labstor_data_structures
+        Catch2::Catch2
+        MPI::MPI_CXX
+        OpenMP::OpenMP_CXX
+        ${Boost_LIBRARIES})
 
 # STRING TESTS
 add_test(NAME test_string COMMAND

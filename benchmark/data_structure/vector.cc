@@ -27,7 +27,9 @@
 #include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/containers/vector.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
+#include <boost/interprocess/allocators/allocator.hpp>
 
+#include <boost/container/scoped_allocator.hpp>
 #include <boost/container/string.hpp>
 #include <boost/container/vector.hpp>
 
@@ -37,8 +39,13 @@
 #include <labstor/data_structures/string.h>
 #include <labstor/data_structures/thread_unsafe/vector.h>
 
+#include "basic_test.h"
+#include "test_init.h"
+
 #include <labstor/util/timer.h>
 using Timer = labstor::HighResMonotonicTimer;
+
+namespace bipc = boost::interprocess;
 
 #define SET_VAR_TO_INT_OR_STRING(TYPE, VAR, VAL)\
   if constexpr(std::is_same_v<TYPE, lipc::string>) {\
@@ -50,162 +57,190 @@ using Timer = labstor::HighResMonotonicTimer;
     VAR = VAL;\
   }
 
+/**
+ * A series of performance tests for vectors
+ * OUTPUT:
+ * [test_name] [vec_type] [internal_type] [time_ms]
+ * */
 template<typename T, typename VecT>
-void ResizeTest(int count) {
-  Timer t;
-  VecT vec;
-  T var;
+class VectorTest {
+ public:
+  std::string vec_type;
+  std::string internal_type;
+  VecT *vec;
 
-  SET_VAR_TO_INT_OR_STRING(T, var, 124);
+  VectorTest() {
+    if constexpr(std::is_same_v<std::vector<T>, VecT>) {
+      vec = new VecT();
+      vec_type = "std::vector";
+    } else if constexpr(std::is_same_v<lipc::vector<T>, VecT>) {
+      vec = new VecT();
+      vec_type = "lipc::vector";
+    } else if constexpr(std::is_same_v<boost::container::vector<T>, VecT>) {
+      vec = new VecT();
+      vec_type = "boost::vector";
+    } else if constexpr(std::is_same_v<bipc::vector<T>, VecT>) {
+      vec = BoostIpcVector();
+      vec_type = "bipc::vector";
+    } else {
+      std::cout << "INVALID: none of the vector tests matched" << std::endl;
+      return;
+    }
 
-  t.Resume();
-  vec.resize(count);
-  t.Pause();
-
-  std::cout << "FixedResize: " << t.GetSec() << "s" << std::endl;
-}
-
-template<typename T, typename VecT>
-void ReserveEmplaceTest(int count) {
-  Timer t;
-  VecT vec;
-  T var;
-  SET_VAR_TO_INT_OR_STRING(T, var, 124);
-
-  t.Resume();
-  vec.reserve(count);
-  for(int i = 0; i < count; ++i) {
-    vec.emplace_back(var);
-  }
-  t.Pause();
-
-  std::cout << "FixedEmplace: " << t.GetSec() << "s" << std::endl;
-}
-
-template<typename T, typename VecT>
-void GetTest(int count) {
-  Timer t;
-  VecT vec;
-  T var;
-  SET_VAR_TO_INT_OR_STRING(T, var, 124);
-
-  vec.reserve(count);
-  for(int i = 0; i < count; ++i) {
-    vec.emplace_back(var);
+    if constexpr(std::is_same_v<T, lipc::string>) {
+      internal_type = "lipc::string";
+    } else if constexpr(std::is_same_v<T, std::string>) {
+      internal_type = "std::string";
+    } else if constexpr(std::is_same_v<T, int>) {
+      internal_type = "int";
+    }
   }
 
-  t.Resume();
-  for(int i = 0; i < count; ++i) {
-    auto x = vec[i];
-  }
-  t.Pause();
-
-  std::cout << "FixedGet: " << t.GetSec() << "s" << std::endl;
-}
-
-template<typename T, typename VecT>
-void ForwardIteratorTest(int count) {
-  Timer t;
-  VecT vec;
-  T var;
-  SET_VAR_TO_INT_OR_STRING(T, var, 124);
-
-  vec.reserve(count);
-  for(int i = 0; i < count; ++i) {
-    vec.emplace_back(var);
+  void TestOutput(const std::string &test_name, Timer &t) {
+    printf("%s, %s, %s, %lf\n",
+           test_name.c_str(),
+           vec_type.c_str(),
+           internal_type.c_str(),
+           t.GetMsec());
   }
 
-  t.Resume();
-  for(auto x : vec) {}
-  t.Pause();
+  void ResizeTest(VecT &vec, int count) {
+    Timer t;
+    T var;
 
-  std::cout << "ForwardIterator: " << t.GetSec() << "s" << std::endl;
-}
+    SET_VAR_TO_INT_OR_STRING(T, var, 124);
 
-template<typename T, typename VecT>
-void CopyTest(int count) {
-  Timer t;
-  VecT vec;
-  T var;
-  SET_VAR_TO_INT_OR_STRING(T, var, 124);
+    t.Resume();
+    vec.resize(count);
+    t.Pause();
 
-  vec.reserve(count);
-  for(int i = 0; i < count; ++i) {
-    vec.emplace_back(var);
+    TestOutput("FixedResize", t);
   }
 
-  t.Resume();
-  lipc::vector vec2(vec);
-  t.Pause();
+  void ReserveEmplaceTest(VecT &vec, int count) {
+    Timer t;
+    T var;
+    SET_VAR_TO_INT_OR_STRING(T, var, 124);
 
-  std::cout << "Copy: " << t.GetSec() << "s" << std::endl;
-}
+    t.Resume();
+    vec.reserve(count);
+    for (int i = 0; i < count; ++i) {
+      vec.emplace_back(var);
+    }
+    t.Pause();
 
-template<typename T, typename VecT>
-void MoveTest(int count) {
-  Timer t;
-  VecT vec;
-  T var;
-  SET_VAR_TO_INT_OR_STRING(T, var, 124);
-
-  vec.reserve(count);
-  for(int i = 0; i < count; ++i) {
-    vec.emplace_back(var);
+    TestOutput("FixedEmplace", t);
   }
 
-  t.Resume();
-  lipc::vector vec2(std::move(vec));
-  t.Pause();
+  void GetTest(VecT &vec, int count) {
+    Timer t;
+    T var;
+    SET_VAR_TO_INT_OR_STRING(T, var, 124);
 
-  std::cout << "Move: " << t.GetSec() << "s" << std::endl;
-}
+    vec.reserve(count);
+    for (int i = 0; i < count; ++i) {
+      vec.emplace_back(var);
+    }
 
-template<typename T, typename VecT>
-void VectorTest(const std::string &name) {
-  if constexpr(std::is_same_v<T, lipc::string>) {
-    std::cout << name << ": lipc::string" << std::endl;
-  } else if constexpr(std::is_same_v<T, std::string>) {
-    std::cout << name << ": std::string" << std::endl;
+    t.Resume();
+    for (int i = 0; i < count; ++i) {
+      auto x = vec[i];
+    }
+    t.Pause();
+
+    TestOutput("FixedGet", t);
   }
-  else {
-    std::cout << name << ": int" << std::endl;
+
+  void ForwardIteratorTest(VecT &vec, int count) {
+    Timer t;
+    T var;
+    SET_VAR_TO_INT_OR_STRING(T, var, 124);
+
+    vec.reserve(count);
+    for (int i = 0; i < count; ++i) {
+      vec.emplace_back(var);
+    }
+
+    t.Resume();
+    for (auto x : vec) {}
+    t.Pause();
+
+    TestOutput("ForwardIterator", t);
   }
 
-  ResizeTest<T, VecT>(1024);
-  ReserveEmplaceTest<T, VecT>(1024);
-  GetTest<T, VecT>(1024);
-  ForwardIteratorTest<T, VecT>(1024);
-  CopyTest<T, VecT>(1024);
-  MoveTest<T, VecT>(1024);
+  void CopyTest(VecT &vec, int count) {
+    Timer t;
+    T var;
+    SET_VAR_TO_INT_OR_STRING(T, var, 124);
 
-  std::cout << "Finished" << std::endl;
-  std::cout << std::endl;
-}
+    vec.reserve(count);
+    for (int i = 0; i < count; ++i) {
+      vec.emplace_back(var);
+    }
+
+    t.Resume();
+    VecT vec2(vec);
+    t.Pause();
+
+    TestOutput("Copy", t);
+  }
+
+  void MoveTest(VecT &vec, int count) {
+    Timer t;
+    T var;
+    SET_VAR_TO_INT_OR_STRING(T, var, 124);
+
+    vec.reserve(count);
+    for (int i = 0; i < count; ++i) {
+      vec.emplace_back(var);
+    }
+
+    t.Resume();
+    VecT vec2(std::move(vec));
+    t.Pause();
+
+    TestOutput("Move", t);
+  }
+
+  VecT *BoostIpcVector() {
+    void_allocator &alloc_inst = *alloc_inst_g;
+    bipc::managed_shared_memory &segment = *segment_g;
+    VecT *vec = segment.construct<VecT>("BoostVector")(alloc_inst);
+    return vec;
+  }
+
+  void Test() {
+    ResizeTest(*vec, 1000000);
+    ReserveEmplaceTest(*vec, 1000000);
+    GetTest(*vec, 1000000);
+    ForwardIteratorTest(*vec, 1000000);
+    CopyTest(*vec, 1000000);
+    MoveTest(*vec, 1000000);
+  }
+};
 
 void FullVectorTest() {
   // std::vector tests
-  VectorTest<int, std::vector<int>>("std::vector");
-  VectorTest<std::string, std::vector<lipc::string>>("std::vector");
-  VectorTest<lipc::string, std::vector<lipc::string>>("std::vector");
-
-  // lipc::vector tests
-  VectorTest<int, lipc::vector<int>>("lipc::vector");
-  VectorTest<std::string, lipc::vector<lipc::string>>("lipc::vector");
-  VectorTest<lipc::string, lipc::vector<lipc::string>>("lipc::vector");
+  /*VectorTest<int, std::vector<int>>().Test();
+  VectorTest<std::string, std::vector<std::string>>().Test();
+  VectorTest<lipc::string, std::vector<lipc::string>>().Test();
 
   // boost::vector tests
-  VectorTest<int, boost::vector<int>>("boost::vector");
-  VectorTest<std::string, boost::vector<lipc::string>>("boost::vector");
-  VectorTest<lipc::string, boost::vector<lipc::string>>("boost::vector");
+  VectorTest<int, boost::container::vector<int>>().Test();
+  VectorTest<std::string, boost::container::vector<std::string>>().Test();
+  VectorTest<lipc::string, boost::container::vector<lipc::string>>().Test();*/
 
   // boost::ipc::vector tests
-  VectorTest<int, boost::ipc::vector<int>>("boost::ipc::vector");
-  VectorTest<std::string, boost::ipc::vector<lipc::string>>(
-    "boost::ipc::vector");
-  VectorTest<lipc::string, boost::ipc::vector<lipc::string>>(
-    "boost::ipc::vector");
+  VectorTest<int, bipc::vector<int>>().Test();
+  VectorTest<std::string, bipc::vector<std::string>>().Test();
+  VectorTest<lipc::string, bipc::vector<lipc::string>>().Test();
+
+  // lipc::vector tests
+  // VectorTest<int, lipc::vector<int>>().Test();
+  // VectorTest<std::string, lipc::vector<std::string>>().Test();
+  // VectorTest<lipc::string, lipc::vector<lipc::string>>().Test();
 }
 
-int main() {
-  FullTest();
+TEST_CASE("VectorBenchmark") {
+  FullVectorTest();
 }

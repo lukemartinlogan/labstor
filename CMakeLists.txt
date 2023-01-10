@@ -9,6 +9,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 option(BUILD_SHARED_LIBS "Build shared libraries (.dll/.so) instead of static ones (.lib/.a)" ON)
 option(BUILD_MPI_TESTS "Build tests which depend on MPI" ON)
 option(BUILD_OpenMP_TESTS "Build tests which depend on OpenMP" ON)
+option(BUILD_Boost_TESTS "Build tests which depend on libboost" ON)
 option(LABSTOR_RPC_THALLIUM "Enable compatability for mochi" ON)
 option(LABSTOR_ENABLE_COVERAGE "Check how well tests cover code" ON)
 option(LABSTOR_ENABLE_DOXYGEN "Check how well the code is documented" ON)
@@ -51,6 +52,12 @@ if(LABSTOR_RPC_THALLIUM)
     endif()
 endif()
 
+# Boost
+if(BUILD_Boost_TESTS)
+    find_package(Boost REQUIRED)
+    message(STATUS "found boost.h at ${Boost_INCLUDE_DIRS}")
+endif()
+
 ##################CODE COVERAGE
 if(LABSTOR_ENABLE_COVERAGE)
     set(COVERAGE_FLAGS "-fprofile-arcs -ftest-coverage" CACHE STRING
@@ -90,8 +97,10 @@ add_custom_target(lint COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/lint.sh ${CMAKE_
 add_custom_target(preamble COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/preamble.py ${CMAKE_SOURCE_DIR})
 
 ##################MODULES & TESTS
+set(TEST_MAIN ${CMAKE_SOURCE_DIR}/test/unit)
 enable_testing()
 add_subdirectory(test)
+add_subdirectory(benchmark)
 
 ##################Install LabStor
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_PREFIX})

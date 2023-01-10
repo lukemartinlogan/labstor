@@ -37,7 +37,7 @@ class MemoryManager {
  private:
   allocator_id_t root_allocator_id_;
   PosixMmap root_backend_;
-  PageAllocator root_allocator_;
+  StackAllocator root_allocator_;
   std::unordered_map<std::string, std::unique_ptr<MemoryBackend>> backends_;
   std::unordered_map<allocator_id_t, std::unique_ptr<Allocator>> allocators_;
   Allocator *default_allocator_;
@@ -56,7 +56,7 @@ class MemoryManager {
     root_allocator_id_.bits_.minor_ = -1;
     root_backend_.shm_init(LABSTOR_SYSTEM_INFO->ram_size_);
     root_backend_.Own();
-    root_allocator_.shm_init(&root_backend_, root_allocator_id_);
+    root_allocator_.shm_init(&root_backend_, root_allocator_id_, 0);
     default_allocator_ = &root_allocator_;
   }
 
