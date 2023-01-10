@@ -30,6 +30,7 @@
 #include "memory_backend.h"
 #include "posix_mmap.h"
 #include "posix_shm_mmap.h"
+#include "null_backend.h"
 
 namespace labstor::ipc {
 
@@ -38,11 +39,21 @@ class MemoryBackendFactory {
   static std::unique_ptr<MemoryBackend> shm_init(
     MemoryBackendType type, size_t size, const std::string &url) {
     switch (type) {
+      // PosixShmMmap
       case MemoryBackendType::kPosixShmMmap: {
         auto backend = std::make_unique<PosixShmMmap>();
         backend->shm_init(size, url);
         return backend;
       }
+
+      // NullBackend
+      case MemoryBackendType::kNullBackend: {
+        auto backend = std::make_unique<NullBackend>();
+        backend->shm_init(size);
+        return backend;
+      }
+
+      // Default
       default: return nullptr;
     }
   }
@@ -50,6 +61,7 @@ class MemoryBackendFactory {
   static std::unique_ptr<MemoryBackend> shm_deserialize(
     MemoryBackendType type, const std::string &url) {
     switch (type) {
+      // PosixShmMmap
       case MemoryBackendType::kPosixShmMmap: {
         auto backend = std::make_unique<PosixShmMmap>();
         if (!backend->shm_deserialize(url)) {
@@ -57,6 +69,17 @@ class MemoryBackendFactory {
         }
         return backend;
       }
+
+      // NullBackend
+      case MemoryBackendType::kNullBackend: {
+        auto backend = std::make_unique<NullBackend>();
+        if (!backend->shm_deserialize(url)) {
+          throw MEMORY_BACKEND_NOT_FOUND.format();
+        }
+        return backend;
+      }
+
+      // Default
       default: return nullptr;
     }
   }

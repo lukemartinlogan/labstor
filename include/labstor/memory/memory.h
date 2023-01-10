@@ -229,6 +229,11 @@ struct Pointer {
     return *this;
   }
 
+  /** Get the current offset */
+  inline size_t GetOff() {
+    return off_.load();
+  }
+
   /** Addition operator */
   Pointer operator+(size_t size) const {
     Pointer p;

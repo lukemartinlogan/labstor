@@ -39,6 +39,7 @@ namespace labstor {
   const Error MMAP_FAILED("Could not mmap file: {}");
   const Error LAZY_ERROR("Error in function {}");
   const Error PTHREAD_CREATE_FAILED("Failed to create a pthread");
+  const Error NOT_IMPLEMENTED("{} not implemented");
 
   const Error DLSYM_MODULE_NOT_FOUND("Module {} was not loaded; error {}");
   const Error DLSYM_MODULE_NO_CONSTRUCTOR("Module {} has no constructor");
