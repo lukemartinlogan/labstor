@@ -24,8 +24,8 @@ void MainPretest() {
   mem_mngr->CreateBackend(MemoryBackendType::kPosixShmMmap,
                           MemoryManager::kDefaultBackendSize,
                           shm_url);
-  mem_mngr->CreateAllocator(AllocatorType::kStackAllocator,
-                            shm_url, alloc_id, 0);
+  mem_mngr->CreateAllocator<lipc::StackAllocator>(
+    shm_url, alloc_id, 0);
 }
 
 void MainPosttest() {

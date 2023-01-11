@@ -31,6 +31,8 @@
 #include "labstor/memory/allocator/allocator_factory.h"
 #include <labstor/constants/data_structure_singleton_macros.h>
 
+namespace lipc = labstor::ipc;
+
 namespace labstor::ipc {
 
 class MemoryManager {
@@ -110,9 +112,8 @@ class MemoryManager {
   /**
    * Create and register a memory allocator for a particular backend.
    * */
-  template<typename ...Args>
-  Allocator* CreateAllocator(AllocatorType type,
-                             const std::string &url,
+  template<typename AllocT, typename ...Args>
+  Allocator* CreateAllocator(const std::string &url,
                              allocator_id_t alloc_id,
                              size_t custom_header_size,
                              Args&& ...args) {
@@ -121,9 +122,8 @@ class MemoryManager {
       alloc_id = allocator_id_t(LABSTOR_SYSTEM_INFO->pid_,
                                 allocators_.size());
     }
-    auto alloc = AllocatorFactory::shm_init(
-      type, backend, alloc_id,
-      custom_header_size, std::forward<Args>(args)...);
+    auto alloc = AllocatorFactory::shm_init<AllocT>(
+      backend, alloc_id, custom_header_size, std::forward<Args>(args)...);
     RegisterAllocator(alloc);
     return GetAllocator(alloc_id);
   }

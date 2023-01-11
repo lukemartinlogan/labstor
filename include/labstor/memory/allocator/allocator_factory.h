@@ -40,51 +40,46 @@ class AllocatorFactory {
   /**
    * Create a new memory allocator
    * */
-  template<typename ...Args>
-  static std::unique_ptr<Allocator> shm_init(AllocatorType type,
-                                             MemoryBackend *backend,
+  template<typename AllocT, typename ...Args>
+  static std::unique_ptr<Allocator> shm_init(MemoryBackend *backend,
                                              allocator_id_t alloc_id,
                                              size_t custom_header_size,
                                              Args&& ...args) {
-    switch (type) {
+    if constexpr(std::is_same_v<PageAllocator, AllocT>) {
       // PageAllocator
-      case AllocatorType::kPageAllocator: {
-        auto alloc = std::make_unique<PageAllocator>();
-        alloc->shm_init(backend,
-                        alloc_id,
-                        custom_header_size,
-                        std::forward<Args>(args)...);
-        return alloc;
-      }
+      auto alloc = std::make_unique<PageAllocator>();
+      alloc->shm_init(backend,
+                      alloc_id,
+                      custom_header_size,
+                      std::forward<Args>(args)...);
+      return alloc;
+    } else if constexpr(std::is_same_v<MultiPageAllocator, AllocT>) {
       // MultiPageAllocator
-      case AllocatorType::kMultiPageAllocator: {
-        auto alloc = std::make_unique<MultiPageAllocator>();
-        alloc->shm_init(backend,
-                        alloc_id,
-                        custom_header_size,
-                        std::forward<Args>(args)...);
-        return alloc;
-      }
+      auto alloc = std::make_unique<MultiPageAllocator>();
+      alloc->shm_init(backend,
+                      alloc_id,
+                      custom_header_size,
+                      std::forward<Args>(args)...);
+      return alloc;
+    } else if constexpr(std::is_same_v<StackAllocator, AllocT>) {
       // StackAllocator
-      case AllocatorType::kStackAllocator: {
-        auto alloc = std::make_unique<StackAllocator>();
-        alloc->shm_init(backend,
-                        alloc_id,
-                        custom_header_size,
-                        std::forward<Args>(args)...);
-        return alloc;
-      }
+      auto alloc = std::make_unique<StackAllocator>();
+      alloc->shm_init(backend,
+                      alloc_id,
+                      custom_header_size,
+                      std::forward<Args>(args)...);
+      return alloc;
+    } else if constexpr(std::is_same_v<MallocAllocator, AllocT>) {
       // Malloc Allocator
-      case AllocatorType::kMallocAllocator: {
-        auto alloc = std::make_unique<MallocAllocator>();
-        alloc->shm_init(backend,
-                        alloc_id,
-                        custom_header_size,
-                        std::forward<Args>(args)...);
-        return alloc;
-      }
+      auto alloc = std::make_unique<MallocAllocator>();
+      alloc->shm_init(backend,
+                      alloc_id,
+                      custom_header_size,
+                      std::forward<Args>(args)...);
+      return alloc;
+    } else {
       // Default
-      default: return nullptr;
+      throw std::logic_error("Not a valid allocator");
     }
   }
 

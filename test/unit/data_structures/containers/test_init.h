@@ -47,7 +47,18 @@ using labstor::ipc::Pointer;
 
 extern Allocator *alloc_g;
 
-void Pretest(AllocatorType type);
+template<typename AllocT>
+void Pretest() {
+  std::string shm_url = "test_allocators";
+  allocator_id_t alloc_id(0, 1);
+  auto mem_mngr = LABSTOR_MEMORY_MANAGER;
+  mem_mngr->CreateBackend(MemoryBackendType::kPosixShmMmap,
+                          MemoryManager::kDefaultBackendSize,
+                          shm_url);
+  mem_mngr->CreateAllocator<AllocT>(shm_url, alloc_id, 0);
+  alloc_g = mem_mngr->GetAllocator(alloc_id);
+}
+
 void Posttest();
 
 #endif  // LABSTOR_TEST_UNIT_DATA_STRUCTURES_TEST_INIT_H_

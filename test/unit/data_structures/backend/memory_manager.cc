@@ -55,8 +55,8 @@ TEST_CASE("MemoryManager") {
     mem_mngr->CreateBackend(MemoryBackendType::kPosixShmMmap,
                             MemoryManager::kDefaultBackendSize,
                             shm_url);
-    mem_mngr->CreateAllocator(AllocatorType::kPageAllocator,
-                              shm_url, alloc_id, 0);
+    mem_mngr->CreateAllocator<lipc::PageAllocator>(
+      shm_url, alloc_id, 0);
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank != 0) {

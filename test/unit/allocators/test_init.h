@@ -46,7 +46,22 @@ struct SimpleAllocatorHeader {
   int checksum_;
 };
 
-Allocator* Pretest(AllocatorType alloc_type, MemoryBackendType backend_type);
+template<typename AllocT>
+Allocator* Pretest(MemoryBackendType backend_type) {
+  std::string shm_url = "test_allocators";
+  allocator_id_t alloc_id(0, 1);
+  auto mem_mngr = LABSTOR_MEMORY_MANAGER;
+  mem_mngr->CreateBackend(backend_type,
+                          MemoryManager::kDefaultBackendSize,
+                          shm_url);
+  mem_mngr->CreateAllocator<AllocT>(
+    shm_url, alloc_id, sizeof(SimpleAllocatorHeader));
+  auto alloc = mem_mngr->GetAllocator(alloc_id);
+  auto hdr = alloc->GetCustomHeader<SimpleAllocatorHeader>();
+  hdr->checksum_ = HEADER_CHECKSUM;
+  return alloc;
+}
+
 void Posttest();
 void PageAllocationTest(Allocator *alloc);
 
