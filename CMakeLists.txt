@@ -13,6 +13,7 @@ option(BUILD_Boost_TESTS "Build tests which depend on libboost" ON)
 option(LABSTOR_RPC_THALLIUM "Enable compatability for mochi" ON)
 option(LABSTOR_ENABLE_COVERAGE "Check how well tests cover code" ON)
 option(LABSTOR_ENABLE_DOXYGEN "Check how well the code is documented" ON)
+option(LABSTOR_CXX_PROFILE "Generate profiling data from benchmarks" OFF)
 
 ##################CMAKE MODULES
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
@@ -20,6 +21,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 ##################OPTIMIZATION
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CMAKE_CXX_FLAGS "-O3")
+endif()
+if(LABSTOR_CXX_PROFILE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+    message("CXX PROFILER IS ON")
 endif()
 
 ##################REQUIRED EXTERNAL LIBRARIES
