@@ -39,6 +39,7 @@ MemoryBackend* MemoryManager::GetBackend(const std::string &url) {
 void MemoryManager::DestroyBackend(const std::string &url) {
   auto backend = GetBackend(url);
   backend->shm_destroy();
+  backends_.erase(url);
 }
 
 void MemoryManager::ScanBackends() {

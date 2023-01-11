@@ -131,8 +131,7 @@ class MemoryManager {
   /**
    * Locates an allocator of a particular id
    * */
-  template<typename T = Allocator>
-  T* GetAllocator(allocator_id_t alloc_id) {
+  Allocator* GetAllocator(allocator_id_t alloc_id) {
     if (alloc_id.IsNull()) { return nullptr; }
     if (alloc_id == root_allocator_.GetId()) {
       return &root_allocator_;
@@ -141,7 +140,7 @@ class MemoryManager {
     if (iter == allocators_.end()) {
       ScanBackends();
     }
-    return reinterpret_cast<T*>(allocators_[alloc_id].get());
+    return reinterpret_cast<Allocator*>(allocators_[alloc_id].get());
   }
 
   /**

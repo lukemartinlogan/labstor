@@ -25,15 +25,24 @@
 
 #include "basic_test.h"
 #include "test_init.h"
+#include "omp.h"
 
 #include <string>
 #include <labstor/data_structures/string.h>
 
+/** Test cases for the allocator */
 class AllocatorTestSuite {
  public:
   std::string alloc_type_;
   Allocator *alloc_;
+  static std::stringstream ss_;
+  static int test_count_;
 
+  ////////////////////
+  /// Test Cases
+  ////////////////////
+
+  /** Constructor */
   AllocatorTestSuite(AllocatorType alloc_type, Allocator *alloc)
     : alloc_(alloc) {
     switch (alloc_type) {
@@ -49,17 +58,14 @@ class AllocatorTestSuite {
         alloc_type_ = "lipc::MallocAllocator";
         break;
       }
+      case AllocatorType::kMultiPageAllocator: {
+        alloc_type_ = "lipc::MultiPageAllocator";
+        break;
+      }
     }
   }
 
-  void TestOutput(const std::string &test_name, size_t obj_size, Timer &t) {
-    printf("%s, %s, %lu, %lf\n",
-           test_name.c_str(),
-           alloc_type_.c_str(),
-           obj_size,
-           t.GetMsec());
-  }
-
+  /** Allocate and Free a single size in a single loop */
   void AllocateAndFreeFixedSize(int count, size_t size) {
     Timer t;
     t.Resume();
@@ -67,11 +73,13 @@ class AllocatorTestSuite {
       Pointer p = alloc_->Allocate(size);
       alloc_->Free(p);
     }
+#pragma omp barrier
     t.Pause();
 
-    TestOutput("ConstructDestructTest", size, t);
+    TestOutput("AllocateAndFreeFixedSize", size, t);
   }
 
+  /** Allocate a fixed size in a loop, and then free in another loop */
   void AllocateThenFreeFixedSize(int count, size_t size) {
     Timer t;
     std::vector<Pointer> cache(count);
@@ -82,51 +90,154 @@ class AllocatorTestSuite {
     for (int i = 0; i < count; ++i) {
       alloc_->Free(cache[i]);
     }
+#pragma omp barrier
     t.Pause();
 
-    TestOutput("ConstructDestructTest", size, t);
+    TestOutput("AllocateThenFreeFixedSize", size, t);
+  }
+
+  /** Allocate, Free, Reallocate, Free in a loop */
+
+  ////////////////////
+  /// Test Output
+  ////////////////////
+
+  /** The CSV header */
+  void TestOutputHeader() {
+    ss_ << "test_name" << ","
+        << "alloc_type" << ","
+        << "alloc_size" << ","
+        << "nthreads" << ","
+        << "time" << std::endl;
+  }
+
+  /** The CSV test case */
+  void TestOutput(const std::string &test_name, size_t obj_size, Timer &t) {
+    int rank = omp_get_thread_num();
+    if (rank != 0) { return; }
+    if (test_count_ == 0) {
+      TestOutputHeader();
+    }
+    ss_ << test_name << ","
+        << alloc_type_ << ","
+        << obj_size << ","
+        << omp_get_num_threads() << ","
+        << t.GetMsec() << std::endl;
+    ++test_count_;
+  }
+
+  /** Print the CSV output */
+  static void PrintTestOutput() {
+    std::cout << ss_.str() << std::endl;
   }
 };
 
+/** The output text */
+std::stringstream AllocatorTestSuite::ss_;
+
+/** Number of tests currently conducted */
+int AllocatorTestSuite::test_count_ = 0;
+
+/** The minor number to use for allocators */
+static int minor = 1;
+
+/** Create the allocator + backend for the test */
 template<typename AllocT, typename ...Args>
 Allocator* Pretest(MemoryBackendType backend_type,
                    Args&& ...args) {
-  static int minor = 1;
-  minor += 1;
+  int rank = omp_get_thread_num();
   allocator_id_t alloc_id(0, minor);
-  std::string shm_url = "test_allocators";
+  Allocator *alloc;
   auto mem_mngr = LABSTOR_MEMORY_MANAGER;
-  mem_mngr->CreateBackend(backend_type,
-                          MemoryManager::kDefaultBackendSize,
-                          shm_url);
-  return mem_mngr->CreateAllocator<AllocT>(
-    shm_url, alloc_id, 0, std::forward<Args>(args)...);
+
+  if (rank == 0) {
+    // Create the allocator + backend
+    std::string shm_url = "test_allocators";
+    mem_mngr->CreateBackend(backend_type,
+                            MemoryManager::kDefaultBackendSize,
+                            shm_url);
+    alloc = mem_mngr->CreateAllocator<AllocT>(
+      shm_url, alloc_id, 0, std::forward<Args>(args)...);
+  }
+#pragma omp barrier
+  if (rank != 0){
+    // Retrieve the allocator + backend
+    alloc = mem_mngr->GetAllocator(alloc_id);
+  }
+
+# pragma omp barrier
+  if (rank == 0) {
+    minor += 1;
+  }
+
+  return alloc;
 }
 
+/** Destroy the allocator + backend from the test */
 void Posttest() {
-  std::string shm_url = "test_allocators";
-  auto mem_mngr = LABSTOR_MEMORY_MANAGER;
-  mem_mngr->DestroyBackend(shm_url);
+  int rank = omp_get_thread_num();
+#pragma omp barrier
+  if (rank == 0) {
+    std::string shm_url = "test_allocators";
+    auto mem_mngr = LABSTOR_MEMORY_MANAGER;
+    mem_mngr->DestroyBackend(shm_url);
+  }
 }
 
+/** A series of allocator benchmarks for a particular thread */
 template<typename AllocT, typename ...Args>
 void AllocatorTest(AllocatorType alloc_type,
                    MemoryBackendType backend_type,
                    Args&& ...args) {
   Allocator *alloc = Pretest<AllocT>(
     backend_type, std::forward<Args>(args)...);
+  // Allocate many, and then free many
   AllocatorTestSuite(alloc_type, alloc).AllocateThenFreeFixedSize(
+    (2<<10), MEGABYTES(1));
+  // Allocate and free immediately
+  AllocatorTestSuite(alloc_type, alloc).AllocateAndFreeFixedSize(
     (2<<10), MEGABYTES(1));
   Posttest();
 }
 
-TEST_CASE("AllocatorBenchmark") {
-  /*AllocatorTest(AllocatorType::kStackAllocator,
-                MemoryBackendType::kPosixShmMmap);
-  AllocatorTest(AllocatorType::kMallocAllocator,
-                MemoryBackendType::kNullBackend);*/
+/** Test different allocators on a particular thread */
+void FullAllocatorTestPerThread() {
+  // Malloc allocator
+  AllocatorTest<lipc::MallocAllocator>(
+    AllocatorType::kMallocAllocator,
+    MemoryBackendType::kNullBackend);/**/
+  // Stack allocator
+  AllocatorTest<lipc::StackAllocator>(
+    AllocatorType::kStackAllocator,
+    MemoryBackendType::kPosixShmMmap);
+  // Page allocator
   AllocatorTest<lipc::PageAllocator>(
     AllocatorType::kPageAllocator,
     MemoryBackendType::kPosixShmMmap,
     MEGABYTES(1));
+  // MultiPage allocator
+  AllocatorTest<lipc::MultiPageAllocator>(
+    AllocatorType::kMultiPageAllocator,
+    MemoryBackendType::kPosixShmMmap);
+}
+
+/** Spawn multiple threads and run allocator tests */
+void FullAllocatorTestThreaded(int nthreads) {
+  LABSTOR_THREAD_MANAGER->GetThreadStatic();
+
+  omp_set_dynamic(0);
+#pragma omp parallel num_threads(nthreads)
+  {
+#pragma omp barrier
+    FullAllocatorTestPerThread();
+#pragma omp barrier
+  }
+}
+
+TEST_CASE("AllocatorBenchmark") {
+  FullAllocatorTestThreaded(1);
+  /*FullAllocatorTestThreaded(2);
+  FullAllocatorTestThreaded(4);
+  FullAllocatorTestThreaded(8);*/
+  AllocatorTestSuite::PrintTestOutput();
 }
