@@ -31,33 +31,42 @@
 #include "posix_mmap.h"
 #include "posix_shm_mmap.h"
 #include "null_backend.h"
+#include "array_backend.h"
 
 namespace labstor::ipc {
 
 class MemoryBackendFactory {
  public:
+  /** Initialize a new backend */
+  template<typename BackendT, typename ...Args>
   static std::unique_ptr<MemoryBackend> shm_init(
-    MemoryBackendType type, size_t size, const std::string &url) {
-    switch (type) {
+    size_t size, const std::string &url, Args ...args) {
+    if constexpr(std::is_same_v<PosixShmMmap, BackendT>) {
       // PosixShmMmap
-      case MemoryBackendType::kPosixShmMmap: {
-        auto backend = std::make_unique<PosixShmMmap>();
-        backend->shm_init(size, url);
-        return backend;
-      }
-
+      auto backend = std::make_unique<PosixShmMmap>();
+      backend->shm_init(size, url, std::forward<args>(args)...);
+      return backend;
+    } else if constexpr(std::is_same_v<PosixMmap, BackendT>) {
+      // PosixMmap
+      auto backend = std::make_unique<PosixMmap>();
+      backend->shm_init(size, url, std::forward<args>(args)...);
+      return backend;
+    } else if constexpr(std::is_same_v<NullBackend, BackendT>) {
       // NullBackend
-      case MemoryBackendType::kNullBackend: {
-        auto backend = std::make_unique<NullBackend>();
-        backend->shm_init(size);
-        return backend;
-      }
-
-      // Default
-      default: return nullptr;
+      auto backend = std::make_unique<NullBackend>();
+      backend->shm_init(size, url, std::forward<args>(args)...);
+      return backend;
+    } else if constexpr(std::is_same_v<ArrayBackend, BackendT>) {
+      // ArrayBackend
+      auto backend = std::make_unique<ArrayBackend>();
+      backend->shm_init(size, url, std::forward<args>(args)...);
+      return backend;
+    } else {
+      throw MEMORY_BACKEND_NOT_FOUND.format();
     }
   }
 
+  /** Deserialize an existing backend */
   static std::unique_ptr<MemoryBackend> shm_deserialize(
     MemoryBackendType type, const std::string &url) {
     switch (type) {
@@ -70,9 +79,27 @@ class MemoryBackendFactory {
         return backend;
       }
 
+      // PosixMmap
+      case MemoryBackendType::kPosixMmap: {
+        auto backend = std::make_unique<PosixMmap>();
+        if (!backend->shm_deserialize(url)) {
+          throw MEMORY_BACKEND_NOT_FOUND.format();
+        }
+        return backend;
+      }
+
       // NullBackend
       case MemoryBackendType::kNullBackend: {
         auto backend = std::make_unique<NullBackend>();
+        if (!backend->shm_deserialize(url)) {
+          throw MEMORY_BACKEND_NOT_FOUND.format();
+        }
+        return backend;
+      }
+
+      // ArrayBackend
+      case MemoryBackendType::kArrayBackend: {
+        auto backend = std::make_unique<ArrayBackend>();
         if (!backend->shm_deserialize(url)) {
           throw MEMORY_BACKEND_NOT_FOUND.format();
         }

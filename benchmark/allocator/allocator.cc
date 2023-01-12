@@ -142,7 +142,7 @@ int AllocatorTestSuite::test_count_ = 0;
 static int minor = 1;
 
 /** Create the allocator + backend for the test */
-template<typename AllocT, typename ...Args>
+template<typename BackendT, typename AllocT, typename ...Args>
 Allocator* Pretest(MemoryBackendType backend_type,
                    Args&& ...args) {
   int rank = omp_get_thread_num();
@@ -153,9 +153,8 @@ Allocator* Pretest(MemoryBackendType backend_type,
   if (rank == 0) {
     // Create the allocator + backend
     std::string shm_url = "test_allocators";
-    mem_mngr->CreateBackend(backend_type,
-                            MemoryManager::kDefaultBackendSize,
-                            shm_url);
+    mem_mngr->CreateBackend<BackendT>(
+      MemoryManager::kDefaultBackendSize, shm_url);
     alloc = mem_mngr->CreateAllocator<AllocT>(
       shm_url, alloc_id, 0, std::forward<Args>(args)...);
   }
@@ -185,11 +184,11 @@ void Posttest() {
 }
 
 /** A series of allocator benchmarks for a particular thread */
-template<typename AllocT, typename ...Args>
+template<typename BackendT, typename AllocT, typename ...Args>
 void AllocatorTest(AllocatorType alloc_type,
                    MemoryBackendType backend_type,
                    Args&& ...args) {
-  Allocator *alloc = Pretest<AllocT>(
+  Allocator *alloc = Pretest<BackendT, AllocT>(
     backend_type, std::forward<Args>(args)...);
   // Allocate many, and then free many
   AllocatorTestSuite(alloc_type, alloc).AllocateThenFreeFixedSize(
@@ -203,20 +202,20 @@ void AllocatorTest(AllocatorType alloc_type,
 /** Test different allocators on a particular thread */
 void FullAllocatorTestPerThread() {
   // Malloc allocator
-  AllocatorTest<lipc::MallocAllocator>(
+  AllocatorTest<lipc::NullBackend, lipc::MallocAllocator>(
     AllocatorType::kMallocAllocator,
     MemoryBackendType::kNullBackend);/**/
   // Stack allocator
-  AllocatorTest<lipc::StackAllocator>(
+  AllocatorTest<lipc::PosixShmMmap, lipc::StackAllocator>(
     AllocatorType::kStackAllocator,
     MemoryBackendType::kPosixShmMmap);
   // Page allocator
-  AllocatorTest<lipc::PageAllocator>(
+  AllocatorTest<lipc::PosixShmMmap, lipc::PageAllocator>(
     AllocatorType::kPageAllocator,
     MemoryBackendType::kPosixShmMmap,
     MEGABYTES(1));
   // MultiPage allocator
-  AllocatorTest<lipc::MultiPageAllocator>(
+  AllocatorTest<lipc::PosixShmMmap, lipc::MultiPageAllocator>(
     AllocatorType::kMultiPageAllocator,
     MemoryBackendType::kPosixShmMmap);
 }

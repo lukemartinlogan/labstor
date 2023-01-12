@@ -40,9 +40,10 @@ struct MemoryBackendHeader {
 };
 
 enum class MemoryBackendType {
-  kPosixMmap,
   kPosixShmMmap,
   kNullBackend,
+  kArrayBackend,
+  kPosixMmap,
 };
 
 #define MEMORY_BACKEND_INITIALIZED 0x1

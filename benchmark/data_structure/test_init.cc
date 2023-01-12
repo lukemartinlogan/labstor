@@ -21,9 +21,8 @@ void MainPretest() {
   std::string shm_url = "LabStorSelfBench";
   allocator_id_t alloc_id(0, 1);
   auto mem_mngr = LABSTOR_MEMORY_MANAGER;
-  mem_mngr->CreateBackend(MemoryBackendType::kPosixShmMmap,
-                          MemoryManager::kDefaultBackendSize,
-                          shm_url);
+  mem_mngr->CreateBackend<lipc::PosixShmMmap>(
+    MemoryManager::kDefaultBackendSize, shm_url);
   auto alloc = mem_mngr->CreateAllocator<lipc::PageAllocator>(
     shm_url, alloc_id, 0);
 

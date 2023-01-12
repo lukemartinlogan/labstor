@@ -30,6 +30,7 @@
 #include "labstor/memory/allocator/page_allocator.h"
 #include "labstor/data_structures/data_structure.h"
 
+using labstor::ipc::PosixShmMmap;
 using labstor::ipc::MemoryBackendType;
 using labstor::ipc::MemoryBackend;
 using labstor::ipc::allocator_id_t;
@@ -52,9 +53,8 @@ void Pretest() {
   std::string shm_url = "test_allocators";
   allocator_id_t alloc_id(0, 1);
   auto mem_mngr = LABSTOR_MEMORY_MANAGER;
-  mem_mngr->CreateBackend(MemoryBackendType::kPosixShmMmap,
-                          MemoryManager::kDefaultBackendSize,
-                          shm_url);
+  mem_mngr->CreateBackend<PosixShmMmap>(
+    MemoryManager::kDefaultBackendSize, shm_url);
   mem_mngr->CreateAllocator<AllocT>(shm_url, alloc_id, 0);
   alloc_g = mem_mngr->GetAllocator(alloc_id);
 }

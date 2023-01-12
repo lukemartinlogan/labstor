@@ -50,8 +50,10 @@ class PosixMmap : public MemoryBackend {
   size_t total_size_;
 
  public:
+  /** Constructor */
   PosixMmap() = default;
 
+  /** Destructor */
   ~PosixMmap() override {
     if (IsOwned()) {
       _Destroy();
@@ -60,6 +62,7 @@ class PosixMmap : public MemoryBackend {
     }
   }
 
+  /** Initialize backend */
   bool shm_init(size_t size) {
     SetInitialized();
     Own();
@@ -72,20 +75,24 @@ class PosixMmap : public MemoryBackend {
     return true;
   }
 
+  /** Deserialize the backend */
   bool shm_deserialize(std::string url) override {
     (void) url;
     throw SHMEM_NOT_SUPPORTED.format();
   }
 
+  /** Detach the mapped memory */
   void shm_detach() override {
     _Detach();
   }
 
+  /** Destroy the mapped memory */
   void shm_destroy() override {
     _Destroy();
   }
 
  protected:
+  /** Map shared memory */
   template<typename T=char>
   T* _Map(size_t size) {
     T *ptr = reinterpret_cast<T*>(
@@ -98,12 +105,14 @@ class PosixMmap : public MemoryBackend {
     return ptr;
   }
 
+  /** Unmap shared memory */
   void _Detach() {
     if (!IsInitialized()) { return; }
     munmap(reinterpret_cast<void*>(header_), total_size_);
     UnsetInitialized();
   }
 
+  /** Destroy shared memory */
   void _Destroy() {
     if (!IsInitialized()) { return; }
     _Detach();

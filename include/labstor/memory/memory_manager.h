@@ -68,9 +68,13 @@ class MemoryManager {
    * There can be multiple slots per-backend, enabling multiple allocation
    * policies over a single memory region.
    * */
-  MemoryBackend* CreateBackend(MemoryBackendType type,
-                               size_t size, const std::string &url) {
-    backends_.emplace(url, MemoryBackendFactory::shm_init(type, size, url));
+  template<typename BackendT, typename ...Args>
+  MemoryBackend* CreateBackend(size_t size,
+                               const std::string &url,
+                               Args&& ...args) {
+    backends_.emplace(url,
+                      MemoryBackendFactory::shm_init<BackendT>(size, url),
+                      std::forward<Args>(args)...);
     auto backend = backends_[url].get();
     backend->Own();
     return backend;

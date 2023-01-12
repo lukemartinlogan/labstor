@@ -116,8 +116,7 @@ void MultiPageAllocationTest(Allocator *alloc) {
 }
 
 TEST_CASE("PageAllocator") {
-  auto alloc = Pretest<lipc::PageAllocator>(
-    MemoryBackendType::kPosixShmMmap);
+  auto alloc = Pretest<lipc::PosixShmMmap, lipc::PageAllocator>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   PageAllocationTest(alloc);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
@@ -125,8 +124,7 @@ TEST_CASE("PageAllocator") {
 }
 
 TEST_CASE("StackAllocator") {
-  auto alloc = Pretest<lipc::StackAllocator>(
-    MemoryBackendType::kPosixShmMmap);
+  auto alloc = Pretest<lipc::PosixShmMmap, lipc::StackAllocator>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   PageAllocationTest(alloc);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
@@ -134,8 +132,7 @@ TEST_CASE("StackAllocator") {
 }
 
 TEST_CASE("MultiPageAllocator") {
-  auto alloc = Pretest<lipc::MultiPageAllocator>(
-    MemoryBackendType::kPosixShmMmap);
+  auto alloc = Pretest<lipc::PosixShmMmap, lipc::MultiPageAllocator>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   PageAllocationTest(alloc);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
@@ -148,8 +145,7 @@ TEST_CASE("MultiPageAllocator") {
 }
 
 TEST_CASE("MallocAllocator") {
-  auto alloc = Pretest<lipc::MultiPageAllocator>(
-    MemoryBackendType::kNullBackend);
+  auto alloc = Pretest<lipc::NullBackend, lipc::MultiPageAllocator>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   PageAllocationTest(alloc);
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);

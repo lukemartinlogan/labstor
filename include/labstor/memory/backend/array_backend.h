@@ -1,9 +1,9 @@
 //
-// Created by lukemartinlogan on 1/10/23.
+// Created by lukemartinlogan on 1/12/23.
 //
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_MEMORY_BACKEND_NULL_H_
-#define LABSTOR_INCLUDE_LABSTOR_MEMORY_BACKEND_NULL_H_
+#ifndef LABSTOR_INCLUDE_LABSTOR_MEMORY_BACKEND_ARRAY_BACKEND_H_
+#define LABSTOR_INCLUDE_LABSTOR_MEMORY_BACKEND_ARRAY_BACKEND_H_
 
 #include "memory_backend.h"
 #include <string>
@@ -24,22 +24,24 @@
 
 namespace labstor::ipc {
 
-class NullBackend : public MemoryBackend {
+class ArrayBackend : public MemoryBackend {
  private:
   size_t total_size_;
 
  public:
-  NullBackend() = default;
+  ArrayBackend() = default;
 
-  ~NullBackend() override {}
+  ~ArrayBackend() override {}
 
-  bool shm_init(size_t size, const std::string &url) {
-    (void) url;
+  bool shm_init(char *region, size_t size) {
+    if (size < sizeof(MemoryBackendHeader)) {
+      throw SHMEM_CREATE_FAILED.format();
+    }
     SetInitialized();
     Own();
     total_size_ = sizeof(MemoryBackendHeader) + size;
-    char *ptr = (char*)malloc(sizeof(MemoryBackendHeader));
-    header_ = reinterpret_cast<MemoryBackendHeader*>(ptr);
+    char *ptr = (char *) malloc(sizeof(MemoryBackendHeader));
+    header_ = reinterpret_cast<MemoryBackendHeader *>(ptr);
     header_->data_size_ = size;
     data_size_ = size;
     data_ = nullptr;
@@ -71,4 +73,4 @@ class NullBackend : public MemoryBackend {
 
 }  // namespace labstor::ipc
 
-#endif //LABSTOR_INCLUDE_LABSTOR_MEMORY_BACKEND_NULL_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_MEMORY_BACKEND_ARRAY_BACKEND_H_
