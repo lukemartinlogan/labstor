@@ -23,9 +23,15 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CMAKE_CXX_FLAGS "-O3")
 endif()
 if(LABSTOR_CXX_PROFILE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     message("CXX PROFILER IS ON")
 endif()
+function(make_gprof exec_name exec_dir)
+    message("gprof -b -A -p -q ${exec_dir}/${exec_name} gmon.out > gprof_out.txt")
+    add_custom_target(
+      ${exec_name}_gprof
+      COMMAND gprof -b -A -p -q ${exec_dir}/${exec_name} gmon.out)
+endfunction()
 
 ##################REQUIRED EXTERNAL LIBRARIES
 

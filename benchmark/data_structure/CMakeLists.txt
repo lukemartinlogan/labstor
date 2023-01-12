@@ -8,6 +8,7 @@ include_directories( ${TEST_MAIN} )
 add_executable(benchmark_data_structures
         ${TEST_MAIN}/main.cc
         test_init.cc
+        atomic.cc
         string.cc
         list.cc
         vector.cc
@@ -23,3 +24,5 @@ target_link_libraries(benchmark_data_structures
         MPI::MPI_CXX
         OpenMP::OpenMP_CXX
         ${Boost_LIBRARIES})
+
+make_gprof(benchmark_data_structures ${CMAKE_CURRENT_BINARY_DIR})

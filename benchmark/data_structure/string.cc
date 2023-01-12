@@ -30,6 +30,7 @@ class StringTestSuite {
   void ConstructDestructTest(int count, int length) {
     char *data = (char *) malloc(length + 1);
     data[length] = 0;
+    memset(data, 1, length);
 
     Timer t;
     t.Resume();
@@ -45,6 +46,7 @@ class StringTestSuite {
   void ConstructThenDestructTest(int count, int length) {
     char *data = (char *) malloc(length + 1);
     data[length] = 0;
+    memset(data, 1, length);
 
     std::vector<T> vec(count);
 
@@ -75,7 +77,7 @@ class StringTestSuite {
 template<typename T>
 void StringTest() {
   StringTestSuite<T>().ConstructDestructTest(1000000, 10);
-  StringTestSuite<T>().ConstructThenDestructTest(1000000, 10);
+  // StringTestSuite<T>().ConstructThenDestructTest(1000000, MEGABYTES(1));
 }
 
 void FullStringTest() {

@@ -190,7 +190,7 @@ struct OffsetPointer {
  * */
 struct Pointer {
   allocator_id_t allocator_id_;   // allocator pointer is attached to
-  std::atomic<size_t> off_;       // Offset within the allocator's slot
+  size_t off_;                    // Offset within the allocator's slot
 
   /** Default constructor */
   Pointer() = default;
@@ -201,12 +201,12 @@ struct Pointer {
 
   /** Copy constructor */
   Pointer(const Pointer &other)
-  : allocator_id_(other.allocator_id_), off_(other.off_.load()) {
+  : allocator_id_(other.allocator_id_), off_(other.off_) {
   }
 
   /** Move constructor */
   Pointer(Pointer &&other) noexcept
-  : allocator_id_(other.allocator_id_), off_(other.off_.load()) {
+  : allocator_id_(other.allocator_id_), off_(other.off_) {
     other.SetNull();
   }
 
@@ -214,7 +214,7 @@ struct Pointer {
   Pointer& operator=(const Pointer &other) {
     if (this != &other) {
       allocator_id_ = other.allocator_id_;
-      off_ = other.off_.load();
+      off_ = other.off_;
     }
     return *this;
   }
@@ -223,15 +223,10 @@ struct Pointer {
   Pointer& operator=(Pointer &&other) {
     if (this != &other) {
       allocator_id_ = other.allocator_id_;
-      off_ = other.off_.load();
+      off_ = other.off_;
       other.SetNull();
     }
     return *this;
-  }
-
-  /** Get the current offset */
-  inline size_t GetOff() {
-    return off_.load();
   }
 
   /** Addition operator */

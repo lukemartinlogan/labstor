@@ -69,7 +69,7 @@ Pointer MallocAllocator::AlignedAllocate(size_t size, size_t alignment) {
 bool MallocAllocator::ReallocateNoNullCheck(Pointer &p, size_t new_size) {
   // Get the input page
   auto page = reinterpret_cast<MallocPage*>(
-    p.off_.load() - sizeof(MallocPage));
+    p.off_ - sizeof(MallocPage));
   header_->total_alloc_size_ += new_size - page->page_size_;
   Pointer old_p = p;
 
@@ -85,7 +85,7 @@ bool MallocAllocator::ReallocateNoNullCheck(Pointer &p, size_t new_size) {
 
 void MallocAllocator::FreeNoNullCheck(Pointer &p) {
   auto page = reinterpret_cast<MallocPage*>(
-    p.off_.load() - sizeof(MallocPage));
+    p.off_ - sizeof(MallocPage));
   header_->total_alloc_size_ -= page->page_size_;
   free(page);
 }

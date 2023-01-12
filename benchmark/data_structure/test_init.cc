@@ -24,8 +24,15 @@ void MainPretest() {
   mem_mngr->CreateBackend(MemoryBackendType::kPosixShmMmap,
                           MemoryManager::kDefaultBackendSize,
                           shm_url);
-  mem_mngr->CreateAllocator<lipc::StackAllocator>(
+  auto alloc = mem_mngr->CreateAllocator<lipc::PageAllocator>(
     shm_url, alloc_id, 0);
+
+  for (int i = 0; i < 1000000; ++i) {
+    Pointer p;
+    void *ptr = alloc->AllocatePtr<void>(KILOBYTES(4), p);
+    memset(ptr, 0, KILOBYTES(4));
+    alloc->Free(p);
+  }
 }
 
 void MainPosttest() {
