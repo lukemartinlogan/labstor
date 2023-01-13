@@ -30,47 +30,37 @@
 #include "allocator.h"
 #include "labstor/thread/lock.h"
 #include "labstor/data_structures/thread_unsafe/_queue.h"
+// #include "labstor/data_structures/thread_unsafe/vector.h"
+#include "stack_allocator.h"
 
 namespace labstor::ipc {
 
 typedef _queue_entry Page;
 
-struct PageFreeList {
-  Mutex lock_;                       /**< Always locks the list */
-  _queue_header<Page> queue_;        /**< Singly linked list header */
-  size_t region_off_, region_size_;  /**< Stack allocator */
-  size_t free_size_;      /**< The number of bytes free in this list */
-  size_t total_alloced_;  /**< Total number of bytes alloc'd from this list */
-  size_t total_freed_;    /**< Total number of bytes freed to this list */
-};
+template<typename T>
+class vector;
 
 struct PageAllocatorHeader : public AllocatorHeader {
-  size_t page_size_, min_free_count_, min_free_size_;
-  int concurrency_;
-  size_t thread_table_size_;
+  size_t page_size_;
+  std::atomic<size_t> total_alloced_;
+  Pointer custom_header_ptr_;
 
   PageAllocatorHeader() = default;
 
   void Configure(allocator_id_t alloc_id,
                  size_t custom_header_size,
-                 size_t page_size,
-                 size_t thread_table_size,
-                 int concurrency,
-                 size_t min_free_count) {
+                 size_t page_size) {
     AllocatorHeader::Configure(alloc_id, AllocatorType::kPageAllocator,
                                custom_header_size);
     page_size_ = page_size;
-    thread_table_size_ = thread_table_size;
-    concurrency_ = concurrency;
-    min_free_count_ = min_free_count;
-    min_free_size_ = page_size_ * min_free_count_;
   }
 };
 
 class PageAllocator : public Allocator {
  private:
   PageAllocatorHeader *header_;
-  _array<PageFreeList> free_lists_;
+  ArrayBackend ibackend_;
+  StackAllocator ialloc_;
 
  public:
   /**
@@ -99,10 +89,7 @@ class PageAllocator : public Allocator {
   void shm_init(MemoryBackend *backend,
                 allocator_id_t id,
                 size_t custom_header_size = 0,
-                size_t page_size = KILOBYTES(4),
-                size_t thread_table_size = KILOBYTES(4),
-                int concurrency = 8,
-                size_t min_free_count = 16);
+                size_t page_size = KILOBYTES(4));
 
   /**
    * Attach an existing allocator from shared memory
@@ -138,12 +125,6 @@ class PageAllocator : public Allocator {
    * checking.
    * */
   size_t GetCurrentlyAllocatedSize() override;
-
- private:
-  void* GetFreeListStart();
-  Pointer _Allocate(PageFreeList &free_list);
-  void _Borrow(PageFreeList *to, tid_t tid, bool append);
-  void _Free(PageFreeList *free_list, Pointer &p);
 };
 
 }  // namespace labstor::ipc

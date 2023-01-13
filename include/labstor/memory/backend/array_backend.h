@@ -25,26 +25,21 @@
 namespace labstor::ipc {
 
 class ArrayBackend : public MemoryBackend {
- private:
-  size_t total_size_;
-
  public:
   ArrayBackend() = default;
 
   ~ArrayBackend() override {}
 
-  bool shm_init(char *region, size_t size) {
+  bool shm_init(size_t size, char *region) {
     if (size < sizeof(MemoryBackendHeader)) {
       throw SHMEM_CREATE_FAILED.format();
     }
     SetInitialized();
     Own();
-    total_size_ = sizeof(MemoryBackendHeader) + size;
-    char *ptr = (char *) malloc(sizeof(MemoryBackendHeader));
-    header_ = reinterpret_cast<MemoryBackendHeader *>(ptr);
-    header_->data_size_ = size;
-    data_size_ = size;
-    data_ = nullptr;
+    header_ = reinterpret_cast<MemoryBackendHeader *>(region);
+    header_->data_size_ = size - sizeof(MemoryBackendHeader);
+    data_size_ = header_->data_size_;
+    data_ = region + sizeof(MemoryBackendHeader);
     return true;
   }
 
@@ -53,22 +48,9 @@ class ArrayBackend : public MemoryBackend {
     throw SHMEM_NOT_SUPPORTED.format();
   }
 
-  void shm_detach() override {
-    _Detach();
-  }
+  void shm_detach() override {}
 
-  void shm_destroy() override {
-    _Destroy();
-  }
-
- protected:
-  void _Detach() {
-    free(header_);
-  }
-
-  void _Destroy() {
-    free(header_);
-  }
+  void shm_destroy() override {}
 };
 
 }  // namespace labstor::ipc

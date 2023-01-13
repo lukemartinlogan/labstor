@@ -19,42 +19,6 @@ static void PrintTestOutput() {
 /** Number of tests executed */
 int test_count = 0;
 
-/** A wrapper around size_t similar to atomic */
-template<typename T>
-struct nonatomic {
-  T x;
-
-  nonatomic() = default;
-
-  nonatomic(T def) : x(def) {}
-
-  inline size_t fetch_add(T count, std::memory_order MemoryOrder) {
-    (void) MemoryOrder;
-    x += count;
-    return x;
-  }
-
-  inline size_t load(std::memory_order MemoryOrder) {
-    (void) MemoryOrder;
-    return x;
-  }
-
-  inline void exchange(T count, std::memory_order MemoryOrder) {
-    (void) MemoryOrder;
-    x = count;
-  }
-
-  inline nonatomic& operator+=(T count) {
-    x += count;
-    return *this;
-  }
-
-  inline nonatomic& operator=(T count) {
-    x = count;
-    return *this;
-  }
-};
-
 /** Global atomic counter */
 template<typename AtomicT>
 struct GlobalAtomicCounter {
@@ -66,9 +30,9 @@ struct GlobalAtomicCounter {
 GLOBAL_COUNTER(std::atomic, uint16_t)
 GLOBAL_COUNTER(std::atomic, uint32_t)
 GLOBAL_COUNTER(std::atomic, uint64_t)
-GLOBAL_COUNTER(nonatomic, uint16_t)
-GLOBAL_COUNTER(nonatomic, uint32_t)
-GLOBAL_COUNTER(nonatomic, uint64_t)
+GLOBAL_COUNTER(lipc::nonatomic, uint16_t)
+GLOBAL_COUNTER(lipc::nonatomic, uint32_t)
+GLOBAL_COUNTER(lipc::nonatomic, uint64_t)
 
 /** Atomic Test Suite */
 template<typename AtomicT, typename T, std::memory_order MemoryOrder>
@@ -100,7 +64,7 @@ class AtomicInstructionTestSuite {
 
     if constexpr(std::is_same_v<std::atomic<T>, AtomicT>) {
       atomic_type_ = "std::atomic";
-    } else if constexpr(std::is_same_v<nonatomic<T>, AtomicT>) {
+    } else if constexpr(std::is_same_v<lipc::nonatomic<T>, AtomicT>) {
       atomic_type_ = "non-atomic";
     }
   }
@@ -245,9 +209,9 @@ void TestAtomicTypes() {
   TestMemoryOrdersPerThread<std::atomic<uint32_t>, uint32_t>();
   TestMemoryOrdersPerThread<std::atomic<uint64_t>, uint64_t>();
 
-  TestMemoryOrdersPerThread<nonatomic<uint16_t>, uint16_t>();
-  TestMemoryOrdersPerThread<nonatomic<uint32_t>, uint32_t>();
-  TestMemoryOrdersPerThread<nonatomic<uint64_t>, uint64_t>();
+  TestMemoryOrdersPerThread<lipc::nonatomic<uint16_t>, uint16_t>();
+  TestMemoryOrdersPerThread<lipc::nonatomic<uint32_t>, uint32_t>();
+  TestMemoryOrdersPerThread<lipc::nonatomic<uint64_t>, uint64_t>();
 }
 
 /**

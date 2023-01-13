@@ -25,68 +25,34 @@
 
 
 #include <labstor/memory/allocator/page_allocator.h>
+#include <labstor/data_structures/thread_unsafe/list.h>
 
 namespace labstor::ipc {
-
-void* PageAllocator::GetFreeListStart() {
-  return reinterpret_cast<void*>(
-    custom_header_ + header_->custom_header_size_);;
-}
 
 void PageAllocator::shm_init(MemoryBackend *backend,
                              allocator_id_t id,
                              size_t custom_header_size,
-                             size_t page_size,
-                             size_t thread_table_size,
-                             int concurrency,
-                             size_t min_free_count) {
+                             size_t page_size) {
   backend_ = backend;
-  header_ = reinterpret_cast<PageAllocatorHeader*>(backend_->data_);
-  header_->Configure(id, custom_header_size, page_size,
-                     thread_table_size, concurrency, min_free_count);
-  custom_header_ = reinterpret_cast<char*>(header_ + 1);
-  void *free_list_start = GetFreeListStart();
-  // Create the array of free lists (which are queues)
-  free_lists_.shm_init(free_list_start, header_->thread_table_size_);
-  free_lists_.resize(concurrency);
-  // Initialize each free list with an equal segment of the backend
-  size_t cur_off = free_lists_.After() - backend_->data_;
-  size_t cur_size = backend_->data_size_ - cur_off;
-  size_t per_conc_region = cur_size / header_->concurrency_;
-  if (per_conc_region < header_->page_size_) {
-    throw NOT_ENOUGH_CONCURRENT_SPACE.format(
-      "PageAllocator", backend_->data_size_, header_->concurrency_);
-  }
-  for (auto &free_list : free_lists_) {
-    _queue<Page> q;
-    q.shm_init(&free_list.queue_, backend_->data_);
-    Allocator::ConstructObj<PageFreeList>(free_list);
-    free_list.region_off_ = cur_off;
-    free_list.region_size_ = per_conc_region;
-    free_list.free_size_ = per_conc_region;
-    free_list.total_alloced_ = 0;
-    free_list.total_freed_ = 0;
-    cur_off += per_conc_region;
-  }
+  ibackend_.shm_init(backend_->data_size_, backend_->data_);
+  ialloc_.shm_init(&ibackend_, allocator_id_t(0,1),
+                   sizeof(PageAllocatorHeader));
+  header_ = ialloc_.GetCustomHeader<PageAllocatorHeader>();
+  header_->Configure(id, custom_header_size, page_size);
+  custom_header_ = ialloc_.AllocatePtr<char>(custom_header_size,
+                                             header_->custom_header_ptr_);
 }
 
 void PageAllocator::shm_deserialize(MemoryBackend *backend) {
   backend_ = backend;
-  header_ = reinterpret_cast<PageAllocatorHeader*>(backend_->data_);
-  custom_header_ = reinterpret_cast<char*>(header_ + 1);
-  void *free_list_start = GetFreeListStart();
-  free_lists_.shm_deserialize(free_list_start);
+  ibackend_.shm_deserialize(backend_->data_);
+  ialloc_.shm_deserialize(&ibackend_);
+  header_ = ialloc_.GetCustomHeader<PageAllocatorHeader>();
+  custom_header_ = ialloc_.Convert<char>(header_->custom_header_ptr_);
 }
 
 size_t PageAllocator::GetCurrentlyAllocatedSize() {
-  size_t total_alloced = 0;
-  size_t total_freed = 0;
-  for (auto i = 0; i < header_->concurrency_; ++i) {
-    auto &free_list = free_lists_[i];
-    total_alloced += free_lists_[i].total_alloced_;
-    total_freed += free_lists_[i].total_freed_;
-  }
-  return total_alloced - total_freed;
+  return header_->total_alloced_;
 }
 
 Pointer PageAllocator::Allocate(size_t size) {
@@ -94,28 +60,19 @@ Pointer PageAllocator::Allocate(size_t size) {
     throw PAGE_SIZE_UNSUPPORTED.format(size);
   }
 
-  // Get current thread ID
-  auto thread_info = LABSTOR_THREAD_MANAGER->GetThreadStatic();
-  auto tid = thread_info->GetTid();
+  // Try re-using cached page
+  Pointer p;
 
-  // Allocate without lock if possible
-  for (auto i = 0; i < header_->concurrency_; ++i) {
-    auto free_list_id = (tid + i) % header_->concurrency_;
-    auto &free_list = free_lists_[free_list_id];
-    ScopedMutex list_lock(free_list.lock_);
-    if (free_list.free_size_ < header_->page_size_) continue;
-    if (list_lock.TryLock()) {
-      Pointer p = _Allocate(free_list);
-      if (!p.IsNull()) return p;
-      _Borrow(&free_list, tid, false);
-      p = _Allocate(free_list);
-      return p;
-    }
+  // Try allocating off segment
+  if (p.IsNull()) {
+    p = ialloc_.Allocate(size);
   }
 
-  // Create a new allocator list, borrowing from an allocator with space
-  _Borrow(nullptr, tid, true);
-
+  // Return
+  if (!p.IsNull()) {
+    header_->total_alloced_ += header_->page_size_;
+    return p;
+  }
   return kNullPointer;
 }
 
@@ -131,73 +88,7 @@ bool PageAllocator::ReallocateNoNullCheck(Pointer &ptr, size_t new_size) {
 }
 
 void PageAllocator::FreeNoNullCheck(Pointer &ptr) {
-  auto thread_info = LABSTOR_THREAD_MANAGER->GetThreadStatic();
-  auto tid = thread_info->GetTid();
-  for (auto i = 0; i < header_->concurrency_; ++i) {
-    auto free_list_id = (tid + i) % header_->concurrency_;
-    auto &free_list = free_lists_[free_list_id];
-    ScopedMutex list_lock(free_list.lock_);
-    if (list_lock.TryLock()) {
-      _Free(&free_list, ptr);
-      return;
-    }
-  }
-
-  auto free_list_id = tid % header_->concurrency_;
-  auto &free_list = free_lists_[free_list_id];
-  ScopedMutex list_lock(free_list.lock_);
-  list_lock.Lock();
-  _Free(&free_list, ptr);
-}
-
-Pointer PageAllocator::_Allocate(PageFreeList &free_list) {
-  // Dequeue a page from the free list
-  _queue<Page> q;
-  q.shm_deserialize(&free_list.queue_, backend_->data_);
-  if (q.size()) {
-    size_t off = q.dequeue_off();
-    free_list.free_size_ -= header_->page_size_;
-    free_list.total_alloced_ += header_->page_size_;
-    return Pointer(GetId(), off);
-  }
-
-  // Create a new page from the segment
-  if (free_list.region_size_ >= header_->page_size_) {
-    size_t off = free_list.region_off_;
-    free_list.region_size_ -= header_->page_size_;
-    free_list.region_off_ += header_->page_size_;
-    free_list.free_size_ -= header_->page_size_;
-    free_list.total_alloced_ += header_->page_size_;
-    return Pointer(GetId(), off);
-  }
-
-  return kNullPointer;
-}
-
-void PageAllocator::_Borrow(PageFreeList *to, tid_t tid, bool append) {
-  tid += 1;
-  for (auto i = 0; i < header_->concurrency_; ++i) {
-    auto free_list_id = (tid + i) % header_->concurrency_;
-    auto &from = free_lists_[free_list_id];
-    ScopedMutex list_lock(from.lock_);
-    if (from.free_size_ < header_->min_free_size_) continue;
-    list_lock.Lock();
-    if (from.free_size_ < header_->min_free_size_) continue;
-    size_t borrow = from.free_size_ / 2 / header_->page_size_;
-    if (append) to = &free_lists_[header_->concurrency_];
-    for (auto j = 0; j < borrow; ++j) {
-      Pointer p = _Allocate(from);
-      _Free(to, p);
-    }
-  }
-}
-
-void PageAllocator::_Free(PageFreeList *free_list, Pointer &p) {
-  _queue<Page> q;
-  q.shm_deserialize(&free_list->queue_, backend_->data_);
-  q.enqueue_off(p.off_);
-  free_list->free_size_ += header_->page_size_;
-  free_list->total_freed_ += header_->page_size_;
+  header_->total_alloced_ -= header_->page_size_;
 }
 
 }  // namespace labstor::ipc

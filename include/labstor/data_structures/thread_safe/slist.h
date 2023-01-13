@@ -220,7 +220,7 @@ using slist_iterator = slist_iterator_templ<T, false>;
 
 /** const forward iterator typedef */
 template<typename T>
-using list_citerator = slist_iterator_templ<T, true>;
+using slist_citerator = slist_iterator_templ<T, true>;
 
 
 /**
@@ -342,6 +342,8 @@ class slist : public SHM_CONTAINER(TYPED_CLASS) {
       tail->next_ptr_ = entry_ptr;
       header_->tail_ptr_ = entry_ptr;
     } else {
+      auto prior = find_prior(entry);
+      prior->next_ptr_ = entry_ptr;
       entry->next_ptr_ = pos.entry_->next_ptr_;
     }
     ++header_->length_;
@@ -355,28 +357,6 @@ class slist : public SHM_CONTAINER(TYPED_CLASS) {
   /** Erase all elements between first and last */
   void erase(slist_iterator<T> first,
              slist_iterator<T> last) {
-    if (first.is_end()) { return; }
-    auto first_prior_ptr = first.entry_->prior_ptr_;
-    auto pos = first;
-    while (pos != last) {
-      auto next = pos + 1;
-      Allocator::DestructObj<slist_entry<T>>(*pos.entry_);
-      alloc_->Free(pos.entry_ptr_);
-      --header_->length_;
-      pos = next;
-    }
-
-    if (first_prior_ptr.IsNull()) {
-      header_->head_ptr_ = last.entry_ptr_;
-    } else {
-      auto first_prior = alloc_->template
-        Convert<slist_entry<T>>(first_prior_ptr);
-      first_prior->next_ptr_ = last.entry_ptr_;
-    }
-
-    if (last.entry_ptr_.IsNull()) {
-      header_->tail_ptr_ = first_prior_ptr;
-    }
   }
 
   /** Destroy all elements in the list */
@@ -402,41 +382,56 @@ class slist : public SHM_CONTAINER(TYPED_CLASS) {
     return 0;
   }
 
-  /**
-   * ITERATORS
-   * */
+ private:
+  slist_entry<T>* find_prior(slist_entry<T> *entry) {
+    slist_entry<T>* pos = Convert<slist_entry<T>>(header_->head_ptr_);
+    while (pos) {
+      slist_entry<T>* next = Convert<slist_entry<T>>(pos->next_ptr_);
+      if (next == entry) {
+        return pos;
+      }
+      pos = entry;
+    }
+    return nullptr;
+  }
+
+ public:
+
+  /////////////////
+  /// ITERATORS
+  ////////////////
 
   /** Forward iterator begin */
-  inline list_iterator<T> begin() {
+  inline slist_iterator<T> begin() {
     if (size() == 0) { return end(); }
     auto head = alloc_->template
-      Convert<list_entry<T>>(header_->head_ptr_);
-    return list_iterator<T>(this, head, header_->head_ptr_);
+      Convert<slist_entry<T>>(header_->head_ptr_);
+    return slist_iterator<T>(this, head, header_->head_ptr_);
   }
 
   /** Forward iterator end */
-  static list_iterator<T> const end() {
-    return list_iterator<T>::end();
+  static slist_iterator<T> const end() {
+    return slist_iterator<T>::end();
   }
 
   /** Constant forward iterator begin */
-  inline list_citerator<T> cbegin() const {
+  inline slist_citerator<T> cbegin() const {
     if (size() == 0) { return cend(); }
     auto head = alloc_->template
-      Convert<list_entry<T>>(header_->head_ptr_);
-    return list_citerator<T>(this, head, header_->head_ptr_);
+      Convert<slist_entry<T>>(header_->head_ptr_);
+    return slist_citerator<T>(this, head, header_->head_ptr_);
   }
 
   /** Constant forward iterator end */
-  static list_citerator<T> const cend() {
-    return list_citerator<T>::end();
+  static slist_citerator<T> const cend() {
+    return slist_citerator<T>::end();
   }
 
  private:
   template<typename ...Args>
-  inline list_entry<T>* _create_entry(Pointer &ptr, Args&& ...args) {
+  inline slist_entry<T>* _create_entry(Pointer &ptr, Args&& ...args) {
     auto entry = alloc_->template
-      AllocateConstructObjs<list_entry<T>>(1, ptr, std::forward<Args>(args)...);
+      AllocateConstructObjs<slist_entry<T>>(1, ptr, std::forward<Args>(args)...);
     return entry;
   }
 };

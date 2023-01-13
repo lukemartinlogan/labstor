@@ -31,7 +31,7 @@
 #include <labstor/constants/data_structure_singleton_macros.h>
 #include <labstor/introspect/system_info.h>
 #include <labstor/types/bitfield.h>
-#include <atomic>
+#include <labstor/types/atomic.h>
 
 namespace labstor::ipc {
 
@@ -94,66 +94,33 @@ typedef uint32_t slot_id_t;  // Uniquely ids a MemoryBackend slot
  * Stores an offset into a memory region. Assumes the developer knows
  * which allocator the pointer comes from.
  * */
-struct OffsetPointer {
-  std::atomic<size_t> off_;       // Offset within the allocator's slot
+template<bool ATOMIC=false>
+struct OffsetPointerBase {
+  typedef typename std::conditional<ATOMIC,
+    nonatomic<size_t>, atomic<size_t>>::type atomic_t;
+  atomic_t off_; /**< Offset within the allocator's slot */
 
   /** Default constructor */
-  OffsetPointer() = default;
+  OffsetPointerBase() = default;
 
   /** Full constructor */
-  explicit OffsetPointer(size_t off) : off_(off) {}
+  explicit OffsetPointerBase(size_t off) : off_(off) {}
+
+  /** Full constructor */
+  explicit OffsetPointerBase(atomic_t off) : off_(off.load()) {}
 
   /** Copy constructor */
-  OffsetPointer(const OffsetPointer &other) : off_(other.off_.load()) {
-  }
+  OffsetPointerBase(const OffsetPointerBase &other)
+  : off_(other.off_.load()) {}
+
+  /** Other copy constructor */
+  OffsetPointerBase(const OffsetPointerBase<!ATOMIC> &other)
+  : off_(other.off_.load()) {}
 
   /** Move constructor */
-  OffsetPointer(OffsetPointer &&other) noexcept
+  OffsetPointerBase(OffsetPointerBase &&other) noexcept
     : off_(other.off_.load()) {
     other.SetNull();
-  }
-
-  /** Copy assignment operator */
-  OffsetPointer& operator=(const OffsetPointer &other) {
-    if (this != &other) {
-      off_ = other.off_.load();
-    }
-    return *this;
-  }
-
-  /** Move assignment operator */
-  OffsetPointer& operator=(OffsetPointer &&other) {
-    if (this != &other) {
-      off_ = other.off_.load();
-      other.SetNull();
-    }
-    return *this;
-  }
-
-  /** Addition operator */
-  OffsetPointer operator+(size_t size) const {
-    OffsetPointer p;
-    p.off_ = off_ + size;
-    return p;
-  }
-
-  /** Subtraction operator */
-  OffsetPointer operator-(size_t size) const {
-    OffsetPointer p;
-    p.off_ = off_ - size;
-    return p;
-  }
-
-  /** Addition assignment operator */
-  OffsetPointer& operator+=(size_t size) {
-    off_ += size;
-    return *this;
-  }
-
-  /** Subtraction assignment operator */
-  OffsetPointer& operator-=(size_t size) {
-    off_ -= size;
-    return *this;
   }
 
   /** Set to null */
@@ -167,94 +134,117 @@ struct OffsetPointer {
   }
 
   /** Get the null pointer */
-  static OffsetPointer GetNull() {
-    OffsetPointer p;
+  static OffsetPointerBase GetNull() {
+    OffsetPointerBase p;
     p.SetNull();
     return p;
   }
 
+  /** Atomic load wrapper */
+  inline size_t load(
+    std::memory_order order = std::memory_order_seq_cst) const {
+    return off_.load(order);
+  }
+
+  /** Atomic exchange wrapper */
+  inline void exchange(
+    size_t count, std::memory_order order = std::memory_order_seq_cst) {
+    off_.exchange(count, order);
+  }
+
+  /** Atomic compare exchange weak wrapper */
+  inline bool compare_exchange_weak(size_t& expected, size_t desired,
+                                    std::memory_order order =
+                                    std::memory_order_seq_cst) {
+    return off_.compare_exchange_weak(expected, desired, order);
+  }
+
+  /** Atomic compare exchange strong wrapper */
+  inline bool compare_exchange_strong(size_t& expected, size_t desired,
+                                      std::memory_order order =
+                                      std::memory_order_seq_cst) {
+    return off_.compare_exchange_weak(expected, desired, order);
+  }
+
+  /** Atomic add operator */
+  inline OffsetPointerBase operator+(size_t count) const {
+    return OffsetPointerBase(off_ + count);
+  }
+
+  /** Atomic subtract operator */
+  inline OffsetPointerBase operator-(size_t count) const {
+    return OffsetPointerBase(off_ - count);
+  }
+
+  /** Atomic add assign operator */
+  inline OffsetPointerBase& operator+=(size_t count) {
+    off_ += count;
+    return *this;
+  }
+
+  /** Atomic subtract assign operator */
+  inline OffsetPointerBase& operator-=(size_t count) {
+    off_ -= count;
+    return *this;
+  }
+
+  /** Atomic assign operator */
+  inline OffsetPointerBase& operator=(size_t count) {
+    off_ = count;
+    return *this;
+  }
+
+  /** Atomic copy assign operator */
+  inline OffsetPointerBase& operator=(const OffsetPointerBase &count) {
+    off_ = count.load();
+    return *this;
+  }
+
   /** Equality check */
-  bool operator==(const OffsetPointer &other) const {
-    return (other.off_ == off_);
+  bool operator==(const OffsetPointerBase &other) const {
+    return off_ == other.off_;
   }
 
   /** Inequality check */
-  bool operator!=(const OffsetPointer &other) const {
-    return (other.off_ != off_);
+  bool operator!=(const OffsetPointerBase &other) const {
+    return off_ != other.off_;
   }
 };
+
+/** Non-atomic offset */
+typedef OffsetPointerBase<false> OffsetPointer;
+
+/** Atomic offset */
+typedef OffsetPointerBase<true> AtomicOffsetPointer;
 
 /**
  * A process-independent pointer, which stores both the allocator's
  * information and the offset within the allocator's region
  * */
-struct Pointer {
-  allocator_id_t allocator_id_;   // allocator pointer is attached to
-  size_t off_;                    // Offset within the allocator's slot
+template<bool ATOMIC=false>
+struct PointerBase {
+  allocator_id_t allocator_id_;     /// Allocator pointer comes from
+  OffsetPointerBase<ATOMIC> off_;   /// Offset within the allocator's slot
 
   /** Default constructor */
-  Pointer() = default;
+  PointerBase() = default;
 
   /** Full constructor */
-  explicit Pointer(allocator_id_t id, size_t off) :
+  explicit PointerBase(allocator_id_t id, size_t off) :
     allocator_id_(id), off_(off) {}
 
   /** Copy constructor */
-  Pointer(const Pointer &other)
-  : allocator_id_(other.allocator_id_), off_(other.off_) {
-  }
+  PointerBase(const PointerBase &other)
+  : allocator_id_(other.allocator_id_), off_(other.off_) {}
+
+  /** Other copy constructor */
+  PointerBase(const PointerBase<!ATOMIC> &other)
+  : allocator_id_(other.allocator_id_), off_(other.off_.load()) {}
 
   /** Move constructor */
-  Pointer(Pointer &&other) noexcept
+  PointerBase(PointerBase &&other) noexcept
   : allocator_id_(other.allocator_id_), off_(other.off_) {
     other.SetNull();
-  }
-
-  /** Copy assignment operator */
-  Pointer& operator=(const Pointer &other) {
-    if (this != &other) {
-      allocator_id_ = other.allocator_id_;
-      off_ = other.off_;
-    }
-    return *this;
-  }
-
-  /** Move assignment operator */
-  Pointer& operator=(Pointer &&other) {
-    if (this != &other) {
-      allocator_id_ = other.allocator_id_;
-      off_ = other.off_;
-      other.SetNull();
-    }
-    return *this;
-  }
-
-  /** Addition operator */
-  Pointer operator+(size_t size) const {
-    Pointer p;
-    p.allocator_id_ = allocator_id_;
-    p.off_ = off_ + size;
-    return p;
-  }
-
-  /** Subtraction operator */
-  Pointer operator-(size_t size) const {
-    Pointer p;
-    p.allocator_id_ = allocator_id_;
-    p.off_ = off_ - size;
-    return p;
-  }
-
-  /** Addition assignment operator */
-  Pointer& operator+=(size_t size) {
-    off_ += size;
-    return *this;
-  }
-
-  /** Subtraction assignment operator */
-  Pointer& operator-=(size_t size) {
-    off_ -= size;
-    return *this;
   }
 
   /** Set to null */
@@ -268,25 +258,79 @@ struct Pointer {
   }
 
   /** Get the null pointer */
-  static Pointer GetNull() {
-    Pointer p;
+  static PointerBase GetNull() {
+    PointerBase p;
     p.SetNull();
     return p;
   }
 
+  /** Copy assignment operator */
+  PointerBase& operator=(const PointerBase &other) {
+    if (this != &other) {
+      allocator_id_ = other.allocator_id_;
+      off_ = other.off_;
+    }
+    return *this;
+  }
+
+  /** Move assignment operator */
+  PointerBase& operator=(PointerBase &&other) {
+    if (this != &other) {
+      allocator_id_ = other.allocator_id_;
+      off_.exchange(other.off_.load());
+      other.SetNull();
+    }
+    return *this;
+  }
+
+  /** Addition operator */
+  PointerBase operator+(size_t size) const {
+    PointerBase p;
+    p.allocator_id_ = allocator_id_;
+    p.off_ = off_ + size;
+    return p;
+  }
+
+  /** Subtraction operator */
+  PointerBase operator-(size_t size) const {
+    PointerBase p;
+    p.allocator_id_ = allocator_id_;
+    p.off_ = off_ - size;
+    return p;
+  }
+
+  /** Addition assignment operator */
+  PointerBase& operator+=(size_t size) {
+    off_ += size;
+    return *this;
+  }
+
+  /** Subtraction assignment operator */
+  PointerBase& operator-=(size_t size) {
+    off_ -= size;
+    return *this;
+  }
+
   /** Equality check */
-  bool operator==(const Pointer &other) const {
+  bool operator==(const PointerBase &other) const {
     return (other.allocator_id_ == allocator_id_ && other.off_ == off_);
   }
 
   /** Inequality check */
-  bool operator!=(const Pointer &other) const {
+  bool operator!=(const PointerBase &other) const {
     return (other.allocator_id_ != allocator_id_ || other.off_ != off_);
   }
 };
 
+/** Non-atomic pointer */
+typedef PointerBase<false> Pointer;
+
+/** Atomic pointer */
+typedef PointerBase<true> AtomicPointer;
+
 /** The null process-indepent pointer */
 static const Pointer kNullPointer = Pointer::GetNull();
+static const AtomicPointer kAtomicNullPointer = AtomicPointer::GetNull();
 
 /** Round up to the nearest multiple of the alignment */
 static size_t NextAlignmentMultiple(size_t alignment, size_t size) {

@@ -180,7 +180,7 @@ class Allocator {
 
 
   ///////////////////////////////////////
-  ///////////POINTER ALLOCATORS
+  /////////// POINTER ALLOCATORS
   ///////////////////////////////////////
 
   /**
@@ -191,7 +191,7 @@ class Allocator {
   inline T* AllocatePtr(size_t size, Pointer &p, size_t alignment = 0) {
     p = Allocate(size, alignment);
     if (p.IsNull()) { return nullptr; }
-    return reinterpret_cast<T*>(backend_->data_ + p.off_);
+    return reinterpret_cast<T*>(backend_->data_ + p.off_.load());
   }
 
   /**
@@ -220,7 +220,7 @@ class Allocator {
   inline T* ClearAllocatePtr(size_t size, Pointer &p, size_t alignment = 0) {
     p = Allocate(size, alignment);
     if (p.IsNull()) { return nullptr; }
-    auto ptr = reinterpret_cast<T*>(backend_->data_ + p.off_);
+    auto ptr = reinterpret_cast<T*>(backend_->data_ + p.off_.load());
     if (ptr) {
       memset(ptr, 0, size);
     }
@@ -457,7 +457,7 @@ class Allocator {
   template<typename T>
   inline T* Convert(const Pointer &p) {
     if (p.IsNull()) { return nullptr; }
-    return reinterpret_cast<T*>(backend_->data_ + p.off_);
+    return reinterpret_cast<T*>(backend_->data_ + p.off_.load());
   }
 
   /**

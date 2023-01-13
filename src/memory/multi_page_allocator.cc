@@ -370,7 +370,7 @@ bool MultiPageAllocator::_AllocateBorrowCached(MultiPageFreeList &mp_free_list,
       hdr->off_ = 0;
       hdr->page_idx_ = page_size_idx;
       hdr->UnsetAllocated();
-      orig_page_free_list.enqueue_off(p.off_);
+      orig_page_free_list.enqueue_off(p.off_.load());
     }
     if (shard_off != 0) {
       Pointer p(GetId(), backend_off + orig_page_size * num_shards);
@@ -379,7 +379,7 @@ bool MultiPageAllocator::_AllocateBorrowCached(MultiPageFreeList &mp_free_list,
       hdr->off_ = 0;
       hdr->page_idx_ = page_size_idx;
       hdr->UnsetAllocated();
-      orig_page_free_list.enqueue_off(p.off_);
+      orig_page_free_list.enqueue_off(p.off_.load());
     }
     // Dequeue a page from the original page free list
     size_t off = orig_page_free_list.dequeue_off();
@@ -438,7 +438,7 @@ void MultiPageAllocator::_Free(MultiPageFreeList &mp_free_list, Pointer &p) {
   mp_free_list.GetPageFreeList(hdr->page_idx_,
                                 backend_->data_, page_free_list);
   Pointer real_p = p - hdr->off_;
-  page_free_list.enqueue_off(real_p.off_);
+  page_free_list.enqueue_off(real_p.off_.load());
   mp_free_list.free_size_ += hdr->page_size_;
   mp_free_list.total_freed_ += hdr->page_size_;
 }

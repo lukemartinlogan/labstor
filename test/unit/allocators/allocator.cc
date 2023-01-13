@@ -39,7 +39,7 @@ void PageAllocationTest(Allocator *alloc) {
   for (int i = 0; i < count; ++i) {
     ptrs[i] = alloc->AllocatePtr<void>(page_size, ps[i]);
     memset(ptrs[i], i, page_size);
-    REQUIRE(ps[i].off_ != 0);
+    REQUIRE(ps[i].off_.load() != 0);
     REQUIRE(!ps[i].IsNull());
     REQUIRE(ptrs[i] != nullptr);
   }
@@ -63,7 +63,7 @@ void PageAllocationTest(Allocator *alloc) {
   // Reallocate pages
   for (int i = 0; i < count; ++i) {
     ptrs[i] = alloc->AllocatePtr<void>(page_size, ps[i]);
-    REQUIRE(ps[i].off_ != 0);
+    REQUIRE(ps[i].off_.load() != 0);
     REQUIRE(!ps[i].IsNull());
   }
 
