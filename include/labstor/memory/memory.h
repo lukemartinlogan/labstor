@@ -82,8 +82,7 @@ union allocator_id_t {
 
   /** Get the null allocator */
   static allocator_id_t GetNull() {
-    allocator_id_t alloc;
-    alloc.SetNull();
+    static allocator_id_t alloc(0, 0);
     return alloc;
   }
 };
@@ -97,7 +96,7 @@ typedef uint32_t slot_id_t;  // Uniquely ids a MemoryBackend slot
 template<bool ATOMIC=false>
 struct OffsetPointerBase {
   typedef typename std::conditional<ATOMIC,
-    nonatomic<size_t>, atomic<size_t>>::type atomic_t;
+    atomic<size_t>, nonatomic<size_t>>::type atomic_t;
   atomic_t off_; /**< Offset within the allocator's slot */
 
   /** Default constructor */
@@ -145,8 +144,7 @@ struct OffsetPointerBase {
 
   /** Get the null pointer */
   static OffsetPointerBase GetNull() {
-    OffsetPointerBase p;
-    p.SetNull();
+    const static OffsetPointerBase p(-1);
     return p;
   }
 
@@ -278,8 +276,8 @@ struct PointerBase {
 
   /** Get the null pointer */
   static PointerBase GetNull() {
-    PointerBase p;
-    p.SetNull();
+    const static PointerBase p(allocator_id_t::GetNull(),
+                               OffsetPointer::GetNull());
     return p;
   }
 
@@ -346,13 +344,6 @@ typedef PointerBase<false> Pointer;
 
 /** Atomic pointer */
 typedef PointerBase<true> AtomicPointer;
-
-/** The null process-indepent pointer */
-static const OffsetPointer kOffsetNullPointer = OffsetPointer::GetNull();
-static const AtomicOffsetPointer kAtomicOffsetNullPointer =
-  AtomicOffsetPointer::GetNull();
-static const Pointer kNullPointer = Pointer::GetNull();
-static const AtomicPointer kAtomicNullPointer = AtomicPointer::GetNull();
 
 /** Round up to the nearest multiple of the alignment */
 static size_t NextAlignmentMultiple(size_t alignment, size_t size) {

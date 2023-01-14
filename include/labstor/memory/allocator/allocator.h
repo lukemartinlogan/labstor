@@ -487,14 +487,12 @@ class Allocator {
    * @param ptr process-specific pointer
    * @return a process-independent pointer
    * */
-  template<typename T>
-  inline Pointer Convert(T *ptr) {
-    Pointer p;
-    if (ptr == nullptr) { return kNullPointer; }
-    p.off_ = reinterpret_cast<size_t>(ptr) -
-             reinterpret_cast<size_t>(backend_->data_);
-    p.allocator_id_ = GetId();
-    return p;
+  template<typename T, typename POINTER_T=Pointer>
+  inline POINTER_T Convert(T *ptr) {
+    if (ptr == nullptr) { return POINTER_T::GetNull(); }
+    return POINTER_T(GetId(),
+                     reinterpret_cast<size_t>(ptr) -
+                     reinterpret_cast<size_t>(backend_->data_));
   }
 
   /**

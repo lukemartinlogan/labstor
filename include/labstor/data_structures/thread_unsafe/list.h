@@ -43,7 +43,7 @@ class list;
 template<typename T>
 struct list_entry {
  public:
-  Pointer next_ptr_, prior_ptr_;
+  OffsetPointer next_ptr_, prior_ptr_;
   shm_ar<T> data_;
 
   /**
@@ -71,18 +71,19 @@ struct list_iterator_templ {
  public:
   ListT_Const *list_;
   list_entry<T> *entry_;
-  Pointer entry_ptr_;
+  OffsetPointer entry_ptr_;
 
   /** Default constructor */
   list_iterator_templ() = default;
 
   /** Construct an iterator  */
-  explicit list_iterator_templ(ListT_Const *list) : list_(list) {}
+  explicit list_iterator_templ(ListT_Const *list)
+  : list_(list), entry_(nullptr), entry_ptr_(OffsetPointer::GetNull()) {}
 
   /** Construct an iterator  */
   explicit list_iterator_templ(ListT_Const *list,
                                list_entry<T> *entry,
-                               Pointer entry_ptr)
+                               OffsetPointer entry_ptr)
     : list_(list), entry_(entry), entry_ptr_(entry_ptr) {}
 
   /** Copy constructor */
@@ -235,7 +236,7 @@ using list_citerator = list_iterator_templ<T, true>;
  * */
 template<typename T>
 struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
-  Pointer head_ptr_, tail_ptr_;
+  OffsetPointer head_ptr_, tail_ptr_;
   size_t length_;
 
   ShmHeader() = default;
@@ -326,7 +327,7 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
   /** Construct an element at \a pos position in the list */
   template<typename ...Args>
   void emplace(list_iterator<T> pos, Args&&... args) {
-    Pointer entry_ptr;
+    OffsetPointer entry_ptr;
     auto entry = _create_entry(entry_ptr, std::forward<Args>(args)...);
     if (size() == 0) {
       entry->prior_ptr_.SetNull();
@@ -449,9 +450,9 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
 
  private:
   template<typename ...Args>
-  inline list_entry<T>* _create_entry(Pointer &ptr, Args&& ...args) {
+  inline list_entry<T>* _create_entry(OffsetPointer &p, Args&& ...args) {
     auto entry = alloc_->template
-      AllocateConstructObjs<list_entry<T>>(1, ptr, std::forward<Args>(args)...);
+      AllocateConstructObjs<list_entry<T>>(1, p, std::forward<Args>(args)...);
     return entry;
   }
 };

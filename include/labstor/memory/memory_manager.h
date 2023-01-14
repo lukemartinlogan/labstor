@@ -198,7 +198,7 @@ class MemoryManager {
         return alloc->Convert(ptr);
       }
     }
-    return kNullPointer;
+    return Pointer::GetNull();
   }
 };
 

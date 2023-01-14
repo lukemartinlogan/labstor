@@ -43,7 +43,7 @@ class slist;
 template<typename T>
 struct slist_entry {
  public:
-  Pointer next_ptr_;
+  OffsetPointer next_ptr_;
   shm_ar<T> data_;
 
   /**
@@ -71,18 +71,19 @@ struct slist_iterator_templ {
  public:
   ListT_Const *list_;
   slist_entry<T> *entry_;
-  Pointer entry_ptr_;
+  OffsetPointer entry_ptr_;
 
   /** Default constructor */
   slist_iterator_templ() = default;
 
   /** Construct an iterator  */
-  explicit slist_iterator_templ(ListT_Const *list) : list_(list) {}
+  explicit slist_iterator_templ(ListT_Const *list)
+  : list_(list), entry_(nullptr), entry_ptr_(OffsetPointer::GetNull()) {}
 
   /** Construct an iterator  */
   explicit slist_iterator_templ(ListT_Const *list,
                                 slist_entry<T> *entry,
-                                Pointer entry_ptr)
+                                OffsetPointer entry_ptr)
     : list_(list), entry_(entry), entry_ptr_(entry_ptr) {}
 
   /** Copy constructor */
@@ -207,7 +208,7 @@ struct slist_iterator_templ {
   /** Determine whether this iterator is the begin iterator */
   bool is_begin() const {
     if (list_ && entry_) {
-      return entry_->prior_ptr_.IsNull();
+      return entry_ptr_ == list_->header_->head_ptr_;
     } else {
       return false;
     }
@@ -235,7 +236,7 @@ using slist_citerator = slist_iterator_templ<T, true>;
  * */
 template<typename T>
 struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
-  AtomicOffsetPointer head_ptr_, tail_ptr_;
+  OffsetPointer head_ptr_, tail_ptr_;
   size_t length_;
 
   ShmHeader() = default;
@@ -326,7 +327,7 @@ class slist : public SHM_CONTAINER(TYPED_CLASS) {
   /** Construct an element at \a pos position in the list */
   template<typename ...Args>
   void emplace(slist_iterator<T> pos, Args&&... args) {
-    Pointer entry_ptr;
+    OffsetPointer entry_ptr;
     auto entry = _create_entry(entry_ptr, std::forward<Args>(args)...);
     if (size() == 0) {
       entry->next_ptr_.SetNull();
@@ -357,6 +358,26 @@ class slist : public SHM_CONTAINER(TYPED_CLASS) {
   /** Erase all elements between first and last */
   void erase(slist_iterator<T> first,
              slist_iterator<T> last) {
+    auto first_prior = find_prior(first.entry_);
+    auto pos = first;
+    while (pos != last) {
+      auto next = pos + 1;
+      Allocator::DestructObj<slist_entry<T>>(*pos.entry_);
+      alloc_->Free(pos.entry_ptr_);
+      --header_->length_;
+      pos = next;
+    }
+
+    if (first_prior == nullptr) {
+      header_->head_ptr_ = last.entry_ptr_;
+    } else {
+      first_prior->next_ptr_ = last.entry_ptr_;
+    }
+
+    if (last.entry_ptr_.IsNull()) {
+      header_->tail_ptr_ = alloc_->template
+        Convert<void, OffsetPointer>(first_prior);
+    }
   }
 
   /** Destroy all elements in the list */
@@ -384,9 +405,11 @@ class slist : public SHM_CONTAINER(TYPED_CLASS) {
 
  private:
   slist_entry<T>* find_prior(slist_entry<T> *entry) {
-    slist_entry<T>* pos = Convert<slist_entry<T>>(header_->head_ptr_);
+    slist_entry<T>* pos = alloc_->template
+      Convert<slist_entry<T>>(header_->head_ptr_);
     while (pos) {
-      slist_entry<T>* next = Convert<slist_entry<T>>(pos->next_ptr_);
+      slist_entry<T>* next = alloc_->template
+        Convert<slist_entry<T>>(pos->next_ptr_);
       if (next == entry) {
         return pos;
       }
@@ -429,9 +452,9 @@ class slist : public SHM_CONTAINER(TYPED_CLASS) {
 
  private:
   template<typename ...Args>
-  inline slist_entry<T>* _create_entry(Pointer &ptr, Args&& ...args) {
+  inline slist_entry<T>* _create_entry(OffsetPointer &p, Args&& ...args) {
     auto entry = alloc_->template
-      AllocateConstructObjs<slist_entry<T>>(1, ptr, std::forward<Args>(args)...);
+      AllocateConstructObjs<slist_entry<T>>(1, p, std::forward<Args>(args)...);
     return entry;
   }
 };

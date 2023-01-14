@@ -69,7 +69,7 @@ OffsetPointer PageAllocator::AllocateOffset(size_t size) {
     header_->total_alloced_ += header_->page_size_;
     return p;
   }
-  return kOffsetNullPointer;
+  return OffsetPointer::GetNull();
 }
 
 OffsetPointer PageAllocator::AlignedAllocateOffset(size_t size,

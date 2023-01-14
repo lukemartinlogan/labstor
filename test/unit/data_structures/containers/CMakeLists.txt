@@ -8,6 +8,7 @@ add_executable(test_data_structure_exec
         test_init.cc
         string.cc
         list.cc
+        slist.cc
         vector.cc
         manual_ptr.cc
         unique_ptr.cc
