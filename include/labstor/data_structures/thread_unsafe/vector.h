@@ -55,20 +55,20 @@ struct vector_iterator_templ {
   vector_iterator_templ() = default;
 
   /** Construct an iterator */
-  explicit vector_iterator_templ(VecT_Const *vec)
+  inline explicit vector_iterator_templ(VecT_Const *vec)
     : vec_(vec) {}
 
   /** Construct an iterator at \a i offset */
-  explicit vector_iterator_templ(VecT_Const *vec, size_t i)
+  inline explicit vector_iterator_templ(VecT_Const *vec, size_t i)
     : vec_(vec), i_(static_cast<off64_t>(i)) {}
 
   /** Copy constructor */
-  vector_iterator_templ(const vector_iterator_templ &other)
+  inline vector_iterator_templ(const vector_iterator_templ &other)
   : vec_(other.vec_), i_(other.i_) {
   }
 
   /** Copy assignment operator  */
-  vector_iterator_templ&
+  inline vector_iterator_templ&
   operator=(const vector_iterator_templ &other) {
     if (this != &other) {
       vec_ = other.vec_;
@@ -78,13 +78,13 @@ struct vector_iterator_templ {
   }
 
   /** Move constructor */
-  vector_iterator_templ(vector_iterator_templ &&other) {
+  inline vector_iterator_templ(vector_iterator_templ &&other) {
     vec_ = other.vec_;
     i_ = other.i_;
   }
 
   /** Move assignment operator  */
-  vector_iterator_templ&
+  inline vector_iterator_templ&
   operator=(vector_iterator_templ &&other) {
     if (this != &other) {
       vec_ = other.vec_;
@@ -94,12 +94,12 @@ struct vector_iterator_templ {
   }
 
   /** Change the vector pointer */
-  void change_pointer(VecT_Const *other) {
+  inline void change_pointer(VecT_Const *other) {
     vec_ = other;
   }
 
   /** Dereference the iterator */
-  Ref<T> operator*() {
+  inline Ref<T> operator*() {
     if constexpr(!CONST_ITER) {
       return Ref<T>(vec_->data_ar()[i_].internal_ref());
     } else {
@@ -108,7 +108,7 @@ struct vector_iterator_templ {
   }
 
   /** Dereference the iterator */
-  const Ref<T> operator*() const {
+  inline const Ref<T> operator*() const {
     if constexpr(!CONST_ITER) {
       return Ref<T>(vec_->data_ar()[i_].internal_ref());
     } else {
@@ -117,7 +117,7 @@ struct vector_iterator_templ {
   }
 
   /** Increment iterator in-place */
-  vector_iterator_templ& operator++() {
+  inline vector_iterator_templ& operator++() {
     if (is_end()) { return *this; }
     if constexpr(FORWARD_ITER) {
       ++i_;
@@ -135,7 +135,7 @@ struct vector_iterator_templ {
   }
 
   /** Decrement iterator in-place */
-  vector_iterator_templ& operator--() {
+  inline vector_iterator_templ& operator--() {
     if (is_begin() || is_end()) { return *this; }
     if constexpr(FORWARD_ITER) {
       --i_;
@@ -146,21 +146,21 @@ struct vector_iterator_templ {
   }
 
   /** Create the next iterator */
-  vector_iterator_templ operator++(int) const {
+  inline vector_iterator_templ operator++(int) const {
     vector_iterator_templ next_iter(*this);
     ++next_iter;
     return next_iter;
   }
 
   /** Create the prior iterator */
-  vector_iterator_templ operator--(int) const {
+  inline vector_iterator_templ operator--(int) const {
     vector_iterator_templ prior_iter(*this);
     --prior_iter;
     return prior_iter;
   }
 
   /** Increment iterator by \a count and return */
-  vector_iterator_templ operator+(size_t count) const {
+  inline vector_iterator_templ operator+(size_t count) const {
     if (is_end()) { return end(); }
     if constexpr(FORWARD_ITER) {
       if (i_ + count > vec_->size()) {
@@ -176,7 +176,7 @@ struct vector_iterator_templ {
   }
 
   /** Decrement iterator by \a count and return */
-  vector_iterator_templ operator-(size_t count) const {
+  inline vector_iterator_templ operator-(size_t count) const {
     if (is_end()) { return end(); }
     if constexpr(FORWARD_ITER) {
       if (i_ < count) {
@@ -192,7 +192,7 @@ struct vector_iterator_templ {
   }
 
   /** Increment iterator by \a count in-place */
-  void operator+=(size_t count) {
+  inline void operator+=(size_t count) {
     if (is_end()) { return end(); }
     if constexpr(FORWARD_ITER) {
       if (i_ + count > vec_->size()) {
@@ -212,7 +212,7 @@ struct vector_iterator_templ {
   }
 
   /** Decrement iterator by \a count in-place */
-  void operator-=(size_t count) {
+  inline void operator-=(size_t count) {
     if (is_end()) { return end(); }
     if constexpr(FORWARD_ITER) {
       if (i_ < count) {
@@ -232,19 +232,19 @@ struct vector_iterator_templ {
   }
 
   /** Check if two iterators are equal */
-  friend bool operator==(const vector_iterator_templ &a,
+  inline friend bool operator==(const vector_iterator_templ &a,
                          const vector_iterator_templ &b) {
     return (a.i_ == b.i_);
   }
 
   /** Check if two iterators are inequal */
-  friend bool operator!=(const vector_iterator_templ &a,
+  inline friend bool operator!=(const vector_iterator_templ &a,
                          const vector_iterator_templ &b) {
     return (a.i_ != b.i_);
   }
 
   /** Create the begin iterator */
-  vector_iterator_templ const begin() {
+  inline vector_iterator_templ const begin() {
     if constexpr(FORWARD_ITER) {
       return vector_iterator_templ(vec_, 0);
     } else {
@@ -253,18 +253,18 @@ struct vector_iterator_templ {
   }
 
   /** Create the end iterator */
-  static vector_iterator_templ const end() {
+  inline static vector_iterator_templ const end() {
     static vector_iterator_templ end_iter(nullptr, -1);
     return end_iter;
   }
 
   /** Set this iterator to end */
-  void set_end() {
+  inline void set_end() {
     i_ = -1;
   }
 
   /** Set this iterator to begin */
-  void set_begin() {
+  inline void set_begin() {
     if constexpr(FORWARD_ITER) {
       if (vec_->size() > 0) {
         i_ = 0;
@@ -277,7 +277,7 @@ struct vector_iterator_templ {
   }
 
   /** Determine whether this iterator is the begin iterator */
-  bool is_begin() const {
+  inline bool is_begin() const {
     if constexpr(FORWARD_ITER) {
       return (i_ == 0);
     } else {
@@ -286,7 +286,7 @@ struct vector_iterator_templ {
   }
 
   /** Determine whether this iterator is the end iterator */
-  bool is_end() const {
+  inline bool is_end() const {
     return i_ < 0;
   }
 };

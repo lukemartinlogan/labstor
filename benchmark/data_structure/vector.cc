@@ -225,17 +225,17 @@ class VectorTest {
 
 void FullVectorTest() {
   // std::vector tests
-  /*VectorTest<int, std::vector<int>>().Test();
-  VectorTest<std::string, std::vector<std::string>>().Test();
-  VectorTest<lipc::string, std::vector<lipc::string>>().Test();
+  VectorTest<int, std::vector<int>>().Test();
+  // VectorTest<std::string, std::vector<std::string>>().Test();
+  // VectorTest<lipc::string, std::vector<lipc::string>>().Test();
 
   // boost::vector tests
-  VectorTest<int, boost::container::vector<int>>().Test();
-  VectorTest<std::string, boost::container::vector<std::string>>().Test();
-  VectorTest<lipc::string, boost::container::vector<lipc::string>>().Test();*/
+//  VectorTest<int, boost::container::vector<int>>().Test();
+//  VectorTest<std::string, boost::container::vector<std::string>>().Test();
+//  VectorTest<lipc::string, boost::container::vector<lipc::string>>().Test();
 
   // boost::ipc::vector tests
-  VectorTest<int, bipc::vector<int>>().Test();
+  // VectorTest<int, bipc::vector<int>>().Test();
   // VectorTest<std::string, bipc::vector<std::string>>().Test();
   // VectorTest<lipc::string, bipc::vector<lipc::string>>().Test();
 

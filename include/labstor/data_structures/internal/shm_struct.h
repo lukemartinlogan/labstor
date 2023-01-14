@@ -24,8 +24,8 @@
  */
 
 
-#ifndef LABSTOR_DATA_STRUCTURES_SHM_POINTER_H_
-#define LABSTOR_DATA_STRUCTURES_SHM_POINTER_H_
+#ifndef LABSTOR_DATA_STRUCTURES_SHM_STRUCT_H_
+#define LABSTOR_DATA_STRUCTURES_SHM_STRUCT_H_
 
 #include "labstor/memory/memory_manager.h"
 #include "shm_macros.h"
@@ -142,4 +142,4 @@ struct ShmStruct : public ShmContainer<T, ShmSimpleHeader<T>> {
 #undef CLASS_NAME
 #undef TYPED_CLASS
 
-#endif  // LABSTOR_DATA_STRUCTURES_SHM_POINTER_H_
+#endif  // LABSTOR_DATA_STRUCTURES_SHM_STRUCT_H_

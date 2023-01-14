@@ -92,4 +92,10 @@
     IS_CONST, \
     const T, T>::type
 
+/**
+ * SHM_ARCHIVE_OR_REF: Return value of shm_ar::internal_ref().
+ * */
+#define SHM_ARCHIVE_OR_REF(T)\
+  SHM_X_OR_Y(T, ShmArchive<T>, T&)
+
 #endif  // LABSTOR_MEMORY_SHM_MACROS_H_

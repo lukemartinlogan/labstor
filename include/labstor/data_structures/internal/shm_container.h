@@ -52,14 +52,14 @@ struct ShmHeader;
 template<typename T>
 struct Ref {
   typedef SHM_T_OR_PTR_T(T) T_Ptr;
-  typedef SHM_ARCHIVE_OR_T(T) T_Ar;
+  typedef SHM_ARCHIVE_OR_REF(T) T_Ar;
   T_Ptr obj_;
 
   /**
    * Constructor. Either reference a SHM_ARCHIVE or a reference to a
    * data type. Deserializes the object if it's archiveable.
    * */
-  explicit Ref(T_Ar &other) {
+  explicit Ref(T_Ar other) {
     if constexpr(IS_SHM_ARCHIVEABLE(T)) {
       obj_.shm_deserialize(other);
     } else {
@@ -183,6 +183,9 @@ struct ShmBaseHeader {
  * */
 template<typename TYPED_CLASS, typename TYPED_HEADER>
 class ShmContainer : public ShmArchiveable {
+ public:
+  typedef TYPED_HEADER header_t;
+
  protected:
   ShmArchive<TYPED_CLASS> ar_;
   Allocator *alloc_;
@@ -297,6 +300,11 @@ class ShmContainer : public ShmArchiveable {
 
   /** Get the allocator for this pointer */
   Allocator* GetAllocator() {
+    return alloc_;
+  }
+
+  /** Get the allocator for this pointer */
+  Allocator* GetAllocator() const {
     return alloc_;
   }
 
@@ -504,6 +512,7 @@ SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::UnsetDataValid;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::SetDestructable;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::UnsetDestructable;\
 SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::IsDestructable;\
+SHM_CONTAINER_USING_NS(TYPED_CLASS, TYPED_HEADER)::GetAllocator;\
 SHM_INHERIT_CONSTRUCTORS(CLASS_NAME, TYPED_CLASS)\
 SHM_INHERIT_DESTRUCTORS(CLASS_NAME)\
 SHM_INHERIT_MOVE_OPS(CLASS_NAME, TYPED_CLASS)\

@@ -50,13 +50,21 @@ struct list_entry {
    * Constructor.
    * */
   template<typename ...Args>
-  explicit list_entry(Args ...args) : data_(std::forward<Args>(args)...) {}
+  explicit list_entry(Allocator *alloc, Args ...args)
+  : data_(alloc, std::forward<Args>(args)...) {}
 
   /**
    * Returns the element stored in the list
    * */
-  Ref<T> internal_ref() {
-    return Ref<T>(data_.internal_ref());
+  Ref<T> internal_ref(Allocator *alloc) {
+    return Ref<T>(data_.internal_ref(alloc));
+  }
+
+  /**
+   * Returns the element stored in the list
+   * */
+  Ref<T> internal_ref(Allocator *alloc) const {
+    return Ref<T>(data_.internal_ref(alloc));
   }
 };
 
@@ -110,7 +118,7 @@ struct list_iterator_templ {
 
   /** Get the object the iterator points to */
   Ref<T> operator*() {
-    return entry_->internal_ref();
+    return entry_->internal_ref(list_->GetAllocator());
   }
 
   /** Get the object the iterator points to */
@@ -452,7 +460,8 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
   template<typename ...Args>
   inline list_entry<T>* _create_entry(OffsetPointer &p, Args&& ...args) {
     auto entry = alloc_->template
-      AllocateConstructObjs<list_entry<T>>(1, p, std::forward<Args>(args)...);
+      AllocateConstructObjs<list_entry<T>>(
+        1, p, alloc_, std::forward<Args>(args)...);
     return entry;
   }
 };

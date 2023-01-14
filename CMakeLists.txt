@@ -20,10 +20,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
 ##################OPTIMIZATION
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(CMAKE_CXX_FLAGS "-O3")
+    set(CMAKE_CXX_FLAGS "-g -O3")
 endif()
 if(LABSTOR_CXX_PROFILE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
     message("CXX PROFILER IS ON")
 endif()
 function(make_gprof exec_name exec_dir)
@@ -111,7 +111,7 @@ add_custom_target(preamble COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/preamble.
 set(TEST_MAIN ${CMAKE_SOURCE_DIR}/test/unit)
 enable_testing()
 add_subdirectory(test)
-add_subdirectory(benchmark)
+#add_subdirectory(benchmark)
 
 ##################Install LabStor
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_PREFIX})

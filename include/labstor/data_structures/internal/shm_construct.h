@@ -28,7 +28,6 @@
 #define LABSTOR_DATA_STRUCTURES_SHM_CONSTRUCT_H_
 
 #include "shm_archive.h"
-#include "shm_struct.h"
 #include "shm_smart_ptr.h"
 
 namespace labstor::ipc {
