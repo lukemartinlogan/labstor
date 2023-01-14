@@ -23,7 +23,7 @@ void MainPretest() {
   auto mem_mngr = LABSTOR_MEMORY_MANAGER;
   mem_mngr->CreateBackend<lipc::PosixShmMmap>(
     MemoryManager::kDefaultBackendSize, shm_url);
-  auto alloc = mem_mngr->CreateAllocator<lipc::PageAllocator>(
+  auto alloc = mem_mngr->CreateAllocator<lipc::StackAllocator>(
     shm_url, alloc_id, 0);
 
   for (int i = 0; i < 1000000; ++i) {

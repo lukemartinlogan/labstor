@@ -163,7 +163,10 @@ class VectorTest {
     }
 
     t.Resume();
-    for (auto x : vec) {}
+    int i = 0;
+    for (auto x : vec) {
+      ++i;
+    }
     t.Pause();
 
     TestOutput("ForwardIterator", t);
@@ -233,11 +236,11 @@ void FullVectorTest() {
 
   // boost::ipc::vector tests
   VectorTest<int, bipc::vector<int>>().Test();
-  VectorTest<std::string, bipc::vector<std::string>>().Test();
-  VectorTest<lipc::string, bipc::vector<lipc::string>>().Test();
+  // VectorTest<std::string, bipc::vector<std::string>>().Test();
+  // VectorTest<lipc::string, bipc::vector<lipc::string>>().Test();
 
   // lipc::vector tests
-  // VectorTest<int, lipc::vector<int>>().Test();
+  VectorTest<int, lipc::vector<int>>().Test();
   // VectorTest<std::string, lipc::vector<std::string>>().Test();
   // VectorTest<lipc::string, lipc::vector<lipc::string>>().Test();
 }
