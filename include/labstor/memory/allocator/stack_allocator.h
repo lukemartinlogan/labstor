@@ -66,13 +66,6 @@ class StackAllocator : public Allocator {
   : header_(nullptr) {}
 
   /**
-   * Determine the size of the shared-memory header
-   * */
-  size_t GetInternalHeaderSize() override {
-    return sizeof(StackAllocatorHeader);
-  }
-
-  /**
    * Get the ID of this allocator from shared memory
    * */
   allocator_id_t GetId() override {
@@ -95,25 +88,26 @@ class StackAllocator : public Allocator {
    * Allocate a memory of \a size size. The page allocator cannot allocate
    * memory larger than the page size.
    * */
-  Pointer Allocate(size_t size) override;
+  OffsetPointer AllocateOffset(size_t size) override;
 
   /**
    * Allocate a memory of \a size size, which is aligned to \a
    * alignment.
    * */
-  Pointer AlignedAllocate(size_t size, size_t alignment) override;
+  OffsetPointer AlignedAllocateOffset(size_t size, size_t alignment) override;
 
   /**
    * Reallocate \a p pointer to \a new_size new size.
    *
    * @return whether or not the pointer p was changed
    * */
-  bool ReallocateNoNullCheck(Pointer &p, size_t new_size) override;
+  OffsetPointer ReallocateOffsetNoNullCheck(
+    OffsetPointer p, size_t new_size) override;
 
   /**
    * Free \a ptr pointer. Null check is performed elsewhere.
    * */
-  void FreeNoNullCheck(Pointer &ptr) override;
+  void FreeOffsetNoNullCheck(OffsetPointer p) override;
 
   /**
    * Get the current amount of data allocated. Can be used for leak

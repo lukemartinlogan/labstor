@@ -50,10 +50,9 @@ size_t StackAllocator::GetCurrentlyAllocatedSize() {
   return header_->total_alloc_;
 }
 
-Pointer StackAllocator::Allocate(size_t size) {
+OffsetPointer StackAllocator::AllocateOffset(size_t size) {
   size += sizeof(MpPage);
-  size_t off = header_->region_off_.fetch_add(size);
-  Pointer p(GetId(), off);
+  OffsetPointer p(header_->region_off_.fetch_add(size));
   auto hdr = Convert<MpPage>(p);
   hdr->SetAllocated();
   hdr->page_size_ = size;
@@ -62,22 +61,23 @@ Pointer StackAllocator::Allocate(size_t size) {
   return p + sizeof(MpPage);
 }
 
-Pointer StackAllocator::AlignedAllocate(size_t size, size_t alignment) {
+OffsetPointer StackAllocator::AlignedAllocateOffset(size_t size,
+                                                    size_t alignment) {
   throw ALIGNED_ALLOC_NOT_SUPPORTED.format();
 }
 
-bool StackAllocator::ReallocateNoNullCheck(Pointer &p, size_t new_size) {
-  Pointer new_p;
+OffsetPointer StackAllocator::ReallocateOffsetNoNullCheck(OffsetPointer p,
+                                                          size_t new_size) {
+  OffsetPointer new_p;
   void *src = Convert<void>(p);
   auto hdr = Convert<MpPage>(p - sizeof(MpPage));
-  void *dst = AllocatePtr<void>(new_size, new_p);
+  void *dst = AllocatePtr<void, OffsetPointer>(new_size, new_p);
   memcpy(dst, src, hdr->page_size_);
   Free(p);
-  p = new_p;
-  return true;
+  return new_p;
 }
 
-void StackAllocator::FreeNoNullCheck(Pointer &p) {
+void StackAllocator::FreeOffsetNoNullCheck(OffsetPointer p) {
   auto hdr = Convert<MpPage>(p - sizeof(MpPage));
   if (!hdr->IsAllocated()) {
     throw DOUBLE_FREE;

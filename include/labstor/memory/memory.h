@@ -109,6 +109,11 @@ struct OffsetPointerBase {
   /** Full constructor */
   explicit OffsetPointerBase(atomic_t off) : off_(off.load()) {}
 
+  /** Pointer constructor */
+  explicit OffsetPointerBase(allocator_id_t alloc_id, size_t off) : off_(off) {
+    (void) alloc_id;
+  }
+
   /** Copy constructor */
   OffsetPointerBase(const OffsetPointerBase &other)
   : off_(other.off_.load()) {}
@@ -121,6 +126,11 @@ struct OffsetPointerBase {
   OffsetPointerBase(OffsetPointerBase &&other) noexcept
     : off_(other.off_.load()) {
     other.SetNull();
+  }
+
+  /** Get the offset pointer */
+  OffsetPointerBase<false> ToOffsetPointer() {
+    return OffsetPointerBase<false>(off_.load());
   }
 
   /** Set to null */
@@ -223,7 +233,7 @@ typedef OffsetPointerBase<true> AtomicOffsetPointer;
  * */
 template<bool ATOMIC=false>
 struct PointerBase {
-  allocator_id_t allocator_id_;     /// Allocator pointer comes from
+  allocator_id_t allocator_id_;     /// Allocator the pointer comes from
   OffsetPointerBase<ATOMIC> off_;   /// Offset within the allocator's slot
 
   /** Default constructor */
@@ -231,6 +241,10 @@ struct PointerBase {
 
   /** Full constructor */
   explicit PointerBase(allocator_id_t id, size_t off) :
+    allocator_id_(id), off_(off) {}
+
+  /** Full constructor using offset pointer */
+  explicit PointerBase(allocator_id_t id, OffsetPointer off) :
     allocator_id_(id), off_(off) {}
 
   /** Copy constructor */
@@ -245,6 +259,11 @@ struct PointerBase {
   PointerBase(PointerBase &&other) noexcept
   : allocator_id_(other.allocator_id_), off_(other.off_) {
     other.SetNull();
+  }
+
+  /** Get the offset pointer */
+  OffsetPointerBase<false> ToOffsetPointer() {
+    return OffsetPointerBase<false>(off_.load());
   }
 
   /** Set to null */
@@ -329,6 +348,9 @@ typedef PointerBase<false> Pointer;
 typedef PointerBase<true> AtomicPointer;
 
 /** The null process-indepent pointer */
+static const OffsetPointer kOffsetNullPointer = OffsetPointer::GetNull();
+static const AtomicOffsetPointer kAtomicOffsetNullPointer =
+  AtomicOffsetPointer::GetNull();
 static const Pointer kNullPointer = Pointer::GetNull();
 static const AtomicPointer kAtomicNullPointer = AtomicPointer::GetNull();
 

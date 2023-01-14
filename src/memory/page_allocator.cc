@@ -51,21 +51,17 @@ void PageAllocator::shm_deserialize(MemoryBackend *backend) {
   custom_header_ = ialloc_.Convert<char>(header_->custom_header_ptr_);
 }
 
-size_t PageAllocator::GetCurrentlyAllocatedSize() {
-  return header_->total_alloced_;
-}
-
-Pointer PageAllocator::Allocate(size_t size) {
+OffsetPointer PageAllocator::AllocateOffset(size_t size) {
   if (size > header_->page_size_) {
     throw PAGE_SIZE_UNSUPPORTED.format(size);
   }
 
   // Try re-using cached page
-  Pointer p;
+  OffsetPointer p;
 
   // Try allocating off segment
   if (p.IsNull()) {
-    p = ialloc_.Allocate(size);
+    p = ialloc_.AllocateOffset(size);
   }
 
   // Return
@@ -73,22 +69,28 @@ Pointer PageAllocator::Allocate(size_t size) {
     header_->total_alloced_ += header_->page_size_;
     return p;
   }
-  return kNullPointer;
+  return kOffsetNullPointer;
 }
 
-Pointer PageAllocator::AlignedAllocate(size_t size, size_t alignment) {
+OffsetPointer PageAllocator::AlignedAllocateOffset(size_t size,
+                                                   size_t alignment) {
   throw ALIGNED_ALLOC_NOT_SUPPORTED.format();
 }
 
-bool PageAllocator::ReallocateNoNullCheck(Pointer &ptr, size_t new_size) {
+OffsetPointer PageAllocator::ReallocateOffsetNoNullCheck(OffsetPointer p,
+                                                         size_t new_size) {
   if (new_size > header_->page_size_) {
     throw PAGE_SIZE_UNSUPPORTED.format(new_size);
   }
-  return false;
+  return p;
 }
 
-void PageAllocator::FreeNoNullCheck(Pointer &ptr) {
+void PageAllocator::FreeOffsetNoNullCheck(OffsetPointer p) {
   header_->total_alloced_ -= header_->page_size_;
+}
+
+size_t PageAllocator::GetCurrentlyAllocatedSize() {
+  return 0;
 }
 
 }  // namespace labstor::ipc

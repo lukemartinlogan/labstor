@@ -235,7 +235,7 @@ using slist_citerator = slist_iterator_templ<T, true>;
  * */
 template<typename T>
 struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
-  Pointer head_ptr_, tail_ptr_;
+  AtomicOffsetPointer head_ptr_, tail_ptr_;
   size_t length_;
 
   ShmHeader() = default;

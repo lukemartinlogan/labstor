@@ -101,25 +101,43 @@ class Allocator {
   /**
    * Allocate a region of memory of \a size size
    * */
-  virtual Pointer Allocate(size_t size) = 0;
+  virtual OffsetPointer AllocateOffset(size_t size) = 0;
+
+  /**
+   * Allocate a region of memory to a specific pointer type
+   * */
+  template<typename POINTER_T=Pointer>
+  POINTER_T Allocate(size_t size) {
+    return POINTER_T(GetId(), AllocateOffset(size).load());
+  }
 
   /**
    * Allocate a region of memory of \a size size
    * and \a alignment alignment. Assumes that
    * alignment is not 0.
    * */
-  virtual Pointer AlignedAllocate(size_t size, size_t alignment) = 0;
+  virtual OffsetPointer AlignedAllocateOffset(size_t size,
+                                              size_t alignment) = 0;
+
+  /**
+   * Allocate a region of memory to a specific pointer type
+   * */
+  template<typename POINTER_T=Pointer>
+  POINTER_T AlignedAllocate(size_t size, size_t alignment) {
+    return POINTER_T(GetId(), AlignedAllocateOffset(size, alignment).load());
+  }
 
   /**
    * Allocate a region of \a size size and \a alignment
    * alignment. Will fall back to regular Allocate if
    * alignmnet is 0.
    * */
-  inline Pointer Allocate(size_t size, size_t alignment) {
+  template<typename POINTER_T=Pointer>
+  inline POINTER_T Allocate(size_t size, size_t alignment) {
     if (alignment == 0) {
-      return Allocate(size);
+      return Allocate<POINTER_T>(size);
     } else {
-      return AlignedAllocate(size, alignment);
+      return AlignedAllocate<POINTER_T>(size, alignment);
     }
   }
 
@@ -129,12 +147,17 @@ class Allocator {
    *
    * @return true if p was modified.
    * */
-  inline bool Reallocate(Pointer &p, size_t new_size) {
+  template<typename POINTER_T=Pointer>
+  inline bool Reallocate(POINTER_T &p, size_t new_size) {
     if (p.IsNull()) {
       p = Allocate(new_size);
       return true;
     }
-    return ReallocateNoNullCheck(p, new_size);
+    auto new_p = ReallocateOffsetNoNullCheck(p.ToOffsetPointer(),
+                                             new_size);
+    bool ret = new_p == p.ToOffsetPointer();
+    p.off_ = new_p.load();
+    return ret;
   }
 
   /**
@@ -143,29 +166,24 @@ class Allocator {
    *
    * @return true if p was modified.
    * */
-
-  virtual bool ReallocateNoNullCheck(Pointer &p, size_t new_size) = 0;
+  virtual OffsetPointer ReallocateOffsetNoNullCheck(OffsetPointer p,
+                                                    size_t new_size) = 0;
 
   /**
    * Free the memory pointed to by \a ptr Pointer
    * */
-
-  inline void Free(Pointer &ptr) {
-    if (ptr.IsNull()) {
+  template<typename POINTER_T=Pointer>
+  inline void Free(POINTER_T &p) {
+    if (p.IsNull()) {
       throw INVALID_FREE.format();
     }
-    FreeNoNullCheck(ptr);
+    FreeOffsetNoNullCheck(OffsetPointer(p.off_.load()));
   }
 
   /**
    * Free the memory pointed to by \a ptr Pointer
    * */
-  virtual void FreeNoNullCheck(Pointer &ptr) = 0;
-
-  /**
-   * Get the size of the user-defined custom header
-   * */
-  virtual size_t GetInternalHeaderSize() = 0;
+  virtual void FreeOffsetNoNullCheck(OffsetPointer p) = 0;
 
   /**
    * Get the allocator identifier
@@ -187,9 +205,9 @@ class Allocator {
    * Allocate a pointer of \a size size and return \a p process-independent
    * pointer and a process-specific pointer.
    * */
-  template<typename T>
-  inline T* AllocatePtr(size_t size, Pointer &p, size_t alignment = 0) {
-    p = Allocate(size, alignment);
+  template<typename T, typename POINTER_T=Pointer>
+  inline T* AllocatePtr(size_t size, POINTER_T &p, size_t alignment = 0) {
+    p = Allocate<POINTER_T>(size, alignment);
     if (p.IsNull()) { return nullptr; }
     return reinterpret_cast<T*>(backend_->data_ + p.off_.load());
   }
@@ -197,28 +215,28 @@ class Allocator {
   /**
    * Allocate a pointer of \a size size
    * */
-  template<typename T>
+  template<typename T, typename POINTER_T=Pointer>
   inline T* AllocatePtr(size_t size, size_t alignment = 0) {
-    Pointer p;
-    return AllocatePtr<T>(size, p, alignment);
+    POINTER_T p;
+    return AllocatePtr<T, POINTER_T>(size, p, alignment);
   }
 
   /**
    * Allocate a pointer of \a size size
    * */
-  template<typename T>
+  template<typename T, typename POINTER_T=Pointer>
   inline T* ClearAllocatePtr(size_t size, size_t alignment = 0) {
-    Pointer p;
-    return ClearAllocatePtr<T>(size, p, alignment);
+    POINTER_T p;
+    return ClearAllocatePtr<T, POINTER_T>(size, p, alignment);
   }
 
   /**
    * Allocate a pointer of \a size size and return \a p process-independent
    * pointer and a process-specific pointer.
    * */
-  template<typename T>
-  inline T* ClearAllocatePtr(size_t size, Pointer &p, size_t alignment = 0) {
-    p = Allocate(size, alignment);
+  template<typename T, typename POINTER_T=Pointer>
+  inline T* ClearAllocatePtr(size_t size, POINTER_T &p, size_t alignment = 0) {
+    p = Allocate<POINTER_T>(size, alignment);
     if (p.IsNull()) { return nullptr; }
     auto ptr = reinterpret_cast<T*>(backend_->data_ + p.off_.load());
     if (ptr) {
@@ -235,9 +253,9 @@ class Allocator {
    * @param modified whether or not p was modified (output)
    * @return A process-specific pointer
    * */
-  template<typename T>
-  inline T* ReallocatePtr(Pointer &p, size_t new_size, bool &modified) {
-    modified = Reallocate(p, new_size);
+  template<typename T, typename POINTER_T=Pointer>
+  inline T* ReallocatePtr(POINTER_T &p, size_t new_size, bool &modified) {
+    modified = Reallocate<POINTER_T>(p, new_size);
     return Convert<T>(p);
   }
 
@@ -248,9 +266,9 @@ class Allocator {
    * @param new_size the new size to allocate
    * @return A process-specific pointer
    * */
-  template<typename T>
-  inline T* ReallocatePtr(Pointer &p, size_t new_size) {
-    Reallocate(p, new_size);
+  template<typename T, typename POINTER_T=Pointer>
+  inline T* ReallocatePtr(POINTER_T &p, size_t new_size) {
+    Reallocate<POINTER_T>(p, new_size);
     return Convert<T>(p);
   }
 
@@ -260,9 +278,9 @@ class Allocator {
    * @param ptr process-specific pointer
    * @return None
    * */
-  template<typename T>
+  template<typename T, typename POINTER_T=Pointer>
   inline void FreePtr(T *ptr) {
-    Pointer p = Convert<T>(ptr);
+    POINTER_T p = Convert<T>(ptr);
     Free(p);
   }
 
@@ -275,9 +293,9 @@ class Allocator {
    *
    * @return A process-specific pointer
    * */
-  template<typename T>
+  template<typename T, typename POINTER_T=Pointer>
   inline T* AllocateObjs(size_t count) {
-    Pointer p;
+    POINTER_T p;
     return AllocateObjs<T>(count, p);
   }
 
@@ -288,8 +306,8 @@ class Allocator {
    * @param p process-independent pointer (output)
    * @return A process-specific pointer
    * */
-  template<typename T>
-  inline T* AllocateObjs(size_t count, Pointer &p) {
+  template<typename T, typename POINTER_T=Pointer>
+  inline T* AllocateObjs(size_t count, POINTER_T &p) {
     return AllocatePtr<T>(count * sizeof(T), p);
   }
 
@@ -300,8 +318,8 @@ class Allocator {
    * @param p process-independent pointer (output)
    * @return A process-specific pointer
    * */
-  template<typename T>
-  inline T* ClearAllocateObjs(size_t count, Pointer &p) {
+  template<typename T, typename POINTER_T=Pointer>
+  inline T* ClearAllocateObjs(size_t count, POINTER_T &p) {
     return ClearAllocatePtr<T>(count * sizeof(T), p);
   }
 
@@ -314,9 +332,10 @@ class Allocator {
    * */
   template<
     typename T,
+    typename POINTER_T=Pointer,
     typename ...Args>
   inline T* AllocateConstructObjs(size_t count, Args&& ...args) {
-    Pointer p;
+    POINTER_T p;
     return AllocateConstructObjs<T>(count, p, std::forward<Args>(args)...);
   }
 
@@ -330,8 +349,9 @@ class Allocator {
    * */
   template<
     typename T,
+    typename POINTER_T=Pointer,
     typename ...Args>
-  inline T* AllocateConstructObjs(size_t count, Pointer &p, Args&& ...args) {
+  inline T* AllocateConstructObjs(size_t count, POINTER_T &p, Args&& ...args) {
     T *ptr = AllocateObjs<T>(count, p);
     ConstructObjs<T>(ptr, 0, count, std::forward<Args>(args)...);
     return ptr;
@@ -346,8 +366,8 @@ class Allocator {
    *
    * @return A process-specific pointer
    * */
-  template<typename T>
-  inline T* ReallocateObjs(Pointer &p, size_t new_count) {
+  template<typename T, typename POINTER_T=Pointer>
+  inline T* ReallocateObjs(POINTER_T &p, size_t new_count) {
     T *ptr = ReallocatePtr<T>(p, new_count*sizeof(T));
     return ptr;
   }
@@ -365,11 +385,12 @@ class Allocator {
    * */
   template<
     typename T,
+    typename POINTER_T=Pointer,
     typename ...Args>
-  inline T* ReallocateConstructObjs(Pointer &p,
-                                size_t old_count,
-                                size_t new_count,
-                                Args&& ...args) {
+  inline T* ReallocateConstructObjs(POINTER_T &p,
+                                    size_t old_count,
+                                    size_t new_count,
+                                    Args&& ...args) {
     T *ptr = ReallocatePtr<T>(p, new_count*sizeof(T));
     ConstructObjs<T>(ptr, old_count, new_count, std::forward<Args>(args)...);
     return ptr;
@@ -454,8 +475,8 @@ class Allocator {
    * @param p process-independent pointer
    * @return a process-specific pointer
    * */
-  template<typename T>
-  inline T* Convert(const Pointer &p) {
+  template<typename T, typename POINTER_T=Pointer>
+  inline T* Convert(const POINTER_T &p) {
     if (p.IsNull()) { return nullptr; }
     return reinterpret_cast<T*>(backend_->data_ + p.off_.load());
   }
