@@ -150,7 +150,7 @@ class Allocator {
   template<typename POINTER_T=Pointer>
   inline bool Reallocate(POINTER_T &p, size_t new_size) {
     if (p.IsNull()) {
-      p = Allocate(new_size);
+      p = Allocate<POINTER_T>(new_size);
       return true;
     }
     auto new_p = ReallocateOffsetNoNullCheck(p.ToOffsetPointer(),
@@ -270,6 +270,19 @@ class Allocator {
   inline T* ReallocatePtr(POINTER_T &p, size_t new_size) {
     Reallocate<POINTER_T>(p, new_size);
     return Convert<T>(p);
+  }
+
+  /**
+   * Reallocate a pointer to a new size
+   *
+   * @param old_ptr process-specific pointer to reallocate
+   * @param new_size the new size to allocate
+   * @return A process-specific pointer
+   * */
+  template<typename T>
+  inline T* ReallocatePtr(T *old_ptr, size_t new_size) {
+    OffsetPointer p = Convert<T, OffsetPointer>(old_ptr);
+    return ReallocatePtr<T, OffsetPointer>(p, new_size);
   }
 
   /**

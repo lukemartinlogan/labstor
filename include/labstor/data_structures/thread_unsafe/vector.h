@@ -101,18 +101,20 @@ struct vector_iterator_templ {
   /** Dereference the iterator */
   inline Ref<T> operator*() {
     if constexpr(!CONST_ITER) {
-      return Ref<T>(vec_->data_ar()[i_].internal_ref());
+      return Ref<T>(vec_->data_ar()[i_].internal_ref(vec_->GetAllocator()));
     } else {
-      return Ref<T>(vec_->data_ar_const()[i_].internal_ref());
+      return Ref<T>(vec_->data_ar_const()[i_].internal_ref(
+        vec_->GetAllocator()));
     }
   }
 
   /** Dereference the iterator */
   inline const Ref<T> operator*() const {
     if constexpr(!CONST_ITER) {
-      return Ref<T>(vec_->data_ar()[i_].internal_ref());
+      return Ref<T>(vec_->data_ar()[i_].internal_ref(vec_->GetAllocator()));
     } else {
-      return Ref<T>(vec_->data_ar_const()[i_].internal_ref());
+      return Ref<T>(vec_->data_ar_const()[i_].internal_ref(
+        vec_->GetAllocator()));
     }
   }
 
@@ -467,7 +469,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   /** Index the vector at position i */
   lipc::Ref<T> operator[](const size_t i) {
     shm_ar<T> *vec = data_ar();
-    return lipc::Ref<T>(vec[i].internal_ref());
+    return lipc::Ref<T>(vec[i].internal_ref(alloc_));
   }
 
   /** Get first element of vector */
@@ -483,7 +485,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   /** Index the vector at position i */
   const lipc::Ref<T> operator[](const size_t i) const {
     shm_ar<T> *vec = data_ar_const();
-    return lipc::Ref<T>(vec[i].internal_ref());
+    return lipc::Ref<T>(vec[i].internal_ref(alloc_));
   }
 
   /** Construct an element at the back of the vector */
@@ -495,7 +497,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
     }
     Allocator::ConstructObj<shm_ar<T>>(
       *(vec + header_->length_),
-      std::forward<Args>(args)...);
+      alloc_, std::forward<Args>(args)...);
     ++header_->length_;
   }
 
@@ -519,7 +521,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
     shift_right(pos);
     Allocator::ConstructObj<shm_ar<T>>(
       *(vec + pos.i_),
-      std::forward<Args>(args)...);
+      alloc_, std::forward<Args>(args)...);
     ++header_->length_;
   }
 
@@ -617,25 +619,33 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
 
     // Allocate new shared-memory vec
     shm_ar<T> *new_vec;
-    if (resize) {
-      new_vec = alloc_->template
-        ReallocateConstructObjs<shm_ar<T>>(
-          header_->vec_ptr_,
-          header_->length_,
-          max_length,
-          std::forward<Args>(args)...);
-    } else {
+    if constexpr(std::is_pod<T>() || IS_SHM_ARCHIVEABLE(T)) {
       new_vec = alloc_->template
         ReallocateObjs<shm_ar<T>>(header_->vec_ptr_, max_length);
+    } else {
+      auto old_ptr_ = header_->vec_ptr_;
+      new_vec = alloc_->template
+        AllocateObjs<shm_ar<T>>(max_length, header_->vec_ptr_);
+      for (size_t i = 0; i < header_->length_; ++i) {
+        Allocator::ConstructObj<shm_ar<T>>(
+          *(new_vec + i),
+          alloc_, std::move(*(*this)[i]));
+      }
+      if (!old_ptr_.IsNull()) {
+        alloc_->Free(old_ptr_);
+      }
     }
     if (new_vec == nullptr) {
       throw OUT_OF_MEMORY.format("vector::emplace_back",
                                  max_length*sizeof(shm_ar<T>));
     }
-
-    // Copy contents of old vector into new
-    memcpy(new_vec, vec,
-           header_->length_*sizeof(shm_ar<T>));
+    if (resize) {
+      for (size_t i = header_->length_; i < max_length; ++i) {
+        Allocator::ConstructObj<shm_ar<T>>(
+          *(new_vec + i),
+          alloc_, std::forward<Args>(args)...);
+      }
+    }
 
     // Update vector header
     header_->max_length_ = max_length;
@@ -653,7 +663,9 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   void shift_left(const vector_iterator<T> pos, int count = 1) {
     shm_ar<T> *vec = data_ar();
     for (int i = 0; i < count; ++i) {
-      Allocator::DestructObj<shm_ar<T>>(*(vec + pos.i_ + i));
+      auto &vec_i = *(vec + pos.i_ + i);
+      vec_i.shm_destroy(alloc_);
+      Allocator::DestructObj<shm_ar<T>>(vec_i);
     }
     auto dst = vec + pos.i_;
     auto src = dst + count;

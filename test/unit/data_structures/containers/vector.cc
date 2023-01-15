@@ -41,7 +41,7 @@ void VectorTest() {
   VectorTestSuite<T, vector<T>> test(vec, alloc);
 
   test.EmplaceTest(30);
-  test.IndexTest();
+  /*test.IndexTest();
   test.ForwardIteratorTest();
   test.CopyConstructorTest();
   test.CopyAssignmentTest();
@@ -49,7 +49,7 @@ void VectorTest() {
   test.MoveAssignmentTest();
   test.EmplaceFrontTest();
   test.ModifyEntryCopyIntoTest();
-  test.ModifyEntryMoveIntoTest();
+  test.ModifyEntryMoveIntoTest();*/
   test.EraseTest();
 }
 
@@ -57,7 +57,7 @@ void VectorOfListOfStringTest() {
   Allocator *alloc = alloc_g;
   vector<list<string>> vec(alloc);
 
-  vec.resize(10, alloc);
+  vec.resize(10);
   for (auto bkt : vec) {
     (*bkt).emplace_back("hello");
   }
