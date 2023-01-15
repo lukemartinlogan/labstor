@@ -623,17 +623,19 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
       new_vec = alloc_->template
         ReallocateObjs<shm_ar<T>>(header_->vec_ptr_, max_length);
     } else {
-      auto old_ptr_ = header_->vec_ptr_;
+      Pointer new_p;
       new_vec = alloc_->template
-        AllocateObjs<shm_ar<T>>(max_length, header_->vec_ptr_);
+        AllocateObjs<shm_ar<T>>(max_length, new_p);
       for (size_t i = 0; i < header_->length_; ++i) {
+        lipc::Ref<std::string> old = (*this)[i];
         Allocator::ConstructObj<shm_ar<T>>(
           *(new_vec + i),
-          alloc_, std::move(*(*this)[i]));
+          alloc_, std::move(*old));
       }
-      if (!old_ptr_.IsNull()) {
-        alloc_->Free(old_ptr_);
+      if (!header_->vec_ptr_.IsNull()) {
+        alloc_->Free(header_->vec_ptr_);
       }
+      header_->vec_ptr_ = new_p;
     }
     if (new_vec == nullptr) {
       throw OUT_OF_MEMORY.format("vector::emplace_back",

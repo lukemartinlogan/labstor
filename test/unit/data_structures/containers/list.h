@@ -76,9 +76,10 @@ class ListTestSuite {
   /// Emplace and erase front
   void EmplaceFrontTest() {
     CREATE_SET_VAR_TO_INT_OR_STRING(T, i0, 100);
+    int old_size = obj_.size();
     obj_.emplace_front(i0);
     REQUIRE(*obj_.front() == i0);
-    REQUIRE(obj_.size() == 31);
+    REQUIRE(obj_.size() == old_size + 1);
     obj_.erase(obj_.begin(), obj_.begin() + 1);
   }
 

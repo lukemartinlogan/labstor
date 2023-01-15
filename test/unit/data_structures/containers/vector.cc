@@ -40,8 +40,8 @@ void VectorTest() {
   vector<T> vec(alloc);
   VectorTestSuite<T, vector<T>> test(vec, alloc);
 
-  test.EmplaceTest(30);
-  /*test.IndexTest();
+  test.EmplaceTest(15);
+  test.IndexTest();
   test.ForwardIteratorTest();
   test.CopyConstructorTest();
   test.CopyAssignmentTest();
@@ -49,7 +49,7 @@ void VectorTest() {
   test.MoveAssignmentTest();
   test.EmplaceFrontTest();
   test.ModifyEntryCopyIntoTest();
-  test.ModifyEntryMoveIntoTest();*/
+  test.ModifyEntryMoveIntoTest();
   test.EraseTest();
 }
 
