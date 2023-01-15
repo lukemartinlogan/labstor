@@ -225,6 +225,14 @@ typedef OffsetPointerBase<false> OffsetPointer;
 /** Atomic offset */
 typedef OffsetPointerBase<true> AtomicOffsetPointer;
 
+/** Typed offset pointer */
+template<typename T>
+using TypedOffsetPointer = OffsetPointer;
+
+/** Typed atomic pointer */
+template<typename T>
+using TypedAtomicOffsetPointer = AtomicOffsetPointer;
+
 /**
  * A process-independent pointer, which stores both the allocator's
  * information and the offset within the allocator's region
@@ -344,6 +352,14 @@ typedef PointerBase<false> Pointer;
 
 /** Atomic pointer */
 typedef PointerBase<true> AtomicPointer;
+
+/** Typed pointer */
+template<typename T>
+using TypedPointer = Pointer;
+
+/** Typed atomic pointer */
+template<typename T>
+using TypedAtomicPointer = AtomicPointer;
 
 /** Round up to the nearest multiple of the alignment */
 static size_t NextAlignmentMultiple(size_t alignment, size_t size) {
