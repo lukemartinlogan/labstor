@@ -297,14 +297,16 @@ class slist : public SHM_CONTAINER(TYPED_CLASS) {
   }
 
   /** Move constructor */
-  void WeakMove(slist &other) {
+  void WeakMove(ShmArchive<TYPED_CLASS> *ar,
+                Allocator *alloc, slist &other) {
     SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS))
     *header_ = *(other.header_);
     SHM_WEAK_MOVE_END()
   }
 
   /** Copy constructor */
-  void StrongCopy(const slist &other) {
+  void StrongCopy(ShmArchive<TYPED_CLASS> *ar,
+                  Allocator *alloc, const slist &other) {
     SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS))
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back(**iter);

@@ -46,17 +46,20 @@ struct list_entry {
   OffsetPointer next_ptr_, prior_ptr_;
   shm_ar<T> data_;
 
-  /**
-   * Constructor.
-   * */
+  /** Constructor */
   template<typename ...Args>
   explicit list_entry(Allocator *alloc, Args ...args)
   : data_(alloc, std::forward<Args>(args)...) {}
 
+  /** Destructor */
+  inline void shm_destroy(Allocator *alloc) {
+    data_.shm_destroy(alloc);
+  }
+
   /**
    * Returns the element stored in the list
    * */
-  Ref<T> internal_ref(Allocator *alloc) {
+  inline Ref<T> internal_ref(Allocator *alloc) {
     return Ref<T>(data_.internal_ref(alloc));
   }
 
@@ -305,14 +308,16 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
   }
 
   /** Move constructor */
-  void WeakMove(list &other) {
+  void WeakMove(ShmArchive<TYPED_CLASS> *ar,
+                Allocator *alloc, list &other) {
     SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS))
     *header_ = *(other.header_);
     SHM_WEAK_MOVE_END()
   }
 
   /** Copy constructor */
-  void StrongCopy(const list &other) {
+  void StrongCopy(ShmArchive<TYPED_CLASS> *ar,
+                  Allocator *alloc, const list &other) {
     SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS))
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back(**iter);
@@ -382,6 +387,7 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
     auto pos = first;
     while (pos != last) {
       auto next = pos + 1;
+      pos.entry_->shm_destroy(alloc_);
       Allocator::DestructObj<list_entry<T>>(*pos.entry_);
       alloc_->Free(pos.entry_ptr_);
       --header_->length_;

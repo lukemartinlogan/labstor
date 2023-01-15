@@ -330,14 +330,16 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
   }
 
   /** Move constructor */
-  void WeakMove(unordered_map &other) {
+  void WeakMove(ShmArchive<TYPED_CLASS> *ar,
+                Allocator *alloc, unordered_map &other) {
     SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT((TYPED_CLASS)))
     *header_ = *(other.header_);
     SHM_WEAK_MOVE_END()
   }
 
   /** Copy constructor */
-  void StrongCopy(const unordered_map &other) {
+  void StrongCopy(ShmArchive<TYPED_CLASS> *ar,
+                  Allocator *alloc, const unordered_map &other) {
     auto num_buckets = other.get_num_buckets();
     auto max_capacity = other.header_->max_capacity_;
     auto growth = other.header_->growth_;

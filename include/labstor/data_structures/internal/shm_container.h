@@ -229,10 +229,10 @@ class ShmContainer : public ShmArchiveable {
     } else {
       // Initialize the input header
       ar_.header_ptr_ = ar->header_ptr_;
+      header_ = alloc_->template
+        Convert<TYPED_HEADER>(ar->header_ptr_);
       Allocator::ConstructObj<TYPED_HEADER>(
         *header_, std::forward<Args>(args)...);
-      header_ = LABSTOR_MEMORY_MANAGER->template
-        Convert<TYPED_HEADER>(ar->header_ptr_);
       header_->SetBits(
         SHM_CONTAINER_DATA_VALID);
       flags_.SetBits(
@@ -270,17 +270,17 @@ class ShmContainer : public ShmArchiveable {
 
   /** Check if this container is destructable */
   bool IsDestructable() {
-    return flags_.CheckBits(SHM_CONTAINER_DESTRUCTABLE);
+    return flags_.OrBits(SHM_CONTAINER_DESTRUCTABLE);
   }
 
   /** Check if container has a valid header */
   bool IsValid() const {
-    return flags_.CheckBits(SHM_CONTAINER_VALID);
+    return flags_.OrBits(SHM_CONTAINER_VALID);
   }
 
   /** Check if header's data is valid */
   bool IsDataValid() const {
-    return header_->CheckBits(SHM_CONTAINER_DATA_VALID);
+    return header_->OrBits(SHM_CONTAINER_DATA_VALID);
   }
 
   /** Set container header invalid */
@@ -379,27 +379,27 @@ class ShmContainer : public ShmArchiveable {
 /** Generates the code for move operators */
 #define SHM_INHERIT_MOVE_OPS(CLASS_NAME, TYPED_CLASS)\
   explicit TYPE_UNWRAP(CLASS_NAME)(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
-    WeakMove(other);\
+    WeakMove(SHM_ARCHIVE_NULL(TYPED_CLASS), SHM_ALLOCATOR_NULL, other);\
   }\
   TYPE_UNWRAP(CLASS_NAME)& operator=(   \
       TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
     if (this != &other) {\
-      WeakMove(other);\
+      WeakMove(SHM_ARCHIVE_NULL(TYPED_CLASS), SHM_ALLOCATOR_NULL, other);\
     }\
     return *this;\
   }\
   void shm_init(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
-    WeakMove(other);\
+    WeakMove(SHM_ARCHIVE_NULL(TYPED_CLASS), SHM_ALLOCATOR_NULL, other);\
   }\
   TYPE_UNWRAP(CLASS_NAME)& operator=(                \
       const lipc::MoveWrapper<TYPE_UNWRAP(CLASS_NAME)> &other) {\
-    WeakMove(other.obj_);\
+    WeakMove(SHM_ARCHIVE_NULL(TYPED_CLASS), SHM_ALLOCATOR_NULL, other.obj_);\
     return *this;\
   }\
   void shm_init_main(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar,\
         lipc::Allocator *alloc, \
         lipc::MoveWrapper<TYPE_UNWRAP(CLASS_NAME)> &other) {\
-    WeakMove(other.obj_);\
+    WeakMove(ar, alloc, other.obj_);\
   }
 
 /** Generates the code for copy operators */
@@ -409,24 +409,24 @@ class ShmContainer : public ShmArchiveable {
   }\
   TYPE_UNWRAP(CLASS_NAME)& operator=(const TYPE_UNWRAP(CLASS_NAME) &other) {\
     if (this != &other) {\
-      StrongCopy(other);\
+      StrongCopy(SHM_ARCHIVE_NULL(TYPED_CLASS), SHM_ALLOCATOR_NULL, other);\
     }\
     return *this;\
   }\
   void shm_init_main(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar,\
         lipc::Allocator *alloc, \
         const TYPE_UNWRAP(CLASS_NAME) &other) {\
-    StrongCopy(other);\
+    StrongCopy(ar, alloc, other);\
   }\
   TYPE_UNWRAP(CLASS_NAME)& operator=(                \
       const lipc::CopyWrapper<TYPE_UNWRAP(CLASS_NAME)> &other) {\
-    StrongCopy(other.obj_);\
+    StrongCopy(SHM_ARCHIVE_NULL(TYPED_CLASS), SHM_ALLOCATOR_NULL, other.obj_);\
     return *this;\
   }\
   void shm_init_main(lipc::ShmArchive<TYPE_UNWRAP(TYPED_CLASS)> *ar,\
         lipc::Allocator *alloc, \
         lipc::CopyWrapper<TYPE_UNWRAP(CLASS_NAME)> &other) {\
-    StrongCopy(other.obj_);\
+    StrongCopy(ar, alloc, other.obj_);\
   }
 
 /**
@@ -440,7 +440,7 @@ class ShmContainer : public ShmArchiveable {
   UnsetDataValid();
 #define SHM_DESTROY_END \
   if (destroy_header && \
-      header_->CheckBits(SHM_CONTAINER_HEADER_DESTRUCTABLE)) {\
+      header_->OrBits(SHM_CONTAINER_HEADER_DESTRUCTABLE)) {\
     auto alloc = LABSTOR_MEMORY_MANAGER->\
       GetAllocator(ar_.header_ptr_.allocator_id_);\
     alloc->Free(ar_.header_ptr_);\
@@ -467,7 +467,7 @@ class ShmContainer : public ShmArchiveable {
   other.shm_destroy(true);\
   SHM_WEAK_COPY_END
 #define SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS) \
-  SHM_ARCHIVE_NULL(TYPED_CLASS), other.alloc_
+  ar, alloc
 
 /** Simplify StrongCopy */
 #define SHM_STRONG_COPY_START(...) \
@@ -476,7 +476,7 @@ class ShmContainer : public ShmArchiveable {
 #define SHM_STRONG_COPY_END() \
   SHM_WEAK_COPY_END
 #define SHM_STRONG_COPY_DEFAULT(TYPED_CLASS)\
-  SHM_ARCHIVE_NULL(TYPED_CLASS), SHM_ALLOCATOR_NULL
+  ar, alloc
 
 /**
  * Namespace simplification for a SHM data structure

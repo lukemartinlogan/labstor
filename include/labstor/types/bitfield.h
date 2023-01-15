@@ -28,7 +28,7 @@ struct bitfield {
     bits_ &= ~mask;
   }
 
-  inline bool CheckBits(T mask) const {
+  inline bool OrBits(T mask) const {
     return bits_ & mask;
   }
 
@@ -51,8 +51,8 @@ typedef bitfield<uint32_t> bitfield32_t;
   inline void UnsetBits(MASK_T mask) {\
     BITFIELD_VAR.UnsetBits(mask);\
   }\
-  inline bool CheckBits(MASK_T mask) const {\
-    return BITFIELD_VAR.CheckBits(mask);\
+  inline bool OrBits(MASK_T mask) const {\
+    return BITFIELD_VAR.OrBits(mask);\
   }\
   inline void Clear() {\
     BITFIELD_VAR.Clear();\

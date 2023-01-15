@@ -55,7 +55,8 @@ class _shm_ar_shm {
 
   /** Shm destructor */
   inline void shm_destroy(Allocator *alloc) {
-    T(internal_ref(alloc)).shm_destroy();
+    auto ar = internal_ref(alloc);
+    T(ar).shm_destroy();
   }
 
   /** Returns a reference to the internal object */

@@ -416,7 +416,8 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   }
 
   /** Move constructor */
-  void WeakMove(vector &other) {
+  void WeakMove(ShmArchive<TYPED_CLASS> *ar,
+                Allocator *alloc, vector &other) {
     SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS))
     *header_ = *(other.header_);
     other.header_->length_ = 0;
@@ -424,7 +425,8 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   }
 
   /** Copy a vector */
-  void StrongCopy(const vector &other) {
+  void StrongCopy(ShmArchive<TYPED_CLASS> *ar,
+                  Allocator *alloc, const vector &other) {
     SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS))
     reserve(other.size());
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
