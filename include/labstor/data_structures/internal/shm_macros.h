@@ -30,23 +30,26 @@
 #include <labstor/constants/macros.h>
 
 /**
+ * Determines whether or not a type has a predictable storage pattern.
+ * */
+#define IS_SHM_PREDICTABLE(T) \
+  std::is_base_of<labstor::ipc::ShmPredictable, T>::value
+
+/**
  * Determine whether or not \a T type is a SHM serializeable data structure
  * */
-
 #define IS_SHM_ARCHIVEABLE(T) \
   std::is_base_of<labstor::ipc::ShmArchiveable, T>::value
 
 /**
  * Determine whether or not \a T type is a SHM smart pointer
  * */
-
 #define IS_SHM_SMART_POINTER(T) \
   std::is_base_of<labstor::ipc::ShmSmartPointer, T>::value
 
 /**
  * SHM_X_OR_Y: X if T is SHM_SERIALIZEABLE, Y otherwise
  * */
-
 #define SHM_X_OR_Y(T, X, Y) \
   typename std::conditional<         \
     IS_SHM_ARCHIVEABLE(T), \
@@ -58,17 +61,15 @@
  *
  * @param T: The type being stored in the shmem data structure
  * */
-
 #define SHM_T_OR_PTR_T(T) \
   SHM_X_OR_Y(T, T, T*)
 
 /**
- * SHM_ARCHIVE_OR_T: Returns ShmArchive<T> if SHM_ARCHIVEABLE, and T
+ * ShmArchiveOrT: Returns ShmArchive<T> if SHM_ARCHIVEABLE, and T
  * otherwise. Used to construct an lipc::Ref<T>.
  *
  * @param T The type being stored in the shmem data structure
  * */
-
 #define SHM_ARCHIVE_OR_T(T) \
   SHM_X_OR_Y(T, lipc::ShmArchive<T>, T)
 
@@ -78,7 +79,6 @@
  *
  * @param T: The type being stored in the shmem data structure
  * */
-
 #define SHM_T_OR_SHM_PTR_T(T) \
   SHM_X_OR_Y(T, T, ShmStruct<T>)
 
@@ -86,7 +86,6 @@
  * SHM_T_OR_CONST_T: Determines whether or not an object should be
  * a constant or not.
  * */
-
 #define SHM_CONST_T_OR_T(T, IS_CONST) \
   typename std::conditional<         \
     IS_CONST, \

@@ -30,6 +30,7 @@
 #include "labstor/memory/memory.h"
 #include "labstor/data_structures/data_structure.h"
 #include "unique_ptr.h"
+#include "labstor/data_structures/internal/shm_archive_or_t.h"
 
 namespace labstor::ipc {
 

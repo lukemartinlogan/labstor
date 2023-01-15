@@ -28,8 +28,10 @@
 #define LABSTOR_SHM_CONTAINER_H_
 
 #include "labstor/memory/memory_manager.h"
+#include "labstor/constants/macros.h"
 #include "shm_macros.h"
 #include "shm_archive.h"
+#include "shm_ref.h"
 
 namespace lipc = labstor::ipc;
 
@@ -44,85 +46,6 @@ namespace labstor::ipc {
 /** The shared-memory header used for data structures */
 template<typename T>
 struct ShmHeader;
-
-/**
- * A reference to a shared-memory object are a simple object
- * stored in shared-memory.
- * */
-template<typename T>
-struct Ref {
-  typedef SHM_T_OR_PTR_T(T) T_Ptr;
-  typedef SHM_ARCHIVE_OR_REF(T) T_Ar;
-  T_Ptr obj_;
-
-  /**
-   * Constructor. Either reference a SHM_ARCHIVE or a reference to a
-   * data type. Deserializes the object if it's archiveable.
-   * */
-  explicit Ref(T_Ar other) {
-    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
-      obj_.shm_deserialize(other);
-    } else {
-      obj_ = &other;
-    }
-  }
-
-  /** Copy constructor */
-  Ref(const Ref &other) {
-    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
-      obj_.shm_deserialize(other.obj_.ar_);
-    } else {
-      obj_ = other.obj_;
-    }
-  }
-
-  /** Move constructor */
-  Ref(Ref &&other) noexcept {
-    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
-      obj_.shm_deserialize(other.obj_.ar_);
-    } else {
-      obj_ = other.obj_;
-    }
-  }
-
-  /** Get reference to the internal data structure */
-  T& get_ref() {
-    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
-      return obj_;
-    } else {
-      return *obj_;
-    }
-  }
-
-  /** Get a constant reference */
-  const T& get_ref_const() const {
-    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
-      return obj_;
-    } else {
-      return *obj_;
-    }
-  }
-
-  /** Dereference operator */
-  T& operator*() {
-    return get_ref();
-  }
-
-  /** Constant dereference operator */
-  const T& operator*() const {
-    return get_ref_const();
-  }
-
-  /** Pointer operator */
-  T* operator->() {
-    return &get_ref();
-  }
-
-  /** Constant pointer operator */
-  const T* operator->() const {
-    return &get_ref_const();
-  }
-};
 
 /** Force a StrongCopy of a container to occur */
 template<typename T>

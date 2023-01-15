@@ -29,7 +29,7 @@
 
 #include "labstor/data_structures/data_structure.h"
 #include "labstor/data_structures/smart_ptr/manual_ptr.h"
-#include "labstor/data_structures/internal/shm_ar.h"
+#include "labstor/data_structures/internal/shm_archive_or_t.h"
 
 #include <list>
 
@@ -44,7 +44,7 @@ template<typename T>
 struct list_entry {
  public:
   OffsetPointer next_ptr_, prior_ptr_;
-  shm_ar<T> data_;
+  ShmArchiveOrT<T> data_;
 
   /** Constructor */
   template<typename ...Args>

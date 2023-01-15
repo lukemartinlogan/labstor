@@ -33,10 +33,16 @@
 namespace labstor::ipc {
 
 /**
+ * Indicates that a data structure can be stored directly in memory or
+ * shared memory.
+ * */
+class ShmPredictable {};
+
+/**
  * Indicates that a data structure can be archived in shared memory
  * and has a corresponding ShmArchive override.
  * */
-class ShmArchiveable {
+class ShmArchiveable : public ShmPredictable {
   /**
    * Initialize a SHM data structure in shared-memory.
    * Constructors may wrap around these.

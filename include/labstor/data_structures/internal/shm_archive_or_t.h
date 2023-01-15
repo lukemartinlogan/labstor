@@ -37,7 +37,7 @@ namespace labstor::ipc {
  * Constructs a ShmArchive in-place
  * */
 template<typename T>
-class _shm_ar_shm {
+class _ShmArchive {
  public:
   typedef typename T::header_t header_t;
   header_t obj_hdr_;
@@ -45,13 +45,13 @@ class _shm_ar_shm {
  public:
   /** Construct + store object */
   template<typename ...Args>
-  explicit _shm_ar_shm(Allocator *alloc, Args&& ...args) {
+  explicit _ShmArchive(Allocator *alloc, Args&& ...args) {
     ShmArchive<T> ar = internal_ref(alloc);
     make_shm_ar<T>(ar, alloc, std::forward<Args>(args)...);
   }
 
   /** Destructor */
-  inline ~_shm_ar_shm() = default;
+  inline ~_ShmArchive() = default;
 
   /** Shm destructor */
   inline void shm_destroy(Allocator *alloc) {
@@ -70,24 +70,24 @@ class _shm_ar_shm {
   }
 
   /** Move constructor */
-  inline _shm_ar_shm(_shm_ar_shm &&other) noexcept {}
+  inline _ShmArchive(_ShmArchive &&other) noexcept {}
 
   /** Copy constructor */
-  inline _shm_ar_shm(const _shm_ar_shm &other) = delete;
+  inline _ShmArchive(const _ShmArchive &other) = delete;
 };
 
 /**
  * Constructs an object in-place
  * */
 template<typename T>
-class _shm_ar_noshm {
+class _ShmArchiveT {
  public:
   T obj_;
 
  public:
   /** Construct + store object */
   template<typename ...Args>
-  explicit _shm_ar_noshm(Allocator *alloc, Args&& ...args)
+  explicit _ShmArchiveT(Allocator *alloc, Args&& ...args)
   : obj_(std::forward<Args>(args)...) {
     (void) alloc;
   }
@@ -96,7 +96,7 @@ class _shm_ar_noshm {
   inline void shm_destroy(Allocator *alloc) {}
 
   /** Destructor. Does nothing. */
-  inline  ~_shm_ar_noshm() = default;
+  inline  ~_ShmArchiveT() = default;
 
   /** Returns a reference to the internal object */
   inline T& internal_ref(Allocator *alloc) {
@@ -111,40 +111,40 @@ class _shm_ar_noshm {
   }
 
   /** Move constructor */
-  inline _shm_ar_noshm(_shm_ar_noshm &&other) noexcept
+  inline _ShmArchiveT(_ShmArchiveT &&other) noexcept
   : obj_(std::move(other.obj_)) {}
 
   /** Copy constructor */
-  inline _shm_ar_noshm(const _shm_ar_noshm &other) = delete;
+  inline _ShmArchiveT(const _ShmArchiveT &other) = delete;
 };
 
 /**
- * Whether or not to use _shm_ar_shm or _shm_ar_noshm
+ * Whether or not to use _ShmArchive or _ShmArchiveT
  * */
-#define SHM_MAKE_T_OR_ARCHIVE(T) \
-  SHM_X_OR_Y(T, _shm_ar_shm<T>, _shm_ar_noshm<T>)
+#define SHM_MAKE_ARCHIVE_OR_T(T) \
+  SHM_X_OR_Y(T, _ShmArchive<T>, _ShmArchiveT<T>)
 
 /**
  * Used for data structures which intend to store:
- * 1. An archive if the data type is SHM_SERIALIZEABLE
+ * 1. An archive if the data type is SHM_ARCHIVEABLE
  * 2. The raw type if the data type is anything else
  *
  * E.g., used in unordered_map for storing collision entries.
  * E.g., used in a list for storing list entries.
  * */
 template<typename T>
-class shm_ar {
+class ShmArchiveOrT {
  public:
   typedef SHM_ARCHIVE_OR_REF(T) T_Ar;
-  SHM_MAKE_T_OR_ARCHIVE(T) obj_;
+  SHM_MAKE_ARCHIVE_OR_T(T) obj_;
 
   /** Construct + store object */
   template<typename ...Args>
-  explicit shm_ar(Args&& ...args)
+  explicit ShmArchiveOrT(Args&& ...args)
   : obj_(std::forward<Args>(args)...) {}
 
   /** Destructor */
-  inline ~shm_ar() = default;
+  inline ~ShmArchiveOrT() = default;
 
   /** Returns a reference to the internal object */
   inline T_Ar internal_ref(Allocator *alloc) {
@@ -162,11 +162,11 @@ class shm_ar {
   }
 
   /** Move constructor */
-  inline shm_ar(shm_ar &&other) noexcept
+  inline ShmArchiveOrT(ShmArchiveOrT &&other) noexcept
   : obj_(std::move(other.obj_)) {}
 
   /** Copy constructor */
-  inline shm_ar(const shm_ar &other) = delete;
+  inline ShmArchiveOrT(const ShmArchiveOrT &other) = delete;
 };
 
 }  // namespace labstor::ipc

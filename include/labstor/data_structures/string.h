@@ -264,6 +264,5 @@ struct hash<labstor::ipc::string> {
 
 #undef CLASS_NAME
 #undef TYPED_CLASS
-#undef TYPED_HEADER
 
 #endif  // LABSTOR_DATA_STRUCTURES_LOCKLESS_STRING_H_

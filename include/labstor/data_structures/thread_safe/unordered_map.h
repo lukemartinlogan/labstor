@@ -49,7 +49,7 @@ class unordered_map_bucket;
  * Represents a the combination of a Key and Value
  * */
 template<typename Key, typename T>
-struct unordered_map_pair {
+struct unordered_map_pair : public ShmPredictable {
  public:
   shm_ar<Key> key_;  /**< The key. Either a ShmArchive<T> or T*/
   shm_ar<T> val_;    /**< The value. Either a ShmArchive<T> or T*/
@@ -57,12 +57,18 @@ struct unordered_map_pair {
  public:
   /** Constructor */
   template<typename ...Args>
-  explicit unordered_map_pair(Key key, Args&& ...args)
-  : key_(std::move(key)), val_(std::forward<Args>(args)...) {}
+  explicit unordered_map_pair(Allocator *alloc, Key key, Args&& ...args)
+  : key_(alloc, std::move(key)), val_(alloc, std::forward<Args>(args)...) {}
 
   /** Move constructor */
-  unordered_map_pair(unordered_map_pair&& other) noexcept
-  : key_(std::move(other.key_)), val_(std::move(other.val_)) {}
+  unordered_map_pair(Allocator *alloc, unordered_map_pair&& other) noexcept
+  : key_(alloc, std::move(other.key_)), val_(alloc, std::move(other.val_)) {}
+
+  /** Shm Destructor */
+  void shm_destroy(Allocator *alloc) {
+    key_.shm_destroy(alloc);
+    val_.shm_destroy(alloc);
+  }
 
   /** Destructor */
   ~unordered_map_pair() = default;
@@ -82,8 +88,8 @@ struct unordered_map_pair_ret {
 
  public:
   /** Constructor */
-  explicit unordered_map_pair_ret(COLLISION_T &pair)
-  : key_(pair.key_.internal_ref()), val_(pair.val_.internal_ref()) {
+  explicit unordered_map_pair_ret(Allocator *alloc, COLLISION_T &pair)
+  : key_(pair.key_.internal_ref(alloc)), val_(pair.val_.internal_ref(alloc)) {
   }
 };
 
@@ -91,9 +97,10 @@ struct unordered_map_pair_ret {
  * A bucket which contains a list of <Key, Obj> pairs
  * */
 template<typename Key, typename T>
-class unordered_map_bucket {
+class unordered_map_bucket : public ShmArchiveable {
  public:
   using COLLISION_T = unordered_map_pair<Key, T>;
+  typedef unordered_map_bucket header_t;
 
  public:
   RwLock lock_;
@@ -161,12 +168,12 @@ struct unordered_map_iterator {
 
   /** Get the pointed object */
   COLLISION_RET_T operator*() {
-    return COLLISION_RET_T(**collision_);
+    return COLLISION_RET_T(map_->GetAllocator(), **collision_);
   }
 
   /** Get the pointed object */
   const COLLISION_RET_T operator*() const {
-    return COLLISION_RET_T(**collision_);
+    return COLLISION_RET_T(map_->GetAllocator(), **collision_);
   }
 
   /** Go to the next object */
@@ -444,7 +451,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
     mptr<vector<BUCKET_T>> buckets(header_->buckets_);
     size_t num_buckets = buckets->size();
     buckets->clear();
-    buckets->resize(num_buckets, alloc_);
+    buckets->resize(num_buckets);
     header_->length_ = 0;
   }
 
@@ -514,7 +521,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
     auto iter = collisions->begin();
     auto iter_end = collisions->end();
     for (; iter != iter_end; ++iter) {
-      COLLISION_RET_T entry(**iter);
+      COLLISION_RET_T entry(alloc_, **iter);
       if (*entry.key_ == key) {
         return iter;
       }
@@ -531,7 +538,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
    * */
   template<bool growth, bool modify_existing, typename ...Args>
   bool emplace_templ(const Key &key, Args&&... args) {
-    COLLISION_T entry_shm(key, std::forward<Args>(args)...);
+    COLLISION_T entry_shm(alloc_, key, std::forward<Args>(args)...);
     return insert_templ<growth, modify_existing>(entry_shm);
   }
 
@@ -546,7 +553,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
   template<bool growth, bool modify_existing>
   bool insert_templ(COLLISION_T &entry_shm) {
     if (header_ == nullptr) { shm_init(); }
-    COLLISION_RET_T entry(entry_shm);
+    COLLISION_RET_T entry(alloc_, entry_shm);
     Key &key = *(entry.key_);
 
     // Acquire the header lock for a read (not modifying bucket vec)
@@ -601,7 +608,7 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
   bool insert_simple(COLLISION_T &&entry_shm,
                      mptr<vector<BUCKET_T>> &buckets) {
     if (header_ == nullptr) { shm_init(); }
-    COLLISION_RET_T entry(entry_shm);
+    COLLISION_RET_T entry(alloc_, entry_shm);
     Key &key = *entry.key_;
     size_t bkt_id = Hash{}(key) % buckets->size();
     BUCKET_T &bkt = *(*buckets)[bkt_id];
