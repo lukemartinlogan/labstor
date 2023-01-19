@@ -172,6 +172,17 @@ class Allocator {
   /**
    * Free the memory pointed to by \a ptr Pointer
    * */
+  template<typename T=void>
+  inline void FreePtr(T *ptr) {
+    if (ptr == nullptr) {
+      throw INVALID_FREE.format();
+    }
+    FreeOffsetNoNullCheck(Convert<T, OffsetPointer>(ptr));
+  }
+
+  /**
+   * Free the memory pointed to by \a p Pointer
+   * */
   template<typename POINTER_T=Pointer>
   inline void Free(POINTER_T &p) {
     if (p.IsNull()) {
@@ -285,18 +296,6 @@ class Allocator {
     return ReallocatePtr<T, OffsetPointer>(p, new_size);
   }
 
-  /**
-   * Free a process-specific pointer.
-   *
-   * @param ptr process-specific pointer
-   * @return None
-   * */
-  template<typename T, typename POINTER_T=Pointer>
-  inline void FreePtr(T *ptr) {
-    POINTER_T p = Convert<T>(ptr);
-    Free(p);
-  }
-
   ///////////////////////////////////////
   ///////////OBJECT ALLOCATORS
   ///////////////////////////////////////
@@ -334,22 +333,6 @@ class Allocator {
   template<typename T, typename POINTER_T=Pointer>
   inline T* ClearAllocateObjs(size_t count, POINTER_T &p) {
     return ClearAllocatePtr<T>(count * sizeof(T), p);
-  }
-
-  /**
-   * Allocate and construct an array of objects
-   *
-   * @param count the number of objects to allocate
-   * @param args parameters to construct object of type T
-   * @return A process-specific pointer
-   * */
-  template<
-    typename T,
-    typename POINTER_T=Pointer,
-    typename ...Args>
-  inline T* AllocateConstructObjs(size_t count, Args&& ...args) {
-    POINTER_T p;
-    return AllocateConstructObjs<T>(count, p, std::forward<Args>(args)...);
   }
 
   /**
@@ -440,8 +423,7 @@ class Allocator {
   template<
     typename T,
     typename ...Args>
-  inline static void ConstructObj(T &obj,
-                           Args&& ...args) {
+  inline static void ConstructObj(T &obj, Args&& ...args) {
     new (&obj) T(std::forward<Args>(args)...);
   }
 

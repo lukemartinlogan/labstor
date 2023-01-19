@@ -41,10 +41,11 @@ class string;
  * */
 #define CLASS_NAME string
 #define TYPED_CLASS string
+#define TYPED_HEADER ShmHeader<string>
 
 /** string shared-memory header */
 template<>
-struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
+struct ShmHeader<string> : public ShmBaseHeader {
   size_t length_;
   Pointer text_;
 };
@@ -52,9 +53,11 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
 /**
  * A string of characters.
  * */
-class string : public SHM_CONTAINER(TYPED_CLASS) {
+class string : public ShmContainer {
  public:
-  BASIC_SHM_CONTAINER_TEMPLATE
+  SHM_CONTAINER_TEMPLATE((CLASS_NAME), (TYPED_CLASS), (TYPED_HEADER))
+
+ public:
   char *text_;
   size_t length_;
 
@@ -63,52 +66,51 @@ class string : public SHM_CONTAINER(TYPED_CLASS) {
   string() : length_(0) {}
 
   /** Default shm constructor */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+  void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc) {
-    shm_init_header(ar, alloc);
+    shm_init_allocator(alloc);
+    shm_init_header(header);
   }
 
   /** Construct from a C-style string with allocator in shared memory */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+  void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc, const char *text) {
     size_t length = strlen(text);
-    shm_init_main(ar, alloc, length);
+    shm_init_main(header, alloc, length);
     _create_str(text, length);
   }
 
   /** Construct for an std::string with allocator in shared-memory */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+  void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc, const std::string &text) {
-    shm_init_main(ar, alloc, text.size());
+    shm_init_main(header, alloc, text.size());
     _create_str(text.data(), text.size());
   }
 
   /** Move constructor */
-  void WeakMove(ShmArchive<TYPED_CLASS> *ar,
-                Allocator *alloc, string &other) {
-    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS))
+  void shm_weak_move_main(TYPED_HEADER *header,
+                          Allocator *alloc, string &other) {
+    shm_init_main(header, alloc);
     header_->length_ = other.header_->length_;
     header_->text_ = other.header_->text_;
     length_ = other.length_;
     text_ = other.text_;
     alloc_ = other.alloc_;
-    SHM_WEAK_MOVE_END()
   }
 
   /** Copy constructor */
-  void StrongCopy(ShmArchive<TYPED_CLASS> *ar,
-                  Allocator *alloc, const string &other) {
-    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS), other.size())
+  void shm_strong_copy_main(TYPED_HEADER *header,
+                            Allocator *alloc, const string &other) {
+    shm_init_main(header, alloc, other.size());
     _create_str(other.data(), other.size());
-    SHM_STRONG_COPY_END()
   }
 
   /** Construct by concatenating two string in shared-memory */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+  void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc,
                      const string &text1, const string &text2) {
     size_t length = text1.size() + text2.size();
-    shm_init_main(ar, alloc, length);
+    shm_init_main(header, alloc, length);
     memcpy(text_,
            text1.data(), text1.size());
     memcpy(text_ + text1.size(),
@@ -119,9 +121,10 @@ class string : public SHM_CONTAINER(TYPED_CLASS) {
   /**
    * Construct a string of specific length and allocator in shared memory
    * */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+  void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc, size_t length) {
-    shm_init_header(ar, alloc);
+    shm_init_allocator(alloc);
+    shm_init_header(header);
     text_ = alloc_->template
       AllocatePtr<char>(
         length + 1,
@@ -134,24 +137,18 @@ class string : public SHM_CONTAINER(TYPED_CLASS) {
   /**
    * Destroy the shared-memory data.
    * */
-  void shm_destroy(bool destroy_header = true) {
-    SHM_DESTROY_DATA_START
+  void shm_destroy_main() {
     if (length_) {
       alloc_->Free(header_->text_);
       length_ = 0;
     }
-    SHM_DESTROY_DATA_END
-    SHM_DESTROY_END
   }
 
   /** Store into shared memory */
-  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
-    shm_serialize_header(ar.header_ptr_);
-  }
+  void shm_serialize_main() const {}
 
   /** Load from shared memory */
-  void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
-    if(!shm_deserialize_header(ar.header_ptr_)) { return; }
+  void shm_deserialize_main() {
     text_ = alloc_->template
       Convert<char>(header_->text_);
     length_ = header_->length_;
@@ -264,5 +261,6 @@ struct hash<labstor::ipc::string> {
 
 #undef CLASS_NAME
 #undef TYPED_CLASS
+#undef TYPED_HEADER
 
 #endif  // LABSTOR_DATA_STRUCTURES_LOCKLESS_STRING_H_

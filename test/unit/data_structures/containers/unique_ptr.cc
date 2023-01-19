@@ -36,7 +36,7 @@ using labstor::ipc::unique_ptr;
 using labstor::ipc::make_uptr;
 using labstor::ipc::uptr;
 using labstor::ipc::mptr;
-using labstor::ipc::ShmArchive;
+using labstor::ipc::TypedPointer;
 
 void CopyConstructorShouldFail(unique_ptr<int> num) {
   std::cout << "Probably shouldn't work" << std::endl;
@@ -54,7 +54,7 @@ void UniquePtrOfInt() {
   REQUIRE(data.IsNull());
   REQUIRE(std::hash<uptr<int>>{}(data2) == std::hash<int>{}(25));
 
-  ShmArchive<uptr<int>> ar;
+  TypedPointer<uptr<int>> ar;
   data2 >> ar;
   mptr<int> from_ar(ar);
   REQUIRE(*from_ar == 25);
@@ -68,7 +68,7 @@ void UniquePtrOfString() {
   unique_ptr<string> data2 = std::move(data);
   REQUIRE(data.IsNull());
 
-  ShmArchive<unique_ptr<string>> ar;
+  TypedPointer<unique_ptr<string>> ar;
   data2 >> ar;
   REQUIRE(data2.obj_.ar_.header_ptr_ == ar.header_ptr_);
   mptr<string> from_ar(ar);

@@ -28,7 +28,6 @@
 #define LABSTOR_DATA_STRUCTURES_LOCKLESS_VECTOR_H_
 
 #include "labstor/data_structures/data_structure.h"
-#include "labstor/data_structures/smart_ptr/manual_ptr.h"
 #include "labstor/data_structures/internal/shm_archive_or_t.h"
 
 #include <vector>
@@ -371,14 +370,14 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Construct the vector in shared memory */
   template<typename ...Args>
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+  void shm_init_main(TypedPointer<TYPED_CLASS> *ar,
                      Allocator *alloc, size_t length, Args&& ...args) {
     shm_init_header(ar, alloc);
     resize(length, std::forward<Args>(args)...);
   }
 
   /** Construct the vector in shared memory */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+  void shm_init_main(TypedPointer<TYPED_CLASS> *ar,
                      Allocator *alloc) {
     shm_init_header(ar, alloc);
     header_->length_ = 0;
@@ -387,7 +386,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   }
 
   /** Copy from std::vector */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+  void shm_init_main(TypedPointer<TYPED_CLASS> *ar,
                      Allocator *alloc, std::vector<T> &other) {
     shm_init_header(ar, alloc);
     reserve(other.size());
@@ -408,17 +407,17 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   }
 
   /** Store into shared memory */
-  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
+  void shm_serialize(TypedPointer<TYPED_CLASS> &ar) const {
     shm_serialize_header(ar.header_ptr_);
   }
 
   /** Load from shared memory */
-  void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
+  void shm_deserialize(const TypedPointer<TYPED_CLASS> &ar) {
     if(!shm_deserialize_header(ar.header_ptr_)) { return; }
   }
 
   /** Move constructor */
-  void WeakMove(ShmArchive<TYPED_CLASS> *ar,
+  void shm_weak_move(TypedPointer<TYPED_CLASS> *ar,
                 Allocator *alloc, vector &other) {
     SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS))
     *header_ = *(other.header_);
@@ -427,7 +426,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   }
 
   /** Copy a vector */
-  void StrongCopy(ShmArchive<TYPED_CLASS> *ar,
+  void shm_strong_copy(TypedPointer<TYPED_CLASS> *ar,
                   Allocator *alloc, const vector &other) {
     SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS))
     reserve(other.size());
@@ -468,7 +467,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Index the vector at position i */
   lipc::Ref<T> operator[](const size_t i) {
-    ShmArchiveOrT<T> *vec = data_ar();
+    ShmHeaderOrT<T> *vec = data_ar();
     return lipc::Ref<T>(vec[i].internal_ref(alloc_));
   }
 
@@ -484,18 +483,18 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
 
   /** Index the vector at position i */
   const lipc::Ref<T> operator[](const size_t i) const {
-    ShmArchiveOrT<T> *vec = data_ar_const();
+    ShmHeaderOrT<T> *vec = data_ar_const();
     return lipc::Ref<T>(vec[i].internal_ref(alloc_));
   }
 
   /** Construct an element at the back of the vector */
   template<typename... Args>
   void emplace_back(Args&& ...args) {
-    ShmArchiveOrT<T> *vec = data_ar();
+    ShmHeaderOrT<T> *vec = data_ar();
     if (header_->length_ == header_->max_length_) {
       vec = grow_vector(vec, 0, false);
     }
-    Allocator::ConstructObj<ShmArchiveOrT<T>>(
+    Allocator::ConstructObj<ShmHeaderOrT<T>>(
       *(vec + header_->length_),
       alloc_, std::forward<Args>(args)...);
     ++header_->length_;
@@ -514,12 +513,12 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
       emplace_back(std::forward<Args>(args)...);
       return;
     }
-    ShmArchiveOrT<T> *vec = data_ar();
+    ShmHeaderOrT<T> *vec = data_ar();
     if (header_->length_ == header_->max_length_) {
       vec = grow_vector(vec, 0, false);
     }
     shift_right(pos);
-    Allocator::ConstructObj<ShmArchiveOrT<T>>(
+    Allocator::ConstructObj<ShmHeaderOrT<T>>(
       *(vec + pos.i_),
       alloc_, std::forward<Args>(args)...);
     ++header_->length_;
@@ -581,17 +580,17 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   /**
    * Retreives a pointer to the array from the process-independent pointer.
    * */
-  ShmArchiveOrT<T>* data_ar() {
+  ShmHeaderOrT<T>* data_ar() {
     return alloc_->template
-      Convert<ShmArchiveOrT<T>>(header_->vec_ptr_);
+      Convert<ShmHeaderOrT<T>>(header_->vec_ptr_);
   }
 
   /**
    * Retreives a pointer to the array from the process-independent pointer.
    * */
-  ShmArchiveOrT<T>* data_ar_const() const {
+  ShmHeaderOrT<T>* data_ar_const() const {
     return alloc_->template
-      Convert<ShmArchiveOrT<T>>(header_->vec_ptr_);
+      Convert<ShmHeaderOrT<T>>(header_->vec_ptr_);
   }
 
  private:
@@ -604,7 +603,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
    * @param args the arguments used to construct the elements of the vector
    * */
   template<typename ...Args>
-  ShmArchiveOrT<T>* grow_vector(ShmArchiveOrT<T> *vec, size_t max_length,
+  ShmHeaderOrT<T>* grow_vector(ShmHeaderOrT<T> *vec, size_t max_length,
                                    bool resize, Args&& ...args) {
     // Grow vector by 25%
     if (max_length == 0) {
@@ -618,19 +617,19 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
     }
 
     // Allocate new shared-memory vec
-    ShmArchiveOrT<T> *new_vec;
+    ShmHeaderOrT<T> *new_vec;
     if constexpr(std::is_pod<T>() || IS_SHM_PREDICTABLE(T)) {
       // Use reallocate for well-behaved objects
       new_vec = alloc_->template
-        ReallocateObjs<ShmArchiveOrT<T>>(header_->vec_ptr_, max_length);
+        ReallocateObjs<ShmHeaderOrT<T>>(header_->vec_ptr_, max_length);
     } else {
       // Use std::move for unpredictable objects
       Pointer new_p;
       new_vec = alloc_->template
-        AllocateObjs<ShmArchiveOrT<T>>(max_length, new_p);
+        AllocateObjs<ShmHeaderOrT<T>>(max_length, new_p);
       for (size_t i = 0; i < header_->length_; ++i) {
         lipc::Ref<T> old = (*this)[i];
-        Allocator::ConstructObj<ShmArchiveOrT<T>>(
+        Allocator::ConstructObj<ShmHeaderOrT<T>>(
           *(new_vec + i),
           alloc_, std::move(*old));
       }
@@ -641,11 +640,11 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
     }
     if (new_vec == nullptr) {
       throw OUT_OF_MEMORY.format("vector::emplace_back",
-                                 max_length*sizeof(ShmArchiveOrT<T>));
+                                 max_length*sizeof(ShmHeaderOrT<T>));
     }
     if (resize) {
       for (size_t i = header_->length_; i < max_length; ++i) {
-        Allocator::ConstructObj<ShmArchiveOrT<T>>(
+        Allocator::ConstructObj<ShmHeaderOrT<T>>(
           *(new_vec + i),
           alloc_, std::forward<Args>(args)...);
       }
@@ -665,16 +664,16 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
    * @param count the amount to shift left by
    * */
   void shift_left(const vector_iterator<T> pos, int count = 1) {
-    ShmArchiveOrT<T> *vec = data_ar();
+    ShmHeaderOrT<T> *vec = data_ar();
     for (int i = 0; i < count; ++i) {
       auto &vec_i = *(vec + pos.i_ + i);
       vec_i.shm_destroy(alloc_);
-      Allocator::DestructObj<ShmArchiveOrT<T>>(vec_i);
+      Allocator::DestructObj<ShmHeaderOrT<T>>(vec_i);
     }
     auto dst = vec + pos.i_;
     auto src = dst + count;
     for (auto i = pos.i_ + count; i < size(); ++i) {
-      memcpy(dst, src, sizeof(ShmArchiveOrT<T>));
+      memcpy(dst, src, sizeof(ShmHeaderOrT<T>));
       dst += 1; src += 1;
     }
   }
@@ -692,7 +691,7 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
     auto dst = src + count;
     auto sz = static_cast<off64_t>(size());
     for (auto i = sz - 1; i >= pos.i_; --i) {
-      memcpy(dst, src, sizeof(ShmArchiveOrT<T>));
+      memcpy(dst, src, sizeof(ShmHeaderOrT<T>));
       dst -= 1; src -= 1;
     }
   }

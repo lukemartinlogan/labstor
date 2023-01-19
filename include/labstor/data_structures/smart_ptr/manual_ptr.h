@@ -80,38 +80,38 @@ class manual_ptr : public ShmSmartPtr<T> {
 
   /** Move constructor */
   manual_ptr(manual_ptr&& source) noexcept {
-    WeakMove(source);
+    shm_weak_move(source);
   }
 
   /** Move assignment operator */
-  void WeakMove(manual_ptr &other) {
+  void shm_weak_move(manual_ptr &other) {
     obj_ = std::move(other.obj_);
     other.obj_.shm_destroy(true);
   }
 
-  /** Constructor. From a ShmArchive<T> */
+  /** Constructor. From a TypedPointer<T> */
   template<typename ...Args>
-  explicit manual_ptr(ShmArchive<T> &ar) {
+  explicit manual_ptr(TypedPointer<T> &ar) {
     shm_deserialize(ar);
   }
 
-  /** Constructor. From a ShmArchive<mptr> */
-  explicit manual_ptr(ShmArchive<TYPED_CLASS> &ar) {
+  /** Constructor. From a TypedPointer<mptr> */
+  explicit manual_ptr(TypedPointer<TYPED_CLASS> &ar) {
     shm_deserialize(ar);
   }
 
-  /** Constructor. From a ShmArchive<uptr> */
-  explicit manual_ptr(ShmArchive<uptr<T>> &ar) {
+  /** Constructor. From a TypedPointer<uptr> */
+  explicit manual_ptr(TypedPointer<uptr<T>> &ar) {
     shm_deserialize(ar);
   }
 
-  /** (De)serialize the obj from a ShmArchive<T> */
+  /** (De)serialize the obj from a TypedPointer<T> */
   SHM_SERIALIZE_DESERIALIZE_WRAPPER(T);
 
-  /** (De)serialize the obj from a ShmArchive<mptr<T>> */
+  /** (De)serialize the obj from a TypedPointer<mptr<T>> */
   SHM_SERIALIZE_DESERIALIZE_WRAPPER(manual_ptr<T>);
 
-  /** Deserialize the obj from a ShmArchive<uptr<T>> */
+  /** Deserialize the obj from a TypedPointer<uptr<T>> */
   SHM_DESERIALIZE_WRAPPER(uptr<T>);
 };
 

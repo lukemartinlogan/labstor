@@ -44,7 +44,7 @@ template<typename T>
 struct list_entry {
  public:
   OffsetPointer next_ptr_, prior_ptr_;
-  ShmArchiveOrT<T> data_;
+  ShmHeaderOrT<T> data_;
 
   /** Constructor */
   template<typename ...Args>
@@ -272,7 +272,7 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
   list() = default;
 
   /** Initialize list in shared memory */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+  void shm_init_main(TypedPointer<TYPED_CLASS> *ar,
                      Allocator *alloc) {
     shm_init_header(ar, alloc);
     header_->length_ = 0;
@@ -281,7 +281,7 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
   }
 
   /** Copy from std::list */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+  void shm_init_main(TypedPointer<TYPED_CLASS> *ar,
                      Allocator *alloc, std::list<T> &other) {
     shm_init_header(ar, alloc);
     for (auto &entry : other) {
@@ -298,17 +298,17 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
   }
 
   /** Store into shared memory */
-  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
+  void shm_serialize(TypedPointer<TYPED_CLASS> &ar) const {
     shm_serialize_header(ar.header_ptr_);
   }
 
   /** Load from shared memory */
-  void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
+  void shm_deserialize(const TypedPointer<TYPED_CLASS> &ar) {
     if(!shm_deserialize_header(ar.header_ptr_)) { return; }
   }
 
   /** Move constructor */
-  void WeakMove(ShmArchive<TYPED_CLASS> *ar,
+  void shm_weak_move(TypedPointer<TYPED_CLASS> *ar,
                 Allocator *alloc, list &other) {
     SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS))
     *header_ = *(other.header_);
@@ -316,7 +316,7 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
   }
 
   /** Copy constructor */
-  void StrongCopy(ShmArchive<TYPED_CLASS> *ar,
+  void shm_strong_copy(TypedPointer<TYPED_CLASS> *ar,
                   Allocator *alloc, const list &other) {
     SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS))
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {

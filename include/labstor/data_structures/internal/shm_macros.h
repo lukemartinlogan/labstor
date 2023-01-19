@@ -39,7 +39,7 @@
  * Determine whether or not \a T type is a SHM serializeable data structure
  * */
 #define IS_SHM_ARCHIVEABLE(T) \
-  std::is_base_of<labstor::ipc::ShmArchiveable, T>::value
+  std::is_base_of<labstor::ipc::TypedPointerable, T>::value
 
 /**
  * Determine whether or not \a T type is a SHM smart pointer
@@ -65,13 +65,13 @@
   SHM_X_OR_Y(T, T, T*)
 
 /**
- * ShmArchiveOrT: Returns ShmArchive<T> if SHM_ARCHIVEABLE, and T
+ * ShmHeaderOrT: Returns TypedPointer<T> if SHM_ARCHIVEABLE, and T
  * otherwise. Used to construct an lipc::Ref<T>.
  *
  * @param T The type being stored in the shmem data structure
  * */
 #define SHM_ARCHIVE_OR_T(T) \
-  SHM_X_OR_Y(T, lipc::ShmArchive<T>, T)
+  SHM_X_OR_Y(T, lipc::TypedPointer<T>, T)
 
 /**
  * SHM_T_OR_PTR_T: Used by unique_ptr and shared_ptr to determine how to
@@ -95,6 +95,6 @@
  * SHM_ARCHIVE_OR_REF: Return value of shm_ar::internal_ref().
  * */
 #define SHM_ARCHIVE_OR_REF(T)\
-  SHM_X_OR_Y(T, ShmArchive<T>, T&)
+  SHM_X_OR_Y(T, TypedPointer<T>, T&)
 
 #endif  // LABSTOR_MEMORY_SHM_MACROS_H_

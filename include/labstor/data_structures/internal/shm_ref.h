@@ -70,7 +70,7 @@ struct Ref {
   Ref& operator=(Ref &&other) noexcept {
     if (this != &other) {
       if constexpr(IS_SHM_ARCHIVEABLE(T)) {
-        obj_.shm_deserialize(other.obj_.ar_);
+        obj_.shm_deserialize(other.obj_);
       } else {
         obj_ = other.obj_;
       }

@@ -72,18 +72,18 @@ class unique_ptr : public ShmSmartPtr<T> {
 
   /** Move constructor */
   unique_ptr(unique_ptr&& other) noexcept {
-    obj_.WeakMove(nullptr, nullptr, other.obj_);
+    obj_.shm_weak_move(nullptr, nullptr, other.obj_);
   }
 
   /** Move assignment operator */
   unique_ptr<T>& operator=(unique_ptr<T> &&other) {
     if (this != &other) {
-      obj_.WeakMove(nullptr, nullptr, other.obj_);
+      obj_.shm_weak_move(nullptr, nullptr, other.obj_);
     }
     return *this;
   }
 
-  /** Serialize into a ShmArchive<unique_ptr> */
+  /** Serialize into a TypedPointer<unique_ptr> */
   SHM_SERIALIZE_WRAPPER(unique_ptr)
 };
 

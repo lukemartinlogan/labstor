@@ -59,7 +59,7 @@ struct array_unordered_map_header {
   std::atomic<Key> enqueued_;
   std::atomic<Key> dequeued_;
   std::atomic<Key> size_;
-  ShmArchive<vector<T>> vec_;
+  TypedPointer<vector<T>> vec_;
 };
 
 /**

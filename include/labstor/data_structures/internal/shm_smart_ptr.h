@@ -35,14 +35,13 @@
 
 #include "labstor/data_structures/internal/shm_archive.h"
 #include "labstor/data_structures/internal/shm_struct.h"
-#include "labstor/data_structures/internal/shm_construct.h"
 
 namespace labstor::ipc {
 
 /**
  * Indicates a data structure represents a memory paradigm for Shm.
  * */
-class ShmSmartPointer : public ShmArchiveable {};
+class ShmSmartPointer : public TypedPointerable {};
 
 /**
  * A base class used for creating shared-memory pointer management
@@ -152,8 +151,8 @@ class ShmSmartPtr : public ShmSmartPointer {
  * A macro for defining shared memory serializations
  * */
 #define SHM_SERIALIZE_WRAPPER(AR_TYPE)\
-  void shm_serialize(ShmArchive<AR_TYPE> &type) const {\
-    auto &cast = reinterpret_cast<ShmArchive<T>&>(type);\
+  void shm_serialize(TYPE_UNWRAP(AR_TYPE) &type) const {\
+    auto &cast = reinterpret_cast<TypedPointer<T>&>(type);\
     obj_.shm_serialize(cast);\
   }\
   SHM_SERIALIZE_OPS(AR_TYPE)
@@ -162,8 +161,8 @@ class ShmSmartPtr : public ShmSmartPointer {
  * A macro for defining shared memory deserializations
  * */
 #define SHM_DESERIALIZE_WRAPPER(AR_TYPE)\
-  void shm_deserialize(const ShmArchive<AR_TYPE> &type) {\
-    auto &cast = reinterpret_cast<const ShmArchive<T>&>(type);\
+  void shm_deserialize(const TYPE_UNWRAP(AR_TYPE) &type) {\
+    auto &cast = reinterpret_cast<const TypedPointer<T>&>(type);\
     obj_.shm_deserialize(cast);\
   }\
   SHM_DESERIALIZE_OPS(AR_TYPE)

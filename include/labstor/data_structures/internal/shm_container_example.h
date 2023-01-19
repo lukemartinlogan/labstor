@@ -1,131 +1,65 @@
-/*
- * Copyright (C) 2022  SCS Lab <scslab@iit.edu>,
- * Luke Logan <llogan@hawk.iit.edu>,
- * Jaime Cernuda Garcia <jcernudagarcia@hawk.iit.edu>
- * Jay Lofstead <gflofst@sandia.gov>,
- * Anthony Kougkas <akougkas@iit.edu>,
- * Xian-He Sun <sun@iit.edu>
- *
- * This file is part of LabStor
- *
- * LabStor is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/>.
- */
 
+/**
+ * MACRO vs TEMPLATE
+ *
+ * TEMPLATE:
+ * - Can make shm_weak_move, shm_strong_copy
+ * */
 
-#ifndef LABSTOR_DATA_STRUCTURES_SHM_STRUCT_H_
-#define LABSTOR_DATA_STRUCTURES_SHM_STRUCT_H_
-
-#include "labstor/memory/memory_manager.h"
-#include "shm_macros.h"
-#include "shm_archive.h"
 #include "shm_container.h"
 
 namespace labstor::ipc {
 
-/** Create a ShmHeader for the simple type */
 template<typename T>
-struct ShmSimpleHeader : public lipc::ShmBaseHeader {
-  T obj_;
+class CLASS_NAME;
 
-  template<typename ...Args>
-  ShmSimpleHeader(Args&& ...args) : obj_(std::forward<Args>(args)...) {}
+template<typename T>
+class TYPED_HEADER : public ShmBaseHeader {
 };
 
-/**
- * MACROS used to simplify the vector namespace
- * Used as inputs to the SHM_CONTAINER_TEMPLATE
- * */
-#define CLASS_NAME ShmStruct
-#define TYPED_CLASS T
-#define TYPED_HEADER ShmSimpleHeader<T>
+#define CLASS_NAME ShmContainerExample
+#define TYPED_CLASS ShmContainerExample<T>
+#define TYPED_HEADER ShmHeader<CLASS_NAME>
 
-/**
- * Used for storing a simple type (int, double, C-style struct, etc) in shared
- * memory.
- *
- * Called internally by manual_ptr, unique_ptr, and shared_ptr
- * */
 template<typename T>
-struct ShmStruct : public ShmContainer {
+class ShmContainerExample : public ShmContainer {
  public:
-  /** Default constructor */
-  ShmStruct() = default;
+  ////////////////////////
+  /// TO IMPLEMENT
+  ////////////////////////
 
-  /**
-   * Constructs and stores a simple C type in shared-memory. E.g., a struct
-   * or union. Complex structures should look at ShmContainer under
-   * data_structures/data_structure.h
-   * */
-  template<typename ...Args>
+  /** Default constructor */
+  ShmContainerExample() = default;
+
+  /** Default shm constructor */
   void shm_init_main(TYPED_HEADER *header,
-                     Allocator *alloc, Args &&...args) {
+                     Allocator *alloc) {
     shm_init_allocator(alloc);
-    shm_init_header(header, std::forward<Args>(args)...);
+    shm_init_header(header);
   }
 
   /** Weak move operator */
   void shm_weak_move_main(TYPED_HEADER *header,
                           Allocator *alloc,
                           CLASS_NAME &other) {
-    *header_ = *(other.header_);
   }
 
   /** Strong copy operator */
   void shm_strong_copy_main(TYPED_HEADER *header,
                             Allocator *alloc,
                             const CLASS_NAME &other) {
-    *header_ = *(other.header_);
   }
 
   /** Serialize main */
-  void shm_serialize_main() {}
+  void shm_serialize_main() const {
+  }
 
   /** Deserialize main */
-  void shm_deserialize_main() {}
+  void shm_deserialize_main() {
+  }
 
   /** Destroy shared-memory data safely */
-  void shm_destroy_main() {}
-
-  /** Convert the pointer to a pointer */
-  T* get() {
-    return &header_->obj_;
-  }
-
-  /** Convert into a reference */
-  T& get_ref() {
-    return *get();
-  }
-
-  /** Convert the pointer to const pointer */
-  T* get_const() const {
-    return &header_->obj_;
-  }
-
-  /** Convert into a const reference */
-  T& get_ref_const() const {
-    return *get_const();
-  }
-
-  /** Convert into a pointer */
-  T* operator->() {
-    return get();
-  }
-
-  /** Convert into a reference */
-  T& operator*() {
-    return get_ref();
+  void shm_destroy_main() {
   }
 
   ////////////////////////////
@@ -154,7 +88,7 @@ struct ShmStruct : public ShmContainer {
   template<typename ...Args>
   void shm_init(Args&& ...args) {
     shm_destroy(false);
-    shm_init_main(typed_nullptr<TYPED_CLASS>(),
+    shm_init_main(typed_nullptr<TYPED_HEADER>(),
                   typed_nullptr<Allocator>(),
                   std::forward<Args>(args)...);
   }
@@ -163,14 +97,14 @@ struct ShmStruct : public ShmContainer {
   template<typename ...Args>
   void shm_init(lipc::Allocator *alloc, Args&& ...args) {
     shm_destroy(false);
-    shm_init_main(typed_nullptr<TYPED_CLASS>(),
+    shm_init_main(typed_nullptr<TYPED_HEADER>(),
                   alloc,
                   std::forward<Args>(args)...);
   }
 
   /** Constructor. Initialize an already-allocated header. */
   template<typename ...Args>
-  void shm_init(lipc::ShmHeader<CLASS_NAME> &header,
+  void shm_init(TYPED_HEADER &header,
                 lipc::Allocator *alloc, Args&& ...args) {
     shm_destroy(false);
     shm_init_main(&header, alloc, std::forward<Args>(args)...);
@@ -182,7 +116,7 @@ struct ShmStruct : public ShmContainer {
    * been set the first time.
    * */
   template<typename ...Args>
-  void shm_init_header(lipc::ShmHeader<CLASS_NAME> *header,
+  void shm_init_header(TYPED_HEADER *header,
                        Args&& ...args) {
     if (IsValid()) {
       // The container already has a valid header
@@ -190,7 +124,7 @@ struct ShmStruct : public ShmContainer {
     } else if (header == nullptr) {
       // Allocate and initialize a new header
       header_ = alloc_->template
-        AllocateConstructObjs<lipc::ShmHeader<CLASS_NAME>>(
+        AllocateConstructObjs<TYPED_HEADER>(
         1, std::forward<Args>(args)...);
       header_->SetBits(
         SHM_CONTAINER_DATA_VALID |
@@ -202,8 +136,8 @@ struct ShmStruct : public ShmContainer {
       // Initialize the input header
       Pointer header_ptr;
       header_ = header;
-      Allocator::ConstructObj<lipc::ShmHeader<CLASS_NAME>>(
-        *header_, header_ptr, std::forward<Args>(args)...);
+      Allocator::ConstructObj<TYPED_HEADER>(
+        *header_, std::forward<Args>(args)...);
       header_->SetBits(
         SHM_CONTAINER_DATA_VALID);
       flags_.SetBits(
@@ -219,14 +153,14 @@ struct ShmStruct : public ShmContainer {
   /** Serialize into a Pointer */
   void shm_serialize(TypedPointer<TYPED_CLASS> &ar) const {
     ar = alloc_->template
-      Convert<Pointer>(header_);
+      Convert<TYPED_HEADER, Pointer>(header_);
     shm_serialize_main();
   }
 
   /** Serialize into an AtomicPointer */
   void shm_serialize(TypedAtomicPointer<TYPED_CLASS> &ar) const {
     ar = alloc_->template
-      Convert<AtomicPointer>(header_);
+      Convert<TYPED_HEADER, AtomicPointer>(header_);
     shm_serialize_main();
   }
 
@@ -238,7 +172,7 @@ struct ShmStruct : public ShmContainer {
   ////////////////////////
 
   /** Deserialize object from a raw pointer */
-  bool shm_deserialize(TypedPointer<TYPED_CLASS> &ar) {
+  bool shm_deserialize(const TypedPointer<TYPED_CLASS> &ar) {
     return shm_deserialize(
       LABSTOR_MEMORY_MANAGER->GetAllocator(ar.allocator_id_),
       ar.ToOffsetPointer()
@@ -249,7 +183,7 @@ struct ShmStruct : public ShmContainer {
   bool shm_deserialize(Allocator *alloc, OffsetPointer header_ptr) {
     if (header_ptr.IsNull()) { return false; }
     shm_deserialize(alloc,
-                    LABSTOR_MEMORY_MANAGER->Convert<
+                    alloc->Convert<
                       TYPED_HEADER,
                       OffsetPointer>(header_ptr));
   }
@@ -295,7 +229,7 @@ struct ShmStruct : public ShmContainer {
     UnsetDataValid();
     if (destroy_header &&
       header_->OrBits(SHM_CONTAINER_HEADER_DESTRUCTABLE)) {
-      alloc_->FreePtr(header_);
+      alloc_->FreePtr<TYPED_HEADER>(header_);
       UnsetValid();
     }
   }
@@ -306,7 +240,7 @@ struct ShmStruct : public ShmContainer {
 
   /** Move constructor */
   CLASS_NAME(CLASS_NAME &&other) noexcept {
-    shm_weak_move(typed_nullptr<TYPED_CLASS>(),
+    shm_weak_move(typed_nullptr<TYPED_HEADER>(),
                   typed_nullptr<Allocator>(),
                   other);
   }
@@ -314,7 +248,7 @@ struct ShmStruct : public ShmContainer {
   /** Move assignment operator */
   CLASS_NAME& operator=(CLASS_NAME &&other) noexcept {
     if (this != &other) {
-      shm_weak_move(typed_nullptr<TYPED_CLASS>(),
+      shm_weak_move(typed_nullptr<TYPED_HEADER>(),
                     typed_nullptr<Allocator>(),
                     other);
     }
@@ -322,22 +256,21 @@ struct ShmStruct : public ShmContainer {
   }
 
   /** Move shm_init constructor */
-  void shm_init_main(lipc::ShmHeader<CLASS_NAME> *header,
+  void shm_init_main(TYPED_HEADER *header,
                      lipc::Allocator *alloc,
                      CLASS_NAME &&other) noexcept {
-    shm_weak_move(typed_nullptr<TYPED_CLASS>(),
+    shm_weak_move(typed_nullptr<TYPED_HEADER>(),
                   typed_nullptr<Allocator>(),
                   other);
   }
 
   /** Move operation */
-  void shm_weak_move(lipc::ShmHeader<CLASS_NAME> *header,
+  void shm_weak_move(TYPED_HEADER *header,
                      lipc::Allocator *alloc,
                      CLASS_NAME &other) {
     if (other.IsNull()) { return; }
-    header_->SetBits(SHM_CONTAINER_DATA_VALID);
-    shm_weak_moveMain(header, alloc, other);
-    if (!IsDestructable() || !other.IsDestructable()) {
+    shm_weak_move_main(header, alloc, other);
+    if (!other.IsDestructable()) {
       UnsetDestructable();
     }
     other.UnsetDataValid();
@@ -356,7 +289,7 @@ struct ShmStruct : public ShmContainer {
   /** Copy assignment constructor */
   CLASS_NAME& operator=(const CLASS_NAME &other) {
     if (this != &other) {
-      shm_strong_copy(typed_nullptr<TYPED_CLASS>(),
+      shm_strong_copy(typed_nullptr<TYPED_HEADER>(),
                       typed_nullptr<Allocator>(),
                       other);
     }
@@ -364,24 +297,22 @@ struct ShmStruct : public ShmContainer {
   }
 
   /** Copy shm_init constructor */
-  void shm_init_main(lipc::ShmHeader<CLASS_NAME> *header,
+  void shm_init_main(TYPED_HEADER *header,
                      lipc::Allocator *alloc,
                      const CLASS_NAME &other) {
     shm_strong_copy(header, alloc, other);
   }
 
   /** Strong Copy operation */
-  void shm_strong_copy(lipc::ShmHeader<CLASS_NAME> *header,
+  void shm_strong_copy(TYPED_HEADER *header,
                        lipc::Allocator *alloc,
                        const CLASS_NAME &other) {
     if (other.IsNull()) { return; }
-    header_->SetBits(SHM_CONTAINER_DATA_VALID);
     shm_strong_copy_main(header, alloc, other);
-    if (!IsDestructable() || !other.IsDestructable()) {
+    if (!other.IsDestructable()) {
       UnsetDestructable();
     }
     other.UnsetDataValid();
-    other.shm_destroy(true);
   }
 
   /////////////////////
@@ -399,7 +330,7 @@ struct ShmStruct : public ShmContainer {
   }
 
   /** Check if this container is destructable */
-  bool IsDestructable() {
+  bool IsDestructable() const {
     return flags_.OrBits(SHM_CONTAINER_DESTRUCTABLE);
   }
 
@@ -429,10 +360,4 @@ struct ShmStruct : public ShmContainer {
   }
 };
 
-}  // namespace labstor::ipc
-
-#undef CLASS_NAME
-#undef TYPED_CLASS
-#undef TYPED_HEADER
-
-#endif  // LABSTOR_DATA_STRUCTURES_SHM_STRUCT_H_
+}

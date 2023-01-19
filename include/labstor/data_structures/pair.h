@@ -7,7 +7,6 @@
 
 #include "data_structure.h"
 #include "internal/shm_archive_or_t.h"
-#include "labstor/data_structures/smart_ptr/manual_ptr.h"
 
 namespace labstor::ipc {
 
@@ -21,12 +20,13 @@ class pair;
  * */
 #define CLASS_NAME pair
 #define TYPED_CLASS pair<FirstT, SecondT>
+#define TYPED_HEADER ShmHeader<TYPED_CLASS>
 
 /** pair shared-memory header */
 template<typename FirstT, typename SecondT>
 struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
-  ShmArchiveOrT<FirstT> first_;
-  ShmArchiveOrT<SecondT> second_;
+  ShmHeaderOrT<FirstT> first_;
+  ShmHeaderOrT<SecondT> second_;
 
   explicit ShmHeader(Allocator *alloc)
   : first_(alloc), second_(alloc) {}
@@ -47,9 +47,11 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
  * A string of characters.
  * */
 template<typename FirstT, typename SecondT>
-class pair : public SHM_CONTAINER(TYPE_WRAP(TYPED_CLASS)) {
-  public:
-  BASIC_SHM_CONTAINER_TEMPLATE
+class pair : public ShmContainer {
+ public:
+  SHM_CONTAINER_TEMPLATE((CLASS_NAME), (TYPED_CLASS), (TYPED_HEADER))
+
+ public:
   lipc::Ref<FirstT> first_;
   lipc::Ref<SecondT> second_;
 
@@ -58,64 +60,61 @@ class pair : public SHM_CONTAINER(TYPE_WRAP(TYPED_CLASS)) {
   pair() = default;
 
   /** Default shm constructor */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar, Allocator *alloc) {
-    shm_init_header(ar, alloc, alloc);
+  void shm_init_main(TYPED_HEADER *header, Allocator *alloc) {
+    shm_init_allocator(alloc);
+    shm_init_header(header, alloc);
   }
 
   /** Construct pair by forwarding parameters */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+  void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc,
                      FirstT &&first, SecondT &&second) {
-    shm_init_header(ar, alloc,
-                    alloc,
+    shm_init_allocator(alloc);
+    shm_init_header(header,
+                    alloc_,
                     std::forward<FirstT>(first),
                     std::forward<SecondT>(second));
   }
 
   /** Construct pair by copying parameters */
-  void shm_init_main(ShmArchive<TYPED_CLASS> *ar,
+  void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc,
                      const FirstT &first, const SecondT &second) {
-    shm_init_header(ar, alloc,
-                    alloc, first, second);
+    shm_init_allocator(alloc);
+    shm_init_header(header,
+                    alloc_, first, second);
     first_ = lipc::Ref<FirstT>(header_->first_.internal_ref(alloc_));
     second_ = lipc::Ref<SecondT>(header_->second_.internal_ref(alloc_));
   }
 
   /** Move constructor */
-  void WeakMove(ShmArchive<TYPED_CLASS> *ar,
-                Allocator *alloc, pair &other) {
-    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS),
-                        std::move(*other.first_),
-                        std::move(*other.second_))
-    SHM_WEAK_MOVE_END()
+  void shm_weak_move_main(TYPED_HEADER *header,
+                          Allocator *alloc, pair &other) {
+    shm_init_allocator(alloc);
+    shm_init_header(header,
+                    alloc_,
+                    std::move(*other.first_),
+                    std::move(*other.second_));
   }
 
   /** Copy constructor */
-  void StrongCopy(ShmArchive<TYPED_CLASS> *ar,
-                  Allocator *alloc, const pair &other) {
-    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS),
-                          *other.first_, *other.second_)
-    SHM_STRONG_COPY_END()
+  void shm_strong_copy_main(TYPED_HEADER *header,
+                            Allocator *alloc, const pair &other) {
+    shm_init_allocator(alloc);
+    shm_init_header(header,
+                    alloc_, *other.first_, *other.second_);
   }
 
   /**
    * Destroy the shared-memory data.
    * */
-  void shm_destroy(bool destroy_header = true) {
-    SHM_DESTROY_DATA_START
-    SHM_DESTROY_DATA_END
-    SHM_DESTROY_END
-  }
+  void shm_destroy_main() {}
 
   /** Store into shared memory */
-  void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const {
-    shm_serialize_header(ar.header_ptr_);
-  }
+  void shm_serialize_main() const {}
 
   /** Load from shared memory */
-  void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar) {
-    if(!shm_deserialize_header(ar.header_ptr_)) { return; }
+  void shm_deserialize_main() {
     first_ = lipc::Ref<FirstT>(header_->first_.internal_ref(alloc_));
     second_ = lipc::Ref<SecondT>(header_->first_.internal_ref(alloc_));
   }
@@ -123,6 +122,7 @@ class pair : public SHM_CONTAINER(TYPE_WRAP(TYPED_CLASS)) {
 
 #undef CLASS_NAME
 #undef TYPED_CLASS
+#undef TYPED_HEADER
 
 }  // namespace labstor::ipc
 

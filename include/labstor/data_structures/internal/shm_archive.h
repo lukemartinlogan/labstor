@@ -40,9 +40,9 @@ class ShmPredictable {};
 
 /**
  * Indicates that a data structure can be archived in shared memory
- * and has a corresponding ShmArchive override.
+ * and has a corresponding TypedPointer override.
  * */
-class ShmArchiveable : public ShmPredictable {
+class TypedPointerable : public ShmPredictable {
   /**
    * Initialize a SHM data structure in shared-memory.
    * Constructors may wrap around these.
@@ -58,7 +58,7 @@ class ShmArchiveable : public ShmPredictable {
   /**
    * Deep copy of an object. Wrapped by copy constructor
    * */
-  // void StrongCopy(const CLASS_NAME &other);
+  // void shm_strong_copy(const CLASS_NAME &other);
   // SHM_INHERIT_COPY_OPS(CLASS_NAME)
 
   /**
@@ -69,96 +69,41 @@ class ShmArchiveable : public ShmPredictable {
   /**
    * Moves the object's contents into another object
    * */
-  // void WeakMove(CLASS_NAME &other);
+  // void shm_weak_move(CLASS_NAME &other);
   // SHM_INHERIT_MOVE_OPS(CLASS_NAME)
 
   /**
-   * Store object into a ShmArchive
+   * Store object into a TypedPointer
    * */
-  // void shm_serialize(ShmArchive<TYPED_CLASS> &ar) const;
+  // void shm_serialize(TypedPointer<TYPED_CLASS> &ar) const;
   // SHM_SERIALIZE_OPS(TYPED_CLASS)
 
   /**
-   * Construct object from a ShmArchive.
+   * Construct object from a TypedPointer.
    * */
-  // void shm_deserialize(const ShmArchive<TYPED_CLASS> &ar);
+  // void shm_deserialize(const TypedPointer<TYPED_CLASS> &ar);
   // SHM_DESERIALIZE_OPS(TYPED_CLASS)
 };
 
 /**
- * A wrapper around a process-independent pointer for storing
- * a single complex shared-memory data structure
+ * Enables a specific TypedPointer type to be serialized
  * */
-template<typename T>
-struct ShmArchive {
- public:
-  Pointer header_ptr_;
-
-  /** Default constructor */
-  ShmArchive() = default;
-
-  /** Get the process-independent pointer */
-  inline Pointer& Get() {
-    return header_ptr_;
-  }
-
-  /** Get the process-independent pointer */
-  inline const Pointer& GetConst() {
-    return header_ptr_;
-  }
-
-  /** Creates a ShmArchive from a header pointer */
-  explicit ShmArchive(Pointer &ptr)
-    : header_ptr_(ptr) {
-  }
-
-  /** Creates a ShmArchive from a header pointer */
-  explicit ShmArchive(const Pointer &ptr)
-    : header_ptr_(ptr) {
-  }
-
-  /** Copy constructor */
-  ShmArchive(const ShmArchive &other)
-    : header_ptr_(other.header_ptr_) {
-  }
-
-  /** Move constructor */
-  ShmArchive(ShmArchive&& other) noexcept
-    : header_ptr_(other.header_ptr_) {
-    other.header_ptr_.SetNull();
-  }
-
-  /** Copy assignmnet operator */
-  ShmArchive& operator=(const ShmArchive &other) {
-    if (this != &other) {
-      header_ptr_ = other.header_ptr_;
-    }
-    return *this;
-  }
-
-  /** Move assignment operator. */
-  ShmArchive& operator=(ShmArchive&& other) noexcept {
-    if (this != &other) {
-      header_ptr_ = other.header_ptr_;
-    }
-    return *this;
-  }
-};
-
-/**
- * Enables a specific ShmArchive type to be serialized
- * */
-#define SHM_SERIALIZE_OPS(AR_TYPE)\
-  void operator>>(lipc::ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) const {\
+#define SHM_SERIALIZE_OPS(TYPED_CLASS)\
+  void operator>>(TypedPointer<TYPE_UNWRAP(TYPED_CLASS)> &ar) const {\
+    shm_serialize(ar);\
+  }\
+  void operator>>(TypedAtomicPointer<TYPE_UNWRAP(TYPED_CLASS)> &ar) const {\
     shm_serialize(ar);\
   }
 
 /**
- * Enables a specific ShmArchive type to be deserialized
+ * Enables a specific TypedPointer type to be deserialized
  * */
-#define SHM_DESERIALIZE_OPS(AR_TYPE)\
-  void operator<<(                      \
-    const lipc::ShmArchive<TYPE_UNWRAP(AR_TYPE)> &ar) {\
+#define SHM_DESERIALIZE_OPS(TYPED_CLASS)\
+  void operator<<(const TypedPointer<TYPE_UNWRAP(TYPED_CLASS)> &ar) {\
+    shm_deserialize(ar);\
+  }\
+  void operator<<(const TypedAtomicPointer<TYPE_UNWRAP(TYPED_CLASS)> &ar) {\
     shm_deserialize(ar);\
   }
 

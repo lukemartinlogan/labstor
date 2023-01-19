@@ -268,7 +268,7 @@ struct PointerBase {
   }
 
   /** Get the offset pointer */
-  OffsetPointerBase<false> ToOffsetPointer() {
+  OffsetPointerBase<false> ToOffsetPointer() const {
     return OffsetPointerBase<false>(off_.load());
   }
 

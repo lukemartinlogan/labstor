@@ -65,12 +65,12 @@ TEST_CASE("MemoryManager") {
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
     std::cout << "Allocating pages (rank 0)" << std::endl;
-    auto alloc = mem_mngr->GetAllocator(alloc_id);
-    auto page = alloc->AllocatePtr<char>(page_size);
+    lipc::Allocator *alloc = mem_mngr->GetAllocator(alloc_id);
+    char *page = alloc->AllocatePtr<char>(page_size);
     memset(page, nonce, page_size);
     auto header = alloc->GetCustomHeader<SimpleHeader>();
-    auto p1 = mem_mngr->Convert<void>(alloc_id, page);
-    auto p2 = mem_mngr->Convert<void>(page);
+    lipc::Pointer p1 = mem_mngr->Convert<void>(alloc_id, page);
+    lipc::Pointer p2 = mem_mngr->Convert<char>(page);
     header->p_ = p1;
     REQUIRE(p1 == p2);
     REQUIRE(VerifyBuffer(page, page_size, nonce));
@@ -78,9 +78,9 @@ TEST_CASE("MemoryManager") {
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank != 0) {
     std::cout << "Finding and checking pages (rank 1)" << std::endl;
-    auto alloc = mem_mngr->GetAllocator(alloc_id);
-    auto header = alloc->GetCustomHeader<SimpleHeader>();
-    auto page = alloc->Convert<char>(header->p_);
+    lipc::Allocator *alloc = mem_mngr->GetAllocator(alloc_id);
+    SimpleHeader *header = alloc->GetCustomHeader<SimpleHeader>();
+    char *page = alloc->Convert<char>(header->p_);
     REQUIRE(VerifyBuffer(page, page_size, nonce));
   }
   MPI_Barrier(MPI_COMM_WORLD);

@@ -35,7 +35,7 @@ using labstor::ipc::mptr;
 using labstor::ipc::uptr;
 using labstor::ipc::mptr;
 using labstor::ipc::make_mptr;
-using labstor::ipc::ShmArchive;
+using labstor::ipc::TypedPointer;
 
 void ManualPtrOfInt() {
   Allocator *alloc = alloc_g;
@@ -61,7 +61,7 @@ void ManualPtrOfInt() {
   }
 
   {
-    ShmArchive<int> ar;
+    TypedPointer<int> ar;
     data2 >> ar;
     REQUIRE(ar.header_ptr_ == data2.obj_.ar_.header_ptr_);
     mptr<int> from_ar(ar);
@@ -69,7 +69,7 @@ void ManualPtrOfInt() {
   }
 
   {
-    ShmArchive<mptr<int>> ar;
+    TypedPointer<mptr<int>> ar;
     data2 >> ar;
     REQUIRE(ar.header_ptr_ == data2.obj_.ar_.header_ptr_);
     mptr<int> from_ar(ar);
@@ -98,7 +98,7 @@ void ManualPtrOfString() {
     REQUIRE(*data3 == "there");
   }
 
-  ShmArchive<mptr<string>> ar;
+  TypedPointer<mptr<string>> ar;
   data2 >> ar;
   mptr<string> from_ar(ar);
   REQUIRE(*from_ar == "there");
