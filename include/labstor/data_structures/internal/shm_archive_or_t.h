@@ -49,12 +49,14 @@ class _ShmHeaderOrT_Header {
   }
 
   /** Destructor */
-  inline ~_ShmHeaderOrT_Header() = default;
+  inline ~_ShmHeaderOrT_Header() {}
 
   /** Shm destructor */
   inline void shm_destroy(Allocator *alloc) {
     auto ar = internal_ref(alloc);
-    T(ar).shm_destroy();
+    T obj;
+    obj.shm_deserialize(ar);
+    obj.shm_destroy();
   }
 
   /** Returns a reference to the internal object */

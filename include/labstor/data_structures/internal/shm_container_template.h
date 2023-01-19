@@ -6,7 +6,7 @@ public:
 /** Constructor. Allocate header with default allocator. */
 template<typename ...Args>
 explicit TYPE_UNWRAP(CLASS_NAME)(Args&& ...args) {
-shm_init(std::forward<Args>(args)...);
+  shm_init(std::forward<Args>(args)...);
 }
 
 /** Constructor. Allocate header with default allocator. */
@@ -152,9 +152,9 @@ void shm_destroy(bool destroy_header = true) {
 
 /** Move constructor */
 TYPE_UNWRAP(CLASS_NAME)(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {
-shm_weak_move(typed_nullptr<TYPE_UNWRAP(TYPED_HEADER)>(),
-  typed_nullptr<Allocator>(),
-  other);
+  shm_weak_move(typed_nullptr<TYPE_UNWRAP(TYPED_HEADER)>(),
+    typed_nullptr<Allocator>(),
+    other);
 }
 
 /** Move assignment operator */
@@ -171,9 +171,7 @@ return *this;
 void shm_init_main(TYPE_UNWRAP(TYPED_HEADER) *header,
                    lipc::Allocator *alloc,
                    TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {
-  shm_weak_move(typed_nullptr<TYPE_UNWRAP(TYPED_HEADER)>(),
-                typed_nullptr<Allocator>(),
-                other);
+  shm_weak_move(header, alloc, other);
 }
 
 /** Move operation */

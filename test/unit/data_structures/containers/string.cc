@@ -51,8 +51,8 @@ void TestString() {
   REQUIRE(text5 == "hello4");
   REQUIRE(text5.header_ != text4.header_);
 
-  /*string text6 = std::move(text5);
-  REQUIRE(text6 == "hello4");*/
+  string text6 = std::move(text5);
+  REQUIRE(text6 == "hello4");
 }
 
 TEST_CASE("String") {

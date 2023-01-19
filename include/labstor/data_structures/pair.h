@@ -41,6 +41,11 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
                      const FirstT &first,
                      const SecondT &second)
     : first_(alloc, first), second_(alloc, second) {}
+
+  void shm_destroy(Allocator *alloc) {
+    first_.shm_destroy(alloc);
+    second_.shm_destroy(alloc);
+  }
 };
 
 /**
@@ -74,6 +79,8 @@ class pair : public ShmContainer {
                     alloc_,
                     std::forward<FirstT>(first),
                     std::forward<SecondT>(second));
+    first_ = lipc::Ref<FirstT>(header_->first_.internal_ref(alloc_));
+    second_ = lipc::Ref<SecondT>(header_->second_.internal_ref(alloc_));
   }
 
   /** Construct pair by copying parameters */
@@ -90,25 +97,25 @@ class pair : public ShmContainer {
   /** Move constructor */
   void shm_weak_move_main(TYPED_HEADER *header,
                           Allocator *alloc, pair &other) {
-    shm_init_allocator(alloc);
-    shm_init_header(header,
-                    alloc_,
-                    std::move(*other.first_),
-                    std::move(*other.second_));
+    shm_init_main(header,
+                  alloc,
+                  std::move(*other.first_),
+                  std::move(*other.second_));
   }
 
   /** Copy constructor */
   void shm_strong_copy_main(TYPED_HEADER *header,
                             Allocator *alloc, const pair &other) {
-    shm_init_allocator(alloc);
-    shm_init_header(header,
-                    alloc_, *other.first_, *other.second_);
+    shm_init_main(header,
+                  alloc, *other.first_, *other.second_);
   }
 
   /**
    * Destroy the shared-memory data.
    * */
-  void shm_destroy_main() {}
+  void shm_destroy_main() {
+    header_->shm_destroy(alloc_);
+  }
 
   /** Store into shared memory */
   void shm_serialize_main() const {}

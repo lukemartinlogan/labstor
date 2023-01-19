@@ -39,7 +39,7 @@ struct Ref {
   /** Copy constructor */
   Ref(const Ref &other) {
     if constexpr(IS_SHM_ARCHIVEABLE(T)) {
-      obj_.shm_deserialize(other.obj_.ar_);
+      obj_.shm_deserialize(other);
     } else {
       obj_ = other.obj_;
     }
@@ -48,7 +48,7 @@ struct Ref {
   /** Move constructor */
   Ref(Ref &&other) noexcept {
     if constexpr(IS_SHM_ARCHIVEABLE(T)) {
-      obj_.shm_deserialize(other.obj_.ar_);
+      obj_.shm_deserialize(other);
     } else {
       obj_ = other.obj_;
     }
