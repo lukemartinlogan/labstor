@@ -28,7 +28,6 @@
 #define LABSTOR_DATA_STRUCTURES_THREAD_UNSAFE_LIST_H_
 
 #include "labstor/data_structures/data_structure.h"
-#include "labstor/data_structures/smart_ptr/manual_ptr.h"
 #include "labstor/data_structures/internal/shm_archive_or_t.h"
 
 #include <list>
@@ -241,12 +240,13 @@ using list_citerator = list_iterator_templ<T, true>;
  * */
 #define CLASS_NAME list
 #define TYPED_CLASS list<T>
+#define TYPED_HEADER ShmHeader<list<T>>
 
 /**
  * The list shared-memory header
  * */
 template<typename T>
-struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
+struct ShmHeader<list<T>> : public ShmBaseHeader {
   OffsetPointer head_ptr_, tail_ptr_;
   size_t length_;
 
@@ -263,67 +263,71 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
  * Doubly linked list implementation
  * */
 template<typename T>
-class list : public SHM_CONTAINER(TYPED_CLASS) {
+class list : public ShmContainer {
  public:
-  BASIC_SHM_CONTAINER_TEMPLATE
+  SHM_CONTAINER_TEMPLATE((CLASS_NAME), (TYPED_CLASS), (TYPED_HEADER))
+  friend list_iterator<T>;
 
  public:
+  ////////////////////////////
+  /// SHM Overrides
+  ////////////////////////////
+
   /** Default constructor */
   list() = default;
 
   /** Initialize list in shared memory */
-  void shm_init_main(TypedPointer<TYPED_CLASS> *ar,
+  void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc) {
-    shm_init_header(ar, alloc);
+    shm_init_allocator(alloc);
+    shm_init_header(header);
     header_->length_ = 0;
     header_->head_ptr_.SetNull();
     header_->tail_ptr_.SetNull();
   }
 
   /** Copy from std::list */
-  void shm_init_main(TypedPointer<TYPED_CLASS> *ar,
+  void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc, std::list<T> &other) {
-    shm_init_header(ar, alloc);
+    shm_init_allocator(alloc);
+    shm_init_header(header);
     for (auto &entry : other) {
       emplace_back(entry);
     }
   }
 
   /** Destroy all shared memory allocated by the list */
-  void shm_destroy(bool destroy_header = true) {
-    SHM_DESTROY_DATA_START
+  void shm_destroy_main() {
     clear();
-    SHM_DESTROY_DATA_END
-    SHM_DESTROY_END
   }
 
   /** Store into shared memory */
-  void shm_serialize(TypedPointer<TYPED_CLASS> &ar) const {
-    shm_serialize_header(ar.header_ptr_);
-  }
+  void shm_serialize_main() const {}
 
   /** Load from shared memory */
-  void shm_deserialize(const TypedPointer<TYPED_CLASS> &ar) {
-    if(!shm_deserialize_header(ar.header_ptr_)) { return; }
-  }
+  void shm_deserialize_main() {}
 
   /** Move constructor */
-  void shm_weak_move(TypedPointer<TYPED_CLASS> *ar,
-                Allocator *alloc, list &other) {
-    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS))
+  void shm_weak_move_main(TYPED_HEADER *header,
+                          Allocator *alloc, list &other) {
+    shm_init_allocator(alloc);
+    shm_init_header(header);
     *header_ = *(other.header_);
-    SHM_WEAK_MOVE_END()
   }
 
   /** Copy constructor */
-  void shm_strong_copy(TypedPointer<TYPED_CLASS> *ar,
-                  Allocator *alloc, const list &other) {
-    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS))
+  void shm_strong_copy_main(TYPED_HEADER *header,
+                            Allocator *alloc, const list &other) {
+    shm_init_allocator(alloc);
+    shm_init_header(header);
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back(**iter);
     }
-    SHM_STRONG_COPY_END();
   }
+
+  ////////////////////////////
+  /// List Methods
+  ////////////////////////////
 
   /** Construct an element at the back of the list */
   template<typename... Args>
@@ -476,5 +480,6 @@ class list : public SHM_CONTAINER(TYPED_CLASS) {
 
 #undef CLASS_NAME
 #undef TYPED_CLASS
+#undef TYPED_HEADER
 
 #endif  // LABSTOR_DATA_STRUCTURES_THREAD_UNSAFE_LIST_H_

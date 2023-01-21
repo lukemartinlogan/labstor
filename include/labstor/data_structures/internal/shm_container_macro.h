@@ -182,6 +182,7 @@ void shm_weak_move(TYPE_UNWRAP(TYPED_HEADER) *header,\
                    lipc::Allocator *alloc,\
                    TYPE_UNWRAP(CLASS_NAME) &other) {\
   if (other.IsNull()) { return; }\
+  shm_destroy(false);\
   shm_weak_move_main(header, alloc, other);\
   if (!other.IsDestructable()) {\
     UnsetDestructable();\
@@ -217,6 +218,7 @@ void shm_strong_copy(TYPE_UNWRAP(TYPED_HEADER) *header,\
                      lipc::Allocator *alloc,\
                      const TYPE_UNWRAP(CLASS_NAME) &other) {\
   if (other.IsNull()) { return; }\
+  shm_destroy(false);\
   shm_strong_copy_main(header, alloc, other);\
   if (!other.IsDestructable()) {\
     UnsetDestructable();\

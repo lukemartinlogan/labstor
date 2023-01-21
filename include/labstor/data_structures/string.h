@@ -62,6 +62,10 @@ class string : public ShmContainer {
   size_t length_;
 
  public:
+  ////////////////////////////
+  /// SHM Overrides
+  ////////////////////////////
+
   /** Default constructor */
   string() : length_(0) {}
 
@@ -153,6 +157,10 @@ class string : public ShmContainer {
       Convert<char>(header_->text_);
     length_ = header_->length_;
   }
+
+  ////////////////////////////
+  /// String Operations
+  ////////////////////////////
 
   /** Get character at index i in the string */
   char& operator[](size_t i) const {

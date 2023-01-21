@@ -76,7 +76,7 @@ struct ShmBaseHeader {
  * shared memory as a TypedPointer.
  * */
 class ShmContainer : public TypedPointerable {
- protected:
+ public:
   Allocator *alloc_;
   bitfield32_t flags_;
 
