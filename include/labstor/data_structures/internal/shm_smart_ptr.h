@@ -34,7 +34,6 @@
 #include <labstor/constants/data_structure_singleton_macros.h>
 
 #include "labstor/data_structures/internal/shm_archive.h"
-#include "labstor/data_structures/internal/shm_struct.h"
 
 namespace labstor::ipc {
 
@@ -48,14 +47,13 @@ class ShmSmartPointer : public TypedPointerable {};
  * classes (manual_ptr, unique_ptr, shared_ptr).
  *
  * Smart pointers are not stored directly in shared memory. They are
- * wrappers around shared-memory objects (ShmContainer or ShmStruct)
- * which are used for constructing destructing these objects.
+ * wrappers around shared-memory objects which manage the construction
+ * and destruction of objects.
  * */
 template<typename T>
 class ShmSmartPtr : public ShmSmartPointer {
  public:
-  typedef SHM_T_OR_SHM_PTR_T(T) T_Ptr;
-  T_Ptr obj_;  /**< T for archiveable objects, ShmStruct<T> for C-style */
+  T obj_;
 
  public:
   /** Sets this pointer to NULL */
@@ -64,44 +62,38 @@ class ShmSmartPtr : public ShmSmartPointer {
   }
 
   /** Checks if this pointer is null */
-  bool IsNull() {
+  bool IsNull() const {
     return obj_.IsNull();
   }
 
   /** Gets a pointer to the internal object */
   T* get() {
-    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
-      return &obj_;
-    } else {
-      return obj_.get();
-    }
+    return &obj_;
   }
 
   /** Gets a pointer to the internal object */
-  const T* get_const() const {
-    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
-      return &obj_;
-    } else {
-      return obj_.get_const();
-    }
+  T* get() const {
+    return &obj_;
+  }
+
+  /** Gets a pointer to the internal object */
+  T* get_const() const {
+    return &obj_;
   }
 
   /** Gets a reference to the internal object */
   T& get_ref() {
-    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
-      return obj_;
-    } else {
-      return obj_.get_ref();
-    }
+    return obj_;
+  }
+
+  /** Gets a reference to the internal object */
+  T& get_ref() const {
+    return obj_;
   }
 
   /** Gets a reference to the internal object */
   const T& get_ref_const() const {
-    if constexpr(IS_SHM_ARCHIVEABLE(T)) {
-      return obj_;
-    } else {
-      return obj_.get_ref_const();
-    }
+    return obj_;
   }
 
   /** Dereference operator */
@@ -151,9 +143,11 @@ class ShmSmartPtr : public ShmSmartPointer {
  * A macro for defining shared memory serializations
  * */
 #define SHM_SERIALIZE_WRAPPER(AR_TYPE)\
-  void shm_serialize(TYPE_UNWRAP(AR_TYPE) &type) const {\
-    auto &cast = reinterpret_cast<TypedPointer<T>&>(type);\
-    obj_.shm_serialize(cast);\
+  void shm_serialize(lipc::TypedPointer<TYPE_UNWRAP(AR_TYPE)> &type) const {\
+    obj_.shm_serialize(type);\
+  }\
+  void shm_serialize(lipc::TypedAtomicPointer<TYPE_UNWRAP(AR_TYPE)> &type) const {\
+    obj_.shm_serialize(type);\
   }\
   SHM_SERIALIZE_OPS(AR_TYPE)
 
@@ -161,9 +155,11 @@ class ShmSmartPtr : public ShmSmartPointer {
  * A macro for defining shared memory deserializations
  * */
 #define SHM_DESERIALIZE_WRAPPER(AR_TYPE)\
-  void shm_deserialize(const TYPE_UNWRAP(AR_TYPE) &type) {\
-    auto &cast = reinterpret_cast<const TypedPointer<T>&>(type);\
-    obj_.shm_deserialize(cast);\
+  void shm_deserialize(const lipc::TypedPointer<TYPE_UNWRAP(AR_TYPE)> &type) {\
+    obj_.shm_deserialize(type);\
+  }\
+  void shm_deserialize(const lipc::TypedAtomicPointer<TYPE_UNWRAP(AR_TYPE)> &type) {\
+    obj_.shm_deserialize(type);\
   }\
   SHM_DESERIALIZE_OPS(AR_TYPE)
 

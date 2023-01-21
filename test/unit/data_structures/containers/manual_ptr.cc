@@ -29,6 +29,7 @@
 #include "test_init.h"
 #include "labstor/data_structures/string.h"
 #include "labstor/memory/allocator/page_allocator.h"
+#include "smart_ptr.h"
 
 using labstor::ipc::string;
 using labstor::ipc::mptr;
@@ -37,85 +38,25 @@ using labstor::ipc::mptr;
 using labstor::ipc::make_mptr;
 using labstor::ipc::TypedPointer;
 
-void ManualPtrOfInt() {
+template<typename T>
+void ManualPtrTest() {
   Allocator *alloc = alloc_g;
-  mptr<int> data = make_mptr<int>(25);
-  REQUIRE(data.get_ref() == 25);
-  REQUIRE(data.get_ref_const() == 25);
-  REQUIRE(*data == 25);
-
-  mptr<int> data2 = std::move(data);
-  REQUIRE(data.IsNull());
-  REQUIRE(std::hash<mptr<int>>{}(data2) == std::hash<int>{}(25));
-
-  {
-    mptr<int> data3(data2);
-    REQUIRE(*data2 == 25);
-    REQUIRE(*data3 == 25);
-  }
-
-  {
-    mptr<int> data3 = data2;
-    REQUIRE(*data2 == 25);
-    REQUIRE(*data3 == 25);
-  }
-
-  {
-    TypedPointer<int> ar;
-    data2 >> ar;
-    REQUIRE(ar.header_ptr_ == data2.obj_.ar_.header_ptr_);
-    mptr<int> from_ar(ar);
-    REQUIRE(*from_ar == 25);
-  }
-
-  {
-    TypedPointer<mptr<int>> ar;
-    data2 >> ar;
-    REQUIRE(ar.header_ptr_ == data2.obj_.ar_.header_ptr_);
-    mptr<int> from_ar(ar);
-    REQUIRE(*from_ar == 25);
-  }
-
-  data2.shm_destroy();
-}
-
-void ManualPtrOfString() {
-  Allocator *alloc = alloc_g;
-  mptr<string> data = make_mptr<string>(alloc, "there");
-  REQUIRE(data->str() == "there");
-  REQUIRE((*data).str() == "there");
-  mptr<string> data2 = std::move(data);
-
-  {
-    mptr<string> data3(data2);
-    REQUIRE(*data2 == "there");
-    REQUIRE(*data3 == "there");
-  }
-
-  {
-    mptr<string> data3 = data2;
-    REQUIRE(*data2 == "there");
-    REQUIRE(*data3 == "there");
-  }
-
-  TypedPointer<mptr<string>> ar;
-  data2 >> ar;
-  mptr<string> from_ar(ar);
-  REQUIRE(*from_ar == "there");
-
-  data2.shm_destroy();
-}
-
-TEST_CASE("ManualPtrOfInt") {
-  Allocator *alloc = alloc_g;
-  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  ManualPtrOfInt();
-  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+  lipc::SmartPtrTestSuite<T, mptr<T>> test;
+  CREATE_SET_VAR_TO_INT_OR_STRING(T, num, 25);
+  test.ptr_ = make_mptr<T>(num);
+  test.DereferenceTest(num);
+  test.MoveConstructorTest(num);
+  test.MoveAssignmentTest(num);
+  test.CopyConstructorTest(num);
+  test.CopyAssignmentTest(num);
+  test.SerializeationConstructorTest(num);
+  test.SerializeationOperatorTest(num);
+  test.ptr_.shm_destroy();
 }
 
 TEST_CASE("ManualPtrOfString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  ManualPtrOfString();
+  ManualPtrTest<lipc::string>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }

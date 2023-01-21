@@ -266,7 +266,6 @@ template<typename T>
 class list : public ShmContainer {
  public:
   SHM_CONTAINER_TEMPLATE((CLASS_NAME), (TYPED_CLASS), (TYPED_HEADER))
-  friend list_iterator<T>;
 
  public:
   ////////////////////////////

@@ -30,6 +30,7 @@
 #include "test_init.h"
 #include "labstor/data_structures/string.h"
 #include "labstor/memory/allocator/page_allocator.h"
+#include "smart_ptr.h"
 
 using labstor::ipc::string;
 using labstor::ipc::unique_ptr;
@@ -38,53 +39,22 @@ using labstor::ipc::uptr;
 using labstor::ipc::mptr;
 using labstor::ipc::TypedPointer;
 
-void CopyConstructorShouldFail(unique_ptr<int> num) {
-  std::cout << "Probably shouldn't work" << std::endl;
-}
-
-void UniquePtrOfInt() {
+template<typename T>
+void UniquePtrTest() {
   Allocator *alloc = alloc_g;
-  uptr<int> data = make_uptr<int>(25);
-  REQUIRE(data.get_ref() == 25);
-  REQUIRE(data.get_ref_const() == 25);
-  REQUIRE(*data == 25);
-  // TestCopy(hello);
-
-  uptr<int> data2 = std::move(data);
-  REQUIRE(data.IsNull());
-  REQUIRE(std::hash<uptr<int>>{}(data2) == std::hash<int>{}(25));
-
-  TypedPointer<uptr<int>> ar;
-  data2 >> ar;
-  mptr<int> from_ar(ar);
-  REQUIRE(*from_ar == 25);
-}
-
-void UniquePtrOfString() {
-  Allocator *alloc = alloc_g;
-  unique_ptr<string> data = make_uptr<string>(alloc, "there");
-  REQUIRE(data->str() == "there");
-  REQUIRE((*data).str() == "there");
-  unique_ptr<string> data2 = std::move(data);
-  REQUIRE(data.IsNull());
-
-  TypedPointer<unique_ptr<string>> ar;
-  data2 >> ar;
-  REQUIRE(data2.obj_.ar_.header_ptr_ == ar.header_ptr_);
-  mptr<string> from_ar(ar);
-  REQUIRE(*from_ar == "there");
-}
-
-TEST_CASE("UniquePtrOfInt") {
-  Allocator *alloc = alloc_g;
-  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  UniquePtrOfInt();
-  REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+  lipc::SmartPtrTestSuite<T, uptr<T>> test;
+  CREATE_SET_VAR_TO_INT_OR_STRING(T, num, 25);
+  test.ptr_ = make_uptr<T>(num);
+  test.DereferenceTest(num);
+  test.MoveConstructorTest(num);
+  test.MoveAssignmentTest(num);
+  test.SerializeationConstructorTest(num);
+  test.SerializeationOperatorTest(num);
 }
 
 TEST_CASE("UniquePtrOfString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
-  UniquePtrOfString();
+  UniquePtrTest<lipc::string>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }

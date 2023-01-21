@@ -74,12 +74,12 @@
   SHM_X_OR_Y(T, lipc::TypedPointer<T>, T)
 
 /**
- * SHM_T_OR_PTR_T: Used by unique_ptr and shared_ptr to determine how to
- * best store the underlying object.
+ * SHM_T_OR_SHM_STRUCT_T: Used by unique_ptr and manual_ptr to internally
+ * store either a shm-compatible type or a POD (piece of data) type.
  *
  * @param T: The type being stored in the shmem data structure
  * */
-#define SHM_T_OR_SHM_PTR_T(T) \
+#define SHM_T_OR_SHM_STRUCT_T(T) \
   SHM_X_OR_Y(T, T, ShmStruct<T>)
 
 /**

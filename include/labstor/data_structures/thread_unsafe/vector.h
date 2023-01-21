@@ -314,6 +314,7 @@ using vector_criterator = vector_iterator_templ<T, false, true>;
  * */
 #define CLASS_NAME vector
 #define TYPED_CLASS vector<T>
+#define TYPED_HEADER ShmHeader<vector<T>>
 
 /**
  * The vector shared-memory header
@@ -360,35 +361,42 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
  * The vector class
  * */
 template<typename T>
-class vector : public SHM_CONTAINER(TYPED_CLASS) {
+class vector : public ShmContainer {
  public:
-  BASIC_SHM_CONTAINER_TEMPLATE
+ SHM_CONTAINER_TEMPLATE((CLASS_NAME), (TYPED_CLASS), (TYPED_HEADER))
 
  public:
+  ////////////////////////////
+  /// SHM Overrides
+  ////////////////////////////
+
   /** Default constructor */
   vector() = default;
 
   /** Construct the vector in shared memory */
   template<typename ...Args>
-  void shm_init_main(TypedPointer<TYPED_CLASS> *ar,
+  void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc, size_t length, Args&& ...args) {
-    shm_init_header(ar, alloc);
+    shm_init_allocator(alloc);
+    shm_init_header(header);
     resize(length, std::forward<Args>(args)...);
   }
 
   /** Construct the vector in shared memory */
-  void shm_init_main(TypedPointer<TYPED_CLASS> *ar,
+  void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc) {
-    shm_init_header(ar, alloc);
+    shm_init_allocator(alloc);
+    shm_init_header(header);
     header_->length_ = 0;
     header_->max_length_ = 0;
     header_->vec_ptr_.SetNull();
   }
 
   /** Copy from std::vector */
-  void shm_init_main(TypedPointer<TYPED_CLASS> *ar,
+  void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc, std::vector<T> &other) {
-    shm_init_header(ar, alloc);
+    shm_init_allocator(alloc);
+    shm_init_header(header);
     reserve(other.size());
     for (auto &entry : other) {
       emplace_back(entry);
@@ -396,45 +404,42 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
   }
 
   /** Destroy all shared memory allocated by the vector */
-  void shm_destroy(bool destroy_header = true) {
-    SHM_DESTROY_DATA_START
+  void shm_destroy_main() {
     erase(begin(), end());
     if (!header_->vec_ptr_.IsNull()) {
       alloc_->Free(header_->vec_ptr_);
     }
-    SHM_DESTROY_DATA_END
-    SHM_DESTROY_END
   }
 
   /** Store into shared memory */
-  void shm_serialize(TypedPointer<TYPED_CLASS> &ar) const {
-    shm_serialize_header(ar.header_ptr_);
-  }
+  void shm_serialize_main() const {}
 
   /** Load from shared memory */
-  void shm_deserialize(const TypedPointer<TYPED_CLASS> &ar) {
-    if(!shm_deserialize_header(ar.header_ptr_)) { return; }
-  }
+  void shm_deserialize_main() {}
 
   /** Move constructor */
-  void shm_weak_move(TypedPointer<TYPED_CLASS> *ar,
-                Allocator *alloc, vector &other) {
-    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS))
+  void shm_weak_move_main(TYPED_HEADER *header,
+                          Allocator *alloc, vector &other) {
+    shm_init_allocator(alloc);
+    shm_init_header(header);
     *header_ = *(other.header_);
     other.header_->length_ = 0;
-    SHM_WEAK_MOVE_END()
   }
 
   /** Copy a vector */
-  void shm_strong_copy(TypedPointer<TYPED_CLASS> *ar,
-                  Allocator *alloc, const vector &other) {
-    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS))
+  void shm_strong_copy_main(TYPED_HEADER *header,
+                            Allocator *alloc, const vector &other) {
+    shm_init_allocator(alloc);
+    shm_init_header(header);
     reserve(other.size());
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back((**iter));
     }
-    SHM_STRONG_COPY_END()
   }
+
+  ////////////////////////////
+  /// Vector Operations
+  ////////////////////////////
 
   /**
    * Reserve space in the vector to emplace elements. Does not
@@ -696,10 +701,9 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
     }
   }
 
-
-  /**
-   * ITERATORS
-   * */
+  ////////////////////////////
+  /// Iterators
+  ////////////////////////////
 
  public:
   /** Beginning of the forward iterator */
@@ -759,5 +763,6 @@ class vector : public SHM_CONTAINER(TYPED_CLASS) {
 
 #undef CLASS_NAME
 #undef TYPED_CLASS
+#undef TYPED_HEADER
 
 #endif  // LABSTOR_DATA_STRUCTURES_LOCKLESS_VECTOR_H_

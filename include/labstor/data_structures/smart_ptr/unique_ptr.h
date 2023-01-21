@@ -44,8 +44,10 @@ namespace labstor::ipc {
 #define TYPED_CLASS unique_ptr<T>
 
 /**
- * Creates a unique instance of a shared-memory data structure
- * and deletes eventually.
+ * Create a unique instance of a shared-memory data structure.
+ * The process which creates the data structure owns it and is responsible
+ * for freeing. Other processes can deserialize the data structure, but
+ * cannot destroy its data.
  * */
 template<typename T>
 class unique_ptr : public ShmSmartPtr<T> {
@@ -57,9 +59,7 @@ class unique_ptr : public ShmSmartPtr<T> {
   unique_ptr() = default;
 
   /** Destroys all allocated memory */
-  ~unique_ptr() {
-    shm_destroy();
-  }
+  ~unique_ptr() = default;
 
   /** Allocates + constructs an object in shared memory */
   template<typename ...Args>
@@ -72,19 +72,29 @@ class unique_ptr : public ShmSmartPtr<T> {
 
   /** Move constructor */
   unique_ptr(unique_ptr&& other) noexcept {
-    obj_.shm_weak_move(nullptr, nullptr, other.obj_);
+    obj_ = std::move(other.obj_);
   }
 
   /** Move assignment operator */
   unique_ptr<T>& operator=(unique_ptr<T> &&other) {
     if (this != &other) {
-      obj_.shm_weak_move(nullptr, nullptr, other.obj_);
+      obj_ = std::move(other.obj_);
     }
     return *this;
   }
 
+  /** Constructor. From a TypedPointer<uptr<T>> */
+  explicit unique_ptr(TypedPointer<TYPED_CLASS> &ar) {
+    obj_.shm_deserialize(ar);
+  }
+
+  /** Constructor. From a TypedAtomicPointer<uptr<T>> */
+  explicit unique_ptr(TypedAtomicPointer<TYPED_CLASS> &ar) {
+    obj_.shm_deserialize(ar);
+  }
+
   /** Serialize into a TypedPointer<unique_ptr> */
-  SHM_SERIALIZE_WRAPPER(unique_ptr)
+  SHM_SERIALIZE_DESERIALIZE_WRAPPER(unique_ptr)
 };
 
 template<typename T>

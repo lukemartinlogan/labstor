@@ -67,52 +67,34 @@ class manual_ptr : public ShmSmartPtr<T> {
 
   /** Copy constructor */
   manual_ptr(const manual_ptr &other) {
-    obj_.shm_deserialize(other.obj_.ar_);
+    obj_.shm_deserialize(other.obj_);
   }
 
   /** Copy assignment operator */
   manual_ptr<T>& operator=(const manual_ptr<T> &other) {
     if (this != &other) {
-      obj_.shm_deserialize(other.obj_.ar_);
+      obj_.shm_deserialize(other.obj_);
     }
     return *this;
   }
 
   /** Move constructor */
-  manual_ptr(manual_ptr&& source) noexcept {
-    shm_weak_move(source);
-  }
-
-  /** Move assignment operator */
-  void shm_weak_move(manual_ptr &other) {
+  manual_ptr(manual_ptr&& other) noexcept {
     obj_ = std::move(other.obj_);
-    other.obj_.shm_destroy(true);
   }
 
   /** Constructor. From a TypedPointer<T> */
-  template<typename ...Args>
-  explicit manual_ptr(TypedPointer<T> &ar) {
-    shm_deserialize(ar);
+  explicit manual_ptr(const TypedPointer<TYPED_CLASS> &ar) {
+    obj_.shm_deserialize(ar);
   }
 
-  /** Constructor. From a TypedPointer<mptr> */
-  explicit manual_ptr(TypedPointer<TYPED_CLASS> &ar) {
-    shm_deserialize(ar);
-  }
-
-  /** Constructor. From a TypedPointer<uptr> */
-  explicit manual_ptr(TypedPointer<uptr<T>> &ar) {
-    shm_deserialize(ar);
+  /** Constructor. From a TypedAtomicPointer<T> */
+  explicit manual_ptr(const TypedAtomicPointer<TYPED_CLASS> &ar) {
+    obj_.shm_deserialize(ar);
   }
 
   /** (De)serialize the obj from a TypedPointer<T> */
-  SHM_SERIALIZE_DESERIALIZE_WRAPPER(T);
-
-  /** (De)serialize the obj from a TypedPointer<mptr<T>> */
-  SHM_SERIALIZE_DESERIALIZE_WRAPPER(manual_ptr<T>);
-
-  /** Deserialize the obj from a TypedPointer<uptr<T>> */
-  SHM_DESERIALIZE_WRAPPER(uptr<T>);
+  SHM_SERIALIZE_DESERIALIZE_WRAPPER((T));
 };
 
 template<typename T>

@@ -104,7 +104,7 @@ bool shm_deserialize(Allocator *alloc, OffsetPointer header_ptr) {
 }
 
 /** Deserialize object from another object (weak copy) */
-bool shm_deserialize(TYPE_UNWRAP(CLASS_NAME) &other) {
+bool shm_deserialize(const TYPE_UNWRAP(CLASS_NAME) &other) {
   return shm_deserialize(other.GetAllocator(), other.header_);
 }
 
