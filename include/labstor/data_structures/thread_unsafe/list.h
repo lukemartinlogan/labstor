@@ -449,7 +449,7 @@ class list : public ShmContainer {
     if (size() == 0) { return cend(); }
     auto head = alloc_->template
       Convert<list_entry<T>>(header_->head_ptr_);
-    return list_citerator<T>(GetShmPointer<TypedPointer<const list<T>>>(),
+    return list_citerator<T>(GetShmPointer<TypedPointer<list<T>>>(),
       head, header_->head_ptr_);
   }
 

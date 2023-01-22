@@ -28,12 +28,12 @@ struct _RefShm {
 
   /** Copy constructor */
   _RefShm(const _RefShm &other) {
-    obj_.shm_deserialize(other);
+    obj_.shm_deserialize(other.obj_);
   }
 
   /** Move constructor */
   _RefShm(_RefShm &&other) noexcept {
-    obj_.shm_deserialize(other);
+    obj_.shm_deserialize(other.obj_);
   }
 
   /** Copy assign operator */
@@ -130,6 +130,12 @@ struct Ref {
   /** Constructor. */
   template<typename ...Args>
   explicit Ref(Args&& ...args) : obj_(std::forward<Args>(args)...) {}
+
+  /** Copy Constructor */
+  Ref(const Ref &other) : obj_(other.obj_) {}
+
+  /** Move Constructor */
+  Ref(Ref &&other) noexcept : obj_(std::move(other.obj_)) {}
 
   /** Copy assign operator */
   Ref& operator=(const Ref &other) {

@@ -41,30 +41,35 @@ class vector;
 /**
  * The vector iterator implementation
  * */
-template<typename T, bool FORWARD_ITER, bool CONST_ITER>
+template<typename T, bool FORWARD_ITER>
 struct vector_iterator_templ {
  public:
-  typedef SHM_CONST_T_OR_T(vector<T>, CONST_ITER) VecT_Const;
-
- public:
-  VecT_Const *vec_;
+  lipc::Ref<vector<T>> vec_;
   off64_t i_;
 
   /** Default constructor */
   vector_iterator_templ() = default;
 
   /** Construct an iterator */
-  inline explicit vector_iterator_templ(VecT_Const *vec)
-    : vec_(vec) {}
+  inline explicit vector_iterator_templ(TypedPointer<vector<T>> vec)
+  : vec_(vec) {}
+
+  /** Construct end iterator */
+  inline explicit vector_iterator_templ(size_t i)
+  : i_(static_cast<off64_t>(i)) {}
 
   /** Construct an iterator at \a i offset */
-  inline explicit vector_iterator_templ(VecT_Const *vec, size_t i)
-    : vec_(vec), i_(static_cast<off64_t>(i)) {}
+  inline explicit vector_iterator_templ(TypedPointer<vector<T>> vec, size_t i)
+  : vec_(vec), i_(static_cast<off64_t>(i)) {}
+
+  /** Construct an iterator at \a i offset */
+  inline explicit vector_iterator_templ(const lipc::Ref<vector<T>> &vec,
+                                        size_t i)
+  : vec_(vec), i_(static_cast<off64_t>(i)) {}
 
   /** Copy constructor */
   inline vector_iterator_templ(const vector_iterator_templ &other)
-  : vec_(other.vec_), i_(other.i_) {
-  }
+  : vec_(other.vec_), i_(other.i_) {}
 
   /** Copy assignment operator  */
   inline vector_iterator_templ&
@@ -92,29 +97,16 @@ struct vector_iterator_templ {
     return *this;
   }
 
-  /** Change the vector pointer */
-  inline void change_pointer(VecT_Const *other) {
-    vec_ = other;
-  }
-
   /** Dereference the iterator */
   inline Ref<T> operator*() {
-    if constexpr(!CONST_ITER) {
-      return Ref<T>(vec_->data_ar()[i_].internal_ref(vec_->GetAllocator()));
-    } else {
-      return Ref<T>(vec_->data_ar_const()[i_].internal_ref(
-        vec_->GetAllocator()));
-    }
+    return Ref<T>(vec_->data_ar()[i_].internal_ref(
+      vec_->GetAllocator()));
   }
 
   /** Dereference the iterator */
   inline const Ref<T> operator*() const {
-    if constexpr(!CONST_ITER) {
-      return Ref<T>(vec_->data_ar()[i_].internal_ref(vec_->GetAllocator()));
-    } else {
-      return Ref<T>(vec_->data_ar_const()[i_].internal_ref(
-        vec_->GetAllocator()));
-    }
+    return Ref<T>(vec_->data_ar_const()[i_].internal_ref(
+      vec_->GetAllocator()));
   }
 
   /** Increment iterator in-place */
@@ -255,7 +247,7 @@ struct vector_iterator_templ {
 
   /** Create the end iterator */
   inline static vector_iterator_templ const end() {
-    static vector_iterator_templ end_iter(nullptr, -1);
+    static vector_iterator_templ end_iter(-1);
     return end_iter;
   }
 
@@ -294,19 +286,19 @@ struct vector_iterator_templ {
 
 /** Forward iterator typedef */
 template<typename T>
-using vector_iterator = vector_iterator_templ<T, true, false>;
+using vector_iterator = vector_iterator_templ<T, true>;
 
 /** Backward iterator typedef */
 template<typename T>
-using vector_riterator = vector_iterator_templ<T, false, false>;
+using vector_riterator = vector_iterator_templ<T, false>;
 
 /** Constant forward iterator typedef */
 template<typename T>
-using vector_citerator = vector_iterator_templ<T, true, true>;
+using vector_citerator = vector_iterator_templ<T, true>;
 
 /** Backward iterator typedef */
 template<typename T>
-using vector_criterator = vector_iterator_templ<T, false, true>;
+using vector_criterator = vector_iterator_templ<T, false>;
 
 /**
  * MACROS used to simplify the vector namespace
@@ -709,7 +701,7 @@ class vector : public ShmContainer {
   /** Beginning of the forward iterator */
   vector_iterator<T> begin() {
     if (size() == 0) { return end(); }
-    vector_iterator<T> iter(this);
+    vector_iterator<T> iter(GetShmPointer<TypedPointer<vector<T>>>());
     iter.set_begin();
     return iter;
   }
@@ -722,7 +714,7 @@ class vector : public ShmContainer {
   /** Beginning of the constant forward iterator */
   vector_citerator<T> cbegin() const {
     if (size() == 0) { return cend(); }
-    vector_citerator<T> iter(this);
+    vector_citerator<T> iter(GetShmPointer<TypedPointer<vector<T>>>());
     iter.set_begin();
     return iter;
   }
@@ -735,7 +727,7 @@ class vector : public ShmContainer {
   /** Beginning of the reverse iterator */
   vector_riterator<T> rbegin() {
     if (size() == 0) { return rend(); }
-    vector_riterator<T> iter(this);
+    vector_riterator<T> iter(GetShmPointer<TypedPointer<vector<T>>>());
     iter.set_begin();
     return iter;
   }
@@ -748,7 +740,7 @@ class vector : public ShmContainer {
   /** Beginning of the constant reverse iterator */
   vector_criterator<T> crbegin() {
     if (size() == 0) { return rend(); }
-    vector_criterator<T> iter(this);
+    vector_criterator<T> iter(GetShmPointer<TypedPointer<vector<T>>>());
     iter.set_begin();
     return iter;
   }
