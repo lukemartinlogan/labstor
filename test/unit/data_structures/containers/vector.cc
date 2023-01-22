@@ -43,6 +43,7 @@ void VectorTest() {
   test.EmplaceTest(15);
   test.IndexTest();
   test.ForwardIteratorTest();
+  test.ConstForwardIteratorTest();
   test.CopyConstructorTest();
   test.CopyAssignmentTest();
   test.MoveConstructorTest();
