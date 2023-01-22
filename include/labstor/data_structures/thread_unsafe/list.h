@@ -69,25 +69,25 @@ struct list_entry : public ShmContainerEntry {
 /**
  * The list iterator
  * */
-template<typename T, bool CONST_ITER>
+template<typename T>
 struct list_iterator_templ {
  public:
-  typedef SHM_CONST_T_OR_T(list<T>, CONST_ITER) ListT_Const;
-
- public:
-  ListT_Const *list_;
+  /**< A shm reference to the containing list object. */
+  lipc::Ref<list<T>> list_;
+  /**< A pointer to the entry in shared memory */
   list_entry<T> *entry_;
+  /**< The offset of the entry in the shared-memory allocator */
   OffsetPointer entry_ptr_;
 
   /** Default constructor */
   list_iterator_templ() = default;
 
   /** Construct an iterator  */
-  explicit list_iterator_templ(ListT_Const *list)
+  explicit list_iterator_templ(TypedPointer<list<T>> list)
   : list_(list), entry_(nullptr), entry_ptr_(OffsetPointer::GetNull()) {}
 
   /** Construct an iterator  */
-  explicit list_iterator_templ(ListT_Const *list,
+  explicit list_iterator_templ(TypedPointer<list<T>> list,
                                list_entry<T> *entry,
                                OffsetPointer entry_ptr)
     : list_(list), entry_(entry), entry_ptr_(entry_ptr) {}
@@ -107,11 +107,6 @@ struct list_iterator_templ {
       entry_ptr_ = other.entry_ptr_;
     }
     return *this;
-  }
-
-  /** Change the list pointer */
-  void change_pointer(ListT_Const *other) {
-    list_ = other;
   }
 
   /** Get the object the iterator points to */
@@ -202,18 +197,18 @@ struct list_iterator_templ {
 
   /** Create the end iterator */
   static list_iterator_templ const end() {
-    static list_iterator_templ end_iter(nullptr);
+    static list_iterator_templ end_iter(Pointer::GetNull());
     return end_iter;
   }
 
   /** Determine whether this iterator is the end iterator */
   bool is_end() const {
-    return list_ == nullptr;
+    return entry_ == nullptr;
   }
 
   /** Determine whether this iterator is the begin iterator */
   bool is_begin() const {
-    if (list_ && entry_) {
+    if (entry_) {
       return entry_->prior_ptr_.IsNull();
     } else {
       return false;
@@ -223,11 +218,11 @@ struct list_iterator_templ {
 
 /** forward iterator typedef */
 template<typename T>
-using list_iterator = list_iterator_templ<T, false>;
+using list_iterator = list_iterator_templ<T>;
 
 /** const forward iterator typedef */
 template<typename T>
-using list_citerator = list_iterator_templ<T, true>;
+using list_citerator = list_iterator_templ<T>;
 
 
 /**
@@ -440,7 +435,8 @@ class list : public ShmContainer {
     if (size() == 0) { return end(); }
     auto head = alloc_->template
       Convert<list_entry<T>>(header_->head_ptr_);
-    return list_iterator<T>(this, head, header_->head_ptr_);
+    return list_iterator<T>(GetShmPointer<TypedPointer<list<T>>>(),
+      head, header_->head_ptr_);
   }
 
   /** Forward iterator end */
@@ -453,7 +449,8 @@ class list : public ShmContainer {
     if (size() == 0) { return cend(); }
     auto head = alloc_->template
       Convert<list_entry<T>>(header_->head_ptr_);
-    return list_citerator<T>(this, head, header_->head_ptr_);
+    return list_citerator<T>(GetShmPointer<TypedPointer<const list<T>>>(),
+      head, header_->head_ptr_);
   }
 
   /** Constant forward iterator end */

@@ -121,9 +121,9 @@ bool shm_deserialize(Allocator *alloc,
 
 /** Constructor. Deserialize the object from the reference. */
 template<typename ...Args>
-void shm_init(lipc::Ref<TYPE_UNWRAP(TYPED_CLASS)> &ref) {
+void shm_init(lipc::Ref<TYPE_UNWRAP(TYPED_CLASS)> &obj) {
   shm_destroy(false);
-  shm_deserialize(ref.obj_.GetAllocator(), ref.obj_.header_);
+  shm_deserialize(obj->GetAllocator(), obj->header_);
 }
 
 /** Override >> operators */
@@ -260,4 +260,10 @@ void UnsetValid() {
 /** Check if null */
 bool IsNull() const {
   return !IsValid() || !IsDataValid();
+}
+
+/** Get a typed pointer to the object */
+template<typename POINTER_T>
+POINTER_T GetShmPointer() const {
+  return alloc_->Convert<TYPE_UNWRAP(TYPED_HEADER), POINTER_T>(header_);
 }

@@ -38,6 +38,18 @@ class ListTestSuite {
     }
   }
 
+  /// Constant Forward iterator
+  void ConstForwardIteratorTest(int count = 30) {
+    const Container &obj = obj_;
+    int fcur = 0;
+    for (auto iter = obj.cbegin(); iter != obj.cend(); ++iter) {
+      lipc::Ref<T> num = *iter;
+      CREATE_SET_VAR_TO_INT_OR_STRING(T, fcur_conv, fcur);
+      REQUIRE(*num == fcur_conv);
+      ++fcur;
+    }
+  }
+
   /// Copy constructor
   void CopyConstructorTest() {
     int count = obj_.size();

@@ -40,6 +40,7 @@ void ListTest() {
 
   test.EmplaceTest(30);
   test.ForwardIteratorTest();
+  test.ConstForwardIteratorTest();
   test.CopyConstructorTest();
   test.CopyAssignmentTest();
   test.MoveConstructorTest();
