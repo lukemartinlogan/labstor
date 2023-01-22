@@ -55,9 +55,15 @@ namespace labstor::ipc {
 template<typename T>
 struct ShmHeader;
 
+/**
+ * Indicates that a type is internal to a container, and needs to be
+ * passed an Allocator to its shm_destroy.
+ * */
+struct ShmContainerEntry {};
+
 /** The base ShmHeader used for all containers */
 struct ShmBaseHeader {
-  bitfield16_t flags_;
+  bitfield32_t flags_;
 
   ShmBaseHeader() = default;
 
@@ -75,7 +81,7 @@ struct ShmBaseHeader {
  * ShmContainers all have a header, which is stored in
  * shared memory as a TypedPointer.
  * */
-class ShmContainer : public TypedPointerable {
+class ShmContainer : public ShmArchiveable {
  public:
   Allocator *alloc_;
   bitfield32_t flags_;
@@ -125,12 +131,6 @@ template<typename T>
 static inline T* typed_nullptr() {
   return reinterpret_cast<T*>(NULL);
 }
-
-/**
- * Namespace simplification for a SHM data structure
- * */
-#define SHM_CONTAINER_USING_NS(TYPED_HEADER)\
-  using labstor::ipc::ShmContainer<TYPE_UNWRAP(TYPED_HEADER)>
 
 }  // namespace labstor::ipc
 

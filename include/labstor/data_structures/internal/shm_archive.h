@@ -42,7 +42,7 @@ class ShmPredictable {};
  * Indicates that a data structure can be archived in shared memory
  * and has a corresponding TypedPointer override.
  * */
-class TypedPointerable : public ShmPredictable {
+class ShmArchiveable : public ShmPredictable {
   /**
    * Initialize a SHM data structure in shared-memory.
    * Constructors may wrap around these.

@@ -30,10 +30,9 @@
 #include "labstor/thread/thread_manager.h"
 #include "labstor/thread/lock.h"
 #include "labstor/data_structures/thread_unsafe/vector.h"
-#include "labstor/data_structures/thread_unsafe/list.h"
+#include "labstor/data_structures/thread_safe/list.h"
+#include "labstor/data_structures/pair.h"
 #include "labstor/data_structures/data_structure.h"
-#include "labstor/data_structures/smart_ptr/manual_ptr.h"
-
 
 namespace labstor::ipc {
 
@@ -41,96 +40,19 @@ namespace labstor::ipc {
 template<typename Key, typename T, class Hash = std::hash<Key>>
 class unordered_map;
 
-/** forward pointer for unordered_map_bucket */
-template<typename Key, typename T>
-class unordered_map_bucket;
-
-/**
- * Represents a the combination of a Key and Value
- * */
-template<typename Key, typename T>
-struct unordered_map_pair : public ShmPredictable {
- public:
-  shm_ar<Key> key_;  /**< The key. Either a TypedPointer<T> or T*/
-  shm_ar<T> val_;    /**< The value. Either a TypedPointer<T> or T*/
-
- public:
-  /** Constructor */
-  template<typename ...Args>
-  explicit unordered_map_pair(Allocator *alloc, Key key, Args&& ...args)
-  : key_(alloc, std::move(key)), val_(alloc, std::forward<Args>(args)...) {}
-
-  /** Move constructor */
-  unordered_map_pair(Allocator *alloc, unordered_map_pair&& other) noexcept
-  : key_(alloc, std::move(other.key_)), val_(alloc, std::move(other.val_)) {}
-
-  /** Shm Destructor */
-  void shm_destroy(Allocator *alloc) {
-    key_.shm_destroy(alloc);
-    val_.shm_destroy(alloc);
-  }
-
-  /** Destructor */
-  ~unordered_map_pair() = default;
-};
-
-/**
- * The return value of a "Get" operation
- * */
-template<typename Key, typename T>
-struct unordered_map_pair_ret {
- public:
-  using COLLISION_T = unordered_map_pair<Key, T>;
-
- public:
-  Ref<Key> key_;
-  Ref<T> val_;
-
- public:
-  /** Constructor */
-  explicit unordered_map_pair_ret(Allocator *alloc, COLLISION_T &pair)
-  : key_(pair.key_.internal_ref(alloc)), val_(pair.val_.internal_ref(alloc)) {
-  }
-};
-
-/**
- * A bucket which contains a list of <Key, Obj> pairs
- * */
-template<typename Key, typename T>
-class unordered_map_bucket : public TypedPointerable {
- public:
-  using COLLISION_T = unordered_map_pair<Key, T>;
-  typedef unordered_map_bucket header_t;
-
- public:
-  RwLock lock_;
-  ShmHeader<list<COLLISION_T>> collisions_hdr_;
-
-  /** Constructs the collision list in shared memory */
-  explicit unordered_map_bucket(Allocator *alloc) {
-    list<COLLISION_T>(collisions_hdr_, alloc).UnsetDestructable();
-  }
-
-  ~unordered_map_bucket() {
-    mptr<list<COLLISION_T>> collisions(collisions_);
-    collisions->shm_destroy();
-  }
-};
-
 /**
  * The unordered map iterator (bucket_iter, list_iter)
  * */
 template<typename Key, typename T, class Hash>
 struct unordered_map_iterator {
  public:
-  using BUCKET_T = unordered_map_bucket<Key, T>;
-  using COLLISION_T = unordered_map_pair<Key, T>;
-  using COLLISION_RET_T = unordered_map_pair_ret<Key, T>;
+  using COLLISION_T = lipc::pair<Key, T>;
+  using BUCKET_T = lipc::lock::list<COLLISION_T>;
 
  public:
   const unordered_map<Key, T, Hash> *map_;
-  mptr<vector<BUCKET_T>> buckets_;
-  mptr<list<COLLISION_T>> collisions_;
+  ShmHeaderOrT<vector<BUCKET_T>> buckets_;
+  ShmHeaderOrT<list<COLLISION_T>> collisions_;
   vector_iterator<BUCKET_T> bucket_;
   list_iterator<COLLISION_T> collision_;
 
@@ -252,6 +174,7 @@ struct unordered_map_iterator {
 
 #define CLASS_NAME unordered_map
 #define TYPED_CLASS unordered_map<Key, T, Hash>
+#define TYPED_HEADER ShmHeader<unordered_map<Key, T, Hash>>
 
 /**
  * The unordered_map shared-memory header
@@ -259,15 +182,24 @@ struct unordered_map_iterator {
 template<typename Key, typename T, class Hash>
 struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
  public:
-  using BUCKET_T = unordered_map_bucket<Key, T>;
+  using COLLISION_T = lipc::pair<Key, T>;
+  using BUCKET_T = lipc::lock::list<COLLISION_T>;
+
  public:
-  TypedPointer<mptr<vector<BUCKET_T>>> buckets_;
+  ShmHeaderOrT<vector<BUCKET_T>> buckets_;
   RealNumber max_capacity_;
   RealNumber growth_;
   std::atomic<size_t> length_;
   RwLock lock_;
 
-  ShmHeader() = default;
+  ShmHeader(Allocator *alloc,
+            int num_buckets,
+            RealNumber max_capacity,
+            RealNumber growth) : buckets_(alloc, num_buckets) {
+    max_capacity_ = max_capacity;
+    growth_ = growth;
+    length_ = 0;
+  }
 
   ShmHeader(const ShmHeader &other) {
     buckets_ = other.buckets_;
@@ -285,23 +217,30 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
     }
     return *this;
   }
+
+  lipc::Ref<vector<BUCKET_T>> GetBuckets(Allocator *alloc) {
+    return lipc::Ref<vector<BUCKET_T>>(buckets_.internal_ref(alloc));
+  }
 };
 
 /**
  * The unordered map implementation
  * */
 template<typename Key, typename T, class Hash>
-class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
+class unordered_map : public ShmContainer {
  public:
-  BASIC_SHM_CONTAINER_TEMPLATE
+  SHM_CONTAINER_TEMPLATE((CLASS_NAME), (TYPED_CLASS), (TYPED_HEADER))
   friend unordered_map_iterator<Key, T, Hash>;
 
  public:
-  using BUCKET_T = unordered_map_bucket<Key, T>;
-  using COLLISION_T = unordered_map_pair<Key, T>;
-  using COLLISION_RET_T = unordered_map_pair_ret<Key, T>;
+  using COLLISION_T = lipc::pair<Key, T>;
+  using BUCKET_T = lipc::lock::list<COLLISION_T>;
 
  public:
+  ////////////////////////////
+  /// SHM Overrides
+  ////////////////////////////
+
   /** Default constructor */
   unordered_map() = default;
 
@@ -314,60 +253,50 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
    * triggered
    * @param growth the multiplier to grow the bucket vector size
    * */
-  void shm_init_main(TypedPointer<TYPED_CLASS> *ar,
+  void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc,
                      int num_buckets = 20,
                      RealNumber max_capacity = RealNumber(4,5),
                      RealNumber growth = RealNumber(5, 4)) {
-    shm_init_header(ar, alloc);
-    auto buckets = make_mptr<vector<BUCKET_T>>(alloc_, num_buckets, alloc_);
-    buckets >> header_->buckets_;
-    header_->length_ = 0;
-    header_->max_capacity_ = max_capacity;
-    header_->growth_ = growth;
+    shm_init_allocator(alloc);
+    shm_init_header(header, alloc_, num_buckets, max_capacity, growth);
   }
 
   /** Store into shared memory */
-  void shm_serialize(labstor::ipc::TypedPointer<TYPED_CLASS> &ar) const {
-    shm_serialize_header(ar.header_ptr_);
-  }
+  void shm_serialize_main(labstor::ipc::TYPED_HEADER &ar) const {}
 
   /** Load from shared memory */
-  void shm_deserialize(const labstor::ipc::TypedPointer<TYPED_CLASS> &ar) {
-    if(!shm_deserialize_header(ar.header_ptr_)) { return; }
-  }
+  void shm_deserialize_main(const labstor::ipc::TYPED_HEADER &ar) {}
 
   /** Move constructor */
-  void shm_weak_move(TypedPointer<TYPED_CLASS> *ar,
-                Allocator *alloc, unordered_map &other) {
-    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT((TYPED_CLASS)))
+  void shm_weak_move_main(TYPED_HEADER *header,
+                          Allocator *alloc, unordered_map &other) {
     *header_ = *(other.header_);
-    SHM_WEAK_MOVE_END()
   }
 
   /** Copy constructor */
-  void shm_strong_copy(TypedPointer<TYPED_CLASS> *ar,
-                  Allocator *alloc, const unordered_map &other) {
+  void shm_strong_copy_main(TYPED_HEADER *header,
+                            Allocator *alloc, const unordered_map &other) {
     auto num_buckets = other.get_num_buckets();
     auto max_capacity = other.header_->max_capacity_;
     auto growth = other.header_->growth_;
-    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT((TYPED_CLASS)),
-      num_buckets, max_capacity, growth)
+    shm_init_allocator(alloc);
+    shm_init_header(header, alloc_, num_buckets, max_capacity, growth);
     for (auto entry : other) {
       emplace_templ<false, true>(
         *entry.key_, *entry.val_);
     }
-    SHM_STRONG_COPY_END()
   }
 
   /** Destroy the unordered_map buckets */
-  void shm_destroy(bool destroy_header = true) {
-    SHM_DESTROY_DATA_START
+  void shm_destroy_main() {
     mptr<vector<BUCKET_T>> buckets(header_->buckets_);
     buckets->shm_destroy(true);
-    SHM_DESTROY_DATA_END
-    SHM_DESTROY_END
   }
+
+  ////////////////////////////
+  /// Map Operations
+  ////////////////////////////
 
   /**
    * Construct an object directly in the map. Overrides the object if
@@ -620,9 +549,9 @@ class unordered_map : public SHM_CONTAINER((TYPED_CLASS)) {
 
 
  public:
-  /**
-   * ITERATION
-   * */
+  ////////////////////////////
+  /// Iterators
+  ////////////////////////////
 
   /** The data required for safe iteration over this map */
   struct ScopedIterLock {

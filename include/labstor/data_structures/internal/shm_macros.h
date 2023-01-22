@@ -30,16 +30,16 @@
 #include <labstor/constants/macros.h>
 
 /**
- * Determines whether or not a type has a predictable storage pattern.
- * */
-#define IS_SHM_PREDICTABLE(T) \
-  std::is_base_of<labstor::ipc::ShmPredictable, T>::value
-
-/**
- * Determine whether or not \a T type is a SHM serializeable data structure
+ * Determine whether or not \a T type is designed for shared memory
  * */
 #define IS_SHM_ARCHIVEABLE(T) \
-  std::is_base_of<labstor::ipc::TypedPointerable, T>::value
+  std::is_base_of<labstor::ipc::ShmArchiveable, T>::value
+
+/**
+ * Determines whether or not \a T type inherits from ShmContainerEntry
+ * */
+#define IS_SHM_CONTAINER_ENTRY(T) \
+  std::is_base_of<labstor::ipc::ShmContainerEntry, T>::value
 
 /**
  * Determine whether or not \a T type is a SHM smart pointer

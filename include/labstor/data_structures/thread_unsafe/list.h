@@ -40,7 +40,7 @@ class list;
 
 /** represents an object within a list */
 template<typename T>
-struct list_entry {
+struct list_entry : public ShmContainerEntry {
  public:
   OffsetPointer next_ptr_, prior_ptr_;
   ShmHeaderOrT<T> data_;
@@ -55,16 +55,12 @@ struct list_entry {
     data_.shm_destroy(alloc);
   }
 
-  /**
-   * Returns the element stored in the list
-   * */
+  /** Returns the element stored in the list */
   inline Ref<T> internal_ref(Allocator *alloc) {
     return Ref<T>(data_.internal_ref(alloc));
   }
 
-  /**
-   * Returns the element stored in the list
-   * */
+  /** Returns the element stored in the list */
   Ref<T> internal_ref(Allocator *alloc) const {
     return Ref<T>(data_.internal_ref(alloc));
   }

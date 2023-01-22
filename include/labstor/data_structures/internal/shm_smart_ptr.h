@@ -40,7 +40,7 @@ namespace labstor::ipc {
 /**
  * Indicates a data structure represents a memory paradigm for Shm.
  * */
-class ShmSmartPointer : public TypedPointerable {};
+class ShmSmartPointer : public ShmArchiveable {};
 
 /**
  * A base class used for creating shared-memory pointer management

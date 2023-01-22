@@ -41,22 +41,28 @@ class slist;
 
 /** represents an object within a list */
 template<typename T>
-struct slist_entry {
+struct slist_entry : public ShmContainerEntry {
  public:
   OffsetPointer next_ptr_;
-  shm_ar<T> data_;
+  ShmHeaderOrT<T> data_;
 
   /**
    * Constructor.
    * */
   template<typename ...Args>
-  explicit slist_entry(Args ...args) : data_(std::forward<Args>(args)...) {}
+  explicit slist_entry(Allocator *alloc, Args ...args)
+  : data_(alloc, std::forward<Args>(args)...) {}
 
   /**
    * Returns the element stored in the list
    * */
-  Ref<T> internal_ref() {
-    return Ref<T>(data_.internal_ref());
+  Ref<T> internal_ref(Allocator *alloc) {
+    return Ref<T>(data_.internal_ref(alloc));
+  }
+
+  /** Destroys the shared-memory header*/
+  void shm_destroy(Allocator *alloc) {
+    data_->shm_destroy(alloc);
   }
 };
 
@@ -110,12 +116,12 @@ struct slist_iterator_templ {
 
   /** Get the object the iterator points to */
   Ref<T> operator*() {
-    return entry_->internal_ref();
+    return entry_->internal_ref(list_->GetAllocator());
   }
 
   /** Get the object the iterator points to */
   const Ref<T> operator*() const {
-    return entry_->internal_ref();
+    return entry_->internal_ref(list_->GetAllocator());
   }
 
   /** Get the next iterator (in place) */
@@ -230,6 +236,7 @@ using slist_citerator = slist_iterator_templ<T, true>;
  * */
 #define CLASS_NAME slist
 #define TYPED_CLASS slist<T>
+#define TYPED_HEADER ShmHeader<slist<T>>
 
 /**
  * The list shared-memory header
@@ -252,67 +259,70 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
  * Doubly linked list implementation
  * */
 template<typename T>
-class slist : public SHM_CONTAINER(TYPED_CLASS) {
+class slist : public ShmContainer {
  public:
-  BASIC_SHM_CONTAINER_TEMPLATE
+  SHM_CONTAINER_TEMPLATE((CLASS_NAME), (TYPED_CLASS), (TYPED_HEADER))
 
  public:
+  ////////////////////////////
+  /// SHM Overrides
+  ////////////////////////////
+
   /** Default constructor */
   slist() = default;
 
   /** Initialize list in shared memory */
-  void shm_init_main(TypedPointer<TYPED_CLASS> *ar,
+  void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc) {
-    shm_init_header(ar, alloc);
+    shm_init_allocator(alloc);
+    shm_init_header(header);
     header_->length_ = 0;
     header_->head_ptr_.SetNull();
     header_->tail_ptr_.SetNull();
   }
 
   /** Copy from std::list */
-  void shm_init_main(TypedPointer<TYPED_CLASS> *ar,
+  void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc, std::list<T> &other) {
-    shm_init_header(ar, alloc);
+    shm_init_allocator(alloc);
+    shm_init_header(header);
     for (auto &entry : other) {
       emplace_back(entry);
     }
   }
 
   /** Destroy all shared memory allocated by the list */
-  void shm_destroy(bool destroy_header = true) {
-    SHM_DESTROY_DATA_START
+  void shm_destroy_main() {
     clear();
-    SHM_DESTROY_DATA_END
-    SHM_DESTROY_END
   }
 
   /** Store into shared memory */
-  void shm_serialize(TypedPointer<TYPED_CLASS> &ar) const {
-    shm_serialize_header(ar.header_ptr_);
-  }
+  void shm_serialize_main() const {}
 
   /** Load from shared memory */
-  void shm_deserialize(const TypedPointer<TYPED_CLASS> &ar) {
-    if(!shm_deserialize_header(ar.header_ptr_)) { return; }
-  }
+  void shm_deserialize_main() {}
 
   /** Move constructor */
-  void shm_weak_move(TypedPointer<TYPED_CLASS> *ar,
-                Allocator *alloc, slist &other) {
-    SHM_WEAK_MOVE_START(SHM_WEAK_MOVE_DEFAULT(TYPED_CLASS))
+  void shm_weak_move_main(TYPED_HEADER *header,
+                          Allocator *alloc, slist &other) {
+    shm_init_allocator(alloc);
+    shm_init_header(header);
     *header_ = *(other.header_);
-    SHM_WEAK_MOVE_END()
   }
 
   /** Copy constructor */
-  void shm_strong_copy(TypedPointer<TYPED_CLASS> *ar,
-                  Allocator *alloc, const slist &other) {
-    SHM_STRONG_COPY_START(SHM_STRONG_COPY_DEFAULT(TYPED_CLASS))
+  void shm_strong_copy_main(TYPED_HEADER *header,
+                            Allocator *alloc, const slist &other) {
+    shm_init_allocator(alloc);
+    shm_init_header(header);
     for (auto iter = other.cbegin(); iter != other.cend(); ++iter) {
       emplace_back(**iter);
     }
-    SHM_STRONG_COPY_END();
   }
+
+  ////////////////////////////
+  /// SList Operators
+  ////////////////////////////
 
   /** Construct an element at the back of the list */
   template<typename... Args>
@@ -422,9 +432,9 @@ class slist : public SHM_CONTAINER(TYPED_CLASS) {
 
  public:
 
-  /////////////////
-  /// ITERATORS
-  ////////////////
+  ////////////////////////////
+  /// Iterators
+  ////////////////////////////
 
   /** Forward iterator begin */
   inline slist_iterator<T> begin() {
@@ -465,5 +475,6 @@ class slist : public SHM_CONTAINER(TYPED_CLASS) {
 
 #undef CLASS_NAME
 #undef TYPED_CLASS
+#undef TYPED_HEADER
 
 #endif  // LABSTOR_DATA_STRUCTURES_THREAD_UNSAFE_SLIST_H_

@@ -49,7 +49,7 @@ class _ShmHeaderOrT_Header {
   }
 
   /** Destructor */
-  inline ~_ShmHeaderOrT_Header() {}
+  inline ~_ShmHeaderOrT_Header() = default;
 
   /** Shm destructor */
   inline void shm_destroy(Allocator *alloc) {

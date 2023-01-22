@@ -9,6 +9,7 @@ add_executable(test_data_structure_exec
         string.cc
         pair.cc
         list.cc
+        locked_list.cc
         #slist.cc
         vector.cc
         manual_ptr.cc

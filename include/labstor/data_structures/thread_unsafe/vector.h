@@ -623,7 +623,7 @@ class vector : public ShmContainer {
 
     // Allocate new shared-memory vec
     ShmHeaderOrT<T> *new_vec;
-    if constexpr(std::is_pod<T>() || IS_SHM_PREDICTABLE(T)) {
+    if constexpr(std::is_pod<T>() || IS_SHM_ARCHIVEABLE(T)) {
       // Use reallocate for well-behaved objects
       new_vec = alloc_->template
         ReallocateObjs<ShmHeaderOrT<T>>(header_->vec_ptr_, max_length);
