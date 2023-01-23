@@ -73,13 +73,23 @@ class _ShmHeaderOrT_Header {
   _ShmHeaderOrT_Header() {}
 
   /** Move constructor */
-  _ShmHeaderOrT_Header(_ShmHeaderOrT_Header &&other) noexcept {
-    T(std::move(other.obj_)).UnsetDestructable();
+  _ShmHeaderOrT_Header(_ShmHeaderOrT_Header &&other) noexcept
+  : obj_hdr_(std::move(other.obj_hdr_)) {}
+
+  /** Move assignment operator */
+  _ShmHeaderOrT_Header& operator=(_ShmHeaderOrT_Header &&other) noexcept {
+    obj_hdr_ = std::move(other.obj_hdr_);
+    return *this;
   }
 
   /** Copy constructor */
-  _ShmHeaderOrT_Header(const _ShmHeaderOrT_Header &other) {
-    T(std::move(other.obj_)).UnsetDestructable();
+  _ShmHeaderOrT_Header(const _ShmHeaderOrT_Header &other)
+  : obj_hdr_(other.obj_hdr_) {
+  }
+
+  /** Copy assignment operator */
+  _ShmHeaderOrT_Header& operator=(const _ShmHeaderOrT_Header &other) {
+    obj_hdr_ = other.obj_hdr_;
   }
 };
 
@@ -124,9 +134,20 @@ class _ShmHeaderOrT_T {
   _ShmHeaderOrT_T(_ShmHeaderOrT_T &&other) noexcept
   : obj_(std::move(other.obj_)) {}
 
+  /** Move assignment operator */
+  _ShmHeaderOrT_T& operator=(_ShmHeaderOrT_T &&other) noexcept {
+    obj_ = std::move(other.obj_);
+    return *this;
+  }
+
   /** Copy constructor */
   _ShmHeaderOrT_T(const _ShmHeaderOrT_T &other)
   : obj_(other.obj_) {}
+
+  /** Copy assignment operator */
+  _ShmHeaderOrT_T& operator=(const _ShmHeaderOrT_T &other) {
+    obj_ = other.obj_;
+  }
 };
 
 /**
@@ -179,9 +200,20 @@ class ShmHeaderOrT {
   ShmHeaderOrT(ShmHeaderOrT &&other) noexcept
   : obj_(std::move(other.obj_)) {}
 
+  /** Move assignment operator */
+  ShmHeaderOrT& operator=(ShmHeaderOrT &&other) noexcept {
+    obj_ = std::move(other.obj_);
+    return *this;
+  }
+
   /** Copy constructor */
   ShmHeaderOrT(const ShmHeaderOrT &other)
-  : obj_(other) {}
+  : obj_(other.obj_) {}
+
+  /** Copy assignment operator */
+  ShmHeaderOrT& operator=(const ShmHeaderOrT &other) {
+    obj_ = other.obj_;
+  }
 };
 
 }  // namespace labstor::ipc

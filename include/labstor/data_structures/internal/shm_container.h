@@ -47,8 +47,6 @@ namespace labstor::ipc {
 #define SHM_CONTAINER_HEADER_DESTRUCTABLE BIT_OPT(uint16_t, 2)
 /// The container is responsible for destroying data
 #define SHM_CONTAINER_DESTRUCTABLE BIT_OPT(uint16_t, 3)
-/// The container is a base class for another container
-#define SHM_CONTAINER_IS_BASE_CLASS BIT_OPT(uint16_t, 4)
 
 /** The shared-memory header used for data structures */
 template<typename T>
@@ -64,13 +62,22 @@ struct ShmContainerEntry {};
 struct ShmBaseHeader {
   bitfield32_t flags_;
 
+  /** Default constructor */
   ShmBaseHeader() = default;
+
+  /** Copy constructor */
+  ShmBaseHeader(const ShmBaseHeader &other) {}
+
+  /** Copy assignment operator */
+  ShmBaseHeader& operator=(const ShmBaseHeader &other) {
+    return *this;
+  }
 
   /**
    * Disable copying of the flag field, as all flags
    * pertain to a particular ShmHeader allocation.
    * */
-  ShmBaseHeader(const ShmBaseHeader &other) = delete;
+  void strong_copy(const ShmBaseHeader &other) {}
 
   /** Publicize bitfield operations */
   INHERIT_BITFIELD_OPS(flags_, uint16_t)
@@ -134,16 +141,6 @@ class ShmContainer : public ShmArchiveable {
   void UnsetValid() {
     flags_.UnsetBits(SHM_CONTAINER_VALID |
       SHM_CONTAINER_DESTRUCTABLE | SHM_CONTAINER_HEADER_DESTRUCTABLE);
-  }
-
-  /** Sets this container as a base class for another container */
-  void SetBaseClass() {
-    flags_.SetBits(SHM_CONTAINER_IS_BASE_CLASS);
-  }
-
-  /** Check if this container is acting as a base class for another container */
-  bool IsBaseClass() {
-    return flags_.OrBits(SHM_CONTAINER_IS_BASE_CLASS);
   }
 
   /////////////////////

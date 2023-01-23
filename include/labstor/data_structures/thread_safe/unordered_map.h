@@ -501,7 +501,7 @@ class unordered_map : public ShmContainer {
 
     // Insert into the map
     list<COLLISION_T> &collisions = bkt.GetContainer();
-    auto has_key = find_collision(key, collisions);
+    /*auto has_key = find_collision(key, collisions);
     if (has_key != collisions.end()) {
       if constexpr(!modify_existing) {
         return false;
@@ -510,7 +510,7 @@ class unordered_map : public ShmContainer {
         collisions.emplace_back(std::move(entry));
         return true;
       }
-    }
+    }*/
     collisions.emplace_back(std::move(entry));
 
     // Release the bucket + unordered_map locks

@@ -245,12 +245,45 @@ struct ShmHeader<list<T>> : public ShmBaseHeader {
   OffsetPointer head_ptr_, tail_ptr_;
   size_t length_;
 
+  /** Default constructor */
   ShmHeader() = default;
 
+  /** Copy constructor */
   ShmHeader(const ShmHeader &other) {
+    strong_copy(other);
+  }
+
+  /** Copy assignment operator */
+  ShmHeader& operator=(const ShmHeader &other) {
+    if (this != &other) {
+      strong_copy(other);
+    }
+    return *this;
+  }
+
+  /** Strong copy operation */
+  void strong_copy(const ShmHeader &other) {
     head_ptr_ = other.head_ptr_;
     tail_ptr_ = other.tail_ptr_;
     length_ = other.length_;
+  }
+
+  /** Move constructor */
+  ShmHeader(ShmHeader &&other) {
+    weak_move(other);
+  }
+
+  /** Move operator */
+  ShmHeader& operator=(ShmHeader &&other) {
+    if (this != &other) {
+      weak_move(other);
+    }
+    return *this;
+  }
+
+  /** Move operation */
+  void weak_move(ShmHeader &other) {
+    strong_copy(other);
   }
 };
 

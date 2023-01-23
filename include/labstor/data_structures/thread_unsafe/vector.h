@@ -316,36 +316,45 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
   Pointer vec_ptr_;
   size_t max_length_, length_;
 
+  /** Default constructor */
   ShmHeader() = default;
 
+  /** Copy constructor */
   ShmHeader(const ShmHeader &other) {
-    vec_ptr_ = other.vec_ptr_;
-    max_length_ = other.max_length_;
-    length_ = other.length_;
+    strong_copy(other);
   }
 
-  ShmHeader(ShmHeader &&other) {
-    vec_ptr_ = other.vec_ptr_;
-    max_length_ = other.max_length_;
-    length_ = other.length_;
-  }
-
+  /** Copy assignment operator */
   ShmHeader& operator=(const ShmHeader &other) {
     if (this != &other) {
-      vec_ptr_ = other.vec_ptr_;
-      max_length_ = other.max_length_;
-      length_ = other.length_;
+      strong_copy(other);
     }
     return *this;
   }
 
+  /** Strong copy operation */
+  void strong_copy(const ShmHeader &other) {
+    vec_ptr_ = other.vec_ptr_;
+    max_length_ = other.max_length_;
+    length_ = other.length_;
+  }
+
+  /** Move constructor */
+  ShmHeader(ShmHeader &&other) {
+    weak_move(other);
+  }
+
+  /** Move operator */
   ShmHeader& operator=(ShmHeader &&other) {
     if (this != &other) {
-      vec_ptr_ = other.vec_ptr_;
-      max_length_ = other.max_length_;
-      length_ = other.length_;
+      weak_move(other);
     }
     return *this;
+  }
+
+  /** Move operation */
+  void weak_move(ShmHeader &other) {
+    strong_copy(other);
   }
 };
 

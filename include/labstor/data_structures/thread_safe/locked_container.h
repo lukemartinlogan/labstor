@@ -13,13 +13,11 @@ template<typename CONTAINER_T>
 class locked_container;
 
 template<typename CONTAINER_T>
-class ShmHeader<locked_container<CONTAINER_T>> : public CONTAINER_T::header_t {
+class ShmHeader<locked_container<CONTAINER_T>> : public ShmBaseHeader {
  public:
   typedef typename CONTAINER_T::header_t sub_header_t;
-
- public:
+  sub_header_t sub_header_;
   RwLock lock_;
-  using sub_header_t::sub_header_t;
 };
 
 #define CLASS_NAME locked_container
@@ -44,9 +42,8 @@ class locked_container : public ShmContainer {
                      Allocator *alloc,
                      Args&& ...args) {
     shm_init_allocator(alloc);
-    shm_init_header(header, std::forward<Args>(args)...);
-    obj_.shm_deserialize(alloc_, reinterpret_cast<sub_header_t*>(header_));
-    obj_.SetBaseClass();
+    shm_init_header(header);
+    obj_.shm_init(header_->sub_header_, alloc, std::forward<Args>(args)...);
   }
 
   template<typename ...Args>
@@ -54,9 +51,9 @@ class locked_container : public ShmContainer {
                           Allocator *alloc,
                           Args&& ...args) {
     shm_init_allocator(alloc);
-    shm_init_header(header, std::forward<Args>(args)...);
-    obj_.shm_weak_move_main(reinterpret_cast<sub_header_t*>(header_),
-                            alloc_, std::forward<Args>(args)...);
+    shm_init_header(header);
+    obj_.shm_weak_move(header_->sub_header_,
+                       alloc_, std::forward<Args>(args)...);
   }
 
   template<typename ...Args>
@@ -64,9 +61,9 @@ class locked_container : public ShmContainer {
                             Allocator *alloc,
                             Args&& ...args) {
     shm_init_allocator(alloc);
-    shm_init_header(header, std::forward<Args>(args)...);
-    obj_.shm_strong_copy_main(reinterpret_cast<sub_header_t*>(header_),
-                              alloc_, std::forward<Args>(args)...);
+    shm_init_header(header);
+    obj_.shm_strong_copy(header_->sub_header_,
+                         alloc_, std::forward<Args>(args)...);
   }
 
   void shm_serialize_main() const {

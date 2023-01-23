@@ -48,6 +48,46 @@ template<>
 struct ShmHeader<string> : public ShmBaseHeader {
   size_t length_;
   Pointer text_;
+
+  /** Default constructor */
+  ShmHeader() = default;
+
+  /** Copy constructor */
+  ShmHeader(const ShmHeader &other) {
+    strong_copy(other);
+  }
+
+  /** Copy assignment operator */
+  ShmHeader& operator=(const ShmHeader &other) {
+    if (this != &other) {
+      strong_copy(other);
+    }
+    return *this;
+  }
+
+  /** Strong copy operation */
+  void strong_copy(const ShmHeader &other) {
+    length_ = other.length_;
+    text_ = other.text_;
+  }
+
+  /** Move constructor */
+  ShmHeader(ShmHeader &&other) {
+    weak_move(other);
+  }
+
+  /** Move operator */
+  ShmHeader& operator=(ShmHeader &&other) {
+    if (this != &other) {
+      weak_move(other);
+    }
+    return *this;
+  }
+
+  /** Move operation */
+  void weak_move(ShmHeader &other) {
+    strong_copy(other);
+  }
 };
 
 /**

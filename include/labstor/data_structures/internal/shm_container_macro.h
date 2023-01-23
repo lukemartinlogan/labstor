@@ -148,7 +148,6 @@ void shm_destroy(bool destroy_header = true) {\
   }\
   UnsetDataValid();\
   if (destroy_header &&\
-    !IsBaseClass() &&\
     header_->OrBits(SHM_CONTAINER_HEADER_DESTRUCTABLE)) {\
     alloc_->FreePtr<TYPE_UNWRAP(TYPED_HEADER)>(header_);\
     UnsetValid();\
