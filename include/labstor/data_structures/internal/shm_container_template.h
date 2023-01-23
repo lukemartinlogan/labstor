@@ -123,6 +123,7 @@ bool shm_deserialize(Allocator *alloc,
 /** Constructor. Deserialize the object from the reference. */
 template<typename ...Args>
 void shm_init(lipc::Ref<TYPE_UNWRAP(TYPED_CLASS)> &obj) {
+  shm_destroy(false);
   shm_deserialize(obj->GetAllocator(), obj->header_);
 }
 
@@ -144,6 +145,7 @@ void shm_destroy(bool destroy_header = true) {
   }
   UnsetDataValid();
   if (destroy_header &&
+    !IsBaseClass() &&
     header_->OrBits(SHM_CONTAINER_HEADER_DESTRUCTABLE)) {
     alloc_->FreePtr<TYPE_UNWRAP(TYPED_HEADER)>(header_);
     UnsetValid();
@@ -217,24 +219,7 @@ void shm_strong_copy(TYPE_UNWRAP(TYPED_HEADER) *header,
   if (other.IsNull()) { return; }
   shm_destroy(false);
   shm_strong_copy_main(header, alloc, other);
-  if (!other.IsDestructable()) {
-    UnsetDestructable();
-  }
-}
-
-/** Sets this object as destructable */
-void SetDestructable() {
-  flags_.SetBits(SHM_CONTAINER_DESTRUCTABLE);
-}
-
-/** Sets this object as indestructable */
-void UnsetDestructable() {
-  flags_.UnsetBits(SHM_CONTAINER_DESTRUCTABLE);
-}
-
-/** Check if this container is destructable */
-bool IsDestructable() const {
-  return flags_.OrBits(SHM_CONTAINER_DESTRUCTABLE);
+  SetDestructable();
 }
 
 /** Check if header's data is valid */
@@ -245,16 +230,6 @@ bool IsDataValid() const {
 /** Check if header's data is valid */
 void UnsetDataValid() const {
   header_->UnsetBits(SHM_CONTAINER_DATA_VALID);
-}
-
-/** Check if container has a valid header */
-bool IsValid() const {
-  return flags_.OrBits(SHM_CONTAINER_VALID);
-}
-
-/** Set container header invalid */
-void UnsetValid() {
-  flags_.UnsetBits(SHM_CONTAINER_VALID | SHM_CONTAINER_DESTRUCTABLE);
 }
 
 /** Check if null */

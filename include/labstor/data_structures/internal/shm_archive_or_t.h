@@ -49,10 +49,10 @@ class _ShmHeaderOrT_Header {
   }
 
   /** Destructor */
-  inline ~_ShmHeaderOrT_Header() = default;
+  ~_ShmHeaderOrT_Header() = default;
 
   /** Shm destructor */
-  inline void shm_destroy(Allocator *alloc) {
+  void shm_destroy(Allocator *alloc) {
     auto ar = internal_ref(alloc);
     T obj;
     obj.shm_deserialize(ar);
@@ -60,25 +60,25 @@ class _ShmHeaderOrT_Header {
   }
 
   /** Returns a reference to the internal object */
-  inline TypedPointer<T> internal_ref(Allocator *alloc) {
+  TypedPointer<T> internal_ref(Allocator *alloc) {
     return TypedPointer<T>(alloc->Convert<header_t, Pointer>(&obj_hdr_));
   }
 
   /** Returns a reference to the internal object */
-  inline TypedPointer<T> internal_ref(Allocator *alloc) const {
+  TypedPointer<T> internal_ref(Allocator *alloc) const {
     return TypedPointer<T>(alloc->Convert<header_t, Pointer>(&obj_hdr_));
   }
 
   /** Default constructor */
-  inline _ShmHeaderOrT_Header() {}
+  _ShmHeaderOrT_Header() {}
 
   /** Move constructor */
-  inline _ShmHeaderOrT_Header(_ShmHeaderOrT_Header &&other) noexcept {
+  _ShmHeaderOrT_Header(_ShmHeaderOrT_Header &&other) noexcept {
     T(std::move(other.obj_)).UnsetDestructable();
   }
 
   /** Copy constructor */
-  inline _ShmHeaderOrT_Header(const _ShmHeaderOrT_Header &other) {
+  _ShmHeaderOrT_Header(const _ShmHeaderOrT_Header &other) {
     T(std::move(other.obj_)).UnsetDestructable();
   }
 };
@@ -100,32 +100,32 @@ class _ShmHeaderOrT_T {
   }
 
   /** Shm destructor */
-  inline void shm_destroy(Allocator *alloc) {}
+  void shm_destroy(Allocator *alloc) {}
 
   /** Destructor. Does nothing. */
-  inline  ~_ShmHeaderOrT_T() = default;
+   ~_ShmHeaderOrT_T() = default;
 
   /** Returns a reference to the internal object */
-  inline T& internal_ref(Allocator *alloc) {
+  T& internal_ref(Allocator *alloc) {
     (void) alloc;
     return obj_;
   }
 
   /** Returns a reference to the internal object */
-  inline T& internal_ref(Allocator *alloc) const {
+  T& internal_ref(Allocator *alloc) const {
     (void) alloc;
     return obj_;
   }
 
   /** Default constructor */
-  inline _ShmHeaderOrT_T() : obj_() {}
+  _ShmHeaderOrT_T() : obj_() {}
 
   /** Move constructor */
-  inline _ShmHeaderOrT_T(_ShmHeaderOrT_T &&other) noexcept
+  _ShmHeaderOrT_T(_ShmHeaderOrT_T &&other) noexcept
   : obj_(std::move(other.obj_)) {}
 
   /** Copy constructor */
-  inline _ShmHeaderOrT_T(const _ShmHeaderOrT_T &other)
+  _ShmHeaderOrT_T(const _ShmHeaderOrT_T &other)
   : obj_(other.obj_) {}
 };
 
@@ -155,32 +155,32 @@ class ShmHeaderOrT {
   : obj_(std::forward<Args>(args)...) {}
 
   /** Destructor */
-  inline ~ShmHeaderOrT() = default;
+  ~ShmHeaderOrT() = default;
 
   /** Returns a reference to the internal object */
-  inline T_Ar internal_ref(Allocator *alloc) {
+  T_Ar internal_ref(Allocator *alloc) {
     return obj_.internal_ref(alloc);
   }
 
   /** Returns a reference to the internal object */
-  inline T_Ar internal_ref(Allocator *alloc) const {
+  T_Ar internal_ref(Allocator *alloc) const {
     return obj_.internal_ref(alloc);
   }
 
   /** Shm destructor */
-  inline void shm_destroy(Allocator *alloc) {
+  void shm_destroy(Allocator *alloc) {
     obj_.shm_destroy(alloc);
   }
 
   /** Default constructor */
-  inline ShmHeaderOrT() : obj_() {}
+  ShmHeaderOrT() = default;
 
   /** Move constructor */
-  inline ShmHeaderOrT(ShmHeaderOrT &&other) noexcept
+  ShmHeaderOrT(ShmHeaderOrT &&other) noexcept
   : obj_(std::move(other.obj_)) {}
 
   /** Copy constructor */
-  inline ShmHeaderOrT(const ShmHeaderOrT &other)
+  ShmHeaderOrT(const ShmHeaderOrT &other)
   : obj_(other) {}
 };
 

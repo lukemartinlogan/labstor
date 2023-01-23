@@ -39,17 +39,16 @@ namespace lipc = labstor::ipc;
 namespace labstor::ipc {
 
 /** Bits used for determining how to destroy an object */
+/// The container's header has been allocated
 #define SHM_CONTAINER_VALID BIT_OPT(uint16_t, 0)
+/// The is not empty
 #define SHM_CONTAINER_DATA_VALID BIT_OPT(uint16_t, 1)
+/// The header was allocated by this container
 #define SHM_CONTAINER_HEADER_DESTRUCTABLE BIT_OPT(uint16_t, 2)
+/// The container is responsible for destroying data
 #define SHM_CONTAINER_DESTRUCTABLE BIT_OPT(uint16_t, 3)
-
-/** Typed nullptr for allocator */
-#define SHM_ALLOCATOR_NULL reinterpret_cast<lipc::Allocator*>(NULL)
-
-/** Typed nullptr for TypedPointer */
-#define SHM_ARCHIVE_NULL(TYPED_CLASS) \
-  reinterpret_cast<lipc::TypedPointer<TYPE_UNWRAP(TYPED_CLASS)>*>(NULL)
+/// The container is a base class for another container
+#define SHM_CONTAINER_IS_BASE_CLASS BIT_OPT(uint16_t, 4)
 
 /** The shared-memory header used for data structures */
 template<typename T>
@@ -99,11 +98,52 @@ class ShmContainer : public ShmArchiveable {
    * Initialize the data structure's allocator
    * */
   inline void shm_init_allocator(Allocator *alloc) {
+    if (IsValid()) { return; }
     if (alloc == nullptr) {
       alloc_ = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
     } else {
       alloc_ = alloc;
     }
+  }
+
+  /////////////////////
+  /// Flags Operations
+  /////////////////////
+
+  /** Sets this object as destructable */
+  void SetDestructable() {
+    flags_.SetBits(SHM_CONTAINER_DESTRUCTABLE);
+  }
+
+  /** Sets this object as not destructable */
+  void UnsetDestructable() {
+    flags_.UnsetBits(SHM_CONTAINER_DESTRUCTABLE);
+  }
+
+  /** Check if this container is destructable */
+  bool IsDestructable() const {
+    return flags_.OrBits(SHM_CONTAINER_DESTRUCTABLE);
+  }
+
+  /** Check if container has a valid header */
+  bool IsValid() const {
+    return flags_.OrBits(SHM_CONTAINER_VALID);
+  }
+
+  /** Set container header invalid */
+  void UnsetValid() {
+    flags_.UnsetBits(SHM_CONTAINER_VALID |
+      SHM_CONTAINER_DESTRUCTABLE | SHM_CONTAINER_HEADER_DESTRUCTABLE);
+  }
+
+  /** Sets this container as a base class for another container */
+  void SetBaseClass() {
+    flags_.SetBits(SHM_CONTAINER_IS_BASE_CLASS);
+  }
+
+  /** Check if this container is acting as a base class for another container */
+  bool IsBaseClass() {
+    return flags_.OrBits(SHM_CONTAINER_IS_BASE_CLASS);
   }
 
   /////////////////////

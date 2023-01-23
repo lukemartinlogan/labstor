@@ -77,7 +77,6 @@ class ListTestSuite {
   /// Move assignment
   void MoveAssignmentTest() {
     int count = obj_.size();
-    // Container cpy = std::move(obj);
     Container cpy;
     cpy = std::move(obj_);
     VerifyMove(obj_, cpy, count);

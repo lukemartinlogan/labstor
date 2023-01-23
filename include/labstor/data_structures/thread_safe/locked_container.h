@@ -46,6 +46,7 @@ class locked_container : public ShmContainer {
     shm_init_allocator(alloc);
     shm_init_header(header, std::forward<Args>(args)...);
     obj_.shm_deserialize(alloc_, reinterpret_cast<sub_header_t*>(header_));
+    obj_.SetBaseClass();
   }
 
   template<typename ...Args>
@@ -54,8 +55,8 @@ class locked_container : public ShmContainer {
                           Args&& ...args) {
     shm_init_allocator(alloc);
     shm_init_header(header, std::forward<Args>(args)...);
-    obj_.shm_weak_move_main_main(reinterpret_cast<sub_header_t*>(header_),
-                                 alloc_, std::forward<Args>(args)...);
+    obj_.shm_weak_move_main(reinterpret_cast<sub_header_t*>(header_),
+                            alloc_, std::forward<Args>(args)...);
   }
 
   template<typename ...Args>
@@ -64,8 +65,8 @@ class locked_container : public ShmContainer {
                             Args&& ...args) {
     shm_init_allocator(alloc);
     shm_init_header(header, std::forward<Args>(args)...);
-    obj_.shm_weak_strong_copy_main(reinterpret_cast<sub_header_t*>(header_),
-                                   alloc_, std::forward<Args>(args)...);
+    obj_.shm_strong_copy_main(reinterpret_cast<sub_header_t*>(header_),
+                              alloc_, std::forward<Args>(args)...);
   }
 
   void shm_serialize_main() const {
@@ -76,9 +77,7 @@ class locked_container : public ShmContainer {
     obj_.shm_deserialize_main();
   }
 
-  void shm_destroy_main() {
-    obj_.shm_destroy_main();
-  }
+  void shm_destroy_main() {}
 
  public:
   ////////////////////////////
@@ -89,7 +88,7 @@ class locked_container : public ShmContainer {
   }
 
   CONTAINER_T& GetContainer() {
-    return reinterpret_cast<CONTAINER_T&>(*this);
+    return obj_;
   }
 };
 
