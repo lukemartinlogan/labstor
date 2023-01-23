@@ -524,7 +524,7 @@ class unordered_map : public ShmContainer {
     // Grow vector if necessary
     if constexpr(growth) {
       if (size() > (header_->max_capacity_ * buckets->size()).as_int()) {
-        grow_map(cur_num_buckets);
+        // grow_map(cur_num_buckets);
       }
     }
 

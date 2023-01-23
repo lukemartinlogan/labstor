@@ -19,7 +19,9 @@ option(LABSTOR_CXX_PROFILE "Generate profiling data from benchmarks" OFF)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
 ##################OPTIMIZATION
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_CXX_FLAGS "-g -O0")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CMAKE_CXX_FLAGS "-g -O3")
 endif()
 if(LABSTOR_CXX_PROFILE)

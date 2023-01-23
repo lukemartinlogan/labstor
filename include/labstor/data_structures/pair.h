@@ -28,22 +28,27 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
   ShmHeaderOrT<FirstT> first_;
   ShmHeaderOrT<SecondT> second_;
 
+  /** Default constructor */
   ShmHeader() = default;
 
+  /** Constructor. Default shm allocate. */
   explicit ShmHeader(Allocator *alloc)
   : first_(alloc), second_(alloc) {}
 
+  /** Move constructor. */
   explicit ShmHeader(Allocator *alloc,
                      FirstT &&first,
                      SecondT &&second)
   : first_(alloc, std::forward<FirstT>(first)),
     second_(alloc, std::forward<SecondT>(second)) {}
 
+  /** Copy constructor. */
   explicit ShmHeader(Allocator *alloc,
                      const FirstT &first,
                      const SecondT &second)
   : first_(alloc, first), second_(alloc, second) {}
 
+  /** Shm destructor */
   void shm_destroy(Allocator *alloc) {
     first_.shm_destroy(alloc);
     second_.shm_destroy(alloc);

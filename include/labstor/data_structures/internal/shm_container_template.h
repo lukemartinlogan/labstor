@@ -105,12 +105,14 @@ bool shm_deserialize(Allocator *alloc, OffsetPointer header_ptr) {
 
 /** Deserialize object from another object (weak copy) */
 bool shm_deserialize(const TYPE_UNWRAP(CLASS_NAME) &other) {
+  if (other.IsNull()) { return false; }
   return shm_deserialize(other.GetAllocator(), other.header_);
 }
 
 /** Deserialize object from allocator + header */
 bool shm_deserialize(Allocator *alloc,
                      TYPE_UNWRAP(TYPED_HEADER) *header) {
+  std::cout << "deserialize(3)" << std::endl;
   flags_.UnsetBits(SHM_CONTAINER_VALID | SHM_CONTAINER_DESTRUCTABLE);
   alloc_ = alloc;
   header_ = header;
@@ -122,7 +124,6 @@ bool shm_deserialize(Allocator *alloc,
 /** Constructor. Deserialize the object from the reference. */
 template<typename ...Args>
 void shm_init(lipc::Ref<TYPE_UNWRAP(TYPED_CLASS)> &obj) {
-  shm_destroy(false);
   shm_deserialize(obj->GetAllocator(), obj->header_);
 }
 

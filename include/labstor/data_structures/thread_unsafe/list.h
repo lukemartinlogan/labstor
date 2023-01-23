@@ -82,6 +82,10 @@ struct list_iterator_templ {
   /** Default constructor */
   list_iterator_templ() = default;
 
+  /** End iterator */
+  explicit list_iterator_templ(bool)
+  : entry_(nullptr), entry_ptr_(OffsetPointer::GetNull()) {}
+
   /** Construct an iterator  */
   explicit list_iterator_templ(TypedPointer<list<T>> list)
   : list_(list), entry_(nullptr), entry_ptr_(OffsetPointer::GetNull()) {}
@@ -197,7 +201,7 @@ struct list_iterator_templ {
 
   /** Create the end iterator */
   static list_iterator_templ const end() {
-    static list_iterator_templ end_iter(Pointer::GetNull());
+    static list_iterator_templ end_iter(true);
     return end_iter;
   }
 

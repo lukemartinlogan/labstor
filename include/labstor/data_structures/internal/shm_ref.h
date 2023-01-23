@@ -21,6 +21,11 @@ struct _RefShm {
   /** Default constructor */
   _RefShm() = default;
 
+  /** Destructor */
+  ~_RefShm() {
+    obj_.UnsetDestructable();
+  }
+
   /** Constructor. */
   explicit _RefShm(TypedPointer<T> other) {
     obj_.shm_deserialize(other);
@@ -130,6 +135,9 @@ struct Ref {
   /** Constructor. */
   template<typename ...Args>
   explicit Ref(Args&& ...args) : obj_(std::forward<Args>(args)...) {}
+
+  /** Default constructor */
+  Ref() = default;
 
   /** Copy Constructor */
   Ref(const Ref &other) : obj_(other.obj_) {}
