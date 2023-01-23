@@ -40,7 +40,7 @@ using labstor::ipc::unordered_map;
 using labstor::ipc::string;
 
 #define GET_INT_FROM_KEY(VAR) CREATE_GET_INT_FROM_VAR(Key, key_ret, VAR)
-#define GET_INT_FROM_VAL(VAR) CREATE_GET_INT_FROM_VAR(Val, val_ret, VAR)
+#define GET_INT_FROM_VAL(VAR) CREATE_GET_INT_FROM_VAR(Val, second_ret, VAR)
 
 #define CREATE_KV_PAIR(KEY, VAL)\
   CREATE_SET_VAR_TO_INT_OR_STRING(Key, key, KEY); \
@@ -72,7 +72,7 @@ void UnorderedMapOpTest() {
     for (int i = 0; i < 20; ++i) {
       CREATE_KV_PAIR(i, i);
       auto iter = map.find(key);
-      REQUIRE(*((*iter).val_) == val);
+      REQUIRE((*iter)->GetVal() == val);
     }
   }
 
@@ -82,10 +82,10 @@ void UnorderedMapOpTest() {
     prep.Lock();
     int i = 0;
     for (auto entry : map) {
-      GET_INT_FROM_KEY(*(entry.key_));
-      GET_INT_FROM_VAL(*(entry.val_));
+      GET_INT_FROM_KEY(entry->GetKey());
+      GET_INT_FROM_VAL(entry->GetVal());
       REQUIRE((0 <= key_ret && key_ret < 20));
-      REQUIRE((0 <= val_ret && val_ret < 20));
+      REQUIRE((0 <= second_ret && second_ret < 20));
       ++i;
     }
     REQUIRE(i == 20);
@@ -104,8 +104,8 @@ void UnorderedMapOpTest() {
   {
     CREATE_KV_PAIR(4, 25);
     auto iter = map.find(key);
-    *((*iter).val_) = std::move(val);
-    REQUIRE(*((*iter).val_) == val);
+    (*iter)->GetVal() = std::move(val);
+    REQUIRE((*iter)->GetVal() == val);
   }
 
   // Verify the modification took place
@@ -118,8 +118,8 @@ void UnorderedMapOpTest() {
   {
     CREATE_KV_PAIR(4, 50);
     auto iter = map.find(key);
-    *((*iter).val_) = val;
-    REQUIRE(*((*iter).val_) == val);
+    (*iter)->GetVal() = val;
+    REQUIRE((*iter)->GetVal() == val);
   }
 
   // Verify the modification took place

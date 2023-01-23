@@ -68,6 +68,28 @@ struct nonatomic {
     return true;
   }
 
+  /** Atomic pre-increment operator */
+  inline nonatomic& operator++() {
+    ++x;
+    return *this;
+  }
+
+  /** Atomic post-increment operator */
+  inline nonatomic operator++(int) {
+    return atomic(x+1);
+  }
+
+  /** Atomic pre-decrement operator */
+  inline nonatomic& operator--() {
+    --x;
+    return *this;
+  }
+
+  /** Atomic post-decrement operator */
+  inline nonatomic operator--(int) {
+    return atomic(x-1);
+  }
+
   /** Atomic add operator */
   inline nonatomic operator+(T count) const {
     return nonatomic(x + count);
@@ -154,6 +176,28 @@ struct atomic {
                                       std::memory_order order =
                                       std::memory_order_seq_cst) {
     return x.compare_exchange_strong(expected, desired, order);
+  }
+
+  /** Atomic pre-increment operator */
+  inline atomic& operator++() {
+    ++x;
+    return *this;
+  }
+
+  /** Atomic post-increment operator */
+  inline atomic operator++(int) {
+    return atomic(x+1);
+  }
+
+  /** Atomic pre-decrement operator */
+  inline atomic& operator--() {
+    --x;
+    return *this;
+  }
+
+  /** Atomic post-decrement operator */
+  inline atomic operator--(int) {
+    return atomic(x-1);
   }
 
   /** Atomic add operator */

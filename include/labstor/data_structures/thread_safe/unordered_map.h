@@ -33,6 +33,7 @@
 #include "labstor/data_structures/thread_safe/list.h"
 #include "labstor/data_structures/pair.h"
 #include "labstor/data_structures/data_structure.h"
+#include "labstor/types/atomic.h"
 
 namespace labstor::ipc {
 
@@ -50,8 +51,7 @@ struct unordered_map_iterator {
   using BUCKET_T = lipc::lock::list<COLLISION_T>;
 
  public:
-  const unordered_map<Key, T, Hash> *map_;
-  lipc::Ref<vector<BUCKET_T>> buckets_;
+  lipc::Ref<unordered_map<Key, T, Hash>> map_;
   vector_iterator<BUCKET_T> bucket_;
   list_iterator<COLLISION_T> collision_;
 
@@ -59,9 +59,8 @@ struct unordered_map_iterator {
   unordered_map_iterator() = default;
 
   /** Construct the iterator  */
-  explicit unordered_map_iterator(const unordered_map<Key, T, Hash> *map)
-    : map_(map) {
-  }
+  explicit unordered_map_iterator(TypedPointer<unordered_map<Key, T, Hash>> map)
+  : map_(map) {}
 
   /** Copy constructor  */
   unordered_map_iterator(const unordered_map_iterator &other) {
@@ -80,10 +79,8 @@ struct unordered_map_iterator {
   /** Copy an iterator */
   void shm_strong_copy(const unordered_map_iterator<Key, T, Hash> &other) {
     map_ = other.map_;
-    buckets_ = other.buckets_;
     bucket_ = other.bucket_;
     collision_ = other.collision_;
-    bucket_.change_pointer(buckets_.get());
   }
 
   /** Get the pointed object */
@@ -116,21 +113,19 @@ struct unordered_map_iterator {
    * */
   bool make_correct() {
     do {
-      if (bucket_ == buckets_->end()) {
+      if (bucket_.is_end()) {
         return false;
       }
       BUCKET_T& bkt = (**bucket_);
-      lipc::Ref<list<COLLISION_T>> collisions = bkt.GetContainer();
-      if (collision_ != collisions_->end()) {
+      list<COLLISION_T> &collisions = bkt.GetContainer();
+      if (collision_ != collisions.end()) {
         return true;
       } else {
         ++bucket_;
-        if (bucket_ == buckets_->end()) {
+        if (bucket_.is_end()) {
           return false;
         }
-        BUCKET_T& bkt = (**bucket_);
-        collisions_ << bkt.collisions_;
-        collision_ = collisions_->begin();
+        collision_ = collisions.begin();
       }
     } while (true);
   }
@@ -186,35 +181,38 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
   ShmHeaderOrT<vector<BUCKET_T>> buckets_;
   RealNumber max_capacity_;
   RealNumber growth_;
-  std::atomic<size_t> length_;
+  lipc::atomic<size_t> length_;
   RwLock lock_;
 
-  ShmHeader(Allocator *alloc,
-            int num_buckets,
-            RealNumber max_capacity,
-            RealNumber growth) : buckets_(alloc, num_buckets) {
+  /** Default constructor. */
+  ShmHeader() = default;
+
+  /** Constructor. Initialize header. */
+  explicit ShmHeader(Allocator *alloc,
+                     int num_buckets,
+                     RealNumber max_capacity,
+                     RealNumber growth) : buckets_(alloc, num_buckets) {
     max_capacity_ = max_capacity;
     growth_ = growth;
     length_ = 0;
   }
 
-  ShmHeader(const ShmHeader &other) {
-    buckets_ = other.buckets_;
+  /** Copy constructor */
+  ShmHeader(const ShmHeader &other) = delete;
+
+  /** Move constructor */
+  ShmHeader(ShmHeader &&other) = delete;
+
+  /** True move constructor. */
+  explicit ShmHeader(Allocator *alloc,
+                     ShmHeader &&other, Allocator *other_alloc) {
+    (*GetBuckets(alloc)) = std::move(*other.GetBuckets(other_alloc));
     max_capacity_ = other.max_capacity_;
     growth_ = other.growth_;
-    length_ = other.length_;
+    length_ = other.length_.load();/**/
   }
 
-  ShmHeader& operator=(const ShmHeader &other) {
-    if (this != &other) {
-      buckets_ = other.buckets_;
-      max_capacity_ = other.max_capacity_;
-      growth_ = other.growth_;
-      length_ = other.length_.load();
-    }
-    return *this;
-  }
-
+  /** Get a reference to the buckets */
   lipc::Ref<vector<BUCKET_T>> GetBuckets(Allocator *alloc) {
     return lipc::Ref<vector<BUCKET_T>>(buckets_.internal_ref(alloc));
   }
@@ -260,15 +258,19 @@ class unordered_map : public ShmContainer {
   }
 
   /** Store into shared memory */
-  void shm_serialize_main(labstor::ipc::TYPED_HEADER &ar) const {}
+  void shm_serialize_main() const {}
 
   /** Load from shared memory */
-  void shm_deserialize_main(const labstor::ipc::TYPED_HEADER &ar) {}
+  void shm_deserialize_main() {}
 
   /** Move constructor */
   void shm_weak_move_main(TYPED_HEADER *header,
                           Allocator *alloc, unordered_map &other) {
-    *header_ = *(other.header_);
+    shm_init_allocator(alloc);
+    shm_init_header(header,
+                    alloc_,
+                    std::move(*other.header_),
+                    other.GetAllocator());
   }
 
   /** Copy constructor */
@@ -281,7 +283,7 @@ class unordered_map : public ShmContainer {
     shm_init_header(header, alloc_, num_buckets, max_capacity, growth);
     for (auto entry : other) {
       emplace_templ<false, true>(
-        *entry.key_, *entry.val_);
+        entry->GetKey(), entry->GetVal());
     }
   }
 
@@ -338,12 +340,12 @@ class unordered_map : public ShmContainer {
     bkt_lock.Lock();
 
     // Find and remove key from collision list
-    list<COLLISION_T> &collisions = bkt->GetContainer();
+    list<COLLISION_T> &collisions = bkt.GetContainer();
     auto iter = find_collision(key, collisions);
     if (iter.is_end()) {
       return;
     }
-    collisions->erase(iter);
+    collisions.erase(iter);
 
     // Decrement the size of the map
     --header_->length_;
@@ -391,7 +393,7 @@ class unordered_map : public ShmContainer {
   Ref<T> operator[](const Key &key) {
     auto iter = find(key);
     if (iter != end()) {
-      return (*iter).val_;
+      return (*iter)->second_;
     }
     throw UNORDERED_MAP_CANT_FIND.format();
   }
@@ -400,25 +402,25 @@ class unordered_map : public ShmContainer {
    * Find an object in the unordered_map
    * */
   unordered_map_iterator<Key, T, Hash> find(const Key &key) {
-    unordered_map_iterator<Key, T, Hash> iter(this);
+    unordered_map_iterator<Key, T, Hash> iter(
+      GetShmPointer<TypedPointer<unordered_map_iterator<Key, T, Hash>>>());
 
     // Acquire the header read lock
     ScopedRwReadLock header_lock(header_->lock_);
     header_lock.Lock();
 
     // Determine the bucket corresponding to the key
-    iter.buckets_ << header_->buckets_;
-    size_t bkt_id = Hash{}(key) % iter.buckets_->size();
-    iter.bucket_ = iter.buckets_->begin() + bkt_id;
+    lipc::Ref<vector<BUCKET_T>> buckets = header_->GetBuckets(alloc_);
+    size_t bkt_id = Hash{}(key) % buckets->size();
+    iter.bucket_ = buckets->begin() + bkt_id;
     BUCKET_T &bkt = (**iter.bucket_);
 
     // Acquire the bucket lock
-    ScopedRwReadLock bkt_lock(bkt.lock_);
+    ScopedRwReadLock bkt_lock(bkt.GetLock());
     bkt_lock.Lock();
 
     // Get the specific collision iterator
-    iter.collisions_ << bkt.collisions_;
-    iter.collision_ = find_collision(key, iter.collisions_);
+    iter.collision_ = find_collision(key, bkt.GetContainer());
     if (iter.collision_.is_end()) {
       iter.set_end();
     }
@@ -430,12 +432,12 @@ class unordered_map : public ShmContainer {
     if (header_ == nullptr) {
       return 0;
     }
-    return header_->length_;
+    return header_->length_.load();
   }
 
   /** The number of buckets in the map */
   size_t get_num_buckets() const {
-    lipc::Ref<vector<BUCKET_T>> buckets = header_->GetBuckets();
+    lipc::Ref<vector<BUCKET_T>> buckets = GetBuckets();
     return buckets->size();
   }
 
@@ -449,7 +451,7 @@ class unordered_map : public ShmContainer {
     auto iter_end = collisions.end();
     for (; iter != iter_end; ++iter) {
       COLLISION_T entry(alloc_, **iter);
-      if (*entry.key_ == key) {
+      if (entry.GetKey() == key) {
         return iter;
       }
     }
@@ -464,8 +466,8 @@ class unordered_map : public ShmContainer {
    * @return None
    * */
   template<bool growth, bool modify_existing, typename ...Args>
-  bool emplace_templ(const Key &key, Args&&... args) {
-    COLLISION_T entry(alloc_, key, std::forward<Args>(args)...);
+  bool emplace_templ(const Key &key, const T &val) {
+    COLLISION_T entry(alloc_, key, val);
     return insert_templ<growth, modify_existing>(entry);
   }
 
@@ -480,7 +482,7 @@ class unordered_map : public ShmContainer {
   template<bool growth, bool modify_existing>
   bool insert_templ(COLLISION_T &entry) {
     if (header_ == nullptr) { shm_init(); }
-    Key &key = *(entry.key_);
+    Key &key = entry.GetKey();
 
     // Acquire the header lock for a read (not modifying bucket vec)
     ScopedRwReadLock header_lock(header_->lock_);
@@ -492,22 +494,22 @@ class unordered_map : public ShmContainer {
     BUCKET_T &bkt = *(*buckets)[bkt_id];
 
     // Prepare bucket for write
-    ScopedRwWriteLock bkt_lock(bkt.lock_);
+    ScopedRwWriteLock bkt_lock(bkt.GetLock());
     bkt_lock.Lock();
 
     // Insert into the map
-    mptr<list<COLLISION_T>> collisions(bkt.collisions_);
+    list<COLLISION_T> &collisions = bkt.GetContainer();
     auto has_key = find_collision(key, collisions);
-    if (has_key != collisions->end()) {
+    if (has_key != collisions.end()) {
       if constexpr(!modify_existing) {
         return false;
       } else {
-        collisions->erase(has_key);
-        collisions->emplace_back(std::move(entry));
+        collisions.erase(has_key);
+        collisions.emplace_back(std::move(entry));
         return true;
       }
     }
-    collisions->emplace_back(std::move(entry));
+    collisions.emplace_back(std::move(entry));
 
     // Get the number of buckets now to ensure repetitive growths don't happen
     size_t cur_num_buckets;
@@ -532,14 +534,13 @@ class unordered_map : public ShmContainer {
   }
 
   bool insert_simple(COLLISION_T &&entry,
-                     mptr<vector<BUCKET_T>> &buckets) {
+                     vector<BUCKET_T> &buckets) {
     if (header_ == nullptr) { shm_init(); }
-    COLLISION_T entry(alloc_, entry);
-    Key &key = *entry.key_;
-    size_t bkt_id = Hash{}(key) % buckets->size();
-    BUCKET_T &bkt = *(*buckets)[bkt_id];
-    mptr<list<COLLISION_T>> collisions(bkt.collisions_);
-    collisions->emplace_back(std::move(entry));
+    Key &key = entry.GetKey();
+    size_t bkt_id = Hash{}(key) % buckets.size();
+    BUCKET_T &bkt = *buckets[bkt_id];
+    list<COLLISION_T>& collisions = bkt.GetContainer();
+    collisions.emplace_back(std::move(entry));
     return true;
   }
 
@@ -565,9 +566,9 @@ class unordered_map : public ShmContainer {
     void Lock() {
       if (!is_locked_) {
         map_.header_->lock_.ReadLock();
-        mptr<vector<BUCKET_T>> buckets(map_.header_->buckets_);
+        lipc::Ref<vector<BUCKET_T>> buckets(map_.GetBuckets());
         for (auto bkt : *buckets) {
-          (*bkt).lock_.ReadLock();
+          bkt->GetLock().ReadLock();
         }
         is_locked_ = true;
       }
@@ -577,9 +578,9 @@ class unordered_map : public ShmContainer {
     void Unlock() {
       if (is_locked_) {
         map_.header_->lock_.ReadUnlock();
-        mptr<vector<BUCKET_T>> buckets(map_.header_->buckets_);
+        lipc::Ref<vector<BUCKET_T>> buckets(map_.GetBuckets());
         for (auto bkt : *buckets) {
-          (*bkt).lock_.ReadUnlock();
+          (*bkt).GetLock().ReadUnlock();
         }
         is_locked_ = false;
       }
@@ -593,24 +594,36 @@ class unordered_map : public ShmContainer {
 
   /** Forward iterator begin */
   inline unordered_map_iterator<Key, T, Hash> begin() const {
-    unordered_map_iterator<Key, T, Hash> iter(this);
-    iter.buckets_ << header_->GetBuckets();
-    if (iter.buckets_->size() == 0) {
+    unordered_map_iterator<Key, T, Hash> iter(
+      GetShmPointer<TypedPointer<unordered_map_iterator<Key, T, Hash>>>());
+    lipc::Ref<vector<BUCKET_T>> buckets(GetBuckets());
+    if (buckets->size() == 0) {
       return iter;
     }
-    auto bkt = (*iter.buckets_)[0];
-    iter.bucket_ = iter.buckets_->begin();
-    iter.collision_ = iter.collisions_->begin();
+    lipc::Ref<BUCKET_T> bkt = (*buckets)[0];
+    iter.bucket_ = buckets->cbegin();
+    iter.collision_ = bkt->GetContainer().begin();
     iter.make_correct();
     return iter;
   }
 
   /** Forward iterator end */
   inline unordered_map_iterator<Key, T, Hash> end() const {
-    unordered_map_iterator<Key, T, Hash> iter(this);
-    iter.buckets_ << header_->buckets_;
-    iter.bucket_ = iter.buckets_->end();
+    unordered_map_iterator<Key, T, Hash> iter(
+      GetShmPointer<TypedPointer<unordered_map_iterator<Key, T, Hash>>>());
+    lipc::Ref<vector<BUCKET_T>> buckets(GetBuckets());
+    iter.bucket_ = buckets->cend();
     return iter;
+  }
+
+  /** Get the buckets */
+  lipc::Ref<vector<BUCKET_T>> GetBuckets() {
+    return header_->GetBuckets(alloc_);
+  }
+
+  /** Get the buckets (const) */
+  lipc::Ref<vector<BUCKET_T>> GetBuckets() const {
+    return header_->GetBuckets(alloc_);
   }
 
  private:
@@ -629,21 +642,20 @@ class unordered_map : public ShmContainer {
 
     // Create new buckets
     size_t new_num_buckets = get_new_size(num_buckets);
-    auto new_buckets = make_mptr<vector<BUCKET_T>>(
-      alloc_, new_num_buckets, alloc_);
+    vector<BUCKET_T> new_buckets(alloc_, new_num_buckets);
 
     // Copy-paste the map
     for (size_t i = 0; i < num_buckets; ++i) {
       BUCKET_T &bkt = *(*buckets)[i];
-      mptr<list<COLLISION_T>> collisions(bkt.collisions_);
-      for (auto entry : *collisions) {
+      list<COLLISION_T> &collisions = bkt.GetContainer();
+      for (lipc::Ref<COLLISION_T> entry : collisions) {
         insert_simple(std::move(*entry), new_buckets);
       }
     }
 
     // Replace this map's buckets
     buckets->shm_destroy();
-    new_buckets >> header_->buckets_;
+    (*buckets) = std::move(new_buckets);
   }
 
   /** Calculate the new number of buckets based on growth rate */

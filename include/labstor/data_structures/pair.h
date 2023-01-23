@@ -28,6 +28,8 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
   ShmHeaderOrT<FirstT> first_;
   ShmHeaderOrT<SecondT> second_;
 
+  ShmHeader() = default;
+
   explicit ShmHeader(Allocator *alloc)
   : first_(alloc), second_(alloc) {}
 
@@ -40,7 +42,7 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
   explicit ShmHeader(Allocator *alloc,
                      const FirstT &first,
                      const SecondT &second)
-    : first_(alloc, first), second_(alloc, second) {}
+  : first_(alloc, first), second_(alloc, second) {}
 
   void shm_destroy(Allocator *alloc) {
     first_.shm_destroy(alloc);
@@ -123,8 +125,32 @@ class pair : public ShmContainer {
   /** Load from shared memory */
   void shm_deserialize_main() {
     first_ = lipc::Ref<FirstT>(header_->first_.internal_ref(alloc_));
-    second_ = lipc::Ref<SecondT>(header_->first_.internal_ref(alloc_));
+    second_ = lipc::Ref<SecondT>(header_->second_.internal_ref(alloc_));
   }
+
+  /** Get the first object */
+  FirstT& GetFirst() { return *first_; }
+
+  /** Get the first object (const) */
+  FirstT& GetFirst() const { return *first_; }
+
+  /** Get the second object */
+  SecondT& GetSecond() { return *second_; }
+
+  /** Get the second object (const) */
+  SecondT& GetSecond() const { return *second_; }
+
+  /** Get the first object (treated as key) */
+  FirstT& GetKey() { return *first_; }
+
+  /** Get the first object (treated as key) (const) */
+  FirstT& GetKey() const { return *first_; }
+
+  /** Get the second object (treated as value) */
+  SecondT& GetVal() { return *second_; }
+
+  /** Get the second object (treated as value) (const) */
+  SecondT& GetVal() const { return *second_; }
 };
 
 #undef CLASS_NAME

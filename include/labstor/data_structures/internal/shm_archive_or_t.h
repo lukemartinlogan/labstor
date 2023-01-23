@@ -69,11 +69,18 @@ class _ShmHeaderOrT_Header {
     return TypedPointer<T>(alloc->Convert<header_t, Pointer>(&obj_hdr_));
   }
 
+  /** Default constructor */
+  inline _ShmHeaderOrT_Header() {}
+
   /** Move constructor */
-  inline _ShmHeaderOrT_Header(_ShmHeaderOrT_Header &&other) noexcept {}
+  inline _ShmHeaderOrT_Header(_ShmHeaderOrT_Header &&other) noexcept {
+    T(std::move(other.obj_)).UnsetDestructable();
+  }
 
   /** Copy constructor */
-  inline _ShmHeaderOrT_Header(const _ShmHeaderOrT_Header &other) = delete;
+  inline _ShmHeaderOrT_Header(const _ShmHeaderOrT_Header &other) {
+    T(std::move(other.obj_)).UnsetDestructable();
+  }
 };
 
 /**
@@ -110,12 +117,16 @@ class _ShmHeaderOrT_T {
     return obj_;
   }
 
+  /** Default constructor */
+  inline _ShmHeaderOrT_T() : obj_() {}
+
   /** Move constructor */
   inline _ShmHeaderOrT_T(_ShmHeaderOrT_T &&other) noexcept
   : obj_(std::move(other.obj_)) {}
 
   /** Copy constructor */
-  inline _ShmHeaderOrT_T(const _ShmHeaderOrT_T &other) = delete;
+  inline _ShmHeaderOrT_T(const _ShmHeaderOrT_T &other)
+  : obj_(other.obj_) {}
 };
 
 /**
@@ -161,12 +172,16 @@ class ShmHeaderOrT {
     obj_.shm_destroy(alloc);
   }
 
+  /** Default constructor */
+  inline ShmHeaderOrT() : obj_() {}
+
   /** Move constructor */
   inline ShmHeaderOrT(ShmHeaderOrT &&other) noexcept
   : obj_(std::move(other.obj_)) {}
 
   /** Copy constructor */
-  inline ShmHeaderOrT(const ShmHeaderOrT &other) = delete;
+  inline ShmHeaderOrT(const ShmHeaderOrT &other)
+  : obj_(other) {}
 };
 
 }  // namespace labstor::ipc

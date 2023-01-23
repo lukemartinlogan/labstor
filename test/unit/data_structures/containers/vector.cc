@@ -79,7 +79,6 @@ TEST_CASE("VectorOfString") {
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
 
-// TODO(llogan): This test fails
 TEST_CASE("VectorOfStdString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);

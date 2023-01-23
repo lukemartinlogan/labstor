@@ -72,7 +72,7 @@ class locked_container : public ShmContainer {
     obj_.shm_serialize_main();
   }
 
-  void shm_deserialize_main() const {
+  void shm_deserialize_main() {
     obj_.shm_deserialize_main();
   }
 
