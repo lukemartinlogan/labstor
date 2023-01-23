@@ -125,6 +125,8 @@ struct unordered_map_iterator {
         if (bucket_.is_end()) {
           return false;
         }
+        BUCKET_T& new_bkt = (**bucket_);
+        list<COLLISION_T> &new_collisions = new_bkt.GetContainer();
         collision_ = collisions.begin();
       }
     } while (true);

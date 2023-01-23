@@ -40,7 +40,7 @@ using labstor::ipc::unordered_map;
 using labstor::ipc::string;
 
 #define GET_INT_FROM_KEY(VAR) CREATE_GET_INT_FROM_VAR(Key, key_ret, VAR)
-#define GET_INT_FROM_VAL(VAR) CREATE_GET_INT_FROM_VAR(Val, second_ret, VAR)
+#define GET_INT_FROM_VAL(VAR) CREATE_GET_INT_FROM_VAR(Val, val_ret, VAR)
 
 #define CREATE_KV_PAIR(KEY, VAL)\
   CREATE_SET_VAR_TO_INT_OR_STRING(Key, key, KEY); \
@@ -85,7 +85,7 @@ void UnorderedMapOpTest() {
       GET_INT_FROM_KEY(entry->GetKey());
       GET_INT_FROM_VAL(entry->GetVal());
       REQUIRE((0 <= key_ret && key_ret < 20));
-      REQUIRE((0 <= second_ret && second_ret < 20));
+      REQUIRE((0 <= val_ret && val_ret < 20));
       ++i;
     }
     REQUIRE(i == 20);

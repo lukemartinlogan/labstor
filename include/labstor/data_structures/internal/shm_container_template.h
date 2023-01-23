@@ -112,7 +112,6 @@ bool shm_deserialize(const TYPE_UNWRAP(CLASS_NAME) &other) {
 /** Deserialize object from allocator + header */
 bool shm_deserialize(Allocator *alloc,
                      TYPE_UNWRAP(TYPED_HEADER) *header) {
-  std::cout << "deserialize(3)" << std::endl;
   flags_.UnsetBits(SHM_CONTAINER_VALID | SHM_CONTAINER_DESTRUCTABLE);
   alloc_ = alloc;
   header_ = header;

@@ -91,7 +91,6 @@ SHM_SERIALIZE_OPS((TYPE_UNWRAP(TYPED_CLASS)))\
 \
 /** Deserialize object from a raw pointer */\
 bool shm_deserialize(const TypedPointer<TYPE_UNWRAP(TYPED_CLASS)> &ar) {\
-  std::cout << "deserialize(0)" << std::endl;\
   return shm_deserialize(\
     LABSTOR_MEMORY_MANAGER->GetAllocator(ar.allocator_id_),\
     ar.ToOffsetPointer()\
@@ -100,7 +99,6 @@ bool shm_deserialize(const TypedPointer<TYPE_UNWRAP(TYPED_CLASS)> &ar) {\
 \
 /** Deserialize object from allocator + offset */\
 bool shm_deserialize(Allocator *alloc, OffsetPointer header_ptr) {\
-  std::cout << "deserialize(1)" << std::endl;\
   if (header_ptr.IsNull()) { return false; }\
   return shm_deserialize(alloc,\
                          alloc->Convert<\
@@ -110,7 +108,6 @@ bool shm_deserialize(Allocator *alloc, OffsetPointer header_ptr) {\
 \
 /** Deserialize object from another object (weak copy) */\
 bool shm_deserialize(const TYPE_UNWRAP(CLASS_NAME) &other) {\
-  std::cout << "deserialize(2)" << std::endl;\
   if (other.IsNull()) { return false; }\
   return shm_deserialize(other.GetAllocator(), other.header_);\
 }\
@@ -118,7 +115,6 @@ bool shm_deserialize(const TYPE_UNWRAP(CLASS_NAME) &other) {\
 /** Deserialize object from allocator + header */\
 bool shm_deserialize(Allocator *alloc,\
                      TYPE_UNWRAP(TYPED_HEADER) *header) {\
-  std::cout << "deserialize(3)" << std::endl;\
   flags_.UnsetBits(SHM_CONTAINER_VALID | SHM_CONTAINER_DESTRUCTABLE);\
   alloc_ = alloc;\
   header_ = header;\
