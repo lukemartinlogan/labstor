@@ -39,13 +39,10 @@
 #include <unistd.h>
 
 #include <labstor/util/errors.h>
-#include "labstor/data_structures/thread_unsafe/_array.h"
 #include <labstor/constants/macros.h>
 #include <labstor/introspect/system_info.h>
 
 namespace labstor::ipc {
-
-using labstor::ipc::_array;
 
 class PosixShmMmap : public MemoryBackend {
  private:

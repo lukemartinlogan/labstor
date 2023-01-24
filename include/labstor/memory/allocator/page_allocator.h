@@ -29,13 +29,12 @@
 
 #include "allocator.h"
 #include "labstor/thread/lock.h"
-#include "labstor/data_structures/thread_unsafe/_queue.h"
 // #include "labstor/data_structures/thread_unsafe/vector.h"
 #include "stack_allocator.h"
 
 namespace labstor::ipc {
 
-typedef _queue_entry Page;
+struct Page {};
 
 template<typename T>
 class vector;

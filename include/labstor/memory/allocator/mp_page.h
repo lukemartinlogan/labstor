@@ -5,11 +5,9 @@
 #ifndef LABSTOR_INCLUDE_LABSTOR_MEMORY_ALLOCATOR_MP_PAGE_H_
 #define LABSTOR_INCLUDE_LABSTOR_MEMORY_ALLOCATOR_MP_PAGE_H_
 
-#include "labstor/data_structures/thread_unsafe/_queue.h"
-
 namespace labstor::ipc {
 
-struct MpPage : public _queue_entry {
+struct MpPage {
   int flags_;           /**< Page flags (e.g., is_allocated?) */
   size_t page_size_;    /**< The size of the page allocated */
   uint32_t off_;        /**< The offset within the page */

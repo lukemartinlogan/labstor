@@ -7,7 +7,6 @@
 
 #include "allocator.h"
 #include "labstor/thread/lock.h"
-#include "labstor/data_structures/thread_unsafe/_queue.h"
 #include "mp_page.h"
 
 namespace labstor::ipc {
@@ -16,7 +15,6 @@ struct MultiPageFreeList {
   /// Lock the list
   Mutex lock_;
   /// Free list for different page sizes
-  _array_header<_queue_header<MpPage>> free_lists_;
   /// Stack allocator
   size_t region_off_, region_size_;
   /// Number of bytes currently free in this free list
@@ -31,9 +29,7 @@ struct MultiPageFreeList {
    * there is \a num_page_caches number of page size free lists
    * */
   static size_t GetSizeBytes(size_t num_page_caches) {
-    return sizeof(MultiPageFreeList) +
-    _array<_queue<MpPage>>::GetSizeBytes(
-      num_page_caches, sizeof(_queue_header<MpPage>));
+    return 0;
   }
 
   /**
@@ -42,34 +38,9 @@ struct MultiPageFreeList {
   void shm_init(size_t mp_free_list_size,
                 char *region_start,
                 size_t region_off, size_t region_size) {
-    Allocator::ConstructObj<MultiPageFreeList>(*this);
-    // Free list array for this thread begins after MultiPageFreeList
-    void *after = reinterpret_cast<void*>(this + 1);
-    _array<_queue_header<MpPage>> free_lists;
-    free_lists.shm_init(after, mp_free_list_size - sizeof(MultiPageFreeList));
-    free_lists.resize_full();
-    // Initialize each page free list
-    for (auto &qh : free_lists) {
-      _queue<MpPage> q;
-      q.shm_init(&qh, region_start);
-    }
-    // Set this thread's total memory allotment
-    region_off_= region_off;
-    region_size_ = region_size;
-    // Set this thread's multipage stats
-    free_size_ = region_size;
-    total_alloced_ = 0;
-    total_freed_ = 0;
   }
 
   /** Get the free list at index i */
-  void GetPageFreeList(size_t i, char *region_start, _queue<MpPage> &page_free_list) {
-    void *after = reinterpret_cast<void*>(this + 1);
-    _array<_queue_header<MpPage>> free_lists;
-    free_lists.shm_deserialize(after);
-    _queue_header<MpPage> &hdr = free_lists[i];
-    page_free_list.shm_deserialize(&hdr, region_start);
-  }
 };
 
 struct MultiPageAllocatorHeader : public AllocatorHeader {
@@ -99,22 +70,12 @@ struct MultiPageAllocatorHeader : public AllocatorHeader {
                  RealNumber coalesce_frac,
                  size_t thread_table_size,
                  uint32_t concurrency) {
-    AllocatorHeader::Configure(alloc_id, AllocatorType::kMultiPageAllocator,
-                               custom_header_size);
-    min_page_size_ = min_page_size;
-    max_page_size_ = max_page_size;
-    growth_rate_ = growth_rate;
-    coalesce_min_size_ = coalesce_min_size;
-    coalesce_frac_ = coalesce_frac;
-    thread_table_size_ = thread_table_size;
-    concurrency_ = concurrency;
   }
 };
 
 class MultiPageAllocator : public Allocator {
  private:
   MultiPageAllocatorHeader *header_;
-  _array<MultiPageFreeList> mp_free_lists_;
 
  public:
   /**

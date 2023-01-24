@@ -29,11 +29,8 @@
 
 #include "allocator.h"
 #include "labstor/thread/lock.h"
-#include "labstor/data_structures/thread_unsafe/_queue.h"
 
 namespace labstor::ipc {
-
-typedef _queue_entry Page;
 
 struct StackAllocatorHeader : public AllocatorHeader {
   std::atomic<size_t> region_off_;

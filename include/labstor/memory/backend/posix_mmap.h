@@ -39,7 +39,6 @@
 #include <unistd.h>
 
 #include <labstor/util/errors.h>
-#include "labstor/data_structures/thread_unsafe/_array.h"
 #include <labstor/constants/macros.h>
 #include <labstor/introspect/system_info.h>
 

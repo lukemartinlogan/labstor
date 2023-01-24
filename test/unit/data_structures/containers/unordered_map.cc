@@ -25,7 +25,7 @@
 
 #include "basic_test.h"
 #include "test_init.h"
-#include "labstor/data_structures/thread_unsafe/unordered_map.h"
+#include "labstor/data_structures/thread_safe/unordered_map.h"
 #include "labstor/data_structures/string.h"
 #include "labstor/memory/allocator/page_allocator.h"
 

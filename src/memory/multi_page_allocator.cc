@@ -84,6 +84,7 @@ OffsetPointer MultiPageAllocator::AlignedAllocateOffset(size_t size,
  * */
 OffsetPointer MultiPageAllocator::ReallocateOffsetNoNullCheck(OffsetPointer p,
                                                      size_t new_size) {
+  return OffsetPointer();
 }
 
 /**

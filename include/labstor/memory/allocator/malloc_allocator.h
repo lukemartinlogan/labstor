@@ -29,7 +29,6 @@
 
 #include "allocator.h"
 #include "labstor/thread/lock.h"
-#include "labstor/data_structures/thread_unsafe/_queue.h"
 
 namespace labstor::ipc {
 
