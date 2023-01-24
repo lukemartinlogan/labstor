@@ -33,6 +33,7 @@
 #include "shm_macros.h"
 #include "shm_archive.h"
 #include "shm_ref.h"
+#include "shm_deserialize.h"
 
 namespace lipc = labstor::ipc;
 
@@ -93,7 +94,6 @@ class ShmContainer : public ShmArchiveable {
   bitfield32_t flags_;
 
  public:
-
   /////////////////////
   /// Constructors
   /////////////////////
@@ -101,9 +101,7 @@ class ShmContainer : public ShmArchiveable {
   /** Default constructor (flags are cleared) */
   ShmContainer() = default;
 
-  /**
-   * Initialize the data structure's allocator
-   * */
+  /** Initialize the data structure's allocator */
   inline void shm_init_allocator(Allocator *alloc) {
     if (IsValid()) { return; }
     if (alloc == nullptr) {

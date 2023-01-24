@@ -42,6 +42,9 @@ class _ShmHeaderOrT_Header {
   header_t obj_hdr_;
 
  public:
+  /** Default constructor */
+  _ShmHeaderOrT_Header() = default;
+
   /** Construct + store object */
   template<typename ...Args>
   explicit _ShmHeaderOrT_Header(Allocator *alloc, Args&& ...args) {
@@ -68,9 +71,6 @@ class _ShmHeaderOrT_Header {
   TypedPointer<T> internal_ref(Allocator *alloc) const {
     return TypedPointer<T>(alloc->Convert<header_t, Pointer>(&obj_hdr_));
   }
-
-  /** Default constructor */
-  _ShmHeaderOrT_Header() {}
 
   /** Move constructor */
   _ShmHeaderOrT_Header(_ShmHeaderOrT_Header &&other) noexcept
@@ -102,6 +102,9 @@ class _ShmHeaderOrT_T {
   T obj_;
 
  public:
+  /** Default constructor */
+  _ShmHeaderOrT_T() = default;
+
   /** Construct + store object */
   template<typename ...Args>
   explicit _ShmHeaderOrT_T(Allocator *alloc, Args&& ...args)
@@ -126,9 +129,6 @@ class _ShmHeaderOrT_T {
     (void) alloc;
     return obj_;
   }
-
-  /** Default constructor */
-  _ShmHeaderOrT_T() : obj_() {}
 
   /** Move constructor */
   _ShmHeaderOrT_T(_ShmHeaderOrT_T &&other) noexcept
@@ -170,6 +170,9 @@ class ShmHeaderOrT {
   typedef SHM_ARCHIVE_OR_REF(T) T_Ar;
   SHM_MAKE_HEADER_OR_T(T) obj_;
 
+  /** Default constructor */
+  ShmHeaderOrT() = default;
+
   /** Construct + store object */
   template<typename ...Args>
   explicit ShmHeaderOrT(Args&& ...args)
@@ -192,9 +195,6 @@ class ShmHeaderOrT {
   void shm_destroy(Allocator *alloc) {
     obj_.shm_destroy(alloc);
   }
-
-  /** Default constructor */
-  ShmHeaderOrT() = default;
 
   /** Move constructor */
   ShmHeaderOrT(ShmHeaderOrT &&other) noexcept

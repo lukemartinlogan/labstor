@@ -25,7 +25,7 @@
 
 #include "basic_test.h"
 #include "test_init.h"
-#include "labstor/data_structures/thread_safe/unordered_map.h"
+#include "labstor/data_structures/thread_unsafe/unordered_map.h"
 #include "labstor/data_structures/string.h"
 #include "labstor/memory/allocator/page_allocator.h"
 
@@ -60,7 +60,7 @@ void UnorderedMapOpTest() {
   }
 
   // Check if the 20 entries are indexable
-  /*{
+  {
     for (int i = 0; i < 20; ++i) {
       CREATE_KV_PAIR(key, i, val, i);
       REQUIRE(*(map[key]) == val);
@@ -78,8 +78,8 @@ void UnorderedMapOpTest() {
 
   // Iterate over the map
   {
-    auto prep = map.iter_prep();
-    prep.Lock();
+    // auto prep = map.iter_prep();
+    // prep.Lock();
     int i = 0;
     for (auto entry : map) {
       GET_INT_FROM_KEY(entry->GetKey());
@@ -164,29 +164,29 @@ void UnorderedMapOpTest() {
       CREATE_KV_PAIR(key, i, val, 100);
       REQUIRE(*map[key] != val);
     }
-  }*/
+  }
 
   // Erase the entire map
-  /*{
+  {
     map.clear();
     REQUIRE(map.size() == 0);
-  }*/
+  }
 
   // Add 100 entries to the map (should force a growth)
-  /*{
-    for (int i = 0; i < 21; ++i) {
+  {
+    for (int i = 0; i < 100; ++i) {
       CREATE_KV_PAIR(key, i, val, i);
       map.emplace(key, val);
       REQUIRE(map.find(key) != map.end());
     }
-    for (int i = 0; i < 21; ++i) {
+    for (int i = 0; i < 100; ++i) {
       CREATE_KV_PAIR(key, i, val, i);
       REQUIRE(map.find(key) != map.end());
     }
-  }*/
+  }
 
   // Copy the unordered_map
-  /*{
+  {
     unordered_map<Key, Val> cpy(map);
     for (int i = 0; i < 100; ++i) {
       CREATE_KV_PAIR(key, i, val, i);
@@ -202,7 +202,7 @@ void UnorderedMapOpTest() {
       CREATE_KV_PAIR(key, i, val, i);
       REQUIRE(cpy.find(key) != cpy.end());
     }
-  }*/
+  }
 }
 
 TEST_CASE("UnorderedMapOfIntInt") {

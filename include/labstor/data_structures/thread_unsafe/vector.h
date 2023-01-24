@@ -44,7 +44,7 @@ class vector;
 template<typename T, bool FORWARD_ITER>
 struct vector_iterator_templ {
  public:
-  lipc::Ref<vector<T>> vec_;
+  lipc::ShmRef<vector<T>> vec_;
   off64_t i_;
 
   /** Default constructor */
@@ -63,7 +63,7 @@ struct vector_iterator_templ {
   : vec_(vec), i_(static_cast<off64_t>(i)) {}
 
   /** Construct an iterator at \a i offset */
-  inline explicit vector_iterator_templ(const lipc::Ref<vector<T>> &vec,
+  inline explicit vector_iterator_templ(const lipc::ShmRef<vector<T>> &vec,
                                         size_t i)
   : vec_(vec), i_(static_cast<off64_t>(i)) {}
 
@@ -98,14 +98,14 @@ struct vector_iterator_templ {
   }
 
   /** Dereference the iterator */
-  inline Ref<T> operator*() {
-    return Ref<T>(vec_->data_ar()[i_].internal_ref(
+  inline ShmRef<T> operator*() {
+    return ShmRef<T>(vec_->data_ar()[i_].internal_ref(
       vec_->GetAllocator()));
   }
 
   /** Dereference the iterator */
-  inline const Ref<T> operator*() const {
-    return Ref<T>(vec_->data_ar_const()[i_].internal_ref(
+  inline const ShmRef<T> operator*() const {
+    return ShmRef<T>(vec_->data_ar_const()[i_].internal_ref(
       vec_->GetAllocator()));
   }
 
@@ -472,25 +472,25 @@ class vector : public ShmContainer {
   }
 
   /** Index the vector at position i */
-  lipc::Ref<T> operator[](const size_t i) {
+  lipc::ShmRef<T> operator[](const size_t i) {
     ShmHeaderOrT<T> *vec = data_ar();
-    return lipc::Ref<T>(vec[i].internal_ref(alloc_));
+    return lipc::ShmRef<T>(vec[i].internal_ref(alloc_));
   }
 
   /** Get first element of vector */
-  lipc::Ref<T> front() {
+  lipc::ShmRef<T> front() {
     return (*this)[0];
   }
 
   /** Get last element of vector */
-  lipc::Ref<T> back() {
+  lipc::ShmRef<T> back() {
     return (*this)[size() - 1];
   }
 
   /** Index the vector at position i */
-  const lipc::Ref<T> operator[](const size_t i) const {
+  const lipc::ShmRef<T> operator[](const size_t i) const {
     ShmHeaderOrT<T> *vec = data_ar_const();
-    return lipc::Ref<T>(vec[i].internal_ref(alloc_));
+    return lipc::ShmRef<T>(vec[i].internal_ref(alloc_));
   }
 
   /** Construct an element at the back of the vector */
@@ -634,7 +634,7 @@ class vector : public ShmContainer {
       new_vec = alloc_->template
         AllocateObjs<ShmHeaderOrT<T>>(max_length, new_p);
       for (size_t i = 0; i < header_->length_; ++i) {
-        lipc::Ref<T> old = (*this)[i];
+        lipc::ShmRef<T> old = (*this)[i];
         Allocator::ConstructObj<ShmHeaderOrT<T>>(
           *(new_vec + i),
           alloc_, std::move(*old));

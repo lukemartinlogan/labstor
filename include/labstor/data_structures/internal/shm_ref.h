@@ -2,8 +2,8 @@
 // Created by lukemartinlogan on 1/15/23.
 //
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_REF_H_
-#define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_REF_H_
+#ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_ShmRef_H_
+#define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_ShmRef_H_
 
 #include "labstor/constants/macros.h"
 #include "shm_macros.h"
@@ -12,37 +12,37 @@
 namespace labstor::ipc {
 
 /**
- * A reference to a shared-memory object
+ * A ShmReference to a shared-memory object
  * */
 template<typename T>
-struct _RefShm {
+struct _ShmRefShm {
   T obj_;
 
   /** Default constructor */
-  _RefShm() = default;
+  _ShmRefShm() = default;
 
   /** Destructor */
-  ~_RefShm() {
+  ~_ShmRefShm() {
     obj_.UnsetDestructable();
   }
 
   /** Constructor. */
-  explicit _RefShm(TypedPointer<T> other) {
+  explicit _ShmRefShm(TypedPointer<T> other) {
     obj_.shm_deserialize(other);
   }
 
   /** Copy constructor */
-  _RefShm(const _RefShm &other) {
+  _ShmRefShm(const _ShmRefShm &other) {
     obj_.shm_deserialize(other.obj_);
   }
 
   /** Move constructor */
-  _RefShm(_RefShm &&other) noexcept {
+  _ShmRefShm(_ShmRefShm &&other) noexcept {
     obj_.shm_deserialize(other.obj_);
   }
 
   /** Copy assign operator */
-  _RefShm& operator=(const _RefShm &other) {
+  _ShmRefShm& operator=(const _ShmRefShm &other) {
     if (this != &other) {
       obj_.shm_deserialize(other.obj_);
     }
@@ -50,51 +50,51 @@ struct _RefShm {
   }
 
   /** Move assign operator */
-  _RefShm& operator=(_RefShm &&other) noexcept {
+  _ShmRefShm& operator=(_ShmRefShm &&other) noexcept {
     if (this != &other) {
       obj_.shm_deserialize(other.obj_);
     }
     return *this;
   }
 
-  /** Get reference to the internal data structure */
+  /** Get ShmReference to the internal data structure */
   T& get_ref() {
     return obj_;
   }
 
-  /** Get a constant reference */
+  /** Get a constant ShmReference */
   const T& get_ref_const() const {
     return obj_;
   }
 };
 
 /**
- * A reference to a POD type stored in shared memory.
+ * A ShmReference to a POD type stored in shared memory.
  * */
 template<typename T>
-struct _RefNoShm {
+struct _ShmRefNoShm {
   T *obj_;
 
   /** Default constructor */
-  _RefNoShm() = default;
+  _ShmRefNoShm() = default;
 
   /** Constructor. */
-  explicit _RefNoShm(T &other) {
+  explicit _ShmRefNoShm(T &other) {
     obj_ = &other;
   }
 
   /** Copy constructor */
-  _RefNoShm(const _RefNoShm &other) {
+  _ShmRefNoShm(const _ShmRefNoShm &other) {
     obj_ = other.obj_;
   }
 
   /** Move constructor */
-  _RefNoShm(_RefNoShm &&other) noexcept {
+  _ShmRefNoShm(_ShmRefNoShm &&other) noexcept {
     obj_ = other.obj_;
   }
 
   /** Copy assign operator */
-  _RefNoShm& operator=(const _RefNoShm &other) {
+  _ShmRefNoShm& operator=(const _ShmRefNoShm &other) {
     if (this != &other) {
       obj_ = other.obj_;
     }
@@ -102,77 +102,77 @@ struct _RefNoShm {
   }
 
   /** Move assign operator */
-  _RefNoShm& operator=(_RefNoShm &&other) noexcept {
+  _ShmRefNoShm& operator=(_ShmRefNoShm &&other) noexcept {
     if (this != &other) {
       obj_ = other.obj_;
     }
     return *this;
   }
 
-  /** Get reference to the internal data structure */
+  /** Get ShmReference to the internal data structure */
   T& get_ref() {
     return *obj_;
   }
 
-  /** Get a constant reference */
+  /** Get a constant ShmReference */
   const T& get_ref_const() const {
     return *obj_;
   }
 };
 
-/** Determine whether Ref stores _RefShm or _RefNoShm */
-#define CHOOSE_SHM_REF_TYPE(T) SHM_X_OR_Y(T, _RefShm<T>, _RefNoShm<T>)
+/** Determine whether ShmRef stores _ShmRefShm or _ShmRefNoShm */
+#define CHOOSE_SHM_ShmRef_TYPE(T) SHM_X_OR_Y(T, _ShmRefShm<T>, _ShmRefNoShm<T>)
 
 /**
- * A reference to a shared-memory object or a simple object
+ * A Reference to a shared-memory object or a simple object
  * stored in shared-memory.
  * */
 template<typename T>
-struct Ref {
-  typedef CHOOSE_SHM_REF_TYPE(T) T_Ref;
-  T_Ref obj_;
+struct ShmRef {
+  typedef CHOOSE_SHM_ShmRef_TYPE(T) T_ShmRef;
+  T_ShmRef obj_;
 
   /** Constructor. */
   template<typename ...Args>
-  explicit Ref(Args&& ...args) : obj_(std::forward<Args>(args)...) {}
+  explicit ShmRef(Args&& ...args) : obj_(std::forward<Args>(args)...) {}
 
   /** Default constructor */
-  Ref() = default;
+  ShmRef() = default;
 
   /** Copy Constructor */
-  Ref(const Ref &other) : obj_(other.obj_) {}
-
-  /** Move Constructor */
-  Ref(Ref &&other) noexcept : obj_(std::move(other.obj_)) {}
+  ShmRef(const ShmRef &other) : obj_(other.obj_) {}
 
   /** Copy assign operator */
-  Ref& operator=(const Ref &other) {
+  ShmRef& operator=(const ShmRef &other) {
     obj_ = other.obj_;
     return *this;
   }
 
+  /** Move Constructor */
+  ShmRef(ShmRef &&other) noexcept : obj_(std::move(other.obj_)) {}
+
   /** Move assign operator */
-  Ref& operator=(Ref &&other) noexcept {
+  ShmRef& operator=(ShmRef &&other) noexcept {
     obj_ = std::move(other.obj_);
     return *this;
   }
 
-  /** Get reference to the internal data structure */
+  /** Get ShmReference to the internal data structure */
   T& get_ref() {
     return obj_.get_ref();
   }
 
-  /** Get a constant reference */
+  /** Get a constant ShmReference */
   const T& get_ref_const() const {
     return obj_.get_ref_const();
   }
 
-  /** Dereference operator */
+  /** DeShmReference operator */
   T& operator*() {
     return get_ref();
   }
 
-  /** Constant dereference operator */
+  /** Constant deShmReference operator */
   const T& operator*() const {
     return get_ref_const();
   }
@@ -190,4 +190,4 @@ struct Ref {
 
 }  // namespace labstor::ipc
 
-#endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_REF_H_
+#endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_ShmRef_H_

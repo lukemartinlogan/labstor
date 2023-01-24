@@ -112,7 +112,7 @@ bool shm_deserialize(const TYPE_UNWRAP(CLASS_NAME) &other) {
 /** Deserialize object from allocator + header */
 bool shm_deserialize(Allocator *alloc,
                      TYPE_UNWRAP(TYPED_HEADER) *header) {
-  flags_.UnsetBits(SHM_CONTAINER_VALID | SHM_CONTAINER_DESTRUCTABLE);
+  flags_.UnsetBits(SHM_CONTAINER_DESTRUCTABLE);
   alloc_ = alloc;
   header_ = header;
   flags_.SetBits(SHM_CONTAINER_VALID);
@@ -122,8 +122,7 @@ bool shm_deserialize(Allocator *alloc,
 
 /** Constructor. Deserialize the object from the reference. */
 template<typename ...Args>
-void shm_init(lipc::Ref<TYPE_UNWRAP(TYPED_CLASS)> &obj) {
-  shm_destroy(false);
+void shm_init(lipc::ShmRef<TYPE_UNWRAP(TYPED_CLASS)> &obj) {
   shm_deserialize(obj->GetAllocator(), obj->header_);
 }
 
@@ -153,19 +152,21 @@ void shm_destroy(bool destroy_header = true) {
 
 /** Move constructor */
 TYPE_UNWRAP(CLASS_NAME)(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {
-  shm_weak_move(typed_nullptr<TYPE_UNWRAP(TYPED_HEADER)>(),
+  shm_weak_move(
+    typed_nullptr<TYPE_UNWRAP(TYPED_HEADER)>(),
     typed_nullptr<Allocator>(),
     other);
 }
 
 /** Move assignment operator */
 TYPE_UNWRAP(CLASS_NAME)& operator=(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {
-if (this != &other) {
-shm_weak_move(typed_nullptr<TYPE_UNWRAP(TYPED_HEADER)>(),
-  typed_nullptr<Allocator>(),
-  other);
-}
-return *this;
+  if (this != &other) {
+    shm_weak_move(
+      typed_nullptr<TYPE_UNWRAP(TYPED_HEADER)>(),
+      typed_nullptr<Allocator>(),
+      other);
+    }
+  return *this;
 }
 
 /** Move shm_init constructor */
@@ -197,9 +198,10 @@ TYPE_UNWRAP(CLASS_NAME)(const TYPE_UNWRAP(CLASS_NAME) &other) noexcept {
 /** Copy assignment constructor */
 TYPE_UNWRAP(CLASS_NAME)& operator=(const TYPE_UNWRAP(CLASS_NAME) &other) {
   if (this != &other) {
-    shm_strong_copy(typed_nullptr<TYPE_UNWRAP(TYPED_HEADER)>(),
-                    typed_nullptr<Allocator>(),
-                    other);
+    shm_strong_copy(
+      typed_nullptr<TYPE_UNWRAP(TYPED_HEADER)>(),
+      typed_nullptr<Allocator>(),
+      other);
   }
   return *this;
 }

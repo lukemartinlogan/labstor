@@ -125,7 +125,7 @@ bool shm_deserialize(Allocator *alloc,\
 \
 /** Constructor. Deserialize the object from the reference. */\
 template<typename ...Args>\
-void shm_init(lipc::Ref<TYPE_UNWRAP(TYPED_CLASS)> &obj) {\
+void shm_init(lipc::ShmRef<TYPE_UNWRAP(TYPED_CLASS)> &obj) {\
   shm_destroy(false);\
   shm_deserialize(obj->GetAllocator(), obj->header_);\
 }\

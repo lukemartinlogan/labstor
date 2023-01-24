@@ -64,8 +64,8 @@ class pair : public ShmContainer {
   SHM_CONTAINER_TEMPLATE((CLASS_NAME), (TYPED_CLASS), (TYPED_HEADER))
 
  public:
-  lipc::Ref<FirstT> first_;
-  lipc::Ref<SecondT> second_;
+  lipc::ShmRef<FirstT> first_;
+  lipc::ShmRef<SecondT> second_;
 
   public:
   /** Default constructor */
@@ -86,8 +86,8 @@ class pair : public ShmContainer {
                     alloc_,
                     std::forward<FirstT>(first),
                     std::forward<SecondT>(second));
-    first_ = lipc::Ref<FirstT>(header_->first_.internal_ref(alloc_));
-    second_ = lipc::Ref<SecondT>(header_->second_.internal_ref(alloc_));
+    first_ = lipc::ShmRef<FirstT>(header_->first_.internal_ref(alloc_));
+    second_ = lipc::ShmRef<SecondT>(header_->second_.internal_ref(alloc_));
   }
 
   /** Construct pair by copying parameters */
@@ -97,8 +97,8 @@ class pair : public ShmContainer {
     shm_init_allocator(alloc);
     shm_init_header(header,
                     alloc_, first, second);
-    first_ = lipc::Ref<FirstT>(header_->first_.internal_ref(alloc_));
-    second_ = lipc::Ref<SecondT>(header_->second_.internal_ref(alloc_));
+    first_ = lipc::ShmRef<FirstT>(header_->first_.internal_ref(alloc_));
+    second_ = lipc::ShmRef<SecondT>(header_->second_.internal_ref(alloc_));
   }
 
   /** Move constructor */
@@ -129,8 +129,8 @@ class pair : public ShmContainer {
 
   /** Load from shared memory */
   void shm_deserialize_main() {
-    first_ = lipc::Ref<FirstT>(header_->first_.internal_ref(alloc_));
-    second_ = lipc::Ref<SecondT>(header_->second_.internal_ref(alloc_));
+    first_ = lipc::ShmRef<FirstT>(header_->first_.internal_ref(alloc_));
+    second_ = lipc::ShmRef<SecondT>(header_->second_.internal_ref(alloc_));
   }
 
   /** Get the first object */

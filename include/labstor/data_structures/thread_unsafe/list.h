@@ -56,13 +56,13 @@ struct list_entry : public ShmContainerEntry {
   }
 
   /** Returns the element stored in the list */
-  inline Ref<T> internal_ref(Allocator *alloc) {
-    return Ref<T>(data_.internal_ref(alloc));
+  inline ShmRef<T> internal_ref(Allocator *alloc) {
+    return ShmRef<T>(data_.internal_ref(alloc));
   }
 
   /** Returns the element stored in the list */
-  Ref<T> internal_ref(Allocator *alloc) const {
-    return Ref<T>(data_.internal_ref(alloc));
+  ShmRef<T> internal_ref(Allocator *alloc) const {
+    return ShmRef<T>(data_.internal_ref(alloc));
   }
 };
 
@@ -73,7 +73,7 @@ template<typename T>
 struct list_iterator_templ {
  public:
   /**< A shm reference to the containing list object. */
-  lipc::Ref<list<T>> list_;
+  lipc::ShmRef<list<T>> list_;
   /**< A pointer to the entry in shared memory */
   list_entry<T> *entry_;
   /**< The offset of the entry in the shared-memory allocator */
@@ -114,12 +114,12 @@ struct list_iterator_templ {
   }
 
   /** Get the object the iterator points to */
-  Ref<T> operator*() {
+  ShmRef<T> operator*() {
     return entry_->internal_ref(list_->GetAllocator());
   }
 
   /** Get the object the iterator points to */
-  const Ref<T> operator*() const {
+  const ShmRef<T> operator*() const {
     return entry_->internal_ref();
   }
 
@@ -201,7 +201,7 @@ struct list_iterator_templ {
 
   /** Create the end iterator */
   static list_iterator_templ const end() {
-    static list_iterator_templ end_iter(true);
+    const static list_iterator_templ end_iter(true);
     return end_iter;
   }
 
@@ -446,12 +446,12 @@ class list : public ShmContainer {
   }
 
   /** Get the object at the front of the list */
-  inline Ref<T> front() {
+  inline ShmRef<T> front() {
     return *begin();
   }
 
   /** Get the object at the back of the list */
-  inline Ref<T> back() {
+  inline ShmRef<T> back() {
     return *end();
   }
 
