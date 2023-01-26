@@ -2,14 +2,24 @@
 #define LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_CONTAINER_MACRO_H_
 #define SHM_CONTAINER_TEMPLATE(CLASS_NAME,TYPED_CLASS,TYPED_HEADER)\
 public:\
-typedef TYPE_UNWRAP(TYPED_HEADER) header_t;\
-header_t *header_;\
+/**====================================\
+ * Variables & Types\
+ * ===================================*/\
+\
+typedef TYPE_UNWRAP(TYPED_HEADER) header_t; /** Header type query */\
+header_t *header_; /**< Header of the shared-memory data structure */\
+Allocator *alloc_; /**< Allocator used for this data structure */\
+bitfield32_t flags_; /**< Flags used data structure status */\
 \
 public:\
+/**====================================\
+ * Constructors\
+ * ===================================*/\
+\
 /** Constructor. Allocate header with default allocator. */\
 template<typename ...Args>\
 explicit TYPE_UNWRAP(CLASS_NAME)(Args&& ...args) {\
-  shm_init(std::forward<Args>(args)...);\
+shm_init(std::forward<Args>(args)...);\
 }\
 \
 /** Constructor. Allocate header with default allocator. */\
@@ -36,6 +46,16 @@ void shm_init(TYPE_UNWRAP(TYPED_HEADER) &header,\
               lipc::Allocator *alloc, Args&& ...args) {\
   shm_destroy(false);\
   shm_init_main(&header, alloc, std::forward<Args>(args)...);\
+}\
+\
+/** Initialize the data structure's allocator */\
+inline void shm_init_allocator(Allocator *alloc) {\
+  if (IsValid()) { return; }\
+  if (alloc == nullptr) {\
+    alloc_ = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();\
+  } else {\
+    alloc_ = alloc;\
+  }\
 }\
 \
 /**\
@@ -72,6 +92,10 @@ void shm_init_header(TYPE_UNWRAP(TYPED_HEADER) *header,\
   }\
 }\
 \
+/**====================================\
+ * Serialization\
+ * ===================================*/\
+\
 /** Serialize into a Pointer */\
 void shm_serialize(TypedPointer<TYPE_UNWRAP(TYPED_CLASS)> &ar) const {\
   ar = alloc_->template\
@@ -88,6 +112,10 @@ void shm_serialize(TypedAtomicPointer<TYPE_UNWRAP(TYPED_CLASS)> &ar) const {\
 \
 /** Override << operators */\
 SHM_SERIALIZE_OPS((TYPE_UNWRAP(TYPED_CLASS)))\
+\
+/**====================================\
+ * Deserialization\
+ * ===================================*/\
 \
 /** Deserialize object from a raw pointer */\
 bool shm_deserialize(const TypedPointer<TYPE_UNWRAP(TYPED_CLASS)> &ar) {\
@@ -115,7 +143,7 @@ bool shm_deserialize(const TYPE_UNWRAP(CLASS_NAME) &other) {\
 /** Deserialize object from allocator + header */\
 bool shm_deserialize(Allocator *alloc,\
                      TYPE_UNWRAP(TYPED_HEADER) *header) {\
-  flags_.UnsetBits(SHM_CONTAINER_VALID | SHM_CONTAINER_DESTRUCTABLE);\
+  flags_.UnsetBits(SHM_CONTAINER_DESTRUCTABLE);\
   alloc_ = alloc;\
   header_ = header;\
   flags_.SetBits(SHM_CONTAINER_VALID);\
@@ -126,12 +154,15 @@ bool shm_deserialize(Allocator *alloc,\
 /** Constructor. Deserialize the object from the reference. */\
 template<typename ...Args>\
 void shm_init(lipc::ShmRef<TYPE_UNWRAP(TYPED_CLASS)> &obj) {\
-  shm_destroy(false);\
   shm_deserialize(obj->GetAllocator(), obj->header_);\
 }\
 \
 /** Override >> operators */\
 SHM_DESERIALIZE_OPS((TYPE_UNWRAP(TYPED_CLASS)))\
+\
+/**====================================\
+ * Destructors\
+ * ===================================*/\
 \
 /** Destructor */\
 ~TYPE_UNWRAP(CLASS_NAME)() {\
@@ -154,17 +185,23 @@ void shm_destroy(bool destroy_header = true) {\
   }\
 }\
 \
+/**====================================\
+ * Move Operations\
+ * ===================================*/\
+\
 /** Move constructor */\
 TYPE_UNWRAP(CLASS_NAME)(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
-  shm_weak_move(typed_nullptr<TYPE_UNWRAP(TYPED_HEADER)>(),\
-    typed_nullptr<Allocator>(),\
-    other);\
+shm_weak_move(\
+  typed_nullptr<TYPE_UNWRAP(TYPED_HEADER)>(),\
+  typed_nullptr<Allocator>(),\
+  other);\
 }\
 \
 /** Move assignment operator */\
 TYPE_UNWRAP(CLASS_NAME)& operator=(TYPE_UNWRAP(CLASS_NAME) &&other) noexcept {\
 if (this != &other) {\
-shm_weak_move(typed_nullptr<TYPE_UNWRAP(TYPED_HEADER)>(),\
+shm_weak_move(\
+  typed_nullptr<TYPE_UNWRAP(TYPED_HEADER)>(),\
   typed_nullptr<Allocator>(),\
   other);\
 }\
@@ -192,6 +229,10 @@ void shm_weak_move(TYPE_UNWRAP(TYPED_HEADER) *header,\
   other.shm_destroy(true);\
 }\
 \
+/**====================================\
+ * Copy Operations\
+ * ===================================*/\
+\
 /** Copy constructor */\
 TYPE_UNWRAP(CLASS_NAME)(const TYPE_UNWRAP(CLASS_NAME) &other) noexcept {\
   shm_init(other);\
@@ -200,9 +241,10 @@ TYPE_UNWRAP(CLASS_NAME)(const TYPE_UNWRAP(CLASS_NAME) &other) noexcept {\
 /** Copy assignment constructor */\
 TYPE_UNWRAP(CLASS_NAME)& operator=(const TYPE_UNWRAP(CLASS_NAME) &other) {\
   if (this != &other) {\
-    shm_strong_copy(typed_nullptr<TYPE_UNWRAP(TYPED_HEADER)>(),\
-                    typed_nullptr<Allocator>(),\
-                    other);\
+    shm_strong_copy(\
+      typed_nullptr<TYPE_UNWRAP(TYPED_HEADER)>(),\
+      typed_nullptr<Allocator>(),\
+      other);\
   }\
   return *this;\
 }\
@@ -224,6 +266,40 @@ void shm_strong_copy(TYPE_UNWRAP(TYPED_HEADER) *header,\
   SetDestructable();\
 }\
 \
+/**====================================\
+ * Container Flag Operations\
+ * ===================================*/\
+\
+/** Sets this object as destructable */\
+void SetDestructable() {\
+  flags_.SetBits(SHM_CONTAINER_DESTRUCTABLE);\
+}\
+\
+/** Sets this object as not destructable */\
+void UnsetDestructable() {\
+  flags_.UnsetBits(SHM_CONTAINER_DESTRUCTABLE);\
+}\
+\
+/** Check if this container is destructable */\
+bool IsDestructable() const {\
+  return flags_.OrBits(SHM_CONTAINER_DESTRUCTABLE);\
+}\
+\
+/** Check if container has a valid header */\
+bool IsValid() const {\
+  return flags_.OrBits(SHM_CONTAINER_VALID);\
+}\
+\
+/** Set container header invalid */\
+void UnsetValid() {\
+  flags_.UnsetBits(SHM_CONTAINER_VALID |\
+    SHM_CONTAINER_DESTRUCTABLE | SHM_CONTAINER_HEADER_DESTRUCTABLE);\
+}\
+\
+/**====================================\
+ * Header Flag Operations\
+ * ===================================*/\
+\
 /** Check if header's data is valid */\
 bool IsDataValid() const {\
   return header_->OrBits(SHM_CONTAINER_DATA_VALID);\
@@ -243,6 +319,25 @@ bool IsNull() const {\
 template<typename POINTER_T>\
 POINTER_T GetShmPointer() const {\
   return alloc_->Convert<TYPE_UNWRAP(TYPED_HEADER), POINTER_T>(header_);\
+}\
+\
+/**====================================\
+ * Query Operations\
+ * ===================================*/\
+\
+/** Get the allocator for this container */\
+Allocator* GetAllocator() {\
+  return alloc_;\
+}\
+\
+/** Get the allocator for this container */\
+Allocator* GetAllocator() const {\
+  return alloc_;\
+}\
+\
+/** Get the shared-memory allocator id */\
+allocator_id_t GetAllocatorId() const {\
+  return alloc_->GetId();\
 }\
 
 #endif  // LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_CONTAINER_MACRO_H_

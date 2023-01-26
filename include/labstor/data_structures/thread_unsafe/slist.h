@@ -41,7 +41,7 @@ class slist;
 
 /** represents an object within a list */
 template<typename T>
-struct slist_entry : public ShmContainerEntry {
+struct slist_entry {
  public:
   OffsetPointer next_ptr_;
   ShmHeaderOrT<T> data_;

@@ -36,12 +36,6 @@
   std::is_base_of<labstor::ipc::ShmArchiveable, T>::value
 
 /**
- * Determines whether or not \a T type inherits from ShmContainerEntry
- * */
-#define IS_SHM_CONTAINER_ENTRY(T) \
-  std::is_base_of<labstor::ipc::ShmContainerEntry, T>::value
-
-/**
  * Determine whether or not \a T type is a SHM smart pointer
  * */
 #define IS_SHM_SMART_POINTER(T) \

@@ -42,24 +42,18 @@ namespace labstor::ipc {
 /** Bits used for determining how to destroy an object */
 /// The container's header has been allocated
 #define SHM_CONTAINER_VALID BIT_OPT(uint16_t, 0)
-/// The is not empty
+/// The container header is initialized
 #define SHM_CONTAINER_DATA_VALID BIT_OPT(uint16_t, 1)
 /// The header was allocated by this container
 #define SHM_CONTAINER_HEADER_DESTRUCTABLE BIT_OPT(uint16_t, 2)
-/// The container is responsible for destroying data
+/// The container should free all data when destroyed
 #define SHM_CONTAINER_DESTRUCTABLE BIT_OPT(uint16_t, 3)
 
 /** The shared-memory header used for data structures */
 template<typename T>
 struct ShmHeader;
 
-/**
- * Indicates that a type is internal to a container, and needs to be
- * passed an Allocator to its shm_destroy.
- * */
-struct ShmContainerEntry {};
-
-/** The base ShmHeader used for all containers */
+/** The ShmHeader used for base containers */
 struct ShmBaseHeader {
   bitfield32_t flags_;
 
@@ -84,82 +78,14 @@ struct ShmBaseHeader {
   INHERIT_BITFIELD_OPS(flags_, uint16_t)
 };
 
+/** The ShmHeader used for wrapper containers */
+struct ShmWrapperHeader {};
+
 /**
  * ShmContainers all have a header, which is stored in
  * shared memory as a TypedPointer.
  * */
-class ShmContainer : public ShmArchiveable {
- public:
-  Allocator *alloc_;
-  bitfield32_t flags_;
-
- public:
-  /////////////////////
-  /// Constructors
-  /////////////////////
-
-  /** Default constructor (flags are cleared) */
-  ShmContainer() = default;
-
-  /** Initialize the data structure's allocator */
-  inline void shm_init_allocator(Allocator *alloc) {
-    if (IsValid()) { return; }
-    if (alloc == nullptr) {
-      alloc_ = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
-    } else {
-      alloc_ = alloc;
-    }
-  }
-
-  /////////////////////
-  /// Flags Operations
-  /////////////////////
-
-  /** Sets this object as destructable */
-  void SetDestructable() {
-    flags_.SetBits(SHM_CONTAINER_DESTRUCTABLE);
-  }
-
-  /** Sets this object as not destructable */
-  void UnsetDestructable() {
-    flags_.UnsetBits(SHM_CONTAINER_DESTRUCTABLE);
-  }
-
-  /** Check if this container is destructable */
-  bool IsDestructable() const {
-    return flags_.OrBits(SHM_CONTAINER_DESTRUCTABLE);
-  }
-
-  /** Check if container has a valid header */
-  bool IsValid() const {
-    return flags_.OrBits(SHM_CONTAINER_VALID);
-  }
-
-  /** Set container header invalid */
-  void UnsetValid() {
-    flags_.UnsetBits(SHM_CONTAINER_VALID |
-      SHM_CONTAINER_DESTRUCTABLE | SHM_CONTAINER_HEADER_DESTRUCTABLE);
-  }
-
-  /////////////////////
-  /// Query Operations
-  /////////////////////
-
-  /** Get the allocator for this container */
-  Allocator* GetAllocator() {
-    return alloc_;
-  }
-
-  /** Get the allocator for this container */
-  Allocator* GetAllocator() const {
-    return alloc_;
-  }
-
-  /** Get the shared-memory allocator id */
-  allocator_id_t GetAllocatorId() const {
-    return alloc_->GetId();
-  }
-};
+class ShmContainer : public ShmArchiveable {};
 
 /** Typed nullptr */
 template<typename T>

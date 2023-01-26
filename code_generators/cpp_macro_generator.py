@@ -3,11 +3,25 @@ import pathlib, os
 
 PROJECT_ROOT=pathlib.Path(__file__).parent.parent.resolve()
 
+DATA_STRUCTURE_TEMPLATES='include/labstor/data_structures/internal/template'
+DATA_STRUCTURE_INTERNAL='include/labstor/data_structures/internal'
+
 CppMacroGenerator().generate(
     os.path.join(PROJECT_ROOT,
-        'include/labstor/data_structures/internal/shm_container_template.h'),
+                 f"{DATA_STRUCTURE_TEMPLATES}/shm_container_base_template.h"),
     os.path.join(PROJECT_ROOT,
-        'include/labstor/data_structures/internal/shm_container_macro.h'),
+                f"{DATA_STRUCTURE_INTERNAL}/shm_container_macro.h"),
     "SHM_CONTAINER_TEMPLATE",
     ["CLASS_NAME", "TYPED_CLASS", "TYPED_HEADER"],
+    ["TYPE_UNWRAP", "TYPE_UNWRAP", "TYPE_UNWRAP"],
     "LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_CONTAINER_MACRO_H_")
+
+CppMacroGenerator().generate(
+    os.path.join(PROJECT_ROOT,
+                 f"{DATA_STRUCTURE_TEMPLATES}/shm_container_extend_template.h"),
+    os.path.join(PROJECT_ROOT,
+                 f"{DATA_STRUCTURE_INTERNAL}/shm_container_extend_macro.h"),
+    "SHM_CONTAINER_EXTEND_TEMPLATE",
+    ["CLASS_NAME", "TYPED_CLASS", "TYPED_HEADER"],
+    ["TYPE_UNWRAP", "TYPE_UNWRAP", "TYPE_UNWRAP"],
+    "LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_CONTAINER_EXTEND_MACRO_H_")
