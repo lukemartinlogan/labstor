@@ -11,8 +11,7 @@ void test_argpack0_pass() {
 }
 
 void test_argpack0() {
-  labstor::ArgPack args;
-  labstor::PassArgPack::Call(args, test_argpack0_pass);
+  labstor::PassArgPack::Call(labstor::ArgPack<>(), test_argpack0_pass);
 }
 
 template<typename T1, typename T2, typename T3>
@@ -25,7 +24,11 @@ void test_argpack3_pass(T1 x, T2 y, T3 z) {
 
 template<typename T1, typename T2, typename T3>
 void test_argpack3() {
-  labstor::ArgPack<T1, T2, T3> x(0, 1, 0);
+  labstor::PassArgPack::Call(
+    labstor::ArgPack<T1, T2, T3>(0, 1, 0),
+    test_argpack3_pass<T1, T2, T3>);
+
+  labstor::tuple<T1, T2, T3> x(0, 1, 0);
   REQUIRE(x.template Get<0>() == 0);
   REQUIRE(x.template Get<1>() == 1);
   REQUIRE(x.template Get<2>() == 0);
@@ -35,8 +38,6 @@ void test_argpack3() {
 #ifdef TEST_COMPILER_ERROR
   std::cout << x.Get<3>() << std::endl;
 #endif
-
-  labstor::PassArgPack::Call(x, test_argpack3_pass<T1, T2, T3>);
 
   labstor::IterateTuple::Apply(x,
     [](size_t i, auto &arg) constexpr {

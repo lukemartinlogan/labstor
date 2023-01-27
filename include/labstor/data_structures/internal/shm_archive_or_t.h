@@ -57,9 +57,9 @@ class _ShmHeaderOrT_Header {
   explicit _ShmHeaderOrT_Header(Allocator *alloc,
                                 labstor::ArgPack<Args...> &args) {
     T obj;
+    // TODO(llogan): Expand pack with: obj, obj_hdr_ alloc, args
     labstor::PassArgPack::Call(
-      Allocator::ConstructObj<T>,
-      obj, obj_hdr_, alloc, args);
+      args, Allocator::ConstructObj<T>);
     (void) alloc;
   }
 
@@ -68,9 +68,9 @@ class _ShmHeaderOrT_Header {
   explicit _ShmHeaderOrT_Header(Allocator *alloc,
                                 labstor::ArgPack<Args...> &&args) {
     T obj;
+    // TODO(llogan): Expand pack with: obj, obj_hdr_ alloc, args
     labstor::PassArgPack::Call(
-      Allocator::ConstructObj<T>,
-      obj, obj_hdr_, alloc, args);
+      args, Allocator::ConstructObj<T>);
     (void) alloc;
   }
 
@@ -141,17 +141,19 @@ class _ShmHeaderOrT_T {
   template<typename ...Args>
   explicit _ShmHeaderOrT_T(Allocator *alloc,
                            labstor::ArgPack<Args...> &args) {
+    // TODO(llogan): Expand pack with: internal_ref(alloc), args
     labstor::PassArgPack::Call(
-      Allocator::ConstructObj<T>,
-      internal_ref(alloc), args);
+      args,
+      Allocator::ConstructObj<T>);
   }
 
   /** Construct + store object (labstor rval argpack) */
   template<typename ...Args>
   explicit _ShmHeaderOrT_T(Allocator *alloc, labstor::ArgPack<Args...> &&args) {
+    // TODO(llogan): Expand pack with: internal_ref(alloc), args
     labstor::PassArgPack::Call(
-      Allocator::ConstructObj<T>,
-      internal_ref(alloc), args);
+      args,
+      Allocator::ConstructObj<T>);
   }
 
   /** Shm destructor */

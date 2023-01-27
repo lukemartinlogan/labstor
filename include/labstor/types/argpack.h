@@ -2,8 +2,8 @@
 // Created by lukemartinlogan on 1/26/23.
 //
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_ARGPACK_H_
-#define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_ARGPACK_H_
+#ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_TupleBase_H_
+#define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_TupleBase_H_
 
 #include <utility>
 #include "basic.h"
@@ -14,19 +14,41 @@ namespace labstor {
 struct EndTemplateRecurrence {};
 
 /** Recurrence used to create argument pack */
-template<size_t idx, typename T=EndTemplateRecurrence, typename ...Args>
-struct ArgPackRecur {
-  T arg_; /**< The argument */
-  ArgPackRecur<idx + 1, Args...> recur_; /**< The remaining argument */
+template<bool is_argpack,
+  size_t idx, typename T=EndTemplateRecurrence, typename ...Args>
+struct TupleBaseRecur {
+  /** Whether to store element as rvalue reference or raw element */
+  typedef typename std::conditional<is_argpack, T&&, T>::type ElementT;
+  ElementT arg_; /**< The element stored */
+  TupleBaseRecur<is_argpack, idx + 1, Args...> recur_; /**< Remaining args */
 
   /** Default constructor */
-  ArgPackRecur() = default;
+  TupleBaseRecur() = default;
 
   /** Constructor. Construct arg in-place. */
-  ArgPackRecur(T arg, Args&& ...args)
+  explicit TupleBaseRecur(const T &arg, Args&& ...args)
+    : arg_(std::forward<T>(arg)), recur_(std::forward<Args>(args)...) {}
+
+  /** Constructor. Construct arg in-place. */
+  explicit TupleBaseRecur(T& arg, Args&& ...args)
   : arg_(std::forward<T>(arg)), recur_(std::forward<Args>(args)...) {}
 
-  /** Getter */
+  /** Constructor. Rvalue reference. */
+  explicit TupleBaseRecur(T&& arg, Args&& ...args)
+  : arg_(std::forward<T>(arg)), recur_(std::forward<Args>(args)...) {}
+
+  /** Forward an rvalue reference (only if argpack) */
+  template<size_t i>
+  auto&& Forward() {
+    if constexpr(i == idx) {
+      return std::forward<T>(arg_);
+    } else {
+      return recur_.template
+        Forward<i>();
+    }
+  }
+
+  /** Get reference to internal variable (only if tuple) */
   template<size_t i>
   auto& Get() {
     if constexpr(i == idx) {
@@ -38,32 +60,44 @@ struct ArgPackRecur {
   }
 };
 
-/** Terminator of the ArgPack recurrence */
-template<size_t idx>
-struct ArgPackRecur<idx, EndTemplateRecurrence> {
+/** Terminator of the TupleBase recurrence */
+template<bool is_argpack, size_t idx>
+struct TupleBaseRecur<is_argpack, idx, EndTemplateRecurrence> {
   /** Default constructor */
-  ArgPackRecur() = default;
+  TupleBaseRecur() = default;
+
+  /** Forward an rvalue reference (only if argpack) */
+  template<size_t i>
+  void Forward() {
+    throw std::logic_error("(Forward) TupleBase index outside of range");
+  }
 
   /** Getter */
   template<size_t i>
   void Get() {
-    throw std::logic_error("Argpack index outside of range");
+    throw std::logic_error("(Get) TupleBase index outside of range");
   }
 };
 
 /** Used to semantically pack arguments */
-template<typename ...Args>
-struct ArgPack {
+template<bool is_argpack, typename ...Args>
+struct TupleBase {
   /** Variable argument pack */
-  ArgPackRecur<0, Args...> recur_;
+  TupleBaseRecur<is_argpack, 0, Args...> recur_;
 
   /** Constructor. */
-  ArgPack(Args&& ...args)
+  TupleBase(Args&& ...args)
   : recur_(std::forward<Args>(args)...) {}
 
   /** Getter */
   template<size_t idx>
-  decltype(auto) Get() {
+  auto&& Forward() {
+    return recur_.template Forward<idx>();
+  }
+
+  /** Getter */
+  template<size_t idx>
+  auto& Get() {
     return recur_.template Get<idx>();
   }
 
@@ -73,12 +107,20 @@ struct ArgPack {
   }
 };
 
+/** ArgPack definition */
+template<typename ...Args>
+using ArgPack = TupleBase<true, Args...>;
+
+/** Tuple definition */
+template<typename ...Args>
+using tuple = TupleBase<false, Args...>;
+
 /** Used to pass an argument pack to a function or class method */
 class PassArgPack {
  public:
-  /** Call function with ArgPack */
+  /** Call function with TupleBase */
   template<typename F, typename ...Args>
-  static decltype(auto) Call(ArgPack<Args...> &pack, F &&f) {
+  static decltype(auto) Call(ArgPack<Args...> &&pack, F &&f) {
     return _CallRecur<0, ArgPack<Args...>,
       sizeof...(Args), F>(std::forward<F>(f), pack);
   }
@@ -91,25 +133,29 @@ class PassArgPack {
   }
 
   private:
-  /** Unpacks the ArgPack and passes it to the function */
-  template<size_t i, typename ArgPackT, size_t PackSize,
+  /** Unpacks the TupleBase and passes it to the function */
+  template<size_t i, typename TupleBaseT, size_t PackSize,
     typename F, typename ...CurArgs>
   static decltype(auto) _CallRecur(F &&f,
-                                   ArgPackT &pack,
+                                   TupleBaseT &pack,
                                    CurArgs&& ...args) {
     typedef typename std::result_of<F(CurArgs...)> RetT;
 
     if constexpr(i < PackSize) {
       if constexpr(std::is_same_v<RetT, void>) {
-        _CallRecur<i + 1, ArgPackT, PackSize, F>(
+        _CallRecur<i + 1, TupleBaseT, PackSize, F>(
           std::forward<F>(f),
           pack,
-          std::forward<CurArgs>(args)..., pack.template Get<i>());
+          std::forward<CurArgs>(args)...,
+          std::forward<decltype(pack.template Forward<i>())>(
+            pack.template Get<i>()));
       } else {
-        return _CallRecur<i + 1, ArgPackT, PackSize, F>(
+        return _CallRecur<i + 1, TupleBaseT, PackSize, F>(
           std::forward<F>(f),
           pack,
-          std::forward<CurArgs>(args)..., pack.template Get<i>());
+          std::forward<CurArgs>(args)...,
+          std::forward<decltype(pack.template Forward<i>())>(
+            pack.template Get<i>()));;
       }
     } else {
       if constexpr(std::is_same_v<RetT, void>) {
@@ -121,11 +167,7 @@ class PassArgPack {
   }
 };
 
-/** Refers to the argpack as a form of tuple */
-template<typename ...Args>
-using tuple = ArgPack<Args...>;
-
-/** Apply a function over an entire argpack / tuple */
+/** Apply a function over an entire TupleBase / tuple */
 class IterateTuple {
  public:
   /** Apply a function to every element of a tuple */
@@ -155,4 +197,4 @@ class IterateTuple {
 
 }  // namespace labstor
 
-#endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_ARGPACK_H_
+#endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_TupleBase_H_
