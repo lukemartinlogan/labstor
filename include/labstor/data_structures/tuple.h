@@ -5,15 +5,23 @@
 #ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_TUPLE_H_
 #define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_TUPLE_H_
 
-#include "internal/shm_container.h"
-
-#define CLASS_NAME ShmContainerExtendExample
-#define TYPED_CLASS ShmContainerExtendExample<ContainerT>
-#define TYPED_HEADER ShmHeader<ShmContainerExtendExample<ContainerT>>
-
 #include "labstor/data_structures/internal/shm_container.h"
+#include "labstor/data_structures/internal/shm_archive_or_t.h"
+#include "labstor/types/argpack.h"
+
+
+#define CLASS_NAME tuple
+#define TYPED_CLASS tuple<Containers...>
+#define TYPED_HEADER ShmHeader<tuple<Containers...>>
 
 namespace labstor::ipc {
+
+/** ShmHeaderRecur forward declaration */
+template<
+  size_t idx,
+  typename ContainerT=EndTemplateRecurrence,
+  typename ...Containers>
+struct ShmHeaderRecur;
 
 /** Tuple forward declaration */
 template<typename ...Containers>
@@ -21,8 +29,25 @@ class tuple;
 
 /** Tuple SHM header */
 template<typename ...Containers>
-class ShmHeader<tuple<Containers...>> : public ShmWrapperHeader {
-  typename ContainerT::header_t obj_;
+class ShmHeader<tuple<Containers...>> {
+  /**< All object headers */
+  labstor::tuple<ShmHeaderOrT<Containers...>> hdrs_;
+
+  /** Get the internal reference to the ith object */
+  template<size_t i>
+  decltype(auto) internal_ref(Allocator *alloc) {
+    return hdrs_.template Get<i>().internal_ref(alloc);
+  }
+
+  /** Destructor */
+  void shm_destroy(Allocator *alloc) {
+    labstor::IterateTuple::Apply(
+      hdrs_,
+      [alloc](size_t i, auto &obj_hdr) constexpr {
+        obj_hdr->shm_destroy(alloc);
+      }
+    );
+  }
 };
 
 /** A tuple of objects to store in shared memory */
@@ -33,9 +58,9 @@ class tuple : public ShmContainer {
    * Variables & Types
    *===================================*/
 
-  typedef TYPED_HEADER header_t; /**< Required by all ShmContainers */
-  header_t *header_; /**< The shared-memory header for this container */
-  ContainerT obj_; /**< The object being wrapped around */
+  typedef TYPED_HEADER header_t; /**< Index to header type */
+  header_t *header_; /**< The shared-memory header */
+  labstor::tuple<lipc::ShmRef<Containers...>> objs_; /**< Constructed objects */
 
  public:
   /**====================================
@@ -90,12 +115,16 @@ class tuple : public ShmContainer {
 
   /** Serialize into a Pointer */
   void shm_serialize(TypedPointer<TYPED_CLASS> &ar) const {
-    obj_.shm_serialize(ar);
+    ar = GetAllocator()->template
+      Convert<TYPED_HEADER, Pointer>(header_);
+    shm_serialize_main();
   }
 
   /** Serialize into an AtomicPointer */
   void shm_serialize(TypedAtomicPointer<TYPED_CLASS> &ar) const {
-    obj_.shm_serialize(ar);
+    ar = GetAllocator()->template
+      Convert<TYPED_HEADER, AtomicPointer>(header_);
+    shm_serialize_main();
   }
 
   /** Override << operators */
@@ -107,23 +136,38 @@ class tuple : public ShmContainer {
 
   /** Deserialize object from a raw pointer */
   bool shm_deserialize(const TypedPointer<TYPED_CLASS> &ar) {
-    return obj_.shm_deserialize(ar);
+    return shm_deserialize(
+      LABSTOR_MEMORY_MANAGER->GetAllocator(ar.allocator_id_),
+      ar.ToOffsetPointer()
+    );
   }
 
   /** Deserialize object from allocator + offset */
   bool shm_deserialize(Allocator *alloc, OffsetPointer header_ptr) {
-    return obj_.shm_deserialize(alloc, header_ptr);
+    if (header_ptr.IsNull()) { return false; }
+    return shm_deserialize(alloc,
+                           alloc->Convert<
+                             TYPED_HEADER,
+                             OffsetPointer>(header_ptr));
   }
 
   /** Deserialize object from another object (weak copy) */
   bool shm_deserialize(const CLASS_NAME &other) {
-    return obj_.shm_deserialize(other);
+    if (other.IsNull()) { return false; }
+    return shm_deserialize(other.GetAllocator(), other.header_);
   }
 
   /** Deserialize object from allocator + header */
   bool shm_deserialize(Allocator *alloc,
                        TYPED_HEADER *header) {
-    return obj_.shm_deserialize(alloc, header);
+    header_ = header;
+    labstor::IterateTuple::Apply(
+      objs_,
+      [this, alloc](size_t i, auto &obj_) constexpr {
+        obj_->shm_deserialize(alloc, this->header_->template Get<i>());
+      }
+    );
+    shm_deserialize_main();
   }
 
   /** Constructor. Deserialize the object from the reference. */

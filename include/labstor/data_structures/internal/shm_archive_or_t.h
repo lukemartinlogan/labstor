@@ -29,6 +29,7 @@
 
 #include "labstor/memory/memory.h"
 #include "labstor/data_structures/data_structure.h"
+#include "labstor/types/argpack.h"
 
 namespace labstor::ipc {
 
@@ -49,6 +50,28 @@ class _ShmHeaderOrT_Header {
   template<typename ...Args>
   explicit _ShmHeaderOrT_Header(Allocator *alloc, Args&& ...args) {
     T(obj_hdr_, alloc, std::forward<Args>(args)...).UnsetDestructable();
+  }
+
+  /** Construct + store object (labstor lval argpack) */
+  template<typename ...Args>
+  explicit _ShmHeaderOrT_Header(Allocator *alloc,
+                                labstor::ArgPack<Args...> &args) {
+    T obj;
+    labstor::PassArgPack::Call(
+      Allocator::ConstructObj<T>,
+      obj, obj_hdr_, alloc, args);
+    (void) alloc;
+  }
+
+  /** Construct + store object (labstor rval argpack) */
+  template<typename ...Args>
+  explicit _ShmHeaderOrT_Header(Allocator *alloc,
+                                labstor::ArgPack<Args...> &&args) {
+    T obj;
+    labstor::PassArgPack::Call(
+      Allocator::ConstructObj<T>,
+      obj, obj_hdr_, alloc, args);
+    (void) alloc;
   }
 
   /** Destructor */
@@ -99,17 +122,36 @@ class _ShmHeaderOrT_Header {
 template<typename T>
 class _ShmHeaderOrT_T {
  public:
-  T obj_;
+  char obj_[sizeof(T)]; /**< Store object without constructing */
 
  public:
   /** Default constructor */
-  _ShmHeaderOrT_T() = default;
+  _ShmHeaderOrT_T() {
+    Allocator::ConstructObj<_ShmHeaderOrT_T>(internal_ref(nullptr));
+  }
 
-  /** Construct + store object */
+  /** Construct + store object (C++ argpack) */
   template<typename ...Args>
-  explicit _ShmHeaderOrT_T(Allocator *alloc, Args&& ...args)
-  : obj_(std::forward<Args>(args)...) {
-    (void) alloc;
+  explicit _ShmHeaderOrT_T(Allocator *alloc, Args&& ...args) {
+    Allocator::ConstructObj<T>(
+      internal_ref(alloc), std::forward<Args>(args)...);
+  }
+
+  /** Construct + store object (labstor lval argpack) */
+  template<typename ...Args>
+  explicit _ShmHeaderOrT_T(Allocator *alloc,
+                           labstor::ArgPack<Args...> &args) {
+    labstor::PassArgPack::Call(
+      Allocator::ConstructObj<T>,
+      internal_ref(alloc), args);
+  }
+
+  /** Construct + store object (labstor rval argpack) */
+  template<typename ...Args>
+  explicit _ShmHeaderOrT_T(Allocator *alloc, labstor::ArgPack<Args...> &&args) {
+    labstor::PassArgPack::Call(
+      Allocator::ConstructObj<T>,
+      internal_ref(alloc), args);
   }
 
   /** Shm destructor */
@@ -121,32 +163,37 @@ class _ShmHeaderOrT_T {
   /** Returns a reference to the internal object */
   T& internal_ref(Allocator *alloc) {
     (void) alloc;
-    return obj_;
+    return reinterpret_cast<T&>(obj_);
   }
 
   /** Returns a reference to the internal object */
   T& internal_ref(Allocator *alloc) const {
     (void) alloc;
-    return obj_;
+    return reinterpret_cast<T&>(obj_);
   }
 
   /** Move constructor */
-  _ShmHeaderOrT_T(_ShmHeaderOrT_T &&other) noexcept
-  : obj_(std::move(other.obj_)) {}
+  _ShmHeaderOrT_T(_ShmHeaderOrT_T &&other) noexcept {
+    Allocator::ConstructObj<_ShmHeaderOrT_T>(
+      obj_, std::move(other.internal_ref()));
+  }
 
   /** Move assignment operator */
   _ShmHeaderOrT_T& operator=(_ShmHeaderOrT_T &&other) noexcept {
-    obj_ = std::move(other.obj_);
+    internal_ref() = std::move(other.internal_ref());
     return *this;
   }
 
   /** Copy constructor */
-  _ShmHeaderOrT_T(const _ShmHeaderOrT_T &other)
-  : obj_(other.obj_) {}
+  _ShmHeaderOrT_T(const _ShmHeaderOrT_T &other) {
+    Allocator::ConstructObj<_ShmHeaderOrT_T>(
+      obj_, other);
+  }
 
   /** Copy assignment operator */
   _ShmHeaderOrT_T& operator=(const _ShmHeaderOrT_T &other) {
-    obj_ = other.obj_;
+    internal_ref() = other.internal_ref();
+    return *this;
   }
 };
 
