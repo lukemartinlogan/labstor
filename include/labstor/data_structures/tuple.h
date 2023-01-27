@@ -31,7 +31,7 @@ class tuple;
 template<typename ...Containers>
 class ShmHeader<tuple<Containers...>> {
   /**< All object headers */
-  labstor::tuple<ShmHeaderOrT<Containers...>> hdrs_;
+  labstor::tuple_wrap<ShmHeaderOrT, Containers...> hdrs_;
 
   /** Get the internal reference to the ith object */
   template<size_t i>
@@ -41,7 +41,7 @@ class ShmHeader<tuple<Containers...>> {
 
   /** Destructor */
   void shm_destroy(Allocator *alloc) {
-    labstor::IterateTuple::Apply(
+    labstor::ForwardIterateTuple::Apply(
       hdrs_,
       [alloc](size_t i, auto &obj_hdr) constexpr {
         obj_hdr->shm_destroy(alloc);
@@ -60,7 +60,7 @@ class tuple : public ShmContainer {
 
   typedef TYPED_HEADER header_t; /**< Index to header type */
   header_t *header_; /**< The shared-memory header */
-  labstor::tuple<lipc::ShmRef<Containers...>> objs_; /**< Constructed objects */
+  labstor::tuple_wrap<lipc::ShmRef, Containers...> objs_; /**< Constructed objects */
 
  public:
   /**====================================
@@ -160,14 +160,15 @@ class tuple : public ShmContainer {
   /** Deserialize object from allocator + header */
   bool shm_deserialize(Allocator *alloc,
                        TYPED_HEADER *header) {
-    header_ = header;
-    labstor::IterateTuple::Apply(
+    /*header_ = header;
+    labstor::ForwardIterateTuple::Apply(
       objs_,
       [this, alloc](size_t i, auto &obj_) constexpr {
         obj_->shm_deserialize(alloc, this->header_->template Get<i>());
       }
-    );
+    );*/
     shm_deserialize_main();
+    return true;
   }
 
   /** Constructor. Deserialize the object from the reference. */
@@ -185,23 +186,26 @@ class tuple : public ShmContainer {
 
   /** Destructor */
   ~CLASS_NAME() {
-    obj_.shm_destroy(true);
+    /*labstor::ForwardIterateTuple::Apply(
+      objs_,
+      [](size_t i, auto &obj_) constexpr {
+        obj_.shm_destroy(true);
+      }
+    );*/
   }
 
   /** Shm Destructor */
   void shm_destroy(bool destroy_header = true) {
-    obj_.shm_destroy(false);
-    if (!IsValid()) { return; }
+    /*if (!IsValid()) { return; }
     if (IsDataValid()) {
+      labstor::ForwardIterateTuple::Apply(
+        objs_,
+        [](size_t i, auto &obj_) constexpr {
+          obj_.shm_destroy(false);
+        }
+      );
       shm_destroy_main();
-    }
-    UnsetDataValid();
-    if (destroy_header &&
-      obj_.header_->OrBits(SHM_CONTAINER_HEADER_DESTRUCTABLE)) {
-      GetAllocator()->template
-        FreePtr<TYPED_HEADER>(header_);
-      UnsetValid();
-    }
+    }*/
   }
 
   /**====================================
@@ -209,12 +213,17 @@ class tuple : public ShmContainer {
    * ===================================*/
 
   /** Move constructor */
-  CLASS_NAME(CLASS_NAME &&other) noexcept
-    : obj_(std::move(other)) {}
+  CLASS_NAME(CLASS_NAME &&other) noexcept {
+  }
 
   /** Move assignment operator */
   CLASS_NAME& operator=(CLASS_NAME &&other) noexcept {
-    obj_ = std::move(other.obj_);
+    /*labstor::ForwardIterateTuple::Apply(
+      objs_,
+      [other](size_t i, auto &obj_) constexpr {
+        obj_ = std::move(other.obj_);
+      }
+    );*/
     return *this;
   }
 
@@ -229,7 +238,12 @@ class tuple : public ShmContainer {
   void shm_weak_move(TYPED_HEADER *header,
                      lipc::Allocator *alloc,
                      CLASS_NAME &other) {
-    obj_.shm_weak_move(header, alloc, other);
+    /*labstor::ForwardIterateTuple::Apply(
+      objs_,
+      [header, alloc, other](size_t i, auto &obj_) constexpr {
+        obj_.shm_weak_move(header, alloc, other.objs_.template Get<i>());
+      }
+    );*/
   }
 
   /**====================================
@@ -274,27 +288,27 @@ class tuple : public ShmContainer {
 
   /** Sets this object as destructable */
   void SetDestructable() {
-    obj_.SetDestructable();
+    return Get<0>()->SetDestructable();
   }
 
   /** Sets this object as not destructable */
   void UnsetDestructable() {
-    obj_.UnsetDestructable();
+    return Get<0>()->UnsetDestructable();
   }
 
   /** Check if this container is destructable */
   bool IsDestructable() const {
-    return obj_.IsDestructable();
+    return Get<0>()->IsDestructable();
   }
 
   /** Check if container has a valid header */
   bool IsValid() const {
-    return obj_.IsValid();
+    return Get<0>()->IsValid();
   }
 
   /** Set container header invalid */
   void UnsetValid() {
-    obj_.UnsetValid();
+    Get<0>()->UnsetValid();
   }
 
   /**====================================
@@ -303,17 +317,17 @@ class tuple : public ShmContainer {
 
   /** Check if header's data is valid */
   bool IsDataValid() const {
-    return obj_.IsDataValid();
+    return Get<0>()->IsDataValid();
   }
 
   /** Check if header's data is valid */
   void UnsetDataValid() const {
-    return obj_.UnsetDataValid();
+    return Get<0>()->UnsetDataValid();
   }
 
   /** Check if null */
   bool IsNull() const {
-    return obj_.IsNull();
+    return Get<0>()->IsNull();
   }
 
   /** Get a typed pointer to the object */
@@ -329,17 +343,23 @@ class tuple : public ShmContainer {
 
   /** Get the allocator for this container */
   Allocator* GetAllocator() {
-    return obj_.GetAllocator();
+    return Get<0>()->GetAllocator();
   }
 
   /** Get the allocator for this container */
   Allocator* GetAllocator() const {
-    return obj_.GetAllocator();
+    return Get<0>()->GetAllocator();
   }
 
   /** Get the shared-memory allocator id */
   allocator_id_t GetAllocatorId() const {
     return GetAllocator()->GetId();
+  }
+
+  /** Get the ith constructed container in the tuple */
+  template<size_t i>
+  auto& Get() {
+    return objs_.template Get<i>();
   }
 };
 

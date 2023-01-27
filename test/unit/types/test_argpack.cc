@@ -39,7 +39,7 @@ void test_argpack3() {
   std::cout << x.Get<3>() << std::endl;
 #endif
 
-  labstor::IterateTuple::Apply(x,
+  labstor::ForwardIterateTuple::Apply(x,
     [](size_t i, auto &arg) constexpr {
       std::cout << "lambda: " << i << std::endl;
     });

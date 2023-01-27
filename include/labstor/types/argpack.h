@@ -13,14 +13,23 @@ namespace labstor {
 /** The "End Recurrence" type */
 struct EndTemplateRecurrence {};
 
+/** The null container wrapper */
+template<typename T>
+using NullWrap = T;
+
 /** Recurrence used to create argument pack */
-template<bool is_argpack,
-  size_t idx, typename T=EndTemplateRecurrence, typename ...Args>
+template<
+  bool is_argpack,
+  template<typename> typename Wrap,
+  size_t idx,
+  typename T=EndTemplateRecurrence,
+  typename ...Args>
 struct TupleBaseRecur {
   /** Whether to store element as rvalue reference or raw element */
-  typedef typename std::conditional<is_argpack, T&&, T>::type ElementT;
+  typedef typename std::conditional<is_argpack, T&&, Wrap<T>>::type ElementT;
   ElementT arg_; /**< The element stored */
-  TupleBaseRecur<is_argpack, idx + 1, Args...> recur_; /**< Remaining args */
+  TupleBaseRecur<is_argpack, Wrap, idx + 1, Args...>
+    recur_; /**< Remaining args */
 
   /** Default constructor */
   TupleBaseRecur() = default;
@@ -61,8 +70,11 @@ struct TupleBaseRecur {
 };
 
 /** Terminator of the TupleBase recurrence */
-template<bool is_argpack, size_t idx>
-struct TupleBaseRecur<is_argpack, idx, EndTemplateRecurrence> {
+template<
+  bool is_argpack,
+  template<typename> typename Wrap,
+  size_t idx>
+struct TupleBaseRecur<is_argpack, Wrap, idx, EndTemplateRecurrence> {
   /** Default constructor */
   TupleBaseRecur() = default;
 
@@ -80,10 +92,13 @@ struct TupleBaseRecur<is_argpack, idx, EndTemplateRecurrence> {
 };
 
 /** Used to semantically pack arguments */
-template<bool is_argpack, typename ...Args>
+template<
+  bool is_argpack,
+  template<typename> typename Wrap,
+  typename ...Args>
 struct TupleBase {
   /** Variable argument pack */
-  TupleBaseRecur<is_argpack, 0, Args...> recur_;
+  TupleBaseRecur<is_argpack, Wrap, 0, Args...> recur_;
 
   /** Constructor. */
   TupleBase(Args&& ...args)
@@ -109,11 +124,15 @@ struct TupleBase {
 
 /** ArgPack definition */
 template<typename ...Args>
-using ArgPack = TupleBase<true, Args...>;
+using ArgPack = TupleBase<true, NullWrap, Args...>;
 
 /** Tuple definition */
-template<typename ...Args>
-using tuple = TupleBase<false, Args...>;
+template<typename ...Containers>
+using tuple = TupleBase<false, NullWrap, Containers...>;
+
+/** Tuple Wrapper Definition */
+template<template<typename> typename Wrap, typename ...Containers>
+using tuple_wrap = TupleBase<false, Wrap, Containers...>;
 
 /** Used to pass an argument pack to a function or class method */
 class PassArgPack {
@@ -168,6 +187,7 @@ class PassArgPack {
 };
 
 /** Apply a function over an entire TupleBase / tuple */
+template<bool reverse>
 class IterateTuple {
  public:
   /** Apply a function to every element of a tuple */
@@ -189,11 +209,22 @@ class IterateTuple {
   template<size_t i, typename TupleT, size_t TupleSize, typename F>
   static void _Apply(TupleT &pack, F &&f) {
     if constexpr(i < TupleSize) {
-      f(i, pack.template Get<i>());
-      _Apply<i + 1, TupleT, TupleSize, F>(pack, std::forward<F>(f));
+      if constexpr(reverse) {
+        _Apply<i + 1, TupleT, TupleSize, F>(pack, std::forward<F>(f));
+        f(i, pack.template Get<i>());
+      } else {
+        f(i, pack.template Get<i>());
+        _Apply<i + 1, TupleT, TupleSize, F>(pack, std::forward<F>(f));
+      }
     }
   }
 };
+
+/** Forward iterate over tuple and apply function  */
+using ForwardIterateTuple = IterateTuple<false>;
+
+/** Reverse iterate over tuple and apply function */
+using ReverseIterateTuple = IterateTuple<true>;
 
 }  // namespace labstor
 
