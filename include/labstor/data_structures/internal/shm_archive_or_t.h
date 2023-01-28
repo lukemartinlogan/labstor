@@ -52,17 +52,6 @@ class _ShmHeaderOrT_Header {
     T(obj_hdr_, alloc, std::forward<Args>(args)...).UnsetDestructable();
   }
 
-  /** Construct + store object (labstor lval argpack) */
-  template<typename ...Args>
-  explicit _ShmHeaderOrT_Header(Allocator *alloc,
-                                labstor::ArgPack<Args...> &args) {
-    T obj;
-    // TODO(llogan): Expand pack with: obj, obj_hdr_ alloc, args
-    labstor::PassArgPack::Call(
-      args, Allocator::ConstructObj<T>);
-    (void) alloc;
-  }
-
   /** Construct + store object (labstor rval argpack) */
   template<typename ...Args>
   explicit _ShmHeaderOrT_Header(Allocator *alloc,
@@ -135,16 +124,6 @@ class _ShmHeaderOrT_T {
   explicit _ShmHeaderOrT_T(Allocator *alloc, Args&& ...args) {
     Allocator::ConstructObj<T>(
       internal_ref(alloc), std::forward<Args>(args)...);
-  }
-
-  /** Construct + store object (labstor lval argpack) */
-  template<typename ...Args>
-  explicit _ShmHeaderOrT_T(Allocator *alloc,
-                           labstor::ArgPack<Args...> &args) {
-    // TODO(llogan): Expand pack with: internal_ref(alloc), args
-    labstor::PassArgPack::Call(
-      args,
-      Allocator::ConstructObj<T>);
   }
 
   /** Construct + store object (labstor rval argpack) */

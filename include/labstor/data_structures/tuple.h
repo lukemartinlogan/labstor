@@ -7,29 +7,29 @@
 
 #include "labstor/data_structures/internal/shm_container.h"
 #include "labstor/data_structures/internal/shm_archive_or_t.h"
+#include "labstor/data_structures/internal/shm_null_container.h"
 #include "labstor/types/argpack.h"
 
-
-#define CLASS_NAME tuple
-#define TYPED_CLASS tuple<Containers...>
-#define TYPED_HEADER ShmHeader<tuple<Containers...>>
+#define CLASS_NAME TupleBase
+#define TYPED_CLASS TupleBase<inherit_header, MainContainer, Containers...>
+#define TYPED_HEADER \
+  ShmHeader<TupleBase<inherit_header, MainContainer, Containers...>>
 
 namespace labstor::ipc {
 
-/** ShmHeaderRecur forward declaration */
-template<
-  size_t idx,
-  typename ContainerT=EndTemplateRecurrence,
-  typename ...Containers>
-struct ShmHeaderRecur;
-
 /** Tuple forward declaration */
-template<typename ...Containers>
-class tuple;
+template<
+  bool inherit_header,
+  typename MainContainer,
+  typename ...Containers>
+class TupleBase;
 
 /** Tuple SHM header */
-template<typename ...Containers>
-class ShmHeader<tuple<Containers...>> {
+template<
+  bool inherit_header,
+  typename MainContainer,
+  typename ...Containers>
+class ShmHeader<TupleBase<inherit_header, MainContainer, Containers...>> {
   /**< All object headers */
   labstor::tuple_wrap<ShmHeaderOrT, Containers...> hdrs_;
 
@@ -51,8 +51,11 @@ class ShmHeader<tuple<Containers...>> {
 };
 
 /** A tuple of objects to store in shared memory */
-template<typename ...Containers>
-class tuple : public ShmContainer {
+template<
+  bool inherit_header,
+  typename MainContainer,
+  typename ...Containers>
+class TupleBase : public ShmContainer {
  public:
   /**====================================
    * Variables & Types
@@ -60,7 +63,8 @@ class tuple : public ShmContainer {
 
   typedef TYPED_HEADER header_t; /**< Index to header type */
   header_t *header_; /**< The shared-memory header */
-  labstor::tuple_wrap<lipc::ShmRef, Containers...> objs_; /**< Constructed objects */
+  labstor::tuple<MainContainer, Containers...>
+    objs_; /**< Constructed objects */
 
  public:
   /**====================================
@@ -106,7 +110,7 @@ class tuple : public ShmContainer {
 
   /** Constructor. Allocate header with default allocator. */
   template<typename ...Args>
-  void shm_init(Args &&...args) {
+  void shm_init(Args&& ...args) {
   }
 
   /**====================================
@@ -160,13 +164,15 @@ class tuple : public ShmContainer {
   /** Deserialize object from allocator + header */
   bool shm_deserialize(Allocator *alloc,
                        TYPED_HEADER *header) {
-    /*header_ = header;
+    header_ = header;
     labstor::ForwardIterateTuple::Apply(
       objs_,
       [this, alloc](size_t i, auto &obj_) constexpr {
-        obj_->shm_deserialize(alloc, this->header_->template Get<i>());
+        if constexpr(IS_SHM_ARCHIVEABLE(decltype(obj_))) {
+          obj_->shm_deserialize(alloc, this->header_->template Get<i>());
+        }
       }
-    );*/
+    );
     shm_deserialize_main();
     return true;
   }
@@ -186,26 +192,25 @@ class tuple : public ShmContainer {
 
   /** Destructor */
   ~CLASS_NAME() {
-    /*labstor::ForwardIterateTuple::Apply(
-      objs_,
-      [](size_t i, auto &obj_) constexpr {
-        obj_.shm_destroy(true);
-      }
-    );*/
+    if (IsDestructable()) {
+      shm_destroy(true);
+    }
   }
 
   /** Shm Destructor */
   void shm_destroy(bool destroy_header = true) {
-    /*if (!IsValid()) { return; }
+    if (!IsValid()) { return; }
     if (IsDataValid()) {
-      labstor::ForwardIterateTuple::Apply(
+      labstor::ReverseIterateTuple::Apply(
         objs_,
-        [](size_t i, auto &obj_) constexpr {
-          obj_.shm_destroy(false);
+        [destroy_header](size_t i, auto &obj_) constexpr {
+          if constexpr(IS_SHM_ARCHIVEABLE(decltype(obj_))) {
+            obj_.shm_destroy(destroy_header);
+          }
         }
       );
       shm_destroy_main();
-    }*/
+    }
   }
 
   /**====================================
@@ -288,27 +293,27 @@ class tuple : public ShmContainer {
 
   /** Sets this object as destructable */
   void SetDestructable() {
-    return Get<0>()->SetDestructable();
+    return GetMain().SetDestructable();
   }
 
   /** Sets this object as not destructable */
   void UnsetDestructable() {
-    return Get<0>()->UnsetDestructable();
+    return GetMain().UnsetDestructable();
   }
 
   /** Check if this container is destructable */
   bool IsDestructable() const {
-    return Get<0>()->IsDestructable();
+    return GetMain().IsDestructable();
   }
 
   /** Check if container has a valid header */
   bool IsValid() const {
-    return Get<0>()->IsValid();
+    return GetMain().IsValid();
   }
 
   /** Set container header invalid */
   void UnsetValid() {
-    Get<0>()->UnsetValid();
+    GetMain().UnsetValid();
   }
 
   /**====================================
@@ -317,17 +322,17 @@ class tuple : public ShmContainer {
 
   /** Check if header's data is valid */
   bool IsDataValid() const {
-    return Get<0>()->IsDataValid();
+    return GetMain().IsDataValid();
   }
 
   /** Check if header's data is valid */
   void UnsetDataValid() const {
-    return Get<0>()->UnsetDataValid();
+    return GetMain().UnsetDataValid();
   }
 
   /** Check if null */
   bool IsNull() const {
-    return Get<0>()->IsNull();
+    return GetMain().IsNull();
   }
 
   /** Get a typed pointer to the object */
@@ -343,12 +348,12 @@ class tuple : public ShmContainer {
 
   /** Get the allocator for this container */
   Allocator* GetAllocator() {
-    return Get<0>()->GetAllocator();
+    return GetMain().GetAllocator();
   }
 
   /** Get the allocator for this container */
   Allocator* GetAllocator() const {
-    return Get<0>()->GetAllocator();
+    return GetMain().GetAllocator();
   }
 
   /** Get the shared-memory allocator id */
@@ -359,9 +364,41 @@ class tuple : public ShmContainer {
   /** Get the ith constructed container in the tuple */
   template<size_t i>
   auto& Get() {
-    return objs_.template Get<i>();
+    if constexpr(inherit_header) {
+      return objs_.template Get<i>();
+    } else {
+      return objs_.template Get<i + 1>();
+    }
+  }
+
+  /** Get the ith constructed container in the tuple (const) */
+  template<size_t i>
+  auto& Get() const {
+    if constexpr(inherit_header) {
+      return objs_.template Get<i>();
+    } else {
+      return objs_.template Get<i + 1>();
+    }
+  }
+
+  /** Get the ith constructed container in the tuple */
+  auto& GetMain() {
+    return objs_.template Get<0>();
+  }
+
+  /** Get the ith constructed container in the tuple (const) */
+  auto& GetMain() const {
+    return objs_.template Get<0>();
   }
 };
+
+/** General case of tuple  */
+template<typename ...Containers>
+using tuple = TupleBase<false, NullContainer, Containers...>;
+
+/** Used for extending base containers */
+template<typename ...Containers>
+using headless_tuple = TupleBase<true, Containers...>;
 
 }  // namespace labstor::ipc
 

@@ -16,8 +16,8 @@ void TupleTest() {
     CREATE_SET_VAR_TO_INT_OR_STRING(FirstT, first, 124);
     CREATE_SET_VAR_TO_INT_OR_STRING(SecondT, second, 130);
     lipc::tuple<FirstT, SecondT> data(alloc, first, second);
-    REQUIRE(*data.template Get<0>() == first);
-    REQUIRE(*data.template Get<1>() == second);
+    REQUIRE(data.template Get<0>() == first);
+    REQUIRE(data.template Get<1>() == second);
   }
 
   // Copy test
@@ -26,8 +26,8 @@ void TupleTest() {
     CREATE_SET_VAR_TO_INT_OR_STRING(SecondT, second, 130);
     lipc::tuple<FirstT, SecondT> data(alloc, first, second);
     lipc::tuple<FirstT, SecondT> cpy(data);
-    REQUIRE(*cpy.template Get<0>() == first);
-    REQUIRE(*cpy.template Get<1>() == second);
+    REQUIRE(cpy.template Get<0>() == first);
+    REQUIRE(cpy.template Get<1>() == second);
   }
 
   // Move test
@@ -36,8 +36,8 @@ void TupleTest() {
     CREATE_SET_VAR_TO_INT_OR_STRING(SecondT, second, 130);
     lipc::tuple<FirstT, SecondT> data(alloc, first, second);
     lipc::tuple<FirstT, SecondT> cpy(std::move(data));
-    REQUIRE(*cpy.template Get<0>() == first);
-    REQUIRE(*cpy.template Get<1>() == second);
+    REQUIRE(cpy.template Get<0>() == first);
+    REQUIRE(cpy.template Get<1>() == second);
   }
 }
 

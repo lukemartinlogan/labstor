@@ -34,17 +34,43 @@ struct TupleBaseRecur {
   /** Default constructor */
   TupleBaseRecur() = default;
 
-  /** Constructor. Construct arg in-place. */
+  /** Constructor. Const reference. */
   explicit TupleBaseRecur(const T &arg, Args&& ...args)
     : arg_(std::forward<T>(arg)), recur_(std::forward<Args>(args)...) {}
 
-  /** Constructor. Construct arg in-place. */
+  /** Constructor. Lvalue reference. */
   explicit TupleBaseRecur(T& arg, Args&& ...args)
   : arg_(std::forward<T>(arg)), recur_(std::forward<Args>(args)...) {}
 
   /** Constructor. Rvalue reference. */
   explicit TupleBaseRecur(T&& arg, Args&& ...args)
   : arg_(std::forward<T>(arg)), recur_(std::forward<Args>(args)...) {}
+
+  /** Move constructor */
+  TupleBaseRecur(TupleBaseRecur &&other) noexcept
+  : arg_(std::move(other.arg_)), recur_(std::move(other.recur_)) {}
+
+  /** Move assignment operator */
+  TupleBaseRecur& operator=(TupleBaseRecur &&other) {
+    if (this != &other) {
+      arg_ = std::move(other.arg_);
+      recur_ = std::move(other.recur_);
+    }
+    return *this;
+  }
+
+  /** Copy constructor */
+  TupleBaseRecur(const TupleBaseRecur &other)
+  : arg_(other.arg_), recur_(other.recur_) {}
+
+  /** Copy assignment operator */
+  TupleBaseRecur& operator=(const TupleBaseRecur &other) {
+    if (this != &other) {
+      arg_ = other.arg_;
+      recur_ = other.recur_;
+    }
+    return *this;
+  }
 
   /** Forward an rvalue reference (only if argpack) */
   template<size_t i>
@@ -60,6 +86,17 @@ struct TupleBaseRecur {
   /** Get reference to internal variable (only if tuple) */
   template<size_t i>
   auto& Get() {
+    if constexpr(i == idx) {
+      return arg_;
+    } else {
+      return recur_.template
+        Get<i>();
+    }
+  }
+
+  /** Get reference to internal variable (only if tuple, const) */
+  template<size_t i>
+  auto& Get() const {
     if constexpr(i == idx) {
       return arg_;
     } else {
@@ -100,9 +137,38 @@ struct TupleBase {
   /** Variable argument pack */
   TupleBaseRecur<is_argpack, Wrap, 0, Args...> recur_;
 
-  /** Constructor. */
-  TupleBase(Args&& ...args)
+  /** Default constructor */
+  TupleBase() = default;
+
+  /** General Constructor. */
+  // NOTE(llogan): template needed to avoid conflict with default constructor
+  template<typename ...FArgs>
+  explicit TupleBase(Args&& ...args)
   : recur_(std::forward<Args>(args)...) {}
+
+  /** Move constructor */
+  TupleBase(TupleBase &&other) noexcept
+  : recur_(std::move(other.objs_)) {}
+
+  /** Move assignment operator */
+  TupleBase& operator=(TupleBase &&other) noexcept {
+    if (this != &other) {
+      recur_ = std::move(other.recur_);
+    }
+    return *this;
+  }
+
+  /** Copy constructor */
+  TupleBase(const TupleBase &other)
+  : recur_(other.objs_) {}
+
+  /** Copy assignment operator */
+  TupleBase& operator=(const TupleBase &other) {
+    if (this != &other) {
+      recur_ = other.recur_;
+    }
+    return *this;
+  }
 
   /** Getter */
   template<size_t idx>
@@ -113,6 +179,12 @@ struct TupleBase {
   /** Getter */
   template<size_t idx>
   auto& Get() {
+    return recur_.template Get<idx>();
+  }
+
+  /** Getter (const) */
+  template<size_t idx>
+  auto& Get() const {
     return recur_.template Get<idx>();
   }
 
