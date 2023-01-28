@@ -59,7 +59,8 @@ class _ShmHeaderOrT_Header {
     T obj;
     // TODO(llogan): Expand pack with: obj, obj_hdr_ alloc, args
     labstor::PassArgPack::Call(
-      args, Allocator::ConstructObj<T>);
+      args,
+      Allocator::ConstructObj<T>);
     (void) alloc;
   }
 

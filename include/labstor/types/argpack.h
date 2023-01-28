@@ -198,6 +198,10 @@ struct TupleBase {
 template<typename ...Args>
 using ArgPack = TupleBase<true, NullWrap, Args...>;
 
+#define FORWARD_ARGPACK_PARAM(pack, i)\
+  std::forward<decltype(pack.template Forward<i>())>(\
+    pack.template Forward<i>())
+
 /** Tuple definition */
 template<typename ...Containers>
 using tuple = TupleBase<false, NullWrap, Containers...>;
@@ -254,6 +258,57 @@ class PassArgPack {
       } else {
         return f(std::forward<CurArgs>(args)...);
       }
+    }
+  }
+};
+
+/** Combine multiple argpacks into a single argpack */
+class MergeArgPacks {
+ public:
+  /** Call function with TupleBase */
+  template<typename ...ArgPacks>
+  static decltype(auto) Merge(ArgPacks&& ...packs) {
+    return _MergePacksRecur<0>(
+      ArgPack<ArgPacks...>(std::forward<ArgPacks>(packs)...));
+  }
+
+ private:
+  /** Unpacks the C++ parameter pack of ArgPacks */
+  template<size_t cur_pack, typename ArgPacksT,
+    typename ...CurArgs>
+  static decltype(auto) _MergePacksRecur(ArgPacksT &&packs,
+                                         CurArgs&& ...args) {
+    if constexpr(cur_pack < packs.Size()) {
+      return _MergeRecur<
+        cur_pack, ArgPacksT,
+        0, decltype(packs.template Forward<cur_pack>())>(
+        // End template parameters
+        std::forward<ArgPacksT>(packs),
+        FORWARD_ARGPACK_PARAM(packs, cur_pack),
+        std::forward<CurArgs>(args)...
+      );
+    } else {
+      return ArgPack<CurArgs...>(std::forward<CurArgs>(args)...);
+    }
+  }
+
+  /** Unpacks the C++ parameter pack of ArgPacks */
+  template<
+    size_t cur_pack, typename ArgPacksT,
+    size_t i, typename ArgPackT,
+    typename ...CurArgs>
+  static decltype(auto) _MergeRecur(ArgPacksT &&packs,
+                                    ArgPackT &&pack,
+                                    CurArgs&& ...args) {
+    if constexpr(i < pack.Size()) {
+      return _MergeRecur<cur_pack, ArgPacksT, i + 1, ArgPackT>(
+        std::forward<ArgPacksT>(packs),
+        std::forward<ArgPackT>(pack),
+        std::forward<CurArgs>(args)..., FORWARD_ARGPACK_PARAM(pack, i));
+    } else {
+      return _MergePacksRecur<cur_pack + 1, ArgPacksT>(
+        std::forward<ArgPacksT>(packs),
+        std::forward<CurArgs>(args)...);
     }
   }
 };

@@ -43,6 +43,17 @@ void test_argpack3() {
     [](size_t i, auto &arg) constexpr {
       std::cout << "lambda: " << i << std::endl;
     });
+
+  size_t y = labstor::MergeArgPacks::Merge(
+    labstor::ArgPack<T1>(0),
+    labstor::ArgPack<T2, T3>(1, 0)).Size();
+  REQUIRE(y == 3);
+
+  labstor::PassArgPack::Call(
+    labstor::MergeArgPacks::Merge(
+      labstor::ArgPack<T1>(0),
+      labstor::ArgPack<T2, T3>(1, 0)),
+    test_argpack3_pass<T1, T2, T3>);/**/
 }
 
 TEST_CASE("TestArgpack") {
