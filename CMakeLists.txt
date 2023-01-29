@@ -20,8 +20,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
 ##################OPTIMIZATION
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message("IN DEBUG MODE")
     set(CMAKE_CXX_FLAGS "-g -O0")
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    message("IN RELEASE MODE")
     set(CMAKE_CXX_FLAGS "-g -O3")
 endif()
 if(LABSTOR_CXX_PROFILE)

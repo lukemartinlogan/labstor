@@ -113,8 +113,8 @@ void test_argpack3() {
     labstor::tuple<T1, T2, T3> x(0, 1, 0);
     labstor::ForwardIterateTuple::Apply(
       x,
-      [](size_t i, auto &arg) constexpr {
-        std::cout << "lambda: " << i << std::endl;
+      [](auto i, auto &arg) constexpr {
+        std::cout << "lambda: " << i.Get() << std::endl;
       });
   }
 

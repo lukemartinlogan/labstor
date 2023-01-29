@@ -53,14 +53,13 @@ class _ShmHeaderOrT_Header {
   }
 
   /** Construct + store object (labstor rval argpack) */
-  template<typename ...Args>
-  explicit _ShmHeaderOrT_Header(Allocator *alloc,
-                                labstor::ArgPack<Args...> &&args) {
+  template<typename ArgPackT>
+  void PiecewiseInit(Allocator *alloc,
+                     ArgPackT &&args) {
     T obj;
     PassArgPack::Call(
       MergeArgPacks::Merge(ArgPack<>(obj, obj_hdr_, alloc), args),
       Allocator::ConstructObj<T>);
-    (void) alloc;
   }
 
   /** Destructor */
@@ -116,7 +115,7 @@ class _ShmHeaderOrT_T {
  public:
   /** Default constructor */
   _ShmHeaderOrT_T() {
-    Allocator::ConstructObj<_ShmHeaderOrT_T>(internal_ref(nullptr));
+    Allocator::ConstructObj<T>(internal_ref(nullptr));
   }
 
   /** Construct + store object (C++ argpack) */
@@ -127,11 +126,13 @@ class _ShmHeaderOrT_T {
   }
 
   /** Construct + store object (labstor rval argpack) */
-  template<typename ...Args>
-  explicit _ShmHeaderOrT_T(Allocator *alloc, labstor::ArgPack<Args...> &&args) {
-    labstor::PassArgPack::Call(
-      MergeArgPacks::Merge(ArgPack<>(obj_, internal_ref(alloc)), args),
-      Allocator::ConstructObj<T>);
+  template<typename ArgPackT>
+  void PiecewiseInit(Allocator *alloc,
+                     ArgPackT &&args) {
+    /*labstor::PassArgPack::Call(
+      MergeArgPacks::Merge(
+        make_argpack(internal_ref(alloc)),
+        std::forward<ArgPackT>(args)));*/
   }
 
   /** Shm destructor */
@@ -195,7 +196,8 @@ template<typename T>
 class ShmHeaderOrT {
  public:
   typedef SHM_ARCHIVE_OR_REF(T) T_Ar;
-  SHM_MAKE_HEADER_OR_T(T) obj_;
+  typedef SHM_MAKE_HEADER_OR_T(T) T_Hdr;
+  T_Hdr obj_;
 
   /** Default constructor */
   ShmHeaderOrT() = default;
@@ -204,6 +206,12 @@ class ShmHeaderOrT {
   template<typename ...Args>
   explicit ShmHeaderOrT(Args&& ...args)
   : obj_(std::forward<Args>(args)...) {}
+
+  /** Construct + store object (labstor rval argpack) */
+  template<typename ArgPackT>
+  void PiecewiseInit(Allocator *alloc, ArgPackT &&args) {
+    obj_.PiecewiseInit(alloc, std::forward<ArgPackT>(args));
+  }
 
   /** Destructor */
   ~ShmHeaderOrT() = default;

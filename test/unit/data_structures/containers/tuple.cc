@@ -4,7 +4,7 @@
 
 #include "basic_test.h"
 #include "test_init.h"
-#include "labstor/data_structures/tuple.h"
+#include "labstor/data_structures/struct.h"
 #include "labstor/data_structures/string.h"
 
 template<typename FirstT, typename SecondT>
@@ -15,10 +15,11 @@ void TupleTest() {
   {
     CREATE_SET_VAR_TO_INT_OR_STRING(FirstT, first, 124);
     CREATE_SET_VAR_TO_INT_OR_STRING(SecondT, second, 130);
-    labstor::ArgPack<FirstT> z(first);
-    lipc::tuple<FirstT, SecondT> data(alloc,
-                                      labstor::ArgPack<FirstT>(first),
-                                      labstor::ArgPack<SecondT>(second));
+    lipc::ShmHeader<lipc::ShmStruct<FirstT, SecondT>> hdr;
+    lipc::ShmStruct<FirstT, SecondT>
+      data(hdr, alloc,
+           labstor::make_argpack(first),
+           labstor::make_argpack(second));
     REQUIRE(data.template Get<0>() == first);
     REQUIRE(data.template Get<1>() == second);
   }

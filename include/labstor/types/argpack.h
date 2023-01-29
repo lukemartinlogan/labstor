@@ -34,7 +34,7 @@ struct ArgPackRecur {
 
   /** Forward an rvalue reference (only if argpack) */
   template<size_t i>
-  decltype(auto) Forward() {
+  constexpr decltype(auto) Forward() const {
     if constexpr(i == idx) {
       if constexpr(is_rval) {
         return std::forward<T>(arg_);
@@ -56,7 +56,7 @@ struct ArgPackRecur<idx, EndTemplateRecurrence> {
 
   /** Forward an rvalue reference (only if argpack) */
   template<size_t i>
-  void Forward() {
+  constexpr void Forward() const {
     throw std::logic_error("(Forward) ArgPack index outside of range");
   }
 };
@@ -75,7 +75,7 @@ struct ArgPack {
 
   /** Get forward reference */
   template<size_t idx>
-  decltype(auto) Forward() {
+  constexpr decltype(auto) Forward() const {
     return recur_.template Forward<idx>();
   }
 
@@ -108,30 +108,30 @@ ArgPack<Args&&...> make_argpack(Args&& ...args) {
 class PassArgPack {
  public:
   /** Call function with ArgPack */
-  template<typename F, typename ...Args>
-  static decltype(auto) Call(ArgPack<Args...> &&pack, F &&f) {
-    return _CallRecur<0, ArgPack<Args...>, sizeof...(Args), F>(
-      std::forward<F>(f), std::forward<ArgPack<Args...>>(pack));
+  template<typename ArgPackT, typename F>
+  constexpr static decltype(auto) Call(ArgPackT &&pack, F &&f) {
+    return _CallRecur<0, ArgPackT, F>(
+      std::forward<F>(f), std::forward<ArgPackT>(pack));
   }
 
  private:
   /** Unpacks the ArgPack and passes it to the function */
-  template<size_t i, typename ArgPackT, size_t PackSize,
+  template<size_t i, typename ArgPackT,
     typename F, typename ...CurArgs>
-  static decltype(auto) _CallRecur(F &&f,
+  constexpr static decltype(auto) _CallRecur(F &&f,
                                    ArgPackT &&pack,
                                    CurArgs&& ...args) {
     typedef typename std::result_of<F(CurArgs...)> RetT;
 
-    if constexpr(i < PackSize) {
+    if constexpr(i < ArgPackT::Size()) {
       if constexpr(std::is_same_v<RetT, void>) {
-        _CallRecur<i + 1, ArgPackT, PackSize, F>(
+        _CallRecur<i + 1, ArgPackT, F>(
           std::forward<F>(f),
           std::forward<ArgPackT>(pack),
           std::forward<CurArgs>(args)...,
           FORWARD_ARGPACK_PARAM(pack, i));
       } else {
-        return _CallRecur<i + 1, ArgPackT, PackSize, F>(
+        return _CallRecur<i + 1, ArgPackT, F>(
           std::forward<F>(f),
           std::forward<ArgPackT>(pack),
           std::forward<CurArgs>(args)...,
@@ -152,7 +152,7 @@ class MergeArgPacks {
  public:
   /** Call function with ArgPack */
   template<typename ...ArgPacks>
-  static decltype(auto) Merge(ArgPacks&& ...packs) {
+  constexpr static decltype(auto) Merge(ArgPacks&& ...packs) {
     return _MergePacksRecur<0>(make_argpack(std::forward<ArgPacks>(packs)...));
   }
 
@@ -160,7 +160,7 @@ class MergeArgPacks {
   /** Unpacks the C++ parameter pack of ArgPacks */
   template<size_t cur_pack, typename ArgPacksT,
     typename ...CurArgs>
-  static decltype(auto) _MergePacksRecur(ArgPacksT &&packs,
+  constexpr static decltype(auto) _MergePacksRecur(ArgPacksT &&packs,
                                          CurArgs&& ...args) {
     if constexpr(cur_pack < ArgPacksT::Size()) {
       return _MergeRecur<
@@ -180,7 +180,7 @@ class MergeArgPacks {
     size_t cur_pack, typename ArgPacksT,
     size_t i, typename ArgPackT,
     typename ...CurArgs>
-  static decltype(auto) _MergeRecur(ArgPacksT &&packs,
+  constexpr static decltype(auto) _MergeRecur(ArgPacksT &&packs,
                                     ArgPackT &&pack,
                                     CurArgs&& ...args) {
     if constexpr(i < ArgPackT::Size()) {
@@ -201,7 +201,7 @@ class ProductArgPacks {
  public:
   /** The product function */
   template<typename ProductPackT, typename ...ArgPacks>
-  static decltype(auto) Product(ProductPackT &&prod_pack,
+  constexpr static decltype(auto) Product(ProductPackT &&prod_pack,
                                 ArgPacks&& ...packs) {
     return _ProductPacksRecur<0>(
       std::forward<ProductPackT>(prod_pack),
@@ -215,7 +215,7 @@ class ProductArgPacks {
     typename ProductPackT,
     typename OrigPacksT,
     typename ...NewPacks>
-  static decltype(auto) _ProductPacksRecur(ProductPackT &&prod_pack,
+  constexpr static decltype(auto) _ProductPacksRecur(ProductPackT &&prod_pack,
                                            OrigPacksT &&orig_packs,
                                            NewPacks&& ...packs) {
     if constexpr(cur_pack < OrigPacksT::Size()) {

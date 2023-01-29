@@ -2,41 +2,43 @@
 // Created by lukemartinlogan on 1/26/23.
 //
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_TUPLE_H_
-#define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_TUPLE_H_
+#ifndef LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_STRUCT_H_
+#define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_STRUCT_H_
 
 #include "labstor/data_structures/internal/shm_container.h"
 #include "labstor/data_structures/internal/shm_archive_or_t.h"
 #include "labstor/data_structures/internal/shm_null_container.h"
 #include "labstor/types/tuple_base.h"
 
-#define CLASS_NAME TupleBase
-#define TYPED_CLASS TupleBase<inherit_header, MainContainer, Containers...>
-#define TYPED_HEADER \
-  ShmHeader<TupleBase<inherit_header, MainContainer, Containers...>>
+#define CLASS_NAME ShmStruct
+#define TYPED_CLASS ShmStruct<Containers...>
+#define TYPED_HEADER ShmHeader<ShmStruct<Containers...>>
 
 namespace labstor::ipc {
 
 /** Tuple forward declaration */
-template<
-  bool inherit_header,
-  typename MainContainer,
-  typename ...Containers>
-class TupleBase;
+template<typename ...Containers>
+class ShmStruct;
 
 /** Tuple SHM header */
-template<
-  bool inherit_header,
-  typename MainContainer,
-  typename ...Containers>
-class ShmHeader<TupleBase<inherit_header, MainContainer, Containers...>> {
+template<typename ...Containers>
+struct ShmHeader<ShmStruct<Containers...>> {
   /**< All object headers */
   labstor::tuple_wrap<ShmHeaderOrT, Containers...> hdrs_;
 
-  /** Initialize all headers */
+  /** Default initialize headers */
+  ShmHeader() = default;
+
+  /** Piecewise initialize all headers */
   template<typename ...Args>
-  explicit ShmHeader(Args&& ...args)
-  : hdrs_(std::forward<Args>(args)...) {}
+  explicit ShmHeader(Allocator *alloc, Args&& ...args) {
+    ForwardIterateTuple::Apply(
+      hdrs_,
+      [alloc, args=make_argpack(std::forward<Args>(args)...)]
+      (auto i, auto &obj_hdr) constexpr {
+        obj_hdr.PiecewiseInit(alloc, args.template Forward<i.Get()>());
+      });
+  }
 
   /** Get the internal reference to the ith object */
   template<size_t i>
@@ -49,18 +51,15 @@ class ShmHeader<TupleBase<inherit_header, MainContainer, Containers...>> {
     labstor::ForwardIterateTuple::Apply(
       hdrs_,
       [alloc](size_t i, auto &obj_hdr) constexpr {
-        obj_hdr->shm_destroy(alloc);
+        obj_hdr.shm_destroy(alloc);
       }
     );
   }
 };
 
 /** A tuple of objects to store in shared memory */
-template<
-  bool inherit_header,
-  typename MainContainer,
-  typename ...Containers>
-class TupleBase : public ShmContainer {
+template<typename ...Containers>
+class ShmStruct : public ShmContainer {
  public:
   /**====================================
    * Variables & Types
@@ -68,7 +67,8 @@ class TupleBase : public ShmContainer {
 
   typedef TYPED_HEADER header_t; /**< Index to header type */
   header_t *header_; /**< The shared-memory header */
-  labstor::tuple<MainContainer, Containers...>
+  Allocator *alloc_; /**< Allocator used for the header */
+  labstor::tuple<Containers...>
     objs_; /**< Constructed objects */
 
  public:
@@ -77,7 +77,7 @@ class TupleBase : public ShmContainer {
    * ===================================*/
 
   /** Default constructor */
-  CLASS_NAME() = default;
+  CLASS_NAME() = delete;
 
   /** Default shm constructor */
   template<typename ...Args>
@@ -92,8 +92,9 @@ class TupleBase : public ShmContainer {
                      Allocator *alloc,
                      Args&& ...args) {
     shm_init_header(header, alloc,
-                    ArgPack<Args...>(std::forward<Args>(args)...));
+                    std::forward<Args>(args)...);
   }
+
   /** Move constructor */
   void shm_weak_move_main(TYPED_HEADER *header,
                           Allocator *alloc, CLASS_NAME &other) {
@@ -134,15 +135,6 @@ class TupleBase : public ShmContainer {
                   std::forward<Args>(args)...);
   }
 
-  /** Constructor. Allocate header with specific allocator. */
-  template<typename ...Args>
-  void shm_init(lipc::Allocator *alloc, Args&& ...args) {
-    shm_destroy(false);
-    shm_init_main(typed_nullptr<TYPED_HEADER>(),
-                  alloc,
-                  std::forward<Args>(args)...);
-  }
-
   /** Constructor. Initialize an already-allocated header. */
   template<typename ...Args>
   void shm_init(TYPED_HEADER &header,
@@ -151,25 +143,25 @@ class TupleBase : public ShmContainer {
     shm_init_main(&header, alloc, std::forward<Args>(args)...);
   }
 
-  /**
-   * Default initialize a data structure's header.
-   * */
+  /** Initialize the allocator */
+  void shm_init_allocator(Allocator *alloc) {
+    if (alloc == nullptr) {
+      alloc_ = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
+    } else {
+      alloc_ = alloc;
+    }
+  }
+
+  /** Default initialize a data structure's header. */
   void shm_init_header(TYPED_HEADER *header,
                        Allocator *alloc) {
-    if (alloc == nullptr) {
-      alloc = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
-    }
-    if (IsValid()) {
-      header_->SetBits(SHM_CONTAINER_DATA_VALID);
-    } else if (header == nullptr) {
-      Pointer p;
-      header_ = alloc->template
-        AllocateConstructObjs<TYPED_HEADER>(
-        1, p);
-    } else {
+    if (IsValid()) { return; }
+    shm_init_allocator(alloc);
+    if (header != nullptr) {
       header_ = header;
-      Allocator::ConstructObj<TYPED_HEADER>(
-        *header_);
+      Allocator::ConstructObj<TYPED_HEADER>(*header_);
+    } else {
+      throw std::runtime_error("Header must be non-null during init of struct");
     }
   }
 
@@ -178,23 +170,15 @@ class TupleBase : public ShmContainer {
   void shm_init_header(TYPED_HEADER *header,
                        Allocator *alloc,
                        Args&& ...args) {
-    if (alloc == nullptr) {
-      alloc = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
+    if (IsValid()) { return; }
+    shm_init_allocator(alloc);
+    if (header == nullptr) {
+      throw std::runtime_error("Header must be non-null during init of struct");
     }
-    if (!IsValid()) {
-      if (header == nullptr) {
-        Pointer p;
-        header_ = alloc->template
-          AllocateObjs<TYPED_HEADER>(1, p);
-      } else {
-        header_ = header;
-      }
-    }
-    PassArgPack(
-      ArgPack(*header_,
-              ProductArgPacks(alloc,
-                              std::forward<Args>(args)...)),
-      Allocator::ConstructObj<TYPED_HEADER>);
+    header_ = header;
+    Allocator::ConstructObj<TYPED_HEADER>(
+      *header_,
+      alloc_, std::forward<Args>(args)...);
   }
 
   /**====================================
@@ -248,6 +232,7 @@ class TupleBase : public ShmContainer {
   /** Deserialize object from allocator + header */
   bool shm_deserialize(Allocator *alloc,
                        TYPED_HEADER *header) {
+    /*alloc_ = alloc;
     header_ = header;
     labstor::ForwardIterateTuple::Apply(
       objs_,
@@ -258,7 +243,7 @@ class TupleBase : public ShmContainer {
       }
     );
     shm_deserialize_main();
-    return true;
+    return true;*/
   }
 
   /** Constructor. Deserialize the object from the reference. */
@@ -276,25 +261,19 @@ class TupleBase : public ShmContainer {
 
   /** Destructor */
   ~CLASS_NAME() {
-    if (IsDestructable()) {
-      shm_destroy(true);
-    }
+    shm_destroy(true);
   }
 
   /** Shm Destructor */
   void shm_destroy(bool destroy_header = true) {
-    if (!IsValid()) { return; }
-    if (IsDataValid()) {
-      labstor::ReverseIterateTuple::Apply(
-        objs_,
-        [destroy_header](size_t i, auto &obj_) constexpr {
-          if constexpr(IS_SHM_ARCHIVEABLE(decltype(obj_))) {
-            obj_.shm_destroy(destroy_header);
-          }
+    /*labstor::ReverseIterateTuple::Apply(
+      objs_,
+      [destroy_header](size_t i, auto &obj_) constexpr {
+        if constexpr(IS_SHM_ARCHIVEABLE(decltype(obj_))) {
+          obj_.shm_destroy(destroy_header);
         }
-      );
-      shm_destroy_main();
-    }
+      }
+    );*/
   }
 
   /**====================================
@@ -371,9 +350,7 @@ class TupleBase : public ShmContainer {
   /** Strong Copy operation */
   void shm_strong_copy(TYPED_HEADER *header, lipc::Allocator *alloc,
                        const CLASS_NAME &other) {
-    if (other.IsNull()) { return; }
-    shm_destroy(false);
-    labstor::ForwardIterateTuple::Apply(
+    /*labstor::ForwardIterateTuple::Apply(
       objs_,
       [header, alloc, other](size_t i, auto &obj_) constexpr {
         if constexpr(IS_SHM_ARCHIVEABLE(decltype(obj_))) {
@@ -383,8 +360,7 @@ class TupleBase : public ShmContainer {
         }
       }
     );
-    shm_strong_copy_main(header, alloc, other);
-    SetDestructable();
+    shm_strong_copy_main(header, alloc, other);*/
   }
 
   /**====================================
@@ -393,46 +369,41 @@ class TupleBase : public ShmContainer {
 
   /** Sets this object as destructable */
   void SetDestructable() {
-    return GetMain().SetDestructable();
+    labstor::ForwardIterateTuple::Apply(
+      objs_,
+      [](size_t i, auto &obj_) constexpr {
+        if constexpr(IS_SHM_ARCHIVEABLE(decltype(obj_))) {
+          obj_.SetDestructable();
+        }
+      }
+    );
   }
 
   /** Sets this object as not destructable */
   void UnsetDestructable() {
-    return GetMain().UnsetDestructable();
+    labstor::ForwardIterateTuple::Apply(
+      objs_,
+      [](size_t i, auto &obj_) constexpr {
+        if constexpr(IS_SHM_ARCHIVEABLE(decltype(obj_))) {
+          obj_.UnsetDestructable();
+        }
+      }
+    );
   }
 
   /** Check if this container is destructable */
-  bool IsDestructable() const {
-    return GetMain().IsDestructable();
-  }
+  bool IsDestructable() const { return true; }
 
   /** Check if container has a valid header */
-  bool IsValid() const {
-    return GetMain().IsValid();
-  }
-
-  /** Set container header invalid */
-  void UnsetValid() {
-    GetMain().UnsetValid();
-  }
+  bool IsValid() const { return header_ != nullptr; }
 
   /**====================================
    * Header Flag Operations
    * ===================================*/
 
-  /** Check if header's data is valid */
-  bool IsDataValid() const {
-    return GetMain().IsDataValid();
-  }
-
-  /** Check if header's data is valid */
-  void UnsetDataValid() const {
-    return GetMain().UnsetDataValid();
-  }
-
   /** Check if null */
   bool IsNull() const {
-    return GetMain().IsNull();
+    return IsValid();
   }
 
   /** Get a typed pointer to the object */
@@ -448,12 +419,12 @@ class TupleBase : public ShmContainer {
 
   /** Get the allocator for this container */
   Allocator* GetAllocator() {
-    return GetMain().GetAllocator();
+    return alloc_;
   }
 
   /** Get the allocator for this container */
   Allocator* GetAllocator() const {
-    return GetMain().GetAllocator();
+    return alloc_;
   }
 
   /** Get the shared-memory allocator id */
@@ -464,41 +435,15 @@ class TupleBase : public ShmContainer {
   /** Get the ith constructed container in the tuple */
   template<size_t i>
   auto& Get() {
-    if constexpr(inherit_header) {
-      return objs_.template Get<i>();
-    } else {
-      return objs_.template Get<i + 1>();
-    }
+    return objs_.template Get<i>();
   }
 
   /** Get the ith constructed container in the tuple (const) */
   template<size_t i>
   auto& Get() const {
-    if constexpr(inherit_header) {
-      return objs_.template Get<i>();
-    } else {
-      return objs_.template Get<i + 1>();
-    }
-  }
-
-  /** Get the ith constructed container in the tuple */
-  auto& GetMain() {
-    return objs_.template Get<0>();
-  }
-
-  /** Get the ith constructed container in the tuple (const) */
-  auto& GetMain() const {
-    return objs_.template Get<0>();
+    return objs_.template Get<i>();
   }
 };
-
-/** General case of tuple  */
-template<typename ...Containers>
-using tuple = TupleBase<false, NullContainer, Containers...>;
-
-/** Used for extending base containers */
-template<typename ...Containers>
-using headless_tuple = TupleBase<true, Containers...>;
 
 }  // namespace labstor::ipc
 
@@ -506,4 +451,4 @@ using headless_tuple = TupleBase<true, Containers...>;
 #undef TYPED_CLASS
 #undef TYPED_HEADER
 
-#endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_TUPLE_H_
+#endif //LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_STRUCT_H_

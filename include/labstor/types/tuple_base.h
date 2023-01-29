@@ -75,7 +75,7 @@ struct TupleBaseRecur {
 
   /** Get reference to internal variable (only if tuple) */
   template<size_t i>
-  auto& Get() {
+  constexpr auto& Get() {
     if constexpr(i == idx) {
       return arg_;
     } else {
@@ -86,7 +86,7 @@ struct TupleBaseRecur {
 
   /** Get reference to internal variable (only if tuple, const) */
   template<size_t i>
-  auto& Get() const {
+  constexpr auto& Get() const {
     if constexpr(i == idx) {
       return arg_;
     } else {
@@ -169,18 +169,18 @@ struct TupleBase {
 
   /** Getter */
   template<size_t idx>
-  auto& Get() {
+  constexpr auto& Get() {
     return recur_.template Get<idx>();
   }
 
   /** Getter (const) */
   template<size_t idx>
-  auto& Get() const {
+  constexpr auto& Get() const {
     return recur_.template Get<idx>();
   }
 
   /** Size */
-  constexpr size_t Size() {
+  constexpr static size_t Size() {
     return sizeof...(Args);
   }
 };
@@ -193,35 +193,36 @@ using tuple = TupleBase<false, NullWrap, Containers...>;
 template<template<typename> typename Wrap, typename ...Containers>
 using tuple_wrap = TupleBase<false, Wrap, Containers...>;
 
+/** Used to emulate constexpr to lambda */
+template<typename T, T Val>
+struct MakeConstexpr {
+  constexpr static T val_ = Val;
+  constexpr static T Get() {
+    return val_;
+  }
+};
+
 /** Apply a function over an entire TupleBase / tuple */
 template<bool reverse>
 class IterateTuple {
  public:
   /** Apply a function to every element of a tuple */
-  template<typename F, typename ...Args>
-  static void Apply(tuple<Args...> &pack, F &&f) {
-    _Apply<0, tuple<Args...>,
-      sizeof...(Args), F>(pack, std::forward<F>(f));
-  }
-
-  /** Apply a function to every element of a std::tuple */
-  template<typename F, typename ...Args>
-  static void Apply(std::tuple<Args...> &pack, F &&f) {
-    _Apply<0, std::tuple<Args...>,
-      sizeof...(Args), F>(pack, std::forward<F>(f));
+  template<typename TupleT, typename F>
+  constexpr static void Apply(TupleT &pack, F &&f) {
+    _Apply<0, TupleT, F>(pack, std::forward<F>(f));
   }
 
  private:
   /** Apply the function recursively */
-  template<size_t i, typename TupleT, size_t TupleSize, typename F>
-  static void _Apply(TupleT &pack, F &&f) {
-    if constexpr(i < TupleSize) {
+  template<size_t i, typename TupleT, typename F>
+  constexpr static void _Apply(TupleT &pack, F &&f) {
+    if constexpr(i < TupleT::Size()) {
       if constexpr(reverse) {
-        _Apply<i + 1, TupleT, TupleSize, F>(pack, std::forward<F>(f));
-        f(i, pack.template Get<i>());
+        _Apply<i + 1, TupleT, F>(pack, std::forward<F>(f));
+        f(MakeConstexpr<size_t, i>(), pack.template Get<i>());
       } else {
-        f(i, pack.template Get<i>());
-        _Apply<i + 1, TupleT, TupleSize, F>(pack, std::forward<F>(f));
+        f(MakeConstexpr<size_t, i>(), pack.template Get<i>());
+        _Apply<i + 1, TupleT, F>(pack, std::forward<F>(f));
       }
     }
   }
