@@ -45,9 +45,24 @@ void TupleTest() {
   }*/
 }
 
+#include <functional>
+
+int y() {
+  return 0;
+}
+
+
+class Y {
+ public:
+  Y() = default;
+  Y(int x) {}
+  Y(int x, int w) {}
+};
+
 TEST_CASE("TupleOfIntInt") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
+
   TupleTest<int, int>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }

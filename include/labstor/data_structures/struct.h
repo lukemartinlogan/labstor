@@ -179,6 +179,7 @@ class ShmStruct : public ShmContainer {
     Allocator::ConstructObj<TYPED_HEADER>(
       *header_,
       alloc_, std::forward<Args>(args)...);
+    // TODO(llogan): pass headers to each container?
   }
 
   /**====================================

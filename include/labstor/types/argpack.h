@@ -6,6 +6,7 @@
 #define LABSTOR_INCLUDE_LABSTOR_TYPES_ARGPACK_H_
 
 #include "basic.h"
+#include  <functional>
 
 namespace labstor {
 
@@ -111,38 +112,24 @@ class PassArgPack {
   template<typename ArgPackT, typename F>
   constexpr static decltype(auto) Call(ArgPackT &&pack, F &&f) {
     return _CallRecur<0, ArgPackT, F>(
-      std::forward<F>(f), std::forward<ArgPackT>(pack));
+      std::forward<ArgPackT>(pack), std::forward<F>(f));
   }
 
  private:
   /** Unpacks the ArgPack and passes it to the function */
   template<size_t i, typename ArgPackT,
     typename F, typename ...CurArgs>
-  constexpr static decltype(auto) _CallRecur(F &&f,
-                                   ArgPackT &&pack,
-                                   CurArgs&& ...args) {
-    typedef typename std::result_of<F(CurArgs...)> RetT;
-
+  constexpr static decltype(auto) _CallRecur(ArgPackT &&pack,
+                                             F &&f,
+                                             CurArgs&& ...args) {
     if constexpr(i < ArgPackT::Size()) {
-      if constexpr(std::is_same_v<RetT, void>) {
-        _CallRecur<i + 1, ArgPackT, F>(
-          std::forward<F>(f),
-          std::forward<ArgPackT>(pack),
-          std::forward<CurArgs>(args)...,
-          FORWARD_ARGPACK_PARAM(pack, i));
-      } else {
-        return _CallRecur<i + 1, ArgPackT, F>(
-          std::forward<F>(f),
-          std::forward<ArgPackT>(pack),
-          std::forward<CurArgs>(args)...,
-          FORWARD_ARGPACK_PARAM(pack, i));
-      }
+      return _CallRecur<i + 1, ArgPackT, F>(
+        std::forward<ArgPackT>(pack),
+        std::forward<F>(f),
+        std::forward<CurArgs>(args)...,
+        FORWARD_ARGPACK_PARAM(pack, i));
     } else {
-      if constexpr(std::is_same_v<RetT, void>) {
-        f(std::forward<CurArgs>(args)...);
-      } else {
-        return f(std::forward<CurArgs>(args)...);
-      }
+      return std::__invoke(f, std::forward<CurArgs>(args)...);
     }
   }
 };

@@ -129,10 +129,13 @@ class _ShmHeaderOrT_T {
   template<typename ArgPackT>
   void PiecewiseInit(Allocator *alloc,
                      ArgPackT &&args) {
-    /*labstor::PassArgPack::Call(
+    labstor::PassArgPack::Call(
       MergeArgPacks::Merge(
         make_argpack(internal_ref(alloc)),
-        std::forward<ArgPackT>(args)));*/
+        std::forward<ArgPackT>(args)),
+      [](auto&& ...Args) constexpr {
+        Allocator::ConstructObj<T>(std::forward<decltype(Args)>(Args)...);
+      });
   }
 
   /** Shm destructor */
