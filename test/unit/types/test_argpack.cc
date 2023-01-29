@@ -94,10 +94,19 @@ void test_argpack3() {
       test_argpack3_pass<T1, T2, T3>);
   }
 
+  // Construct tuple from argpack
+  {
+    labstor::tuple<int, int, int> x(
+      labstor::ArgPack<int, int, int>(10, 11, 12));
+    REQUIRE(x.Get<0>() == 10);
+    REQUIRE(x.Get<1>() == 11);
+    REQUIRE(x.Get<2>() == 12);
+  }
+
   // Product an argpack
   {
     auto&& pack = labstor::ProductArgPacks::Product(
-      labstor::ArgPack<int>(0),
+      0,
       labstor::ArgPack<int, int>(1, 2),
       labstor::ArgPack<double, double>(3, 4));
     REQUIRE(pack.Size() == 4);
@@ -107,7 +116,7 @@ void test_argpack3() {
   {
     labstor::PassArgPack::Call(
       labstor::ProductArgPacks::Product(
-        (int)0,
+        0,
         labstor::ArgPack<int, int>(1, 2),
         labstor::ArgPack<double, double>(3, 4)),
       test_product<

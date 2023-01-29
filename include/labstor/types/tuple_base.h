@@ -7,11 +7,9 @@
 
 #include <utility>
 #include "basic.h"
+#include "argpack.h"
 
 namespace labstor {
-
-/** The "End Recurrence" type */
-struct EndTemplateRecurrence {};
 
 /** The null container wrapper */
 template<typename T>
@@ -19,16 +17,13 @@ using NullWrap = T;
 
 /** Recurrence used to create argument pack */
 template<
-  bool is_argpack,
   template<typename> typename Wrap,
   size_t idx,
   typename T=EndTemplateRecurrence,
   typename ...Args>
 struct TupleBaseRecur {
-  /** Whether to store element as rvalue reference or raw element */
-  typedef typename std::conditional<is_argpack, T&&, Wrap<T>>::type ElementT;
-  ElementT arg_; /**< The element stored */
-  TupleBaseRecur<is_argpack, Wrap, idx + 1, Args...>
+  Wrap<T> arg_; /**< The element stored */
+  TupleBaseRecur<Wrap, idx + 1, Args...>
     recur_; /**< Remaining args */
 
   /** Default constructor */
@@ -72,16 +67,11 @@ struct TupleBaseRecur {
     return *this;
   }
 
-  /** Forward an rvalue reference (only if argpack) */
-  template<size_t i>
-  auto&& Forward() {
-    if constexpr(i == idx) {
-      return std::forward<T>(arg_);
-    } else {
-      return recur_.template
-        Forward<i>();
-    }
-  }
+  /** Solidification constructor */
+  template<typename ...CArgs>
+  explicit TupleBaseRecur(ArgPack<CArgs...> &&other)
+    : arg_(other.template Forward<idx>()),
+      recur_(std::forward<ArgPack<CArgs...>>(other)) {}
 
   /** Get reference to internal variable (only if tuple) */
   template<size_t i>
@@ -108,18 +98,15 @@ struct TupleBaseRecur {
 
 /** Terminator of the TupleBase recurrence */
 template<
-  bool is_argpack,
   template<typename> typename Wrap,
   size_t idx>
-struct TupleBaseRecur<is_argpack, Wrap, idx, EndTemplateRecurrence> {
+struct TupleBaseRecur<Wrap, idx, EndTemplateRecurrence> {
   /** Default constructor */
   TupleBaseRecur() = default;
 
-  /** Forward an rvalue reference (only if argpack) */
-  template<size_t i>
-  void Forward() {
-    throw std::logic_error("(Forward) TupleBase index outside of range");
-  }
+  /** Solidification constructor */
+  template<typename ...CArgs>
+  explicit TupleBaseRecur(ArgPack<CArgs...> &&other) {}
 
   /** Getter */
   template<size_t i>
@@ -141,14 +128,9 @@ template<
   typename ...Args>
 struct TupleBase {
   /** Variable argument pack */
-  TupleBaseRecur<is_argpack, Wrap, 0, Args...> recur_;
-
-  /** Default constructor */
-  TupleBase() = default;
+  TupleBaseRecur<Wrap, 0, Args...> recur_;
 
   /** General Constructor. */
-  // NOTE(llogan): template needed to avoid conflict with default constructor
-  template<typename ...FArgs>
   explicit TupleBase(Args&& ...args)
   : recur_(std::forward<Args>(args)...) {}
 
@@ -164,9 +146,13 @@ struct TupleBase {
     return *this;
   }
 
+  /** Solidification constructor */
+  TupleBase(ArgPack<Args...> &&other)
+  : recur_(std::forward<ArgPack<Args...>>(other)) {}
+
   /** Copy constructor */
   TupleBase(const TupleBase &other)
-  : recur_(other.objs_) {}
+  : recur_(other.recur_) {}
 
   /** Copy assignment operator */
   TupleBase& operator=(const TupleBase &other) {
@@ -176,11 +162,10 @@ struct TupleBase {
     return *this;
   }
 
-  /** Getter */
-  template<size_t idx>
-  auto&& Forward() {
-    return recur_.template Forward<idx>();
-  }
+  /** Solidification constructor */
+  template<typename ...CArgs>
+  explicit TupleBase(ArgPack<CArgs...> &&other)
+  : recur_(std::forward<ArgPack<CArgs...>>(other)) {}
 
   /** Getter */
   template<size_t idx>
@@ -200,19 +185,6 @@ struct TupleBase {
   }
 };
 
-/** ArgPack definition */
-template<typename ...Args>
-using ArgPack = TupleBase<true, NullWrap, Args...>;
-
-#define FORWARD_ARGPACK_TYPE(pack, i)\
-  decltype(pack.template Forward<i>())
-
-#define FORWARD_ARGPACK_PARAM(pack, i)\
-  std::forward<FORWARD_ARGPACK_TYPE(pack, i)>(\
-    pack.template Forward<i>())
-
-
-
 /** Tuple definition */
 template<typename ...Containers>
 using tuple = TupleBase<false, NullWrap, Containers...>;
@@ -220,144 +192,6 @@ using tuple = TupleBase<false, NullWrap, Containers...>;
 /** Tuple Wrapper Definition */
 template<template<typename> typename Wrap, typename ...Containers>
 using tuple_wrap = TupleBase<false, Wrap, Containers...>;
-
-/** Used to pass an argument pack to a function or class method */
-class PassArgPack {
- public:
-  /** Call function with TupleBase */
-  template<typename F, typename ...Args>
-  static decltype(auto) Call(ArgPack<Args...> &&pack, F &&f) {
-    return _CallRecur<0, ArgPack<Args...>,
-      sizeof...(Args), F>(std::forward<F>(f), pack);
-  }
-
-  /** Call function with std::tuple */
-  template<typename F, typename ...Args>
-  static decltype(auto) Call(std::tuple<Args...> &pack, F &&f) {
-    return _CallRecur<0, std::tuple<Args...>,
-      sizeof...(Args), F>(std::forward<F>(f), pack);
-  }
-
-  private:
-  /** Unpacks the TupleBase and passes it to the function */
-  template<size_t i, typename TupleBaseT, size_t PackSize,
-    typename F, typename ...CurArgs>
-  static decltype(auto) _CallRecur(F &&f,
-                                   TupleBaseT &pack,
-                                   CurArgs&& ...args) {
-    typedef typename std::result_of<F(CurArgs...)> RetT;
-
-    if constexpr(i < PackSize) {
-      if constexpr(std::is_same_v<RetT, void>) {
-        _CallRecur<i + 1, TupleBaseT, PackSize, F>(
-          std::forward<F>(f),
-          pack,
-          std::forward<CurArgs>(args)...,
-          std::forward<decltype(pack.template Forward<i>())>(
-            pack.template Get<i>()));
-      } else {
-        return _CallRecur<i + 1, TupleBaseT, PackSize, F>(
-          std::forward<F>(f),
-          pack,
-          std::forward<CurArgs>(args)...,
-          std::forward<decltype(pack.template Forward<i>())>(
-            pack.template Get<i>()));;
-      }
-    } else {
-      if constexpr(std::is_same_v<RetT, void>) {
-        f(std::forward<CurArgs>(args)...);
-      } else {
-        return f(std::forward<CurArgs>(args)...);
-      }
-    }
-  }
-};
-
-/** Combine multiple argpacks into a single argpack */
-class MergeArgPacks {
- public:
-  /** Call function with TupleBase */
-  template<typename ...ArgPacks>
-  static decltype(auto) Merge(ArgPacks&& ...packs) {
-    return _MergePacksRecur<0>(
-      ArgPack<ArgPacks...>(std::forward<ArgPacks>(packs)...));
-  }
-
- private:
-  /** Unpacks the C++ parameter pack of ArgPacks */
-  template<size_t cur_pack, typename ArgPacksT,
-    typename ...CurArgs>
-  static decltype(auto) _MergePacksRecur(ArgPacksT &&packs,
-                                         CurArgs&& ...args) {
-    if constexpr(cur_pack < packs.Size()) {
-      return _MergeRecur<
-        cur_pack, ArgPacksT,
-        0, decltype(packs.template Forward<cur_pack>())>(
-        // End template parameters
-        std::forward<ArgPacksT>(packs),
-        FORWARD_ARGPACK_PARAM(packs, cur_pack),
-        std::forward<CurArgs>(args)...
-      );
-    } else {
-      return ArgPack<CurArgs...>(std::forward<CurArgs>(args)...);
-    }
-  }
-
-  /** Unpacks the C++ parameter pack of ArgPacks */
-  template<
-    size_t cur_pack, typename ArgPacksT,
-    size_t i, typename ArgPackT,
-    typename ...CurArgs>
-  static decltype(auto) _MergeRecur(ArgPacksT &&packs,
-                                    ArgPackT &&pack,
-                                    CurArgs&& ...args) {
-    if constexpr(i < pack.Size()) {
-      return _MergeRecur<cur_pack, ArgPacksT, i + 1, ArgPackT>(
-        std::forward<ArgPacksT>(packs),
-        std::forward<ArgPackT>(pack),
-        std::forward<CurArgs>(args)..., FORWARD_ARGPACK_PARAM(pack, i));
-    } else {
-      return _MergePacksRecur<cur_pack + 1, ArgPacksT>(
-        std::forward<ArgPacksT>(packs),
-        std::forward<CurArgs>(args)...);
-    }
-  }
-};
-
-/** Insert an argpack at the head of each pack in a set of ArgPacks */
-class ProductArgPacks {
- public:
-  /** The product function */
-  template<typename ProductPackT, typename ...ArgPacks>
-  static decltype(auto) Product(ProductPackT &&prod_pack,
-                                ArgPacks&& ...packs) {
-    return _ProductPacksRecur<0>(
-      std::forward<ProductPackT>(prod_pack),
-      ArgPack<ArgPacks...>(std::forward<ArgPacks>(packs)...));
-  }
-
- private:
-  /** Prepend \a ArgPack prod_pack to every ArgPack in orig_packs */
-  template<
-    size_t cur_pack,
-    typename ProductPackT,
-    typename OrigPacksT,
-    typename ...NewPacks>
-  static decltype(auto) _ProductPacksRecur(ProductPackT &&prod_pack,
-                                           OrigPacksT &&orig_packs,
-                                           NewPacks&& ...packs) {
-    if constexpr(cur_pack < orig_packs.Size()) {
-      return _ProductPacksRecur<cur_pack + 1>(
-        std::forward<ProductPackT>(prod_pack),
-        std::forward<OrigPacksT>(orig_packs),
-        std::forward<NewPacks>(packs)...,
-        std::forward<ProductPackT>(prod_pack),
-        FORWARD_ARGPACK_PARAM(orig_packs, cur_pack));
-    } else {
-      return ArgPack<NewPacks...>(std::forward<NewPacks>(packs)...);
-    }
-  }
-};
 
 /** Apply a function over an entire TupleBase / tuple */
 template<bool reverse>
