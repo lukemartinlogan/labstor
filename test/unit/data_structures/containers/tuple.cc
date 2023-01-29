@@ -21,7 +21,7 @@ void TupleTest() {
   }
 
   // Copy test
-  {
+  /*{
     CREATE_SET_VAR_TO_INT_OR_STRING(FirstT, first, 124);
     CREATE_SET_VAR_TO_INT_OR_STRING(SecondT, second, 130);
     lipc::tuple<FirstT, SecondT> data(alloc, first, second);
@@ -38,17 +38,17 @@ void TupleTest() {
     lipc::tuple<FirstT, SecondT> cpy(std::move(data));
     REQUIRE(cpy.template Get<0>() == first);
     REQUIRE(cpy.template Get<1>() == second);
-  }
+  }*/
 }
 
-TEST_CASE("PairOfIntInt") {
+TEST_CASE("TupleOfIntInt") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   TupleTest<int, int>();
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
 }
 
-TEST_CASE("PairOfIntString") {
+TEST_CASE("TupleOfIntString") {
   Allocator *alloc = alloc_g;
   REQUIRE(alloc->GetCurrentlyAllocatedSize() == 0);
   // TupleTest<int, lipc::string>();

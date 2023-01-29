@@ -126,6 +126,12 @@ struct TupleBaseRecur<is_argpack, Wrap, idx, EndTemplateRecurrence> {
   void Get() {
     throw std::logic_error("(Get) TupleBase index outside of range");
   }
+
+  /** Getter */
+  template<size_t i>
+  void Get() const {
+    throw std::logic_error("(Get) TupleBase index outside of range");
+  }
 };
 
 /** Used to semantically pack arguments */
@@ -198,9 +204,14 @@ struct TupleBase {
 template<typename ...Args>
 using ArgPack = TupleBase<true, NullWrap, Args...>;
 
+#define FORWARD_ARGPACK_TYPE(pack, i)\
+  decltype(pack.template Forward<i>())
+
 #define FORWARD_ARGPACK_PARAM(pack, i)\
-  std::forward<decltype(pack.template Forward<i>())>(\
+  std::forward<FORWARD_ARGPACK_TYPE(pack, i)>(\
     pack.template Forward<i>())
+
+
 
 /** Tuple definition */
 template<typename ...Containers>
@@ -309,6 +320,41 @@ class MergeArgPacks {
       return _MergePacksRecur<cur_pack + 1, ArgPacksT>(
         std::forward<ArgPacksT>(packs),
         std::forward<CurArgs>(args)...);
+    }
+  }
+};
+
+/** Insert an argpack at the head of each pack in a set of ArgPacks */
+class ProductArgPacks {
+ public:
+  /** The product function */
+  template<typename ProductPackT, typename ...ArgPacks>
+  static decltype(auto) Product(ProductPackT &&prod_pack,
+                                ArgPacks&& ...packs) {
+    return _ProductPacksRecur<0>(
+      std::forward<ProductPackT>(prod_pack),
+      ArgPack<ArgPacks...>(std::forward<ArgPacks>(packs)...));
+  }
+
+ private:
+  /** Prepend \a ArgPack prod_pack to every ArgPack in orig_packs */
+  template<
+    size_t cur_pack,
+    typename ProductPackT,
+    typename OrigPacksT,
+    typename ...NewPacks>
+  static decltype(auto) _ProductPacksRecur(ProductPackT &&prod_pack,
+                                           OrigPacksT &&orig_packs,
+                                           NewPacks&& ...packs) {
+    if constexpr(cur_pack < orig_packs.Size()) {
+      return _ProductPacksRecur<cur_pack + 1>(
+        std::forward<ProductPackT>(prod_pack),
+        std::forward<OrigPacksT>(orig_packs),
+        std::forward<NewPacks>(packs)...,
+        std::forward<ProductPackT>(prod_pack),
+        FORWARD_ARGPACK_PARAM(orig_packs, cur_pack));
+    } else {
+      return ArgPack<NewPacks...>(std::forward<NewPacks>(packs)...);
     }
   }
 };

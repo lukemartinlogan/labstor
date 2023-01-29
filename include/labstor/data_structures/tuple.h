@@ -8,7 +8,7 @@
 #include "labstor/data_structures/internal/shm_container.h"
 #include "labstor/data_structures/internal/shm_archive_or_t.h"
 #include "labstor/data_structures/internal/shm_null_container.h"
-#include "labstor/types/argpack.h"
+#include "labstor/types/tuple_base.h"
 
 #define CLASS_NAME TupleBase
 #define TYPED_CLASS TupleBase<inherit_header, MainContainer, Containers...>
@@ -32,6 +32,11 @@ template<
 class ShmHeader<TupleBase<inherit_header, MainContainer, Containers...>> {
   /**< All object headers */
   labstor::tuple_wrap<ShmHeaderOrT, Containers...> hdrs_;
+
+  /** Initialize headers */
+  template<typename ...Args>
+  explicit ShmHeader(Args&& ...args)
+  : hdrs_(std::forward<Args>(args)...) {}
 
   /** Get the internal reference to the ith object */
   template<size_t i>
@@ -75,8 +80,12 @@ class TupleBase : public ShmContainer {
   CLASS_NAME() = default;
 
   /** Default shm constructor */
+  template<typename ...Args>
   void shm_init_main(TYPED_HEADER *header,
-                     Allocator *alloc) {
+                     Allocator *alloc,
+                     Args&& ...args) {
+    shm_init_allocator(alloc);
+    shm_init_header(header_, lipc::ArgPack(std::forward<Args>(args)...));
   }
 
   /** Move constructor */
@@ -111,6 +120,7 @@ class TupleBase : public ShmContainer {
   /** Constructor. Allocate header with default allocator. */
   template<typename ...Args>
   void shm_init(Args&& ...args) {
+    shm_init_main(std::forward<Args>(args)...);
   }
 
   /**====================================
@@ -219,16 +229,18 @@ class TupleBase : public ShmContainer {
 
   /** Move constructor */
   CLASS_NAME(CLASS_NAME &&other) noexcept {
+    shm_weak_move(
+      typed_nullptr<TYPED_HEADER>(),
+      typed_nullptr<Allocator>(),
+      other);
   }
 
   /** Move assignment operator */
   CLASS_NAME& operator=(CLASS_NAME &&other) noexcept {
-    /*labstor::ForwardIterateTuple::Apply(
-      objs_,
-      [other](size_t i, auto &obj_) constexpr {
-        obj_ = std::move(other.obj_);
-      }
-    );*/
+    shm_weak_move(
+      typed_nullptr<TYPED_HEADER>(),
+      typed_nullptr<Allocator>(),
+      other);
     return *this;
   }
 
@@ -246,7 +258,11 @@ class TupleBase : public ShmContainer {
     /*labstor::ForwardIterateTuple::Apply(
       objs_,
       [header, alloc, other](size_t i, auto &obj_) constexpr {
-        obj_.shm_weak_move(header, alloc, other.objs_.template Get<i>());
+        if constexpr(IS_SHM_ARCHIVEABLE(decltype(obj_))) {
+          obj_.shm_weak_move(header, alloc, other.objs_.template Get<i>());
+        } else {
+          obj_ = std::move(other.objs_.template Get<i>());
+        }
       }
     );*/
   }
@@ -283,6 +299,16 @@ class TupleBase : public ShmContainer {
                        const CLASS_NAME &other) {
     if (other.IsNull()) { return; }
     shm_destroy(false);
+    labstor::ForwardIterateTuple::Apply(
+      objs_,
+      [header, alloc, other](size_t i, auto &obj_) constexpr {
+        if constexpr(IS_SHM_ARCHIVEABLE(decltype(obj_))) {
+          obj_.shm_strong_copy(header, alloc, other.objs_.template Get<i>());
+        } else {
+          obj_ = other.objs_.template Get<i>();
+        }
+      }
+    );
     shm_strong_copy_main(header, alloc, other);
     SetDestructable();
   }

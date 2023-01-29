@@ -29,7 +29,7 @@
 
 #include "labstor/memory/memory.h"
 #include "labstor/data_structures/data_structure.h"
-#include "labstor/types/argpack.h"
+#include "labstor/types/tuple_base.h"
 
 namespace labstor::ipc {
 
@@ -57,9 +57,8 @@ class _ShmHeaderOrT_Header {
   explicit _ShmHeaderOrT_Header(Allocator *alloc,
                                 labstor::ArgPack<Args...> &&args) {
     T obj;
-    // TODO(llogan): Expand pack with: obj, obj_hdr_ alloc, args
-    labstor::PassArgPack::Call(
-      args,
+    PassArgPack::Call(
+      MergeArgPacks::Merge(ArgPack<>(obj, obj_hdr_, alloc), args),
       Allocator::ConstructObj<T>);
     (void) alloc;
   }
@@ -130,9 +129,8 @@ class _ShmHeaderOrT_T {
   /** Construct + store object (labstor rval argpack) */
   template<typename ...Args>
   explicit _ShmHeaderOrT_T(Allocator *alloc, labstor::ArgPack<Args...> &&args) {
-    // TODO(llogan): Expand pack with: internal_ref(alloc), args
     labstor::PassArgPack::Call(
-      args,
+      MergeArgPacks::Merge(ArgPack<>(obj_, internal_ref(alloc)), args),
       Allocator::ConstructObj<T>);
   }
 
