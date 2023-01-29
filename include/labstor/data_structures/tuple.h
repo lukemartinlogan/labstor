@@ -33,7 +33,7 @@ class ShmHeader<TupleBase<inherit_header, MainContainer, Containers...>> {
   /**< All object headers */
   labstor::tuple_wrap<ShmHeaderOrT, Containers...> hdrs_;
 
-  /** Initialize headers */
+  /** Initialize all headers */
   template<typename ...Args>
   explicit ShmHeader(Args&& ...args)
   : hdrs_(std::forward<Args>(args)...) {}
@@ -82,20 +82,28 @@ class TupleBase : public ShmContainer {
   /** Default shm constructor */
   template<typename ...Args>
   void shm_init_main(TYPED_HEADER *header,
-                     Allocator *alloc,
-                     Args&& ...args) {
-    shm_init_allocator(alloc);
-    shm_init_header(header_, lipc::ArgPack(std::forward<Args>(args)...));
+                     Allocator *alloc) {
+    shm_init_header(header, alloc);
   }
 
+  /** Piecewise shm constructor */
+  template<typename ...Args>
+  void shm_init_main(TYPED_HEADER *header,
+                     Allocator *alloc,
+                     Args&& ...args) {
+    shm_init_header(header, alloc,
+                    ArgPack<Args...>(std::forward<Args>(args)...));
+  }
   /** Move constructor */
   void shm_weak_move_main(TYPED_HEADER *header,
                           Allocator *alloc, CLASS_NAME &other) {
+    shm_init_header(header, alloc, std::move(other));
   }
 
   /** Copy constructor */
   void shm_strong_copy_main(TYPED_HEADER *header,
                             Allocator *alloc, const CLASS_NAME &other) {
+    shm_init_header(header, alloc, other);
   }
 
   /** Destroy the shared-memory data. */
@@ -113,14 +121,81 @@ class TupleBase : public ShmContainer {
 
   /** Constructor. Allocate header with default allocator. */
   template<typename ...Args>
-  explicit CLASS_NAME(Args &&...args) {
+  explicit CLASS_NAME(Args&& ...args) {
     shm_init(std::forward<Args>(args)...);
   }
 
   /** Constructor. Allocate header with default allocator. */
   template<typename ...Args>
   void shm_init(Args&& ...args) {
-    shm_init_main(std::forward<Args>(args)...);
+    shm_destroy(false);
+    shm_init_main(typed_nullptr<TYPED_HEADER>(),
+                  typed_nullptr<Allocator>(),
+                  std::forward<Args>(args)...);
+  }
+
+  /** Constructor. Allocate header with specific allocator. */
+  template<typename ...Args>
+  void shm_init(lipc::Allocator *alloc, Args&& ...args) {
+    shm_destroy(false);
+    shm_init_main(typed_nullptr<TYPED_HEADER>(),
+                  alloc,
+                  std::forward<Args>(args)...);
+  }
+
+  /** Constructor. Initialize an already-allocated header. */
+  template<typename ...Args>
+  void shm_init(TYPED_HEADER &header,
+                lipc::Allocator *alloc, Args&& ...args) {
+    shm_destroy(false);
+    shm_init_main(&header, alloc, std::forward<Args>(args)...);
+  }
+
+  /**
+   * Default initialize a data structure's header.
+   * */
+  void shm_init_header(TYPED_HEADER *header,
+                       Allocator *alloc) {
+    if (alloc == nullptr) {
+      alloc = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
+    }
+    if (IsValid()) {
+      header_->SetBits(SHM_CONTAINER_DATA_VALID);
+    } else if (header == nullptr) {
+      Pointer p;
+      header_ = alloc->template
+        AllocateConstructObjs<TYPED_HEADER>(
+        1, p);
+    } else {
+      header_ = header;
+      Allocator::ConstructObj<TYPED_HEADER>(
+        *header_);
+    }
+  }
+
+  /** Piecewise initialize a data structure's header. */
+  template<typename ...Args>
+  void shm_init_header(TYPED_HEADER *header,
+                       Allocator *alloc,
+                       Args&& ...args) {
+    if (alloc == nullptr) {
+      alloc = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
+    }
+    if (IsValid()) {
+      header_->SetBits(SHM_CONTAINER_DATA_VALID);
+      return;
+    }
+    if (header == nullptr) {
+      Pointer p;
+      header_ = alloc->template
+        AllocateObjs<TYPED_HEADER>(1, p);
+    } else {
+      header_ = header;
+    }
+    PassArgPack(
+      ArgPack(*header_,
+              ProductArgPacks(alloc, std::forward<Args>(args)...)),
+      Allocator::ConstructObj<TYPED_HEADER>);
   }
 
   /**====================================

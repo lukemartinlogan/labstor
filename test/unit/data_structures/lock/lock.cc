@@ -55,7 +55,7 @@ void MutexTest() {
   }
 }
 
-void barrier_for_reads(int *tid_start, int left) {
+void barrier_for_reads(std::vector<int> &tid_start, int left) {
   int count;
   do {
     count = 0;
@@ -68,7 +68,7 @@ void barrier_for_reads(int *tid_start, int left) {
 void RwLockTest() {
   int nthreads = 8;
   int left = nthreads / 2;
-  int tid_start[left] = {0};
+  std::vector<int> tid_start(left, 0);
   int loop_count = 100000;
   int count = 0;
   RwLock lock;

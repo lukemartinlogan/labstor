@@ -67,6 +67,7 @@ void test_argpack3() {
 #endif
   }
 
+
   // Iterate over a tuple
   {
     labstor::tuple<T1, T2, T3> x(0, 1, 0);
@@ -105,24 +106,24 @@ void test_argpack3() {
 
   // Product an argpack
   {
-    auto&& pack = labstor::ProductArgPacks::Product(
-      0,
-      labstor::ArgPack<int, int>(1, 2),
-      labstor::ArgPack<double, double>(3, 4));
-    REQUIRE(pack.Size() == 4);
-  }
+   auto&& pack = labstor::ProductArgPacks::Product(
+     0,
+     labstor::ArgPack<int, int>(1, 2),
+     labstor::ArgPack<double, double>(3, 4));
+   REQUIRE(pack.Size() == 4);
+ }
 
-  // Product an argpack
-  {
-    labstor::PassArgPack::Call(
-      labstor::ProductArgPacks::Product(
-        0,
-        labstor::ArgPack<int, int>(1, 2),
-        labstor::ArgPack<double, double>(3, 4)),
-      test_product<
-        labstor::ArgPack<int, int>,
-        labstor::ArgPack<double, double>>);
-  }
+ // Product an argpack
+ {
+   labstor::PassArgPack::Call(
+     labstor::ProductArgPacks::Product(
+       0,
+       labstor::ArgPack<int, int>(1, 2),
+       labstor::ArgPack<double, double>(3, 4)),
+     test_product<
+       labstor::ArgPack<int, int>,
+       labstor::ArgPack<double, double>>);
+ }
 }
 
 TEST_CASE("TestArgpack") {

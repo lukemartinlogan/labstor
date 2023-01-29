@@ -25,21 +25,13 @@ struct ArgPackRecur {
   /** Default constructor */
   ArgPackRecur() = default;
 
-  /** Constructor. Const reference. */
-  explicit ArgPackRecur(const T &arg, Args&& ...args)
-    : arg_(std::forward<T>(arg)), recur_(std::forward<Args>(args)...) {}
-
-  /** Constructor. Lvalue reference. */
-  explicit ArgPackRecur(T& arg, Args&& ...args)
-    : arg_(std::forward<T>(arg)), recur_(std::forward<Args>(args)...) {}
-
   /** Constructor. Rvalue reference. */
   explicit ArgPackRecur(T&& arg, Args&& ...args)
-    : arg_(std::forward<T>(arg)), recur_(std::forward<Args>(args)...) {}
+  : arg_(std::forward<T>(arg)), recur_(std::forward<Args>(args)...) {}
 
   /** Forward an rvalue reference (only if argpack) */
   template<size_t i>
-  auto&& Forward() {
+  decltype(auto) Forward() {
     if constexpr(i == idx) {
       return std::forward<T>(arg_);
     } else {
@@ -67,34 +59,16 @@ template<typename ...Args>
 struct ArgPack {
   /** Variable argument pack */
   ArgPackRecur<0, Args...> recur_;
+  /** Size of the argpack */
+  constexpr const static size_t size_ = sizeof...(Args);
+
+  /** Default constructor */
+  ArgPack() = default;
 
   /** General Constructor. */
+  template<typename ...CArgs>
   explicit ArgPack(Args&& ...args)
     : recur_(std::forward<Args>(args)...) {}
-
-  /** Move constructor */
-  ArgPack(ArgPack &&other) noexcept
-    : recur_(std::move(other.objs_)) {}
-
-  /** Move assignment operator */
-  ArgPack& operator=(ArgPack &&other) noexcept {
-    if (this != &other) {
-      recur_ = std::move(other.recur_);
-    }
-    return *this;
-  }
-
-  /** Copy constructor */
-  ArgPack(const ArgPack &other)
-    : recur_(other.recur_) {}
-
-  /** Copy assignment operator */
-  ArgPack& operator=(const ArgPack &other) {
-    if (this != &other) {
-      recur_ = other.recur_;
-    }
-    return *this;
-  }
 
   /** Get forward reference */
   template<size_t idx>
@@ -103,18 +77,22 @@ struct ArgPack {
   }
 
   /** Size */
-  constexpr size_t Size() {
-    return sizeof...(Args);
+  constexpr static size_t Size() {
+    return size_;
   }
 };
 
-/** Get the type of the forward for \a pack pack at \a index i */
-#define FORWARD_ARGPACK_TYPE(pack, i)\
+/** Get the type + reference of the forward for \a pack pack at \a index i */
+#define FORWARD_ARGPACK_FULL_TYPE(pack, i)\
   decltype(pack.template Forward<i>())
+
+/** Get type of the forward for \a pack pack at \a index i */
+#define FORWARD_ARGPACK_BASE_TYPE(pack, i)\
+  std::remove_reference<FORWARD_ARGPACK_FULL_TYPE(pack, i)>
 
 /** Forward the param for \a pack pack at \a index i */
 #define FORWARD_ARGPACK_PARAM(pack, i)\
-  std::forward<FORWARD_ARGPACK_TYPE(pack, i)>(\
+  std::forward<FORWARD_ARGPACK_FULL_TYPE(pack, i)>(\
     pack.template Forward<i>())
 
 /** Used to pass an argument pack to a function or class method */
@@ -123,15 +101,8 @@ class PassArgPack {
   /** Call function with ArgPack */
   template<typename F, typename ...Args>
   static decltype(auto) Call(ArgPack<Args...> &&pack, F &&f) {
-    return _CallRecur<0, ArgPack<Args...>,
-                      sizeof...(Args), F>(std::forward<F>(f), pack);
-  }
-
-  /** Call function with std::tuple */
-  template<typename F, typename ...Args>
-  static decltype(auto) Call(std::tuple<Args...> &pack, F &&f) {
-    return _CallRecur<0, std::tuple<Args...>,
-    sizeof...(Args), F>(std::forward<F>(f), pack);
+    return _CallRecur<0, ArgPack<Args...>, sizeof...(Args), F>(
+      std::forward<F>(f), std::forward<ArgPack<Args...>>(pack));
   }
 
  private:
@@ -139,7 +110,7 @@ class PassArgPack {
   template<size_t i, typename ArgPackT, size_t PackSize,
     typename F, typename ...CurArgs>
   static decltype(auto) _CallRecur(F &&f,
-                                   ArgPackT &pack,
+                                   ArgPackT &&pack,
                                    CurArgs&& ...args) {
     typedef typename std::result_of<F(CurArgs...)> RetT;
 
@@ -147,17 +118,15 @@ class PassArgPack {
       if constexpr(std::is_same_v<RetT, void>) {
         _CallRecur<i + 1, ArgPackT, PackSize, F>(
           std::forward<F>(f),
-          pack,
+          std::forward<ArgPackT>(pack),
           std::forward<CurArgs>(args)...,
-          std::forward<decltype(pack.template Forward<i>())>(
-            pack.template Get<i>()));
+          FORWARD_ARGPACK_PARAM(pack, i));
       } else {
         return _CallRecur<i + 1, ArgPackT, PackSize, F>(
           std::forward<F>(f),
-          pack,
+          std::forward<ArgPackT>(pack),
           std::forward<CurArgs>(args)...,
-          std::forward<decltype(pack.template Forward<i>())>(
-            pack.template Forward<i>()));
+          FORWARD_ARGPACK_PARAM(pack, i));
       }
     } else {
       if constexpr(std::is_same_v<RetT, void>) {
@@ -185,10 +154,9 @@ class MergeArgPacks {
     typename ...CurArgs>
   static decltype(auto) _MergePacksRecur(ArgPacksT &&packs,
                                          CurArgs&& ...args) {
-    if constexpr(cur_pack < packs.Size()) {
+    if constexpr(cur_pack < ArgPacksT::Size()) {
       return _MergeRecur<
-        cur_pack, ArgPacksT,
-        0, decltype(packs.template Forward<cur_pack>())>(
+        cur_pack, ArgPacksT, 0>(
         // End template parameters
         std::forward<ArgPacksT>(packs),
         FORWARD_ARGPACK_PARAM(packs, cur_pack),
@@ -207,7 +175,7 @@ class MergeArgPacks {
   static decltype(auto) _MergeRecur(ArgPacksT &&packs,
                                     ArgPackT &&pack,
                                     CurArgs&& ...args) {
-    if constexpr(i < pack.Size()) {
+    if constexpr(i < ArgPackT::Size()) {
       return _MergeRecur<cur_pack, ArgPacksT, i + 1, ArgPackT>(
         std::forward<ArgPacksT>(packs),
         std::forward<ArgPackT>(pack),
@@ -242,7 +210,7 @@ class ProductArgPacks {
   static decltype(auto) _ProductPacksRecur(ProductPackT &&prod_pack,
                                            OrigPacksT &&orig_packs,
                                            NewPacks&& ...packs) {
-    if constexpr(cur_pack < orig_packs.Size()) {
+    if constexpr(cur_pack < OrigPacksT::Size()) {
       return _ProductPacksRecur<cur_pack + 1>(
         std::forward<ProductPackT>(prod_pack),
         std::forward<OrigPacksT>(orig_packs),

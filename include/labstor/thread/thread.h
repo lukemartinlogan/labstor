@@ -50,6 +50,7 @@ class Thread {
 
 class ThreadStatic {
  public:
+  virtual ~ThreadStatic() = default;
   virtual void Yield() = 0;
   virtual tid_t GetTid() = 0;
 };

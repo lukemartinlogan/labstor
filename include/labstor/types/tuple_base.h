@@ -130,7 +130,11 @@ struct TupleBase {
   /** Variable argument pack */
   TupleBaseRecur<Wrap, 0, Args...> recur_;
 
+  /** Default constructor */
+  TupleBase() = default;
+
   /** General Constructor. */
+  template<typename ...CArgs>
   explicit TupleBase(Args&& ...args)
   : recur_(std::forward<Args>(args)...) {}
 
@@ -145,10 +149,6 @@ struct TupleBase {
     }
     return *this;
   }
-
-  /** Solidification constructor */
-  TupleBase(ArgPack<Args...> &&other)
-  : recur_(std::forward<ArgPack<Args...>>(other)) {}
 
   /** Copy constructor */
   TupleBase(const TupleBase &other)
