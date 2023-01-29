@@ -15,7 +15,10 @@ void TupleTest() {
   {
     CREATE_SET_VAR_TO_INT_OR_STRING(FirstT, first, 124);
     CREATE_SET_VAR_TO_INT_OR_STRING(SecondT, second, 130);
-    lipc::tuple<FirstT, SecondT> data(alloc, first, second);
+    labstor::ArgPack<FirstT> z(first);
+    lipc::tuple<FirstT, SecondT> data(alloc,
+                                      labstor::ArgPack<FirstT>(first),
+                                      labstor::ArgPack<SecondT>(second));
     REQUIRE(data.template Get<0>() == first);
     REQUIRE(data.template Get<1>() == second);
   }

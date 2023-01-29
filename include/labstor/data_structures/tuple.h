@@ -181,20 +181,19 @@ class TupleBase : public ShmContainer {
     if (alloc == nullptr) {
       alloc = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
     }
-    if (IsValid()) {
-      header_->SetBits(SHM_CONTAINER_DATA_VALID);
-      return;
-    }
-    if (header == nullptr) {
-      Pointer p;
-      header_ = alloc->template
-        AllocateObjs<TYPED_HEADER>(1, p);
-    } else {
-      header_ = header;
+    if (!IsValid()) {
+      if (header == nullptr) {
+        Pointer p;
+        header_ = alloc->template
+          AllocateObjs<TYPED_HEADER>(1, p);
+      } else {
+        header_ = header;
+      }
     }
     PassArgPack(
       ArgPack(*header_,
-              ProductArgPacks(alloc, std::forward<Args>(args)...)),
+              ProductArgPacks(alloc,
+                              std::forward<Args>(args)...)),
       Allocator::ConstructObj<TYPED_HEADER>);
   }
 

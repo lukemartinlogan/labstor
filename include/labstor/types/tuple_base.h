@@ -140,7 +140,7 @@ struct TupleBase {
 
   /** Move constructor */
   TupleBase(TupleBase &&other) noexcept
-  : recur_(std::move(other.objs_)) {}
+  : recur_(std::move(other.recur_)) {}
 
   /** Move assignment operator */
   TupleBase& operator=(TupleBase &&other) noexcept {

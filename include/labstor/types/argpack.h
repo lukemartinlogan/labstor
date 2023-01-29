@@ -18,7 +18,10 @@ template<
   typename T=EndTemplateRecurrence,
   typename ...Args>
 struct ArgPackRecur {
-  T&& arg_; /**< The element stored */
+  constexpr static bool is_rval = std::is_rvalue_reference<T>();
+  typedef typename std::conditional<is_rval, T&&, T&>::type ElementT;
+
+  ElementT arg_; /**< The element stored */
   ArgPackRecur<idx + 1, Args...>
     recur_; /**< Remaining args */
 
@@ -26,14 +29,18 @@ struct ArgPackRecur {
   ArgPackRecur() = default;
 
   /** Constructor. Rvalue reference. */
-  explicit ArgPackRecur(T&& arg, Args&& ...args)
+  explicit ArgPackRecur(T arg, Args&& ...args)
   : arg_(std::forward<T>(arg)), recur_(std::forward<Args>(args)...) {}
 
   /** Forward an rvalue reference (only if argpack) */
   template<size_t i>
   decltype(auto) Forward() {
     if constexpr(i == idx) {
-      return std::forward<T>(arg_);
+      if constexpr(is_rval) {
+        return std::forward<T>(arg_);
+      } else {
+        return arg_;
+      }
     } else {
       return recur_.template
         Forward<i>();
@@ -62,17 +69,13 @@ struct ArgPack {
   /** Size of the argpack */
   constexpr const static size_t size_ = sizeof...(Args);
 
-  /** Default constructor */
-  ArgPack() = default;
-
   /** General Constructor. */
-  template<typename ...CArgs>
-  explicit ArgPack(Args&& ...args)
-    : recur_(std::forward<Args>(args)...) {}
+  ArgPack(Args&& ...args)
+  : recur_(std::forward<Args>(args)...) {}
 
   /** Get forward reference */
   template<size_t idx>
-  auto&& Forward() {
+  decltype(auto) Forward() {
     return recur_.template Forward<idx>();
   }
 
@@ -81,6 +84,12 @@ struct ArgPack {
     return size_;
   }
 };
+
+/** Make an argpack */
+template<typename ...Args>
+ArgPack<Args&&...> make_argpack(Args&& ...args) {
+  return ArgPack<Args&&...>(std::forward<Args>(args)...);
+}
 
 /** Get the type + reference of the forward for \a pack pack at \a index i */
 #define FORWARD_ARGPACK_FULL_TYPE(pack, i)\
@@ -144,8 +153,7 @@ class MergeArgPacks {
   /** Call function with ArgPack */
   template<typename ...ArgPacks>
   static decltype(auto) Merge(ArgPacks&& ...packs) {
-    return _MergePacksRecur<0>(
-      ArgPack<ArgPacks...>(std::forward<ArgPacks>(packs)...));
+    return _MergePacksRecur<0>(make_argpack(std::forward<ArgPacks>(packs)...));
   }
 
  private:
@@ -163,7 +171,7 @@ class MergeArgPacks {
         std::forward<CurArgs>(args)...
       );
     } else {
-      return ArgPack<CurArgs...>(std::forward<CurArgs>(args)...);
+      return make_argpack(std::forward<CurArgs>(args)...);
     }
   }
 
@@ -197,7 +205,7 @@ class ProductArgPacks {
                                 ArgPacks&& ...packs) {
     return _ProductPacksRecur<0>(
       std::forward<ProductPackT>(prod_pack),
-      ArgPack<ArgPacks...>(std::forward<ArgPacks>(packs)...));
+      make_argpack(std::forward<ArgPacks>(packs)...));
   }
 
  private:
@@ -218,7 +226,7 @@ class ProductArgPacks {
         std::forward<ProductPackT>(prod_pack),
         FORWARD_ARGPACK_PARAM(orig_packs, cur_pack));
     } else {
-      return ArgPack<NewPacks...>(std::forward<NewPacks>(packs)...);
+      return make_argpack(std::forward<NewPacks>(packs)...);
     }
   }
 };
