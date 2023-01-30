@@ -137,9 +137,7 @@ class string : public ShmContainer {
     shm_init_main(header, alloc);
     header_->length_ = other.header_->length_;
     header_->text_ = other.header_->text_;
-    length_ = other.length_;
-    text_ = other.text_;
-    alloc_ = other.alloc_;
+    shm_deserialize_main();
   }
 
   /** Copy constructor */
@@ -147,6 +145,7 @@ class string : public ShmContainer {
                             Allocator *alloc, const string &other) {
     shm_init_main(header, alloc, other.size());
     _create_str(other.data(), other.size());
+    shm_deserialize_main();
   }
 
   /** Construct by concatenating two string in shared-memory */

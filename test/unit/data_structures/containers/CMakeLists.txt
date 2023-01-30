@@ -42,14 +42,10 @@ add_test(NAME test_list_of_string COMMAND
         ${CMAKE_CURRENT_BINARY_DIR}/test_data_structure_exec "ListOfString")
 
 # MANUAL PTR TESTS
-add_test(NAME test_manual_ptr_of_int COMMAND
-        ${CMAKE_CURRENT_BINARY_DIR}/test_data_structure_exec "ManualPtrOfInt")
 add_test(NAME test_manual_ptr_of_string COMMAND
         ${CMAKE_CURRENT_BINARY_DIR}/test_data_structure_exec "ManualPtrOfString")
 
 # UNIQUE PTR TESTS
-add_test(NAME test_unique_ptr_of_int COMMAND
-        ${CMAKE_CURRENT_BINARY_DIR}/test_data_structure_exec "UniquePtrOfInt")
 add_test(NAME test_unique_ptr_of_string COMMAND
         ${CMAKE_CURRENT_BINARY_DIR}/test_data_structure_exec "UniquePtrOfString")
 

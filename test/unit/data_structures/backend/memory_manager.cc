@@ -54,7 +54,7 @@ TEST_CASE("MemoryManager") {
     std::cout << "Creating SHMEM (rank 0): " << shm_url << std::endl;
     mem_mngr->CreateBackend<lipc::PosixShmMmap>(
       MemoryManager::kDefaultBackendSize, shm_url);
-    mem_mngr->CreateAllocator<lipc::PageAllocator>(
+    mem_mngr->CreateAllocator<lipc::StackAllocator>(
       shm_url, alloc_id, 0);
   }
   MPI_Barrier(MPI_COMM_WORLD);

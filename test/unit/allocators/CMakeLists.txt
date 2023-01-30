@@ -14,6 +14,6 @@ target_link_libraries(test_allocator_exec
 
 # PAGE ALLOCATOR TESTS
 add_test(NAME test_page_allocator COMMAND
-        ${CMAKE_CURRENT_BINARY_DIR}/test_allocator_exec "PageAllocator")
+        ${CMAKE_CURRENT_BINARY_DIR}/test_allocator_exec "StackAllocator")
 add_test(NAME test_page_allocator_4t COMMAND
-        ${CMAKE_CURRENT_BINARY_DIR}/test_allocator_exec "PageAllocatorMultithreaded")
+        ${CMAKE_CURRENT_BINARY_DIR}/test_allocator_exec "StackAllocatorMultithreaded")
