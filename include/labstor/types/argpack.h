@@ -10,7 +10,10 @@
 
 namespace labstor {
 
-/** The "End Recurrence" type */
+/** Type which indicates that a constructor takes ArgPacks as input */
+struct PiecewiseConstruct {};
+
+/** Type which ends template recurrence */
 struct EndTemplateRecurrence {};
 
 /** Recurrence used to create argument pack */

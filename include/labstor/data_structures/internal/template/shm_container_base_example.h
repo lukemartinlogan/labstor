@@ -7,7 +7,7 @@
 
 #include "labstor/data_structures/internal/shm_container.h"
 
-namespace labstor::ipc {
+namespace honey {
 
 class ShmContainerExample;
 
@@ -15,8 +15,11 @@ class ShmContainerExample;
 #define TYPED_CLASS ShmContainerExample
 #define TYPED_HEADER ShmHeader<ShmContainerExample>
 
+template<typename T>
+class ShmHeader;
+
 template<>
-class ShmHeader<ShmContainerExample> : public ShmBaseHeader {
+ class ShmHeader<ShmContainerExample> : public lipc::ShmBaseHeader {
 };
 
 class ShmContainerExample {
@@ -27,8 +30,8 @@ class ShmContainerExample {
 
   typedef TYPED_HEADER header_t; /** Header type query */
   header_t *header_; /**< Header of the shared-memory data structure */
-  Allocator *alloc_; /**< Allocator used for this data structure */
-  bitfield32_t flags_; /**< Flags used data structure status */
+  lipc::Allocator *alloc_; /**< lipc::Allocator used for this data structure */
+  labstor::bitfield32_t flags_; /**< Flags used data structure status */
 
  public:
   /**====================================
@@ -40,20 +43,22 @@ class ShmContainerExample {
 
   /** Default shm constructor */
   void shm_init_main(TYPED_HEADER *header,
-                     Allocator *alloc) {
+                     lipc::Allocator *alloc) {
     shm_init_allocator(alloc);
     shm_init_header(header);
   }
 
   /** Move constructor */
   void shm_weak_move_main(TYPED_HEADER *header,
-                          Allocator *alloc, CLASS_NAME &other) {
+                          lipc::Allocator *alloc, 
+                          CLASS_NAME &other) {
     shm_init_main(header, alloc);
   }
 
   /** Copy constructor */
   void shm_strong_copy_main(TYPED_HEADER *header,
-                            Allocator *alloc, const CLASS_NAME &other) {
+                            lipc::Allocator *alloc, 
+                            const CLASS_NAME &other) {
     shm_init_main(header, alloc);
   }
 
@@ -80,8 +85,8 @@ class ShmContainerExample {
   template<typename ...Args>
   void shm_init(Args&& ...args) {
     shm_destroy(false);
-    shm_init_main(typed_nullptr<TYPED_HEADER>(),
-                  typed_nullptr<Allocator>(),
+    shm_init_main(lipc::typed_nullptr<TYPED_HEADER>(),
+                  lipc::typed_nullptr<lipc::Allocator>(),
                   std::forward<Args>(args)...);
   }
 
@@ -89,7 +94,7 @@ class ShmContainerExample {
   template<typename ...Args>
   void shm_init(lipc::Allocator *alloc, Args&& ...args) {
     shm_destroy(false);
-    shm_init_main(typed_nullptr<TYPED_HEADER>(),
+    shm_init_main(lipc::typed_nullptr<TYPED_HEADER>(),
                   alloc,
                   std::forward<Args>(args)...);
   }
@@ -103,7 +108,7 @@ class ShmContainerExample {
   }
 
   /** Initialize the data structure's allocator */
-  inline void shm_init_allocator(Allocator *alloc) {
+  inline void shm_init_allocator(lipc::Allocator *alloc) {
     if (IsValid()) { return; }
     if (alloc == nullptr) {
       alloc_ = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
@@ -123,7 +128,7 @@ class ShmContainerExample {
     if (IsValid()) {
       header_->SetBits(SHM_CONTAINER_DATA_VALID);
     } else if (header == nullptr) {
-      Pointer p;
+      lipc::Pointer p;
       header_ = alloc_->template
         AllocateConstructObjs<TYPED_HEADER>(
         1, p, std::forward<Args>(args)...);
@@ -134,9 +139,9 @@ class ShmContainerExample {
         SHM_CONTAINER_VALID |
           SHM_CONTAINER_DESTRUCTABLE);
     } else {
-      Pointer header_ptr;
+      lipc::Pointer header_ptr;
       header_ = header;
-      Allocator::ConstructObj<TYPED_HEADER>(
+      lipc::Allocator::ConstructObj<TYPED_HEADER>(
         *header_, std::forward<Args>(args)...);
       header_->SetBits(
         SHM_CONTAINER_DATA_VALID);
@@ -151,16 +156,16 @@ class ShmContainerExample {
    * ===================================*/
 
   /** Serialize into a Pointer */
-  void shm_serialize(TypedPointer<TYPED_CLASS> &ar) const {
+  void shm_serialize(lipc::TypedPointer<TYPED_CLASS> &ar) const {
     ar = alloc_->template
-      Convert<TYPED_HEADER, Pointer>(header_);
+      Convert<TYPED_HEADER, lipc::Pointer>(header_);
     shm_serialize_main();
   }
 
   /** Serialize into an AtomicPointer */
-  void shm_serialize(TypedAtomicPointer<TYPED_CLASS> &ar) const {
+  void shm_serialize(lipc::TypedAtomicPointer<TYPED_CLASS> &ar) const {
     ar = alloc_->template
-      Convert<TYPED_HEADER, AtomicPointer>(header_);
+      Convert<TYPED_HEADER, lipc::AtomicPointer>(header_);
     shm_serialize_main();
   }
 
@@ -172,7 +177,7 @@ class ShmContainerExample {
    * ===================================*/
 
   /** Deserialize object from a raw pointer */
-  bool shm_deserialize(const TypedPointer<TYPED_CLASS> &ar) {
+  bool shm_deserialize(const lipc::TypedPointer<TYPED_CLASS> &ar) {
     return shm_deserialize(
       LABSTOR_MEMORY_MANAGER->GetAllocator(ar.allocator_id_),
       ar.ToOffsetPointer()
@@ -180,12 +185,12 @@ class ShmContainerExample {
   }
 
   /** Deserialize object from allocator + offset */
-  bool shm_deserialize(Allocator *alloc, OffsetPointer header_ptr) {
+  bool shm_deserialize(lipc::Allocator *alloc, lipc::OffsetPointer header_ptr) {
     if (header_ptr.IsNull()) { return false; }
     return shm_deserialize(alloc,
                            alloc->Convert<
                              TYPED_HEADER,
-                             OffsetPointer>(header_ptr));
+                             lipc::OffsetPointer>(header_ptr));
   }
 
   /** Deserialize object from another object (weak copy) */
@@ -195,7 +200,7 @@ class ShmContainerExample {
   }
 
   /** Deserialize object from allocator + header */
-  bool shm_deserialize(Allocator *alloc,
+  bool shm_deserialize(lipc::Allocator *alloc,
                        TYPED_HEADER *header) {
     flags_.UnsetBits(SHM_CONTAINER_DESTRUCTABLE);
     alloc_ = alloc;
@@ -246,8 +251,8 @@ class ShmContainerExample {
   /** Move constructor */
   CLASS_NAME(CLASS_NAME &&other) noexcept {
     shm_weak_move(
-      typed_nullptr<TYPED_HEADER>(),
-      typed_nullptr<Allocator>(),
+      lipc::typed_nullptr<TYPED_HEADER>(),
+      lipc::typed_nullptr<lipc::Allocator>(),
       other);
   }
 
@@ -255,8 +260,8 @@ class ShmContainerExample {
   CLASS_NAME& operator=(CLASS_NAME &&other) noexcept {
     if (this != &other) {
       shm_weak_move(
-        typed_nullptr<TYPED_HEADER>(),
-        typed_nullptr<Allocator>(),
+        lipc::typed_nullptr<TYPED_HEADER>(),
+        lipc::typed_nullptr<lipc::Allocator>(),
         other);
     }
     return *this;
@@ -296,8 +301,8 @@ class ShmContainerExample {
   CLASS_NAME& operator=(const CLASS_NAME &other) {
     if (this != &other) {
       shm_strong_copy(
-        typed_nullptr<TYPED_HEADER>(),
-        typed_nullptr<Allocator>(),
+        lipc::typed_nullptr<TYPED_HEADER>(),
+        lipc::typed_nullptr<lipc::Allocator>(),
         other);
     }
     return *this;
@@ -380,17 +385,17 @@ class ShmContainerExample {
    * ===================================*/
 
   /** Get the allocator for this container */
-  Allocator* GetAllocator() {
+  lipc::Allocator* GetAllocator() {
     return alloc_;
   }
 
   /** Get the allocator for this container */
-  Allocator* GetAllocator() const {
+  lipc::Allocator* GetAllocator() const {
     return alloc_;
   }
 
   /** Get the shared-memory allocator id */
-  allocator_id_t GetAllocatorId() const {
+  lipc::allocator_id_t GetAllocatorId() const {
     return alloc_->GetId();
   }
 };

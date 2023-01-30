@@ -58,8 +58,12 @@ class _ShmHeaderOrT_Header {
                      ArgPackT &&args) {
     T obj;
     PassArgPack::Call(
-      MergeArgPacks::Merge(ArgPack<>(obj, obj_hdr_, alloc), args),
-      Allocator::ConstructObj<T>);
+      MergeArgPacks::Merge(make_argpack(obj, obj_hdr_, alloc),
+                           std::forward<ArgPackT>(args)),
+      [](auto&& ...Args) constexpr {
+        Allocator::ConstructObj<T>(std::forward<decltype(Args)>(Args)...);
+      });
+    obj.UnsetDestructable();
   }
 
   /** Destructor */

@@ -53,9 +53,12 @@ class ShmSmartPointer : public ShmArchiveable {};
 template<typename T>
 class ShmSmartPtr : public ShmSmartPointer {
  public:
-  T obj_;
+  T obj_; /**< The stored shared-memory object */
 
  public:
+  /** Default constructor */
+  ShmSmartPtr() = default;
+
   /** Sets this pointer to NULL */
   void SetNull() {
     obj_.SetNull();

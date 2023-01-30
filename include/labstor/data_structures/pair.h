@@ -35,6 +35,17 @@ struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
   explicit ShmHeader(Allocator *alloc)
   : first_(alloc), second_(alloc) {}
 
+  /** Piecewise constructor. */
+  template<typename FirstArgPackT, typename SecondArgPackT>
+  explicit ShmHeader(Allocator *alloc,
+                     PiecewiseConstruct &&hint,
+                     FirstArgPackT &&first,
+                     SecondArgPackT &&second) {
+    (void) hint;
+    first_.PiecewiseInit(alloc, std::forward<FirstArgPackT>(first));
+    second_.PiecewiseInit(alloc, std::forward<SecondArgPackT>(second));
+  }
+
   /** Move constructor. */
   explicit ShmHeader(Allocator *alloc,
                      FirstT &&first,
@@ -77,7 +88,7 @@ class pair : public ShmContainer {
     shm_init_header(header, alloc);
   }
 
-  /** Construct pair by forwarding parameters */
+  /** Construct pair by moving parameters */
   void shm_init_main(TYPED_HEADER *header,
                      Allocator *alloc,
                      FirstT &&first, SecondT &&second) {
@@ -97,6 +108,23 @@ class pair : public ShmContainer {
     shm_init_allocator(alloc);
     shm_init_header(header,
                     alloc_, first, second);
+    first_ = lipc::ShmRef<FirstT>(header_->first_.internal_ref(alloc_));
+    second_ = lipc::ShmRef<SecondT>(header_->second_.internal_ref(alloc_));
+  }
+
+  /** Construct pair piecewise */
+  template<typename FirstArgPackT, typename SecondArgPackT>
+  void shm_init_main(TYPED_HEADER *header,
+                     Allocator *alloc,
+                     PiecewiseConstruct &&hint,
+                     FirstArgPackT &&first,
+                     SecondArgPackT &&second) {
+    shm_init_allocator(alloc);
+    shm_init_header(header,
+                    alloc_,
+                    std::forward<PiecewiseConstruct>(hint),
+                    std::forward<FirstArgPackT>(first),
+                    std::forward<SecondArgPackT>(second));
     first_ = lipc::ShmRef<FirstT>(header_->first_.internal_ref(alloc_));
     second_ = lipc::ShmRef<SecondT>(header_->second_.internal_ref(alloc_));
   }

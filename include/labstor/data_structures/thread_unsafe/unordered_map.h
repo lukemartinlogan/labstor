@@ -447,8 +447,11 @@ class unordered_map : public ShmContainer {
    * @return None
    * */
   template<bool growth, bool modify_existing, typename ...Args>
-  bool emplace_templ(const Key &key, const T &val) {
-    COLLISION_T entry(alloc_, key, val);
+  bool emplace_templ(const Key &key, Args&&... args) {
+    COLLISION_T entry(alloc_,
+                      PiecewiseConstruct(),
+                      make_argpack(key),
+                      make_argpack(std::forward<Args>(args)...));
     return insert_templ<growth, modify_existing>(entry);
   }
 
