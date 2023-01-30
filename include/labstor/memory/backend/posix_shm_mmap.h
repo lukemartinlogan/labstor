@@ -118,7 +118,7 @@ class PosixShmMmap : public MemoryBackend {
   T* _Map(size_t size, off64_t off) {
     T *ptr = reinterpret_cast<T*>(
       mmap64(nullptr, size, PROT_READ | PROT_WRITE,
-             MAP_SHARED, fd_, 0));
+             MAP_SHARED, fd_, off));
     if (ptr == MAP_FAILED) {
       throw SHMEM_CREATE_FAILED.format();
     }
