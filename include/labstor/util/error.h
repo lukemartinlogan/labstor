@@ -26,7 +26,7 @@
 #ifndef LABSTOR_ERROR_H
 #define LABSTOR_ERROR_H
 
-#ifdef __cplusplus
+// #ifdef __cplusplus
 
 #include <iostream>
 #include <string>
@@ -68,6 +68,6 @@ class Error {
 
 }  // namespace labstor
 
-#endif
+// #endif
 
 #endif  // LABSTOR_ERROR_H

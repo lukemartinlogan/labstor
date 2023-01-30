@@ -81,7 +81,7 @@ OffsetPointer StackAllocator::ReallocateOffsetNoNullCheck(OffsetPointer p,
 void StackAllocator::FreeOffsetNoNullCheck(OffsetPointer p) {
   auto hdr = Convert<MpPage>(p - sizeof(MpPage));
   if (!hdr->IsAllocated()) {
-    throw DOUBLE_FREE;
+    throw DOUBLE_FREE.format();
   }
   hdr->UnsetAllocated();
   header_->total_alloc_.fetch_sub(hdr->page_size_);

@@ -7,6 +7,7 @@
 #include "labstor/data_structures/string.h"
 #include "labstor/data_structures/thread_unsafe/list.h"
 #include "labstor/data_structures/thread_unsafe/vector.h"
+#include "labstor/util/error.h"
 
 template<typename T, typename ContainerT>
 void ListVecTest(size_t count) {
@@ -16,51 +17,71 @@ void ListVecTest(size_t count) {
   Pointer *header = alloc->GetCustomHeader<Pointer>();
   ContainerT obj;
 
-  if (rank == 0) {
-    obj.shm_init(alloc);
-    obj >> (*header);
-  } else {
-    obj.shm_deserialize(*header);
-  }
-  MPI_Barrier(MPI_COMM_WORLD);
-
-  // Write 100 objects from rank 0
-  {
+  try {
     if (rank == 0) {
-      for (int i = 0; i < count; ++i) {
-        CREATE_SET_VAR_TO_INT_OR_STRING(T, var, i);
-        obj.emplace_back(var);
+      obj.shm_init(alloc);
+      obj >> (*header);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    obj.shm_deserialize(*header);
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // Write 100 objects from rank 0
+    {
+      if (rank == 0) {
+        for (int i = 0; i < count; ++i) {
+          CREATE_SET_VAR_TO_INT_OR_STRING(T, var, i);
+          obj.emplace_back(var);
+        }
       }
+      MPI_Barrier(MPI_COMM_WORLD);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
-  }
 
-  // Read 100 objects from every rank
-  {
-    REQUIRE(obj.size() == count);
-    int i = 0;
-    for (lipc::ShmRef<T> var : obj) {
-      CREATE_SET_VAR_TO_INT_OR_STRING(T, orig, i);
-      REQUIRE(*var == orig);
+    // Read 100 objects from every rank
+    {
+      REQUIRE(obj.size() == count);
+      int i = 0;
+      for (lipc::ShmRef<T> var : obj) {
+        CREATE_SET_VAR_TO_INT_OR_STRING(T, orig, i);
+        REQUIRE(*var == orig);
+        ++i;
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
-  }
 
-  // Modify an object in rank 0
-  {
-    CREATE_SET_VAR_TO_INT_OR_STRING(T, update, count);
-    lipc::ShmRef<T> first = *obj.begin();
-    (*first) = update;
-    MPI_Barrier(MPI_COMM_WORLD);
-  }
+    // Modify an object in rank 0
+    {
+      if (rank == 0) {
+        CREATE_SET_VAR_TO_INT_OR_STRING(T, update, count);
+        lipc::ShmRef<T> first = *obj.begin();
+        (*first) = update;
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
 
-  // Check if modification received
-  {
-    CREATE_SET_VAR_TO_INT_OR_STRING(T, update, count);
-    lipc::ShmRef<T> first = *obj.begin();
-    REQUIRE((*first) == update);
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
+    // Check if modification received
+    {
+      CREATE_SET_VAR_TO_INT_OR_STRING(T, update, count);
+      lipc::ShmRef<T> first = *obj.begin();
+      REQUIRE((*first) == update);
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
+
+  } catch(LABSTOR_ERROR_TYPE &LABSTOR_ERROR_PTR) {
+    std::cout << "HERE0" << std::endl;
+    err->print();
+  } catch(labstor::Error &err) {
+    std::cout << "HERE1" << std::endl;
+    err.print();
+  } catch(int err) {
+    std::cout << "HERE2" << std::endl;
+  } catch(std::runtime_error &err) {
+    std::cout << "HERE3" << std::endl;
+  } catch(std::logic_error &err) {
+    std::cout << "HERE4" << std::endl;
+  } catch(...) {
+    std::cout << "HERE5" << std::endl;
   }
 }
 

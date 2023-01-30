@@ -32,6 +32,7 @@
 #include <type_traits>
 #include <cstring>
 #include <sstream>
+#include <labstor/types/argpack.h>
 
 #define NUMBER_SERIAL(type) \
     return std::to_string(num_.type);
@@ -98,130 +99,12 @@ class SizeType : public Formattable {
   }
 };
 
-class Arg : Formattable {
- private:
-  union {
-    char d8;
-    short int d16;
-    int d32;
-    long d64;
-    long long d128;
-    unsigned char u8;
-    unsigned short int u16;
-    unsigned u32;
-    unsigned long u64;
-    unsigned long long u128;
-    float f32;
-    double f64;
-    long double f96;
-  } num_;
-  std::string str_;
-  Formattable *obj_;
-  std::shared_ptr<Formattable> obj_shared_;
-  int type_;
-
- public:
-  Arg(int8_t num) : type_(0) { num_.d8 = num; }
-  Arg(int16_t num) : type_(1) { num_.d16 = num; }
-  Arg(int32_t num) : type_(2) { num_.d32 = num; }
-  Arg(int64_t num) : type_(3) { num_.d64 = num; }
-  Arg(uint8_t num) : type_(4) { num_.u8 = num; }
-  Arg(uint16_t num) : type_(5) { num_.u16 = num; }
-  Arg(uint32_t num) : type_(6) { num_.u32 = num; }
-  Arg(uint64_t num) : type_(7) { num_.u64 = num; }
-  Arg(float num) : type_(8) { num_.f32 = num; }
-  Arg(double num) : type_(9) { num_.f64 = num; }
-  Arg(long double num) : type_(10) { num_.f96 = num; }
-  Arg(const char *str) : type_(11) { str_ = str; }
-  Arg(std::string str) : type_(11) { str_ = std::move(str); }
-  Arg(const std::string &str) : type_(11) { str_ = str; }
-  Arg(Formattable *obj) : type_(12) { obj_ = obj; }
-  Arg(std::unique_ptr<Formattable> &obj) : type_(12) {
-    obj_ = obj.get();
-  }
-  Arg(std::shared_ptr<Formattable> &obj) : type_(13) {
-    obj_shared_ = obj;
-  }
-  std::string ToString() override {
-    switch (type_) {
-      case 0: {
-        NUMBER_SERIAL(d8)
-      }
-      case 1: {
-        NUMBER_SERIAL(d16)
-      }
-      case 2: {
-        NUMBER_SERIAL(d32)
-      }
-      case 3: {
-        NUMBER_SERIAL(d64)
-      }
-      case 4: {
-        NUMBER_SERIAL(u8)
-      }
-      case 5: {
-        NUMBER_SERIAL(u16)
-      }
-      case 6: {
-        NUMBER_SERIAL(u32)
-      }
-      case 7: {
-        NUMBER_SERIAL(u64)
-      }
-      case 8: {
-        NUMBER_SERIAL(f32)
-      }
-      case 9: {
-        NUMBER_SERIAL(f64)
-      }
-      case 10: {
-        NUMBER_SERIAL(f96)
-      }
-      case 11: {
-        return str_;
-      }
-      case 12: {
-        return obj_->ToString();
-      }
-      case 13: {
-        return obj_shared_->ToString();
-      }
-    }
-    return "";
-  }
-};
-
-class ArgPacker {
- private:
-  std::vector<Arg> args_;
- public:
-  template<typename ...Args>
-  explicit ArgPacker(Args&& ...args) {
-    args_ = {std::forward<Args>(args)...};
-  }
-  Arg& operator[](int pos) { return args_[pos]; }
-
-  std::vector<Arg>::iterator begin() { return args_.begin(); }
-  std::vector<Arg>::iterator end() { return args_.end(); }
-  std::vector<Arg>::reverse_iterator rbegin() { return args_.rbegin(); }
-  std::vector<Arg>::reverse_iterator rend() { return args_.rend(); }
-};
-
 class Formatter {
  public:
   template<typename ...Args>
   static std::string format(std::string fmt, Args&& ...args) {
-    ArgPacker params(std::forward<Args>(args)...);
-    std::stringstream ss;
-    int arg = 0;
-    for (size_t i = 0; i < fmt.size(); ++i) {
-      if (fmt[i] == '{' && fmt[i + 1] == '}') {
-        ss << params[arg++].ToString();
-        ++i;
-        continue;
-      }
-    }
-    return ss.str();
+    // make_argpack(std::forward<Args>(args)...);
+    return fmt;
   }
 };
 

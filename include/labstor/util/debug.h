@@ -59,12 +59,8 @@ class AutoTrace {
  public:
   template<typename ...Args>
   AutoTrace(bool tracepoint, Args&& ...args) : tracepoint_(tracepoint) {
-    labstor::ArgPacker params(std::forward<Args>(args)...);
+    // TODO(llogan): Redo with good argpack
     std::stringstream ss;
-    for (auto &param : params) {
-      ss << param.ToString();
-      ss << ";";
-    }
     base_text_ = ss.str();
     t_cpu_.Resume();
     t_total_.Resume();
