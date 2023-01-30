@@ -47,7 +47,7 @@ class string;
 template<>
 struct ShmHeader<string> : public ShmBaseHeader {
   size_t length_;
-  Pointer text_;
+  AtomicPointer text_;
 
   /** Default constructor */
   ShmHeader() = default;

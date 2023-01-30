@@ -313,7 +313,7 @@ using vector_criterator = vector_iterator_templ<T, false>;
  * */
 template<typename T>
 struct ShmHeader<TYPED_CLASS> : public ShmBaseHeader {
-  Pointer vec_ptr_;
+  AtomicPointer vec_ptr_;
   size_t max_length_, length_;
 
   /** Default constructor */

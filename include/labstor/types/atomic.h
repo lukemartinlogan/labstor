@@ -224,7 +224,7 @@ struct atomic {
 
   /** Atomic assign operator */
   inline atomic& operator=(T count) {
-    x = count;
+    x.exchange(count);
     return *this;
   }
 
