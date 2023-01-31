@@ -279,6 +279,11 @@ class ShmContainerExample {
                      lipc::Allocator *alloc,
                      CLASS_NAME &other) {
     if (other.IsNull()) { return; }
+    if (IsValid() && other.GetAllocator() != GetAllocator()) {
+      shm_strong_copy(header, alloc, other);
+      other.shm_destroy(true);
+      return;
+    }
     shm_destroy(false);
     shm_weak_move_main(header, alloc, other);
     if (!other.IsDestructable()) {

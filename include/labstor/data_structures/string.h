@@ -276,6 +276,8 @@ class string : public ShmContainer {
   LABSTOR_STR_CMP_OPERATOR(<=)
   LABSTOR_STR_CMP_OPERATOR(>=)
 
+#undef LABSTOR_STR_CMP_OPERATOR
+
  private:
   inline void _create_str(const char *text, size_t length) {
     memcpy(text_, text, length);

@@ -11,6 +11,7 @@ header_t *header_; /**< Header of the shared-memory data structure */\
 lipc::Allocator *alloc_; /**< lipc::Allocator used for this data structure */\
 labstor::bitfield32_t flags_; /**< Flags used data structure status */\
 \
+public:\
 /**====================================\
  * Constructors\
  * ===================================*/\
@@ -219,6 +220,11 @@ void shm_weak_move(TYPE_UNWRAP(TYPED_HEADER) *header,\
                    lipc::Allocator *alloc,\
                    TYPE_UNWRAP(CLASS_NAME) &other) {\
   if (other.IsNull()) { return; }\
+  if (IsValid() && other.GetAllocator() != GetAllocator()) {\
+    shm_strong_copy(header, alloc, other);\
+    other.shm_destroy(true);\
+    return;\
+  }\
   shm_destroy(false);\
   shm_weak_move_main(header, alloc, other);\
   if (!other.IsDestructable()) {\

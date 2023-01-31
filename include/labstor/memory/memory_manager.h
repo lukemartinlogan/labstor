@@ -148,6 +148,13 @@ class MemoryManager {
   }
 
   /**
+   * Gets the allocator used for initializing other allocators.
+   * */
+  Allocator* GetRootAllocator() {
+    return &root_allocator_;
+  }
+
+  /**
    * Gets the allocator used by default when no allocator is
    * used to construct an object.
    * */
