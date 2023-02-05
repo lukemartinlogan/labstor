@@ -39,6 +39,15 @@ struct charbuf {
   explicit charbuf(char *data, size_t size)
   : alloc_(nullptr), data_(data), size_(size), destructable_(false) {}
 
+  /**
+   * Pointer-based constructor
+   * This should only be used when Blob itself is const.
+   * */
+  explicit charbuf(const char *data, size_t size)
+  : alloc_(nullptr), data_(const_cast<char*>(data)),
+    size_(size), destructable_(false) {}
+
+
   /** Copy constructor */
   charbuf(const charbuf &other) {
     if (!Allocate(LABSTOR_MEMORY_MANAGER->GetDefaultAllocator(),
@@ -67,6 +76,7 @@ struct charbuf {
     data_ = other.data_;
     size_ = other.size_;
     destructable_ = other.destructable_;
+    other.size_ = 0;
     other.destructable_ = false;
   }
 
@@ -78,9 +88,28 @@ struct charbuf {
       data_ = other.data_;
       size_ = other.size_;
       destructable_ = other.destructable_;
+      other.size_ = 0;
       other.destructable_ = false;
     }
     return *this;
+  }
+
+  /** Destroy and resize */
+  void resize(size_t new_size) {
+    if (new_size < size()) {
+      size_ = new_size;
+      return;
+    }
+    if (alloc_ == nullptr) {
+      alloc_ = LABSTOR_MEMORY_MANAGER->GetDefaultAllocator();
+    }
+    if (destructable_) {
+      data_ = alloc_->ReallocatePtr<char>(data_, new_size);
+    } else {
+      data_ = alloc_->AllocatePtr<char>(new_size);
+    }
+    destructable_ = true;
+    size_ = new_size;
   }
 
   /** Reference data */
@@ -99,8 +128,8 @@ struct charbuf {
   }
 
   /**
- * Comparison operators
- * */
+    * Comparison operators
+    * */
 
   int _strncmp(const char *a, size_t len_a,
                const char *b, size_t len_b) const {
@@ -159,6 +188,8 @@ struct charbuf {
     }
   }
 };
+
+typedef charbuf string;
 
 }  // namespace labstor
 

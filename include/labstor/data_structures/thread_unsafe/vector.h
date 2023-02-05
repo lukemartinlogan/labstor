@@ -443,6 +443,17 @@ class vector : public ShmContainer {
   ////////////////////////////
 
   /**
+   * Convert to std::vector
+   * */
+  std::vector<T> vec() {
+    std::vector<T> v;
+    v.reserve(size());
+    for (lipc::ShmRef<T> entry : *this) {
+      v.emplace_back(*entry);
+    }
+  }
+
+  /**
    * Reserve space in the vector to emplace elements. Does not
    * change the size of the list.
    *

@@ -67,6 +67,7 @@ class PosixShmMmap : public MemoryBackend {
     SetInitialized();
     Own();
     url_ = std::move(url);
+    shm_unlink(url_.c_str());
     fd_ = shm_open(url_.c_str(), O_CREAT | O_RDWR, 0666);
     if (fd_ < 0) {
       return false;
