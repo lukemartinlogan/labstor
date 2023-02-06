@@ -451,6 +451,7 @@ class vector : public ShmContainer {
     for (lipc::ShmRef<T> entry : *this) {
       v.emplace_back(*entry);
     }
+    return v;
   }
 
   /**

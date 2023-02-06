@@ -134,6 +134,7 @@ void RwLock::assert_w_refcnt(int ref) {
  * */
 ScopedRwReadLock::ScopedRwReadLock(RwLock &lock)
 : lock_(lock), is_locked_(false) {
+  Lock();
 }
 
 /**
@@ -172,6 +173,7 @@ void ScopedRwReadLock::Unlock() {
  * */
 ScopedRwWriteLock::ScopedRwWriteLock(RwLock &lock)
 : lock_(lock), is_locked_(false) {
+  Lock();
 }
 
 /**

@@ -96,7 +96,7 @@ struct charbuf {
 
   /** Destroy and resize */
   void resize(size_t new_size) {
-    if (new_size < size()) {
+    if (new_size <= size()) {
       size_ = new_size;
       return;
     }

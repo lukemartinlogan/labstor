@@ -51,12 +51,12 @@ struct list_entry {
   : data_(alloc, std::forward<Args>(args)...) {}
 
   /** Destructor */
-  inline void shm_destroy(Allocator *alloc) {
+  void shm_destroy(Allocator *alloc) {
     data_.shm_destroy(alloc);
   }
 
   /** Returns the element stored in the list */
-  inline ShmRef<T> internal_ref(Allocator *alloc) {
+  ShmRef<T> internal_ref(Allocator *alloc) {
     return ShmRef<T>(data_.internal_ref(alloc));
   }
 
@@ -358,13 +358,13 @@ class list : public ShmContainer {
 
   /** Construct an element at the back of the list */
   template<typename... Args>
-  inline void emplace_back(Args&&... args) {
+  void emplace_back(Args&&... args) {
     emplace(end(), std::forward<Args>(args)...);
   }
 
   /** Construct an element at the beginning of the list */
   template<typename... Args>
-  inline void emplace_front(Args&&... args) {
+  void emplace_front(Args&&... args) {
     emplace(begin(), std::forward<Args>(args)...);
   }
 
@@ -403,6 +403,12 @@ class list : public ShmContainer {
       prior->next_ptr_ = entry_ptr;
     }
     ++header_->length_;
+  }
+
+  /** Erase element with ID */
+  void erase(const T &entry) {
+    auto iter = find(entry);
+    erase(iter);
   }
 
   /** Erase the element at pos */
@@ -446,21 +452,32 @@ class list : public ShmContainer {
   }
 
   /** Get the object at the front of the list */
-  inline ShmRef<T> front() {
+  ShmRef<T> front() {
     return *begin();
   }
 
   /** Get the object at the back of the list */
-  inline ShmRef<T> back() {
+  ShmRef<T> back() {
     return *end();
   }
 
   /** Get the number of elements in the list */
-  inline size_t size() const {
+  size_t size() const {
     if (!IsNull()) {
       return header_->length_;
     }
     return 0;
+  }
+  
+  /** Find an element in this list */
+  list_iterator<T> find(const T &entry) {
+    for (auto iter = begin(); iter != end(); ++iter) {
+      lipc::ShmRef<T> ref = *iter;
+      if (*ref == entry) {
+        return iter;
+      }
+    }
+    return end();
   }
 
   /**
@@ -468,7 +485,7 @@ class list : public ShmContainer {
    * */
 
   /** Forward iterator begin */
-  inline list_iterator<T> begin() {
+  list_iterator<T> begin() {
     if (size() == 0) { return end(); }
     auto head = alloc_->template
       Convert<list_entry<T>>(header_->head_ptr_);
@@ -482,7 +499,7 @@ class list : public ShmContainer {
   }
 
   /** Constant forward iterator begin */
-  inline list_citerator<T> cbegin() const {
+  list_citerator<T> cbegin() const {
     if (size() == 0) { return cend(); }
     auto head = alloc_->template
       Convert<list_entry<T>>(header_->head_ptr_);
@@ -497,7 +514,7 @@ class list : public ShmContainer {
 
  private:
   template<typename ...Args>
-  inline list_entry<T>* _create_entry(OffsetPointer &p, Args&& ...args) {
+  list_entry<T>* _create_entry(OffsetPointer &p, Args&& ...args) {
     auto entry = alloc_->template
       AllocateConstructObjs<list_entry<T>>(
         1, p, alloc_, std::forward<Args>(args)...);
