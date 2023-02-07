@@ -41,15 +41,21 @@ TEST_CASE("MemorySlot") {
 
   PosixShmMmap backend;
   if (rank == 0) {
-    std::cout << "HERE?" << std::endl;
-    SECTION("Creating SHMEM (rank 0)") {
-      backend.shm_init(MEGABYTES(1), shm_url);
+    {
+      std::cout << "Creating SHMEM (rank 0)" << std::endl;
+      if(!backend.shm_init(MEGABYTES(1), shm_url)) {
+        throw std::runtime_error("Couldn't create backend");
+      }
+      std::cout << "Backend data: " << (void*)backend.data_ << std::endl;
+      std::cout << "Backend sz: " << backend.data_size_ << std::endl;
       memset(backend.data_, nonce, backend.data_size_);
+      std::cout << "Wrote backend data" << std::endl;
     }
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank != 0) {
-    SECTION("Attaching SHMEM (rank 1)") {
+    {
+      std::cout << "Attaching SHMEM (rank 1)" << std::endl;
       backend.shm_deserialize(shm_url);
       char *ptr = backend.data_;
       REQUIRE(VerifyBuffer(ptr, backend.data_size_, nonce));
@@ -57,7 +63,8 @@ TEST_CASE("MemorySlot") {
   }
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
-    SECTION("Destroying shmem (rank 1)") {
+    {
+      std::cout << "Destroying shmem (rank 1)" << std::endl;
       backend.shm_destroy();
     }
   }

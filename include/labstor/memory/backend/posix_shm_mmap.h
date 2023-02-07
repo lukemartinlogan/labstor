@@ -72,7 +72,7 @@ class PosixShmMmap : public MemoryBackend {
     if (fd_ < 0) {
       return false;
     }
-    _Reserve(size);
+    _Reserve(size + LABSTOR_SYSTEM_INFO->page_size_);
     header_ = _Map<MemoryBackendHeader>(LABSTOR_SYSTEM_INFO->page_size_, 0);
     header_->data_size_ = size;
     data_size_ = size;
