@@ -6,6 +6,7 @@
 #define LABSTOR_INCLUDE_LABSTOR_DATA_STRUCTURES_INTERNAL_SHM_CONTAINER_EXAMPLE_H_
 
 #include "labstor/data_structures/internal/shm_container.h"
+#include "labstor/data_structures/internal/shm_deserialize.h"
 
 namespace honey {
 
@@ -199,6 +200,11 @@ class ShmContainerExample {
     return shm_deserialize(other.GetAllocator(), other.header_);
   }
 
+  /** Deserialize object from "Deserialize" object */
+  bool shm_deserialize(lipc::ShmDeserialize<TYPED_CLASS> other) {
+    return shm_deserialize(other.alloc_, other.header_);
+  }
+
   /** Deserialize object from allocator + header */
   bool shm_deserialize(lipc::Allocator *alloc,
                        TYPED_HEADER *header) {
@@ -214,6 +220,12 @@ class ShmContainerExample {
   template<typename ...Args>
   void shm_init(lipc::ShmRef<TYPED_CLASS> &obj) {
     shm_deserialize(obj->GetAllocator(), obj->header_);
+  }
+
+  /** Constructor. Deserialize the object deserialize reference. */
+  template<typename ...Args>
+  void shm_init(lipc::ShmDeserialize<TYPED_CLASS> other) {
+    shm_deserialize(other);
   }
 
   /** Override >> operators */

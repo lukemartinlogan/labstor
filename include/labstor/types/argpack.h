@@ -99,14 +99,14 @@ ArgPack<Args&&...> make_argpack(Args&& ...args) {
 #define FORWARD_ARGPACK_FULL_TYPE(pack, i)\
   decltype(pack.template Forward<i>())
 
-/** Get type of the forward for \a pack pack at \a index i */
-#define FORWARD_ARGPACK_BASE_TYPE(pack, i)\
-  std::remove_reference<FORWARD_ARGPACK_FULL_TYPE(pack, i)>
-
 /** Forward the param for \a pack pack at \a index i */
 #define FORWARD_ARGPACK_PARAM(pack, i)\
   std::forward<FORWARD_ARGPACK_FULL_TYPE(pack, i)>(\
     pack.template Forward<i>())
+
+/** Forward an argpack */
+#define FORWARD_ARGPACK(pack) \
+  std::forward<decltype(pack)>(pack)
 
 /** Used to pass an argument pack to a function or class method */
 class PassArgPack {

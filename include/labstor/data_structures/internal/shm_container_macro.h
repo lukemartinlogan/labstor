@@ -140,6 +140,11 @@ bool shm_deserialize(const TYPE_UNWRAP(CLASS_NAME) &other) {\
   return shm_deserialize(other.GetAllocator(), other.header_);\
 }\
 \
+/** Deserialize object from "Deserialize" object */\
+bool shm_deserialize(lipc::ShmDeserialize<TYPE_UNWRAP(TYPED_CLASS)> other) {\
+  return shm_deserialize(other.alloc_, other.header_);\
+}\
+\
 /** Deserialize object from allocator + header */\
 bool shm_deserialize(lipc::Allocator *alloc,\
                      TYPE_UNWRAP(TYPED_HEADER) *header) {\
@@ -155,6 +160,12 @@ bool shm_deserialize(lipc::Allocator *alloc,\
 template<typename ...Args>\
 void shm_init(lipc::ShmRef<TYPE_UNWRAP(TYPED_CLASS)> &obj) {\
   shm_deserialize(obj->GetAllocator(), obj->header_);\
+}\
+\
+/** Constructor. Deserialize the object deserialize reference. */\
+template<typename ...Args>\
+void shm_init(lipc::ShmDeserialize<TYPE_UNWRAP(TYPED_CLASS)> other) {\
+  shm_deserialize(other);\
 }\
 \
 /** Override >> operators */\

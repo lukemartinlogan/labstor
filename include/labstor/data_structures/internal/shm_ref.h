@@ -8,6 +8,7 @@
 #include "labstor/constants/macros.h"
 #include "shm_macros.h"
 #include "shm_archive.h"
+#include "shm_deserialize.h"
 
 namespace labstor::ipc {
 
@@ -26,8 +27,13 @@ struct _ShmRefShm {
     obj_.UnsetDestructable();
   }
 
-  /** Constructor. */
+  /** Constructor. From TypedPointer. */
   explicit _ShmRefShm(TypedPointer<T> other) {
+    obj_.shm_deserialize(other);
+  }
+
+  /** Constructor. From ShmDeserialize. */
+  explicit _ShmRefShm(ShmDeserialize<T> other) {
     obj_.shm_deserialize(other);
   }
 

@@ -89,6 +89,6 @@
  * SHM_ARCHIVE_OR_REF: Return value of shm_ar::internal_ref().
  * */
 #define SHM_ARCHIVE_OR_REF(T)\
-  SHM_X_OR_Y(T, TypedPointer<T>, T&)
+  SHM_X_OR_Y(T, ShmDeserialize<T>, T&)
 
 #endif  // LABSTOR_MEMORY_SHM_MACROS_H_

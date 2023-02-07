@@ -78,13 +78,13 @@ class _ShmHeaderOrT_Header {
   }
 
   /** Returns a reference to the internal object */
-  TypedPointer<T> internal_ref(Allocator *alloc) {
-    return TypedPointer<T>(alloc->Convert<header_t, Pointer>(&obj_hdr_));
+  ShmDeserialize<T> internal_ref(Allocator *alloc) {
+    return ShmDeserialize<T>(alloc, &obj_hdr_);
   }
 
   /** Returns a reference to the internal object */
-  TypedPointer<T> internal_ref(Allocator *alloc) const {
-    return TypedPointer<T>(alloc->Convert<header_t, Pointer>(&obj_hdr_));
+  ShmDeserialize<T> internal_ref(Allocator *alloc) const {
+    return ShmDeserialize<T>(alloc, &obj_hdr_);
   }
 
   /** Move constructor */
