@@ -1,44 +1,74 @@
-cmake_minimum_required(VERSION 3.10)
-project(labstor)
+include_directories(${CMAKE_SOURCE_DIR})
 
-set(CMAKE_CXX_STANDARD 17)
+#------------------------------------------------------------------------------
+# External dependencies
+#------------------------------------------------------------------------------
+# None for now
 
-##################Build LabStor main packages
+#------------------------------------------------------------------------------
+# Set sources
+#------------------------------------------------------------------------------
+set(LABSTOR_SRCS
+  ${CMAKE_CURRENT_SOURCE_DIR}/config_client.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/config_server.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/labstor.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/labstor_singleton.cc
+)
 
-add_library(labstor_data_structures
-        thread/mutex.cc
-        thread/rwlock.cc
-        memory/stack_allocator.cc
-        memory/page_allocator.cc
-        memory/multi_page_allocator.cc
-        memory/memory_manager.cc
-        data_structure_singleton.cc)
-target_link_libraries(labstor_data_structures
-        yaml-cpp pthread -lrt -ldl)
+#------------------------------------------------------------------------------
+# Build Labstor Library
+#------------------------------------------------------------------------------
 
-add_library(labstor_client
-        ipc_manager.cc
-        singleton.cc)
-add_dependencies(labstor_client
-        labstor_data_structures)
-target_link_libraries(labstor_client
-        labstor_data_structures)
-target_link_libraries(labstor_client yaml-cpp pthread -lrt -ldl)
+include_directories(${HermesShm_INCLUDE_DIRS})
+add_library(labstor SHARED ${LABSTOR_SRCS})
+target_link_libraries(labstor
+  ${HermesShm_LIBRARIES}
+  yaml-cpp
+  cereal::cereal
+  -ldl -lrt -lc)
 
-add_executable(labstor_runtime
-        runtime/runtime.cc
-        ipc_manager.cc
-        singleton.cc)
-add_dependencies(labstor_runtime
-        labstor_data_structures)
-target_link_libraries(labstor_runtime
-        labstor_data_structures)
-target_link_libraries(labstor_runtime yaml-cpp pthread -lrt -ldl)
+#------------------------------------------------------------------------------
+# Build Labstor Runtime
+#------------------------------------------------------------------------------
+add_executable(labstor_runtime labstor_runtime.cc)
+add_dependencies(labstor_runtime labstor)
+target_link_libraries(labstor_runtime labstor -ldl -lrt -lc)
 
-##################Install LabStor
+#------------------------------------------------------------------------------
+# Build LabStor Finalization Function
+#------------------------------------------------------------------------------
+add_executable(finalize_labstor finalize_labstor.cc)
+add_dependencies(finalize_labstor labstor)
+target_link_libraries(finalize_labstor labstor)
+
+#-----------------------------------------------------------------------------
+# Add file(s) to CMake Install
+#-----------------------------------------------------------------------------
 install(
-        TARGETS labstor_data_structures labstor_client
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+  FILES
+    ${HERMES_HEADERS}
+  DESTINATION
+    ${HERMES_INSTALL_INCLUDE_DIR}
+  COMPONENT
+    headers
+)
+
+#-----------------------------------------------------------------------------
+# Add Target(s) to CMake Install
+#-----------------------------------------------------------------------------
 install(
-        TARGETS labstor_runtime
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+  TARGETS
+    labstor
+    labstor_runtime
+    finalize_labstor
+  LIBRARY DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
+  ARCHIVE DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
+  RUNTIME DESTINATION ${LABSTOR_INSTALL_BIN_DIR}
+)
+
+#------------------------------------------------------------------------------
+# Coverage
+#------------------------------------------------------------------------------
+if(LABSTOR_ENABLE_COVERAGE)
+  set_coverage_flags(labstor)
+endif()

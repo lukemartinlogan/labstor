@@ -1,18 +1,29 @@
 cmake_minimum_required(VERSION 3.10)
 project(labstor)
 
-set(CMAKE_CXX_STANDARD 17)
-
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
+#-----------------------------------------------------------------------------
+# Define Options
+#-----------------------------------------------------------------------------
 option(BUILD_SHARED_LIBS "Build shared libraries (.dll/.so) instead of static ones (.lib/.a)" ON)
 option(BUILD_MPI_TESTS "Build tests which depend on MPI" ON)
 option(BUILD_OpenMP_TESTS "Build tests which depend on OpenMP" ON)
-option(LABSTOR_RPC_THALLIUM "Enable compatability for mochi" ON)
+option(LABSTOR_ENABLE_COVERAGE "Check how well tests cover code" OFF)
+option(LABSTOR_ENABLE_DOXYGEN "Check how well the code is documented" OFF)
 
+#-----------------------------------------------------------------------------
+# Compiler Optimization
+#-----------------------------------------------------------------------------
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "-O0")
 
-##################REQUIRED EXTERNAL LIBRARIES
+#-----------------------------------------------------------------------------
+# Find Packages
+#-----------------------------------------------------------------------------
+# HermesShm
+find_package(HermesShm CONFIG REQUIRED)
+message(STATUS "found hermes_shm.h at ${HermesShm_INCLUDE_DIRS}")
 
 # YAML-CPP
 find_package(yaml-cpp REQUIRED)
@@ -34,25 +45,53 @@ if(BUILD_OpenMP_TESTS)
     message(STATUS "found omp.h at ${OpenMP_CXX_INCLUDE_DIRS}")
 endif()
 
-# thallium
-if(LABSTOR_RPC_THALLIUM)
-    find_package(thallium CONFIG REQUIRED)
-    if(thallium_FOUND)
-        message(STATUS "found thallium at ${thallium_DIR}")
-    endif()
+#Cereal
+find_package(cereal REQUIRED)
+if(cereal)
+    message(STATUS "found cereal")
 endif()
 
-##################Build LabStor main packages
+#------------------------------------------------------------------------------
+# Setup CMake Environment
+#------------------------------------------------------------------------------
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
+        ${PROJECT_BINARY_DIR}/bin CACHE PATH "Single Directory for all Executables.")
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY
+        ${PROJECT_BINARY_DIR}/bin CACHE PATH "Single Directory for all Libraries")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY
+        ${PROJECT_BINARY_DIR}/bin CACHE PATH "Single Directory for all static libraries.")
 
+#------------------------------------------------------------------------------
+# Setup install and output Directories
+#------------------------------------------------------------------------------
+if(NOT LABSTOR_INSTALL_BIN_DIR)
+    set(LABSTOR_INSTALL_BIN_DIR ${CMAKE_INSTALL_PREFIX}/bin)
+endif()
+if(NOT LABSTOR_INSTALL_LIB_DIR)
+    set(LABSTOR_INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/lib)
+endif()
+if(NOT LABSTOR_INSTALL_INCLUDE_DIR)
+    set(LABSTOR_INSTALL_INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include)
+endif()
+if(NOT LABSTOR_INSTALL_DATA_DIR)
+    set(LABSTOR_INSTALL_DATA_DIR ${CMAKE_INSTALL_PREFIX}/share)
+endif()
+
+#-----------------------------------------------------------------------------
+# Build Labstor Main Packages
+#-----------------------------------------------------------------------------
 add_subdirectory(src)
 
 add_custom_target(lint COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/lint.sh ${CMAKE_SOURCE_DIR})
 
-add_custom_target(preamble COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/preamble.py ${CMAKE_SOURCE_DIR})
-
-##################MODULES & TESTS
+#-----------------------------------------------------------------------------
+# Build + Enable Testing
+#-----------------------------------------------------------------------------
 enable_testing()
-add_subdirectory(test)
+# add_subdirectory(test)
 
-##################Install LabStor
+#-----------------------------------------------------------------------------
+# Install LabStor
+#-----------------------------------------------------------------------------
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_PREFIX})
