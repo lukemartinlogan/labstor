@@ -38,3 +38,6 @@ rpc:
 
   # The number of handler threads for each RPC server.
   num_threads: 4
+
+### Task Registry
+task_registry: []

@@ -26,4 +26,4 @@ class Constants {
 
 }  // namespace labstor
 
-#endif //LABSTOR_INCLUDE_LABSTOR_LABSTOR_CONSTANTS_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_LABSTOR_CONSTANTS_H_

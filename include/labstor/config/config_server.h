@@ -60,6 +60,8 @@ class ServerConfig : public BaseConfig {
   WorkOrchestratorInfo wo_;
   /** The RPC information */
   RpcInfo rpc_;
+  /** Bootstrap task registry */
+  std::vector<std::string> task_libs_;
 
  public:
   ServerConfig() = default;

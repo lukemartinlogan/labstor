@@ -66,4 +66,4 @@ class BaseConfig {
 
 }  // namespace labstor::config
 
-#endif //LABSTOR_SRC_CONFIG_H_
+#endif  // LABSTOR_SRC_CONFIG_H_

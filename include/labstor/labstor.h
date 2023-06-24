@@ -15,7 +15,7 @@
 
 #include "config/config_client.h"
 #include "config/config_server.h"
-#include "labstor_data_structure.h"
+#include "labstor_data_structures.h"
 #include "labstor_constants.h"
 
 // Singleton macros
