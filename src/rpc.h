@@ -20,7 +20,8 @@
 #include <string>
 #include <vector>
 
-#include "labstor/labstor.h"
+#include "labstor/labstor_types.h"
+#include "labstor/config/config_server.h"
 
 namespace labstor {
 
@@ -57,7 +58,7 @@ class RpcContext {
   static std::vector<std::string> ParseHostfile(const std::string &path);
 
   /** initialize host info list */
-  void InitRpcContext();
+  void ServerInit(ServerConfig *config, LabstorMode mode);
 
   /** Check if we should skip an RPC and call a function locally */
   bool ShouldDoLocalCall(u32 node_id);

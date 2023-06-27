@@ -11,7 +11,6 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "rpc.h"
-#include "labstor/labstor.h"
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <ifaddrs.h>
@@ -41,10 +40,10 @@ std::vector<std::string> RpcContext::ParseHostfile(const std::string &path) {
  * initialize host info list
  * Requires the MetadataManager to be initialized.
  * */
-void RpcContext::InitRpcContext() {
-  config_ = &LABSTOR->server_config_;
+void RpcContext::ServerInit(ServerConfig *config, LabstorMode mode) {
+  config_ = config;
   port_ = config_->rpc_.port_;
-  mode_ = LABSTOR->mode_;
+  mode_ = mode;
   if (hosts_.size()) { return; }
   // Uses hosts produced by host_names
   auto &hosts = config_->rpc_.host_names_;
@@ -60,10 +59,8 @@ void RpcContext::InitRpcContext() {
   }
 
   // Get id of current host
-  if (LABSTOR->mode_ == LabstorMode::kServer) {
+  if (mode == LabstorMode::kServer) {
     node_id_ = _FindThisHost();
-  } else {
-    node_id_ = LABSTOR->header_->node_id_;
   }
   if (node_id_ == 0 || node_id_ > (i32)hosts_.size()) {
     HELOG(kFatal, "Couldn't identify this host.")

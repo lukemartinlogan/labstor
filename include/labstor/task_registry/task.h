@@ -5,7 +5,7 @@
 #ifndef LABSTOR_INCLUDE_LABSTOR_QUEUE_MANAGER_REQUEST_H_
 #define LABSTOR_INCLUDE_LABSTOR_QUEUE_MANAGER_REQUEST_H_
 
-#include "labstor/labstor_data_structures.h"
+#include "labstor/labstor_types.h"
 
 namespace labstor {
 

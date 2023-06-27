@@ -2,8 +2,8 @@
 // Created by lukemartinlogan on 6/22/23.
 //
 
-#ifndef LABSTOR_INCLUDE_LABSTOR_LABSTOR_DATA_STRUCTURES_H_
-#define LABSTOR_INCLUDE_LABSTOR_LABSTOR_DATA_STRUCTURES_H_
+#ifndef LABSTOR_INCLUDE_LABSTOR_LABSTOR_TYPES_H_
+#define LABSTOR_INCLUDE_LABSTOR_LABSTOR_TYPES_H_
 
 #include <hermes_shm/data_structures/ipc/unordered_map.h>
 #include <hermes_shm/data_structures/ipc/vector.h>
@@ -38,6 +38,13 @@ typedef int32_t i32;  /**< 32-bit signed integer */
 typedef int64_t i64;  /**< 64-bit signed integer */
 typedef float f32;    /**< 32-bit float */
 typedef double f64;   /**< 64-bit float */
+
+/** Determine the mode that LabStor is initialized for */
+enum class LabstorMode {
+  kNone,
+  kClient,
+  kServer
+};
 
 /** Represents unique ID for BlobId and TagId */
 template<int TYPE>
@@ -132,4 +139,4 @@ struct hash<labstor::UniqueId<TYPE>> {
 };
 }  // namespace std
 
-#endif  // LABSTOR_INCLUDE_LABSTOR_LABSTOR_DATA_STRUCTURES_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_LABSTOR_TYPES_H_

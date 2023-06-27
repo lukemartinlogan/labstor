@@ -6,7 +6,7 @@
 #define LABSTOR_INCLUDE_LABSTOR_TASK_TASK_H_
 
 #include <dlfcn.h>
-#include "labstor/labstor_data_structures.h"
+#include "labstor/labstor_types.h"
 #include "task.h"
 
 namespace labstor {

@@ -2,11 +2,15 @@
 // Created by lukemartinlogan on 6/17/23.
 //
 
-#include "labstor/labstor.h"
+#include "hermes_shm/util/singleton.h"
+#include "labstor/api/labstor_runtime.h"
 
 int main(int argc, char **argv) {
-  LABSTOR->Create(labstor::LabstorMode::kServer);
-  LABSTOR->RunDaemon();
-  LABSTOR->Finalize();
+  LABSTOR_RUNTIME->Create();
+  LABSTOR_RUNTIME->RunDaemon();
+  LABSTOR_RUNTIME->Finalize();
   return 0;
 }
+
+/** Runtime singleton */
+DEFINE_SINGLETON_CC(labstor::Runtime)
