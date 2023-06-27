@@ -10,7 +10,7 @@
  * have access to the file, you may request a copy from help@hdfgroup.org.   *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include "rpc.h"
+#include "labstor/util/rpc.h"
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <ifaddrs.h>
