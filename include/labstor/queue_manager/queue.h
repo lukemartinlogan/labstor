@@ -159,7 +159,7 @@ class MultiQueue {
              u32 max_lanes, u32 num_lanes,
              u32 depth, bitfield32_t flags) {
     queue_ = hipc::make_uptr<MultiQueueShm>(
-      alloc, id, max_lanes, num_lanes, depth, flags);
+        alloc, id, max_lanes, num_lanes, depth, flags);
     CacheLanes();
   }
 
@@ -179,13 +179,6 @@ class MultiQueue {
   }
 
  public:
-  /**
-   * Change the number of active lanes
-   * This assumes that PlugForResize and UnplugForResize are called externally.
-   * */
-  void Resize(u32 num_lanes) {
-  }
-
   /** Emplace a SHM pointer to a task */
   bool Emplace(u32 hash, hipc::Pointer &p) {
     if (IsEmplacePlugged()) {
@@ -207,6 +200,30 @@ class MultiQueue {
     }
     task = HERMES_MEMORY_MANAGER->Convert<Task>(p);
     return true;
+  }
+
+  /**
+   * Change the number of active lanes
+   * This assumes that PlugForResize and UnplugForResize are called externally.
+   * */
+  void Resize(u32 num_lanes) {
+    hipc::vector<Lane> *lanes = queue_->lanes_.get();
+    if (num_lanes > queue_->max_lanes_) {
+      num_lanes = queue_->max_lanes_;
+    }
+    if (num_lanes < queue_->num_lanes_) {
+      // Remove lanes
+      for (u32 lane_id = num_lanes; lane_id < queue_->num_lanes_; ++lane_id) {
+        lanes->erase(lanes->begin() + lane_id);
+      }
+    } else if (num_lanes > queue_->num_lanes_) {
+      // Add lanes
+      for (u32 lane_id = queue_->num_lanes_; lane_id < num_lanes; ++lane_id) {
+        lanes->emplace_back(queue_->depth_);
+        lanes_.emplace_back(&queue_->GetLane(lane_id));
+      }
+    }
+    queue_->num_lanes_ = num_lanes;
   }
 
   /** Begin plugging the queue for resize */
