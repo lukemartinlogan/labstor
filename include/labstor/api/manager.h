@@ -9,12 +9,14 @@
 #include "labstor/labstor_constants.h"
 #include "labstor/config/config_client.h"
 #include "labstor/config/config_server.h"
+#include "labstor/queue_manager/queue_manager.h"
 
 namespace labstor {
 
 /** Shared-memory header for LabStor */
 struct LabstorShm {
-  i32 node_id_;
+  u32 node_id_;
+  QueueManagerShm queue_manager_;
 };
 
 /** The configuration used inherited by runtime + client */

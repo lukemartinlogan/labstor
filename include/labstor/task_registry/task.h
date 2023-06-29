@@ -40,11 +40,11 @@ struct TaskMethod {
 
 /** A generic task */
 struct Task {
-  bitfield32_t flags_;      /**< Properties of the task  */
+  u32 key_;                 /**< Helps determine the lane task is keyed to */
   TaskExecId task_exec_;    /**< The unique name of a task executor */
   u32 method_;              /**< The method to call in the executor */
-  u32 node_id_;             /**< The node that the task should run on */
-  u32 hash_;                /**< Determines the lane task is keyed to */
+  bitfield32_t task_flags_;    /**< Properties of the task  */
+  u32 node_id_;                /**< The node that the task should run on */
 };
 
 }  // namespace labstor

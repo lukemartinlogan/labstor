@@ -12,8 +12,10 @@
 #include <hermes_shm/data_structures/data_structure.h>
 #include <hermes_shm/data_structures/ipc/string.h>
 #include <hermes_shm/data_structures/ipc/mpsc_queue.h>
+#include <hermes_shm/data_structures/ipc/ticket_queue.h>
 #include <hermes_shm/data_structures/containers/charbuf.h>
 #include <hermes_shm/data_structures/containers/converters.h>
+#include "hermes_shm/data_structures/serialization/shm_serialize.h"
 #include <hermes_shm/util/auto_trace.h>
 #include <hermes_shm/thread/lock.h>
 #include <hermes_shm/thread/thread_model_manager.h>
@@ -47,6 +49,7 @@ enum class LabstorMode {
 };
 
 /** Represents unique ID for BlobId and TagId */
+template<int TYPE>
 struct UniqueId {
   u64 unique_;   /**< A unique id for the blob */
   u32 node_id_;  /**< The node the content is on */
@@ -55,7 +58,7 @@ struct UniqueId {
   UniqueId() = default;
 
   /** Emplace constructor */
-  UniqueId(u64 unique, i32 node_id) : unique_(unique), node_id_(node_id) {}
+  UniqueId(u64 unique, u32 node_id) : unique_(unique), node_id_(node_id) {}
 
   /** Copy constructor */
   UniqueId(const UniqueId &other) {
@@ -123,9 +126,9 @@ struct UniqueId {
 };
 
 /** Uniquely identify a task executor */
-using TaskExecId = UniqueId;
+using TaskExecId = UniqueId<1>;
 /** Uniquely identify a queue */
-using QueueId = UniqueId;
+using QueueId = UniqueId<2>;
 
 }  // namespace labstor
 

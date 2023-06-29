@@ -18,13 +18,14 @@
 
 namespace labstor {
 
+/** Represents a lane tasks can be stored */
 typedef hipc::mpsc_queue<hipc::Pointer> Lane;
 
 /**
  * The shared-memory representation of a Queue
  * */
-struct MultiQueueShm : public hipc::ShmContainer {
- SHM_CONTAINER_TEMPLATE((MultiQueueShm), (MultiQueueShm))
+struct MultiQueue : public hipc::ShmContainer {
+ SHM_CONTAINER_TEMPLATE((MultiQueue), (MultiQueue))
   QueueId id_;
   bitfield32_t flags_;
   u32 max_lanes_;
@@ -37,10 +38,16 @@ struct MultiQueueShm : public hipc::ShmContainer {
    * Constructor
    * ===================================*/
 
+  /** SHM constructor. Default. */
+  explicit MultiQueue(hipc::Allocator *alloc) {
+    shm_init_container(alloc);
+    SetNull();
+  }
+
   /** SHM constructor. */
-  explicit MultiQueueShm(hipc::Allocator *alloc, QueueId id,
-                         u32 max_lanes, u32 num_lanes,
-                         u32 depth, bitfield32_t flags) {
+  explicit MultiQueue(hipc::Allocator *alloc, const QueueId &id,
+                      u32 max_lanes, u32 num_lanes,
+                      u32 depth, bitfield32_t flags) {
     shm_init_container(alloc);
     id_ = id;
     max_lanes_ = max_lanes;
@@ -61,14 +68,14 @@ struct MultiQueueShm : public hipc::ShmContainer {
    * ===================================*/
 
   /** SHM copy constructor */
-  explicit MultiQueueShm(hipc::Allocator *alloc, const MultiQueueShm &other) {
+  explicit MultiQueue(hipc::Allocator *alloc, const MultiQueue &other) {
     shm_init_container(alloc);
     SetNull();
     shm_strong_copy_construct_and_op(other);
   }
 
   /** SHM copy assignment operator */
-  MultiQueueShm& operator=(const MultiQueueShm &other) {
+  MultiQueue& operator=(const MultiQueue &other) {
     if (this != &other) {
       shm_destroy();
       shm_strong_copy_construct_and_op(other);
@@ -77,7 +84,7 @@ struct MultiQueueShm : public hipc::ShmContainer {
   }
 
   /** SHM copy constructor + operator main */
-  void shm_strong_copy_construct_and_op(const MultiQueueShm &other) {
+  void shm_strong_copy_construct_and_op(const MultiQueue &other) {
     (*lanes_) = (*other.lanes_);
   }
 
@@ -86,8 +93,8 @@ struct MultiQueueShm : public hipc::ShmContainer {
    * ===================================*/
 
   /** SHM move constructor. */
-  MultiQueueShm(hipc::Allocator *alloc,
-                MultiQueueShm &&other) noexcept {
+  MultiQueue(hipc::Allocator *alloc,
+             MultiQueue &&other) noexcept {
     shm_init_container(alloc);
     if (GetAllocator() == other.GetAllocator()) {
       (*lanes_) = std::move(*other.lanes_);
@@ -99,7 +106,7 @@ struct MultiQueueShm : public hipc::ShmContainer {
   }
 
   /** SHM move assignment operator. */
-  MultiQueueShm& operator=(MultiQueueShm &&other) noexcept {
+  MultiQueue& operator=(MultiQueue &&other) noexcept {
     if (this != &other) {
       shm_destroy();
       if (GetAllocator() == other.GetAllocator()) {
@@ -134,67 +141,39 @@ struct MultiQueueShm : public hipc::ShmContainer {
    * Helpers
    * ===================================*/
 
+  /** Get a lane of the queue */
   Lane& GetLane(u32 lane_id) {
     return (*lanes_)[lane_id];
   }
-};
 
-/**
- * A shared-memory, scalable concurrent queue
- * Update requests are stored in a single lane
- * Read & Write requests are stored in a separate pool of lanes
- *
- * Resize is assumed to be called sequentially on a single thread.
- * */
-class MultiQueue {
- public:
-  hipc::uptr<MultiQueueShm> queue_;  /**< SHM representation of multi-queue */
-  std::vector<Lane*> lanes_;  /**< Lanes for storing TASK_READ & TASK_WRITE */
-  hipc::uptr<Lane> update_lane_shm_;  /** SHM representation of update lane */
-  Lane *update_lane_;  /**< Lane used for storing TASK_UPDATE */
-
- public:
-  /** Construct queue */
-  MultiQueue(hipc::Allocator *alloc, QueueId id,
-             u32 max_lanes, u32 num_lanes,
-             u32 depth, bitfield32_t flags) {
-    queue_ = hipc::make_uptr<MultiQueueShm>(
-        alloc, id, max_lanes, num_lanes, depth, flags);
-    CacheLanes();
+  /** Allocate a task */
+  template<typename T, typename ...Args>
+  static T* Allocate(hipc::Allocator *alloc, hipc::Pointer &p, Args&& ...args) {
+    return alloc->AllocateConstructObjs<T>(1, p, std::forward<Args>(args)...);
   }
 
-  /** Attach to existing queue */
-  MultiQueue(hipc::Pointer p) {
-    queue_ << p;
-    CacheLanes();
+  /** Free a task */
+  void Free(hipc::Allocator *alloc, hipc::Pointer &p) {
+    alloc->Free(p);
   }
 
- private:
-  /** Cache lanes */
-  void CacheLanes() {
-    lanes_.reserve(queue_->max_lanes_);
-    for (u32 lane_id = 0; lane_id < queue_->num_lanes_; ++lane_id) {
-      lanes_.emplace_back(&queue_->GetLane(lane_id));
-    }
-  }
-
- public:
   /** Emplace a SHM pointer to a task */
   bool Emplace(u32 hash, hipc::Pointer &p) {
     if (IsEmplacePlugged()) {
       WaitForEmplacePlug();
     }
-    u32 lane_id = hash % lanes_.size();
-    Lane *lane = lanes_[lane_id];
-    hshm::qtok_t ret = lane->emplace(p);
+    hipc::vector<Lane> *lanes = lanes_.get();
+    u32 lane_id = hash % lanes->size();
+    Lane &lane = (*lanes)[lane_id];
+    hshm::qtok_t ret = lane.emplace(p);
     return !ret.IsNull();
   }
 
   /** Pop a regular pointer to a task */
   bool Pop(u32 lane_id, Task *&task) {
-    Lane *lane = lanes_[lane_id];
+    Lane &lane = (*lanes_)[lane_id];
     hipc::Pointer p;
-    hshm::qtok_t ret = lane->pop(p);
+    hshm::qtok_t ret = lane.pop(p);
     if (ret.IsNull()) {
       return false;
     }
@@ -207,34 +186,33 @@ class MultiQueue {
    * This assumes that PlugForResize and UnplugForResize are called externally.
    * */
   void Resize(u32 num_lanes) {
-    hipc::vector<Lane> *lanes = queue_->lanes_.get();
-    if (num_lanes > queue_->max_lanes_) {
-      num_lanes = queue_->max_lanes_;
+    hipc::vector<Lane> *lanes = lanes_.get();
+    if (num_lanes > max_lanes_) {
+      num_lanes = max_lanes_;
     }
-    if (num_lanes < queue_->num_lanes_) {
+    if (num_lanes < num_lanes_) {
       // Remove lanes
-      for (u32 lane_id = num_lanes; lane_id < queue_->num_lanes_; ++lane_id) {
+      for (u32 lane_id = num_lanes; lane_id < num_lanes_; ++lane_id) {
         lanes->erase(lanes->begin() + lane_id);
       }
-    } else if (num_lanes > queue_->num_lanes_) {
+    } else if (num_lanes > num_lanes_) {
       // Add lanes
-      for (u32 lane_id = queue_->num_lanes_; lane_id < num_lanes; ++lane_id) {
-        lanes->emplace_back(queue_->depth_);
-        lanes_.emplace_back(&queue_->GetLane(lane_id));
+      for (u32 lane_id = num_lanes_; lane_id < num_lanes; ++lane_id) {
+        lanes->emplace_back(depth_);
       }
     }
-    queue_->num_lanes_ = num_lanes;
+    num_lanes_ = num_lanes;
   }
 
   /** Begin plugging the queue for resize */
   bool PlugForResize() {
     // Mark this queue as QUEUE_RESIZE
-    if (!queue_->flags_.Any(QUEUE_RESIZE)) {
-      queue_->flags_.SetBits(QUEUE_RESIZE);
+    if (!flags_.Any(QUEUE_RESIZE)) {
+      flags_.SetBits(QUEUE_RESIZE);
     }
     // Check if all lanes have been marked QUEUE_RESIZE
-    for (Lane *lane : lanes_) {
-      if (!lane->flags_.Any(QUEUE_RESIZE)) {
+    for (Lane &lane : *lanes_) {
+      if (!lane.flags_.Any(QUEUE_RESIZE)) {
         return false;
       }
     }
@@ -244,10 +222,10 @@ class MultiQueue {
   /** Begin plugging the queue for update tasks */
   bool PlugForUpdateTask() {
     // Mark this queue as QUEUE_UPDATE
-    queue_->flags_.SetBits(QUEUE_UPDATE);
+    flags_.SetBits(QUEUE_UPDATE);
     // Check if all lanes have been marked QUEUE_UPDATE
-    for (Lane *lane : lanes_) {
-      if (!lane->flags_.Any(QUEUE_UPDATE)) {
+    for (Lane &lane : *lanes_) {
+      if (!lane.flags_.Any(QUEUE_UPDATE)) {
         return false;
       }
     }
@@ -256,30 +234,30 @@ class MultiQueue {
 
   /** Check if emplace operations are plugged */
   bool IsEmplacePlugged() {
-    return queue_->flags_.Any(QUEUE_RESIZE);
+    return flags_.Any(QUEUE_RESIZE);
   }
 
   /** Check if pop operations are plugged */
   bool IsPopPlugged() {
-    return queue_->flags_.Any(QUEUE_UPDATE | QUEUE_RESIZE);
+    return flags_.Any(QUEUE_UPDATE | QUEUE_RESIZE);
   }
 
   /** Wait for emplace plug to complete */
   void WaitForEmplacePlug() {
     // NOTE(llogan): will this infinite loop due to CPU caching?
-    while (queue_->flags_.Any(QUEUE_UPDATE)) {
+    while (flags_.Any(QUEUE_UPDATE)) {
       HERMES_THREAD_MODEL->Yield();
     }
   }
 
   /** Enable emplace & pop */
   void UnplugForResize() {
-    queue_->flags_.UnsetBits(QUEUE_RESIZE);
+    flags_.UnsetBits(QUEUE_RESIZE);
   }
 
   /** Enable pop */
   void UnplugForUpdateTask() {
-    queue_->flags_.UnsetBits(QUEUE_UPDATE);
+    flags_.UnsetBits(QUEUE_UPDATE);
   }
 };
 

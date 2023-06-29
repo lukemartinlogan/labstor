@@ -26,21 +26,28 @@ void ServerConfig::ParseWorkOrchestrator(YAML::Node yaml_conf) {
   if (yaml_conf["max_workers"]) {
     wo_.max_workers_ = yaml_conf["max_workers"].as<size_t>();
   }
-  if (yaml_conf["request_unit"]) {
-    wo_.request_unit_ = yaml_conf["request_unit"].as<size_t>();
-  }
+}
+
+/** parse work orchestrator info from YAML config */
+void ServerConfig::ParseQueueManager(YAML::Node yaml_conf) {
   if (yaml_conf["queue_depth"]) {
-    wo_.queue_depth_ = yaml_conf["queue_depth"].as<size_t>();
+    queue_manager_.queue_depth_ = yaml_conf["queue_depth"].as<size_t>();
+  }
+  if (yaml_conf["max_lanes"]) {
+    queue_manager_.max_lanes_ = yaml_conf["max_lanes"].as<size_t>();
+  }
+  if (yaml_conf["max_queues"]) {
+    queue_manager_.max_queues_ = yaml_conf["max_queues"].as<size_t>();
   }
   if (yaml_conf["shm_allocator"]) {
-    wo_.shm_allocator_ = yaml_conf["shm_allocator"].as<std::string>();
+    queue_manager_.shm_allocator_ = yaml_conf["shm_allocator"].as<std::string>();
   }
   if (yaml_conf["shmem_name"]) {
-    wo_.shmem_name_ = yaml_conf["shmem_name"].as<std::string>();
+    queue_manager_.shmem_name_ = yaml_conf["shmem_name"].as<std::string>();
   }
   if (yaml_conf["shmem_size"]) {
-    wo_.shmem_size_ = hshm::ConfigParse::ParseSize(
-      yaml_conf["shmem_size"].as<std::string>());
+    queue_manager_.shmem_size_ = hshm::ConfigParse::ParseSize(
+        yaml_conf["shmem_size"].as<std::string>());
   }
 }
 

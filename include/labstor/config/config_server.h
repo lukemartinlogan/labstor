@@ -23,10 +23,18 @@ namespace labstor::config {
 struct WorkOrchestratorInfo {
   /** Maximum number of workers to spawn */
   size_t max_workers_;
-  /** Maximum request size unit */
-  size_t request_unit_;
+};
+
+/**
+ * Queue manager information defined in server config
+ * */
+struct QueueManagerInfo {
   /** Maximum depth of IPC queues */
   size_t queue_depth_;
+  /** Maximum number of lanes per IPC queue */
+  size_t max_lanes_;
+  /** Maximum number of allocatable IPC queues */
+  size_t max_queues_;
   /** Shared memory allocator */
   std::string shm_allocator_;
   /** Shared memory region name */
@@ -58,6 +66,8 @@ class ServerConfig : public BaseConfig {
  public:
   /** Work orchestrator info */
   WorkOrchestratorInfo wo_;
+  /** Queue manager info */
+  QueueManagerInfo queue_manager_;
   /** The RPC information */
   RpcInfo rpc_;
   /** Bootstrap task registry */
@@ -70,6 +80,7 @@ class ServerConfig : public BaseConfig {
  private:
   void ParseYAML(YAML::Node &yaml_conf);
   void ParseWorkOrchestrator(YAML::Node yaml_conf);
+  void ParseQueueManager(YAML::Node yaml_conf);
   void ParseRpcInfo(YAML::Node yaml_conf);
 };
 

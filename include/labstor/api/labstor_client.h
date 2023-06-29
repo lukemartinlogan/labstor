@@ -7,6 +7,7 @@
 
 #include <string>
 #include "manager.h"
+#include "labstor/queue_manager/queue_manager_client.h"
 
 // Singleton macros
 #define LABSTOR_CLIENT hshm::Singleton<labstor::Client>::GetInstance()
@@ -17,6 +18,7 @@ namespace labstor {
 class Client : public ConfigurationManager {
  public:
   int data_;
+  QueueManagerClient queue_manager_;
 
  public:
   /** Default constructor */
@@ -45,6 +47,7 @@ class Client : public ConfigurationManager {
     LoadServerConfig(server_config_path);
     LoadClientConfig(client_config_path);
     LoadSharedMemory();
+    queue_manager_.ClientInit(header_->queue_manager_);
 
     // Initialize references to SHM types
     // rpc_.InitClient();
@@ -61,7 +64,7 @@ class Client : public ConfigurationManager {
     // Load shared-memory allocator
     auto mem_mngr = HERMES_MEMORY_MANAGER;
     mem_mngr->AttachBackend(hipc::MemoryBackendType::kPosixShmMmap,
-                            server_config_.wo_.shmem_name_);
+                            server_config_.queue_manager_.shmem_name_);
     main_alloc_ = mem_mngr->GetAllocator(main_alloc_id_);
     header_ = main_alloc_->GetCustomHeader<LabstorShm>();
   }
@@ -71,13 +74,5 @@ class Client : public ConfigurationManager {
 };
 
 }  // namespace labstor
-
-#define TRANSPARENT_LABSTOR_CLIENT\
-  if (!LABSTOR->IsInitialized() && \
-      !LABSTOR->IsBeingInitialized() && \
-      !LABSTOR->IsTerminated()) {\
-    LABSTOR_CLIENT->Create();\
-    LABSTOR_CLIENT->is_transparent_ = true;\
-  }
 
 #endif  // LABSTOR_INCLUDE_LABSTOR_CLIENT_LABSTOR_CLIENT_H_
