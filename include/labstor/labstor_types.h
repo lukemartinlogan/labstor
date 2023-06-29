@@ -47,7 +47,6 @@ enum class LabstorMode {
 };
 
 /** Represents unique ID for BlobId and TagId */
-template<int TYPE>
 struct UniqueId {
   u64 unique_;   /**< A unique id for the blob */
   u32 node_id_;  /**< The node the content is on */
@@ -123,8 +122,10 @@ struct UniqueId {
   }*/
 };
 
-/** Uniquely identify a distributed task */
-using TaskExecId = UniqueId<1>;
+/** Uniquely identify a task executor */
+using TaskExecId = UniqueId;
+/** Uniquely identify a queue */
+using QueueId = UniqueId;
 
 }  // namespace labstor
 

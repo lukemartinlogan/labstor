@@ -6,6 +6,7 @@
 #define LABSTOR_INCLUDE_LABSTOR_CLIENT_LABSTOR_SERVER_H_
 
 #include "labstor/task_registry/task_registry.h"
+#include "labstor/work_orchestrator/work_orchestrator.h"
 #include "manager.h"
 
 // Singleton macros
@@ -18,6 +19,7 @@ class Runtime : public ConfigurationManager {
  public:
   int data_;
   TaskRegistry task_registry_;
+  WorkOrchestrator work_orchestrator_;
 
  public:
   /** Default constructor */
@@ -46,7 +48,8 @@ class Runtime : public ConfigurationManager {
 
     // Initialize RPC
     // rpc_.InitRuntime();
-    HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kArgobots);
+    HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kPthread);
+    work_orchestrator_.ServerInit(&server_config_);
 
     // Initialize queue manager
 
