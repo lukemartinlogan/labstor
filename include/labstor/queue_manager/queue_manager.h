@@ -21,7 +21,8 @@ struct QueueManagerShm {
 class QueueManager {
  public:
   hipc::vector<MultiQueue> *queue_map_;
-  static inline const QueueId kAdmin = QueueId(0, 0);
+  static inline const QueueId kAdminQueue = QueueId(0, 0);
+  static inline const TaskExecId kAdminTaskExec = TaskExecId(0, 0);
 
  public:
   /**
@@ -34,62 +35,6 @@ class QueueManager {
   }
 };
 
-/** The set of methods in the admin task */
-struct QueueManagerMethod : public TaskMethod {
-  TASK_METHOD_T kCreateQueue = TaskMethod::kLast;
-  TASK_METHOD_T kDestroyQueue = TaskMethod::kLast + 1;
-};
+}  // namespace labstor
 
-/** A request used for communicating between clients & runtime */
-struct CreateQueueTask : public Task {
-  QueueId id_;
-  u32 max_lanes_;
-  u32 num_lanes_;
-  u32 depth_;
-  bitfield32_t flags_;
-
-  HSHM_ALWAYS_INLINE
-  CreateQueueTask(TaskExecId task_exec,
-                  u32 node_id,
-                  const QueueId &id,
-                  u32 max_lanes, u32 num_lanes,
-                  u32 depth, bitfield32_t flags) {
-    // Initialize task
-    key_ = 0;
-    task_exec_ = task_exec;
-    method_ = QueueManagerMethod::kCreateQueue;
-    task_flags_.SetBits(0);
-    node_id_ = node_id;
-
-    // Initialize QueueManager task
-    id_ = id;
-    max_lanes_ = max_lanes;
-    num_lanes_ = num_lanes;
-    depth_ = depth;
-    flags_ = flags;
-  }
-};
-
-/** A request used for communicating between clients & runtime */
-struct DestroyQueueTask : public Task {
-  QueueId id_;
-
-  HSHM_ALWAYS_INLINE
-  DestroyQueueTask(TaskExecId task_exec,
-                   u32 node_id,
-                   const QueueId &id) {
-    // Initialize task
-    key_ = 0;
-    task_exec_ = task_exec;
-    method_ = QueueManagerMethod::kCreateQueue;
-    task_flags_.SetBits(0);
-    node_id_ = node_id;
-
-    // Initialize QueueManager task
-    id_ = id;
-  }
-};
-
-}
-
-#endif //LABSTOR_INCLUDE_LABSTOR_QUEUE_MANAGER_QUEUE_MANAGER_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_QUEUE_MANAGER_QUEUE_MANAGER_H_

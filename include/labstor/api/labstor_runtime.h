@@ -8,8 +8,9 @@
 #include "labstor/task_registry/task_registry.h"
 #include "labstor/work_orchestrator/work_orchestrator.h"
 #include "labstor/queue_manager/queue_manager_runtime.h"
+#include "labstor_client.h"
 #include "manager.h"
-#include "labstor/queue_manager/queue_manager_client.h"
+#include "labstor/network/rpc.h"
 
 // Singleton macros
 #define LABSTOR_RUNTIME hshm::Singleton<labstor::Runtime>::GetInstance()
@@ -23,6 +24,7 @@ class Runtime : public ConfigurationManager {
   TaskRegistry task_registry_;
   WorkOrchestrator work_orchestrator_;
   QueueManagerRuntime queue_manager_;
+  RpcContext rpc_;
 
  public:
   /** Default constructor */
@@ -37,6 +39,7 @@ class Runtime : public ConfigurationManager {
     mode_ = LabstorMode::kClient;
     is_being_initialized_ = true;
     InitServer(std::move(server_config_path));
+    LABSTOR_CLIENT->Create(server_config_path, "", true);
     is_initialized_ = true;
     is_being_initialized_ = false;
     return this;
@@ -48,16 +51,10 @@ class Runtime : public ConfigurationManager {
     LoadServerConfig(server_config_path);
     InitSharedMemory();
     task_registry_.ServerInit(&server_config_);
-    queue_manager_.ServerInit(&server_config_, main_alloc_, header_->queue_manager_);
-
-    // Initialize RPC
-    // rpc_.InitRuntime();
+    rpc_.ServerInit(&server_config_);
+    queue_manager_.ServerInit(main_alloc_, rpc_.node_id_, &server_config_, header_->queue_manager_);
     HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kPthread);
     work_orchestrator_.ServerInit(&server_config_);
-
-    // Initialize queue manager
-
-    // Initialize work orchestrator
   }
 
  public:

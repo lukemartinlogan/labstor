@@ -48,7 +48,6 @@ class RpcContext {
   int port_;  /**< port number */
   u32 node_id_; /**< the ID of this node */
   std::vector<HostInfo> hosts_; /**< Hostname and ip addr per-node */
-  LabstorMode mode_; /**< The current mode hermes is executing in */
 
  public:
   /** Default constructor */
@@ -58,10 +57,7 @@ class RpcContext {
   static std::vector<std::string> ParseHostfile(const std::string &path);
 
   /** initialize host info list */
-  void ServerInit(ServerConfig *config, LabstorMode mode);
-
-  /** Check if we should skip an RPC and call a function locally */
-  bool ShouldDoLocalCall(u32 node_id);
+  void ServerInit(ServerConfig *config);
 
   /** get RPC address */
   std::string GetRpcAddress(u32 node_id, int port);
@@ -87,10 +83,6 @@ class RpcContext {
 
   /** Get IPv4 address from the host with "host_name" */
   std::string _GetIpAddress(const std::string &host_name);
-
- public:
-  virtual void InitServer() = 0;
-  virtual void InitClient() = 0;
 };
 
 }  // namespace hermes

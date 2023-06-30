@@ -10,7 +10,7 @@
  * have access to the file, you may request a copy from help@hdfgroup.org.   *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include "labstor/util/rpc.h"
+#include "labstor/network/rpc.h"
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <ifaddrs.h>
@@ -40,10 +40,9 @@ std::vector<std::string> RpcContext::ParseHostfile(const std::string &path) {
  * initialize host info list
  * Requires the MetadataManager to be initialized.
  * */
-void RpcContext::ServerInit(ServerConfig *config, LabstorMode mode) {
+void RpcContext::ServerInit(ServerConfig *config) {
   config_ = config;
   port_ = config_->rpc_.port_;
-  mode_ = mode;
   if (hosts_.size()) { return; }
   // Uses hosts produced by host_names
   auto &hosts = config_->rpc_.host_names_;
@@ -59,27 +58,9 @@ void RpcContext::ServerInit(ServerConfig *config, LabstorMode mode) {
   }
 
   // Get id of current host
-  if (mode == LabstorMode::kServer) {
-    node_id_ = _FindThisHost();
-  }
-  if (node_id_ == 0 || node_id_ > (i32)hosts_.size()) {
+  node_id_ = _FindThisHost();
+  if (node_id_ == 0 || node_id_ > (u32)hosts_.size()) {
     HELOG(kFatal, "Couldn't identify this host.")
-  }
-}
-
-/** Check if we should skip an RPC and call a function locally */
-bool RpcContext::ShouldDoLocalCall(u32 node_id) {
-  switch (mode_) {
-    case LabstorMode::kClient: {
-      return false;
-    }
-    case LabstorMode::kServer: {
-      return node_id == node_id_;
-    }
-    default: {
-      HELOG(kFatal, "Invalid LabstorMode.")
-      exit(1);
-    }
   }
 }
 

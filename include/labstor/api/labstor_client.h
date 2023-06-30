@@ -26,7 +26,8 @@ class Client : public ConfigurationManager {
 
   /** Initialize the client */
   Client* Create(std::string server_config_path = "",
-                 std::string client_config_path = "") {
+                 std::string client_config_path = "",
+                 bool server = false) {
     hshm::ScopedMutex lock(lock_, 1);
     if (is_initialized_) {
       return this;
@@ -34,7 +35,8 @@ class Client : public ConfigurationManager {
     mode_ = LabstorMode::kClient;
     is_being_initialized_ = true;
     InitClient(std::move(server_config_path),
-               std::move(client_config_path));
+               std::move(client_config_path),
+               server);
     is_initialized_ = true;
     is_being_initialized_ = false;
     return this;
@@ -43,15 +45,18 @@ class Client : public ConfigurationManager {
  private:
   /** Initialize client */
   void InitClient(std::string server_config_path,
-                  std::string client_config_path) {
+                  std::string client_config_path,
+                  bool server) {
     LoadServerConfig(server_config_path);
     LoadClientConfig(client_config_path);
     LoadSharedMemory();
-    queue_manager_.ClientInit(header_->queue_manager_);
+    queue_manager_.ClientInit(main_alloc_, header_->queue_manager_);
 
     // Initialize references to SHM types
     // rpc_.InitClient();
-    HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kArgobots);
+    if (!server) {
+      HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kPthread);
+    }
 
     // Initialize queue manager
 

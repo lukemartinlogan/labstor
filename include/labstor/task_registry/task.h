@@ -27,6 +27,8 @@ namespace labstor {
 #define TASK_UNORDERED (1 << 7)
 /** This task was spawned as consequence of another task */
 #define TASK_INTERMEDIATE (1 << 8)
+/** This task is completed */
+#define TASK_COMPLETE (1 << 9)
 
 /** Used to define task methods */
 #define TASK_METHOD_T static const u32
@@ -45,6 +47,20 @@ struct Task {
   u32 method_;              /**< The method to call in the executor */
   bitfield32_t task_flags_;    /**< Properties of the task  */
   u32 node_id_;                /**< The node that the task should run on */
+
+  HSHM_ALWAYS_INLINE bool IsComplete() {
+    return task_flags_.Any(TASK_COMPLETE);
+  }
+
+  HSHM_ALWAYS_INLINE void SetComplete() {
+    task_flags_.SetBits(TASK_COMPLETE);
+  }
+
+  void Wait() {
+    while (!IsComplete()) {
+      HERMES_THREAD_MODEL->Yield();
+    }
+  }
 };
 
 }  // namespace labstor

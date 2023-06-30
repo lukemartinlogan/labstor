@@ -17,12 +17,16 @@ target_link_libraries(labstor_client
   ${HermesShm_LIBRARIES}
   yaml-cpp
   cereal::cereal
-  -ldl -lrt -lc)
+  -ldl -lrt -lc -pthread)
 
 #------------------------------------------------------------------------------
 # Build Labstor Runtime
 #------------------------------------------------------------------------------
-add_executable(labstor_runtime labstor_runtime.cc)
+add_executable(labstor_runtime
+        rpc.cc
+        work_orchestrator.cc
+        worker.cc
+        labstor_runtime.cc)
 add_dependencies(labstor_runtime labstor_client)
 target_link_libraries(labstor_runtime labstor_client -ldl -lrt -lc)
 
