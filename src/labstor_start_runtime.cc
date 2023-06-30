@@ -5,5 +5,12 @@
 #include "hermes_shm/util/singleton.h"
 #include "labstor/api/labstor_runtime.h"
 
+int main(int argc, char **argv) {
+  LABSTOR_RUNTIME->Create();
+  LABSTOR_RUNTIME->RunDaemon();
+  LABSTOR_RUNTIME->Finalize();
+  return 0;
+}
+
 /** Runtime singleton */
 DEFINE_SINGLETON_CC(labstor::Runtime)

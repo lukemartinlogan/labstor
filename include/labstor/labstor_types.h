@@ -21,6 +21,7 @@
 #include <hermes_shm/thread/thread_model_manager.h>
 #include <hermes_shm/types/atomic.h>
 #include "hermes_shm/util/singleton.h"
+#include "hermes_shm/constants/macros.h"
 
 namespace labstor {
 

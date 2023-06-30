@@ -7,6 +7,7 @@
 
 #include <dlfcn.h>
 #include "labstor/labstor_types.h"
+#include "labstor/queue_manager/queue.h"
 #include "task.h"
 
 namespace labstor {
@@ -33,7 +34,7 @@ class TaskLib {
   virtual ~TaskLib() = default;
 
   /** Run a method of the task */
-  virtual void Run(u32 method, Task *task) = 0;
+  virtual void Run(MultiQueue *queue, u32 method, Task *task) = 0;
 };
 
 /** Represents a TaskLib in action */
@@ -47,14 +48,14 @@ typedef const char* (*get_task_lib_name_t)(void);
 }  // extern c
 
 /** Used internally by task source file */
-#define LABSTOR_TASK_CC(TRAIT_CLASS, task_name) \
+#define LABSTOR_TASK_CC(TRAIT_CLASS, TASK_NAME) \
     extern "C" {                              \
-        void* create_executor(Task *task) { \
-          hermes::TaskExecutor *exec = new TYPE_UNWRAP(TRAIT_CLASS)(); \
-          exec->Run(TaskMethods::kConstruct, task); \
+        void* create_executor(labstor::Task *task) { \
+          labstor::TaskExecutor *exec = new TYPE_UNWRAP(TRAIT_CLASS)(); \
+          exec->Run(nullptr, labstor::TaskMethod::kConstruct, task); \
           return exec; \
         } \
-        const char* get_task_lib_name(void) { return task_name; } \
+        const char* get_task_lib_name(void) { return TASK_NAME; } \
         bool is_labstor_task_ = true; \
     }
 }   // namespace labstor

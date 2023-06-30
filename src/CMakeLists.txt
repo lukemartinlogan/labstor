@@ -1,5 +1,3 @@
-include_directories(${CMAKE_SOURCE_DIR})
-
 #------------------------------------------------------------------------------
 # External dependencies
 #------------------------------------------------------------------------------
@@ -8,7 +6,6 @@ include_directories(${CMAKE_SOURCE_DIR})
 #------------------------------------------------------------------------------
 # Build Labstor Client Library
 #------------------------------------------------------------------------------
-include_directories(${HermesShm_INCLUDE_DIRS})
 add_library(labstor_client SHARED
         ${CMAKE_CURRENT_SOURCE_DIR}/config_client.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/config_server.cc
@@ -20,9 +17,9 @@ target_link_libraries(labstor_client
   -ldl -lrt -lc -pthread)
 
 #------------------------------------------------------------------------------
-# Build Labstor Runtime
+# Build Labstor Runtime Library
 #------------------------------------------------------------------------------
-add_executable(labstor_runtime
+add_library(labstor_runtime
         rpc.cc
         work_orchestrator.cc
         worker.cc
@@ -31,11 +28,19 @@ add_dependencies(labstor_runtime labstor_client)
 target_link_libraries(labstor_runtime labstor_client -ldl -lrt -lc)
 
 #------------------------------------------------------------------------------
-# Build LabStor Finalization Function
+# Build Labstor Runtime Start Function
 #------------------------------------------------------------------------------
-add_executable(finalize_labstor finalize_labstor.cc)
-add_dependencies(finalize_labstor labstor_client)
-target_link_libraries(finalize_labstor labstor_client)
+add_executable(labstor_start_runtime
+        labstor_start_runtime.cc)
+add_dependencies(labstor_start_runtime labstor_runtime)
+target_link_libraries(labstor_start_runtime labstor_runtime)
+
+#------------------------------------------------------------------------------
+# Build LabStor Runtime Stop Function
+#------------------------------------------------------------------------------
+add_executable(labstor_stop_runtime labstor_stop_runtime.cc)
+add_dependencies(labstor_stop_runtime labstor_client)
+target_link_libraries(labstor_stop_runtime labstor_client)
 
 #-----------------------------------------------------------------------------
 # Add file(s) to CMake Install
@@ -56,7 +61,8 @@ install(
   TARGETS
     labstor_client
     labstor_runtime
-    finalize_labstor
+    labstor_start_runtime
+    labstor_stop_runtime
   LIBRARY DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
   ARCHIVE DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
   RUNTIME DESTINATION ${LABSTOR_INSTALL_BIN_DIR}
@@ -68,5 +74,6 @@ install(
 if(LABSTOR_ENABLE_COVERAGE)
   set_coverage_flags(labstor_client)
   set_coverage_flags(labstor_runtime)
-  set_coverage_flags(finalize_labstor)
+  set_coverage_flags(labstor_start_runtime)
+  set_coverage_flags(labstor_stop_runtime)
 endif()

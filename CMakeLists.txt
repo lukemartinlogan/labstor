@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(labstor)
 
-include_directories(${CMAKE_SOURCE_DIR}/include)
-
 #-----------------------------------------------------------------------------
 # Define Options
 #-----------------------------------------------------------------------------
@@ -81,8 +79,12 @@ endif()
 #-----------------------------------------------------------------------------
 # Build Labstor Main Packages
 #-----------------------------------------------------------------------------
+include_directories(${HermesShm_INCLUDE_DIRS})
+include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/tasks)
 add_subdirectory(src)
-
+add_subdirectory(tasks)
 add_custom_target(lint COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/lint.sh ${CMAKE_SOURCE_DIR})
 
 #-----------------------------------------------------------------------------
@@ -92,6 +94,6 @@ enable_testing()
 # add_subdirectory(test)
 
 #-----------------------------------------------------------------------------
-# Install LabStor
+# Install LabStor Headers
 #-----------------------------------------------------------------------------
 install(DIRECTORY include DESTINATION ${CMAKE_INSTALL_PREFIX})
