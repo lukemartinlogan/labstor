@@ -167,11 +167,16 @@ class TaskRegistry {
     libs_.erase(it);
   }
 
+  /** Get a TaskExecutor ID */
+  TaskExecId CreateTaskExecutorId(u32 node_id) {
+    return TaskExecId(unique_.fetch_add(1), node_id);;
+  }
+
   /** Create a task executor */
   TaskExecId CreateTaskExecutor(const char *lib_name,
                                 const char *exec_name,
                                 u32 node_id,
-                                TaskExecId &exec_id,
+                                const TaskExecId &exec_id,
                                 Task *task) {
     // Find the task library to instantiate
     auto it = libs_.find(lib_name);
@@ -186,11 +191,6 @@ class TaskRegistry {
       return TaskExecId::GetNull();
     }
 
-    // Allocate a TaskExecId
-    if (exec_id.IsNull()) {
-      exec_id = TaskExecId(unique_.fetch_add(1), node_id);
-    }
-
     // Create the executor instance
     TaskLibInfo &info = it->second;
     TaskExecutor *task_exec = info.create_executor_(task);
@@ -201,8 +201,8 @@ class TaskRegistry {
 
     // Add the executor to the registry
     TaskExecId task_exec_id = task_exec->id_;
-    task_exec_ids_.emplace(exec_name, task_exec_id);
-    task_execs_.emplace(task_exec_id, task_exec);
+    task_exec_ids_.emplace(exec_name, exec_id);
+    task_execs_.emplace(exec_id, task_exec);
     return task_exec_id;
   }
 
@@ -216,12 +216,25 @@ class TaskRegistry {
   }
 
   /** Get a task executor instance */
-  TaskExecutor *GetTaskExecutor(TaskExecId task_exec_id) {
+  TaskExecutor *GetTaskExecutor(const TaskExecId &task_exec_id) {
     auto it = task_execs_.find(task_exec_id);
     if (it == task_execs_.end()) {
       return nullptr;
     }
     return it->second;
+  }
+
+  /** Destroy a task executor */
+  void DestroyTaskExecutor(const TaskExecId &task_exec_id) {
+    auto it = task_execs_.find(task_exec_id);
+    if (it == task_execs_.end()) {
+      HELOG(kWarning, "Could not find the task executor");
+      return;
+    }
+    TaskExecutor *task_exec = it->second;
+    task_exec_ids_.erase(task_exec->name_);
+    task_execs_.erase(it);
+    delete task_exec;
   }
 };
 

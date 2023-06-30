@@ -52,16 +52,6 @@ class QueueManagerRuntime : public QueueManager {
                 bitfield32_t(TASK_LOW_LATENCY));
   }
 
-  /** Create a new queue in the map */
-  QueueId CreateQueue(u32 max_lanes, u32 num_lanes,
-                      u32 depth, bitfield32_t flags) {
-    u64 tkt;
-    tickets_->pop(tkt);
-    QueueId id(tkt, node_id_);
-    CreateQueue(id, max_lanes, num_lanes, depth, flags);
-    return id;
-  }
-
   /** Create a new queue (with pre-allocated ID) in the map */
   void CreateQueue(const QueueId &id,
                    u32 max_lanes, u32 num_lanes,
