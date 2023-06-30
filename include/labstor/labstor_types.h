@@ -126,6 +126,7 @@ struct UniqueId {
   }*/
 };
 
+/** Uniquely identify a task library */
 /** Uniquely identify a task executor */
 using TaskExecId = UniqueId<1>;
 /** Uniquely identify a queue */

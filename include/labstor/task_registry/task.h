@@ -41,27 +41,86 @@ struct TaskMethod {
 };
 
 /** A generic task */
-struct Task {
+struct Task : public hipc::ShmContainer {
+  SHM_CONTAINER_TEMPLATE((Task), (Task))
   u32 key_;                 /**< Helps determine the lane task is keyed to */
   TaskExecId task_exec_;    /**< The unique name of a task executor */
   u32 method_;              /**< The method to call in the executor */
   bitfield32_t task_flags_;    /**< Properties of the task  */
   u32 node_id_;                /**< The node that the task should run on */
 
+  /**====================================
+   * Task Helpers
+   * ===================================*/
+  
+  /** Check if task is complete */
   HSHM_ALWAYS_INLINE bool IsComplete() {
     return task_flags_.Any(TASK_COMPLETE);
   }
 
+  /** Set task as complete */
   HSHM_ALWAYS_INLINE void SetComplete() {
     task_flags_.SetBits(TASK_COMPLETE);
   }
 
+  /** Wait for task to complete */
   void Wait() {
     while (!IsComplete()) {
       HERMES_THREAD_MODEL->Yield();
     }
   }
+
+  /**====================================
+   * Default Constructor
+   * ===================================*/
+
+  /** Default SHM constructor */
+  HSHM_ALWAYS_INLINE Task(hipc::Allocator *alloc) {
+    shm_init_container(alloc);
+  }
+
+  /**====================================
+   * Copy Constructors
+   * ===================================*/
+
+  /** SHM copy constructor */
+  HSHM_ALWAYS_INLINE explicit Task(hipc::Allocator *alloc, const Task &other) {}
+
+  /** SHM copy assignment operator */
+  HSHM_ALWAYS_INLINE Task& operator=(const Task &other) {
+    return *this;
+  }
+
+  /**====================================
+   * Move Constructors
+   * ===================================*/
+
+  /** SHM move constructor. */
+  HSHM_ALWAYS_INLINE Task(hipc::Allocator *alloc, Task &&other) noexcept {}
+
+  /** SHM move assignment operator. */
+  HSHM_ALWAYS_INLINE Task& operator=(Task &&other) noexcept {
+    return *this;
+  }
+
+  /**====================================
+   * Destructor
+   * ===================================*/
+
+  /** SHM destructor.  */
+  HSHM_ALWAYS_INLINE void shm_destroy_main() {}
+
+  /** Check if the Task is empty */
+  HSHM_ALWAYS_INLINE bool IsNull() const { return false; }
+
+  /** Sets this Task as empty */
+  HSHM_ALWAYS_INLINE void SetNull() {}
 };
+
+/** Decorator macros */
+#define IN
+#define OUT
+#define INOUT
 
 }  // namespace labstor
 

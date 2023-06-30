@@ -102,14 +102,14 @@ class TaskRegistry {
 
     // Find each lib in LD_LIBRARY_PATH
     for (const std::string &lib_name : config->task_libs_) {
-      if (!LoadTaskLib(lib_name)) {
+      if (!RegisterTaskLib(lib_name)) {
         HELOG(kWarning, "Failed to load the lib: {}", lib_name);
       }
     }
   }
 
   /** Load a task lib */
-  bool LoadTaskLib(const std::string &lib_name) {
+  bool RegisterTaskLib(const std::string &lib_name) {
     std::string lib_dir;
     for (const std::string &lib_dir : lib_dirs_) {
       // Determine if this directory contains the library
@@ -155,6 +155,16 @@ class TaskRegistry {
       return true;
     }
     return false;
+  }
+
+  /** Destroy a task lib */
+  void DestroyTaskLib(const std::string &lib_name) {
+    auto it = libs_.find(lib_name);
+    if (it == libs_.end()) {
+      HELOG(kError, "Could not find the task lib: {}", lib_name);
+      return;
+    }
+    libs_.erase(it);
   }
 
   /** Create a task executor */
@@ -215,6 +225,9 @@ class TaskRegistry {
   }
 };
 
+/** Singleton macro for task registry */
+#define LABSTOR_TASK_REGISTRY \
+  (&LABSTOR_RUNTIME->task_registry_)
 }  // namespace labstor
 
 #endif  // LABSTOR_INCLUDE_LABSTOR_TASK_TASK_REGISTRY_H_

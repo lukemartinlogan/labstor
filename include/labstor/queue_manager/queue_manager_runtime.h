@@ -10,8 +10,8 @@
 
 namespace labstor {
 
-#define LABSTOR_QUEUE_MANAGER_SERVER \
-  (&LABSTOR_SERVER->queue_manager_)
+#define LABSTOR_QM_RUNTIME \
+  (&LABSTOR_RUNTIME->queue_manager_)
 
 /** Administrative queuing actions */
 class QueueManagerRuntime : public QueueManager {

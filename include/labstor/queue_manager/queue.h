@@ -149,7 +149,7 @@ struct MultiQueue : public hipc::ShmContainer {
   /** Allocate a task */
   template<typename T, typename ...Args>
   static T* Allocate(hipc::Allocator *alloc, hipc::Pointer &p, Args&& ...args) {
-    return alloc->AllocateConstructObjs<T>(1, p, std::forward<Args>(args)...);
+    return alloc->AllocateConstructObjs<T>(1, p, alloc, std::forward<Args>(args)...);
   }
 
   /** Free a task */
