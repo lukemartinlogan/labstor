@@ -1,12 +1,10 @@
 #ifndef LABSTOR_SRC_CONFIG_SERVER_DEFAULT_H_
 #define LABSTOR_SRC_CONFIG_SERVER_DEFAULT_H_
 const char* kServerDefaultConfigStr = 
-"### Hermes runtime orchestration settings\n"
+"### Runtime orchestration settings\n"
 "work_orchestrator:\n"
 "  # The number of worker threads to spawn\n"
 "  max_workers: 64\n"
-"  # The default size of queue requests\n"
-"  request_unit: 64\n"
 "  # The default depth of allocated queues\n"
 "  queue_depth: 256\n"
 "  # The shared memory allocator to use\n"
@@ -15,6 +13,15 @@ const char* kServerDefaultConfigStr =
 "  shmem_name: \"labstor_shm\"\n"
 "  # The size of the shared memory region to allocate\n"
 "  shmem_size: 0g\n"
+"\n"
+"### Queue Manager settings\n"
+"queue_manager:\n"
+"  # The default depth of allocated queues\n"
+"  queue_depth: 256\n"
+"  # The maximum number of lanes per queue\n"
+"  max_lanes: 16\n"
+"  # The maximum number of queues\n"
+"  max_queues: 1024\n"
 "\n"
 "### Define properties of RPCs\n"
 "rpc:\n"
@@ -40,5 +47,8 @@ const char* kServerDefaultConfigStr =
 "  port: 8080\n"
 "\n"
 "  # The number of handler threads for each RPC server.\n"
-"  num_threads: 4\n";
+"  num_threads: 4\n"
+"\n"
+"### Task Registry\n"
+"task_registry: []\n";
 #endif  // LABSTOR_SRC_CONFIG_SERVER_DEFAULT_H_
