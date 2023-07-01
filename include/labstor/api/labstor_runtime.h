@@ -55,6 +55,15 @@ class Runtime : public ConfigurationManager {
     queue_manager_.ServerInit(main_alloc_, rpc_.node_id_, &server_config_, header_->queue_manager_);
     HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kPthread);
     work_orchestrator_.ServerInit(&server_config_);
+
+    // Create the admin library
+    task_registry_.RegisterTaskLib("labstor_admin");
+    TaskExecId exec_id(0, 0);
+    task_registry_.CreateTaskExecutor("labstor_admin",
+                                      "labstor_admin",
+                                      rpc_.node_id_,
+                                      exec_id,
+                                      nullptr);
   }
 
  public:

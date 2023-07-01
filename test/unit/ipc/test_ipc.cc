@@ -3,7 +3,9 @@
 //
 
 #include "basic_test.h"
+#include "labstor/api/labstor_client.h"
+#include "labstor_admin/labstor_admin.h"
 
 TEST_CASE("TestIpc") {
-
+  labstor::LabstorAdmin admin;
 }

@@ -106,4 +106,4 @@ class Admin : public TaskLib {
 
 }  // namespace labstor
 
-LABSTOR_TASK_CC(labstor::Admin, "admin");
+LABSTOR_TASK_CC(labstor::Admin, "labstor_admin");

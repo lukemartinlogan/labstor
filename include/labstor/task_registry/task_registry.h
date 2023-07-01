@@ -200,10 +200,10 @@ class TaskRegistry {
     }
 
     // Add the executor to the registry
-    TaskExecId task_exec_id = task_exec->id_;
+    task_exec->id_ = exec_id;
     task_exec_ids_.emplace(exec_name, exec_id);
     task_execs_.emplace(exec_id, task_exec);
-    return task_exec_id;
+    return exec_id;
   }
 
   /** Get a task executor's ID */
