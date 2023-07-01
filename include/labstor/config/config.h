@@ -23,7 +23,9 @@ class BaseConfig {
  public:
   /** load configuration from a string */
   void LoadText(const std::string &config_string, bool with_default = true) {
-    if (with_default) { LoadDefault(); }
+    if (with_default) {
+      LoadDefault();
+    }
     if (config_string.size() == 0) {
       return;
     }
@@ -33,7 +35,9 @@ class BaseConfig {
 
   /** load configuration from file */
   void LoadFromFile(const std::string &path, bool with_default = true) {
-    if (with_default) { LoadDefault(); }
+    if (with_default) {
+      LoadDefault();
+    }
     if (path.size() == 0) {
       return;
     }

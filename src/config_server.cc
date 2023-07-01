@@ -42,12 +42,12 @@ void ServerConfig::ParseQueueManager(YAML::Node yaml_conf) {
   if (yaml_conf["shm_allocator"]) {
     queue_manager_.shm_allocator_ = yaml_conf["shm_allocator"].as<std::string>();
   }
-  if (yaml_conf["shmem_name"]) {
-    queue_manager_.shmem_name_ = yaml_conf["shmem_name"].as<std::string>();
+  if (yaml_conf["shm_name"]) {
+    queue_manager_.shm_name_ = yaml_conf["shm_name"].as<std::string>();
   }
-  if (yaml_conf["shmem_size"]) {
-    queue_manager_.shmem_size_ = hshm::ConfigParse::ParseSize(
-        yaml_conf["shmem_size"].as<std::string>());
+  if (yaml_conf["shm_size"]) {
+    queue_manager_.shm_size_ = hshm::ConfigParse::ParseSize(
+        yaml_conf["shm_size"].as<std::string>());
   }
 }
 
@@ -60,7 +60,7 @@ void ServerConfig::ParseRpcInfo(YAML::Node yaml_conf) {
         hshm::ConfigParse::ExpandPath(yaml_conf["host_file"].as<std::string>());
     rpc_.host_names_.clear();
   }
-  if (yaml_conf["host_names"] && rpc_.host_file_.size() == 0) {
+  if (yaml_conf["host_names"] && rpc_.host_file_.empty()) {
     // NOTE(llogan): host file is prioritized
     rpc_.host_names_.clear();
     for (YAML::Node host_name_gen : yaml_conf["host_names"]) {
@@ -83,6 +83,9 @@ void ServerConfig::ParseRpcInfo(YAML::Node yaml_conf) {
 void ServerConfig::ParseYAML(YAML::Node &yaml_conf) {
   if (yaml_conf["work_orchestrator"]) {
     ParseWorkOrchestrator(yaml_conf["work_orchestrator"]);
+  }
+  if (yaml_conf["queue_manager"]) {
+    ParseQueueManager(yaml_conf["queue_manager"]);
   }
   if (yaml_conf["rpc"]) {
     ParseRpcInfo(yaml_conf["rpc"]);

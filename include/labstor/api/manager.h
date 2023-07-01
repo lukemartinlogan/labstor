@@ -26,7 +26,8 @@ class ConfigurationManager {
   LabstorShm *header_;
   ClientConfig client_config_;
   ServerConfig server_config_;
-  hipc::allocator_id_t main_alloc_id_;
+  static inline const hipc::allocator_id_t main_alloc_id_ =
+      hipc::allocator_id_t(0, 1);
   hipc::Allocator *main_alloc_;
   bool is_being_initialized_;
   bool is_initialized_;

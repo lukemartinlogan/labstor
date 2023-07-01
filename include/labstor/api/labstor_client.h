@@ -68,8 +68,10 @@ class Client : public ConfigurationManager {
   void LoadSharedMemory() {
     // Load shared-memory allocator
     auto mem_mngr = HERMES_MEMORY_MANAGER;
-    mem_mngr->AttachBackend(hipc::MemoryBackendType::kPosixShmMmap,
-                            server_config_.queue_manager_.shmem_name_);
+    try {
+      mem_mngr->AttachBackend(hipc::MemoryBackendType::kPosixShmMmap,
+                              server_config_.queue_manager_.shm_name_);
+    } catch (hshm::Error &e) {}
     main_alloc_ = mem_mngr->GetAllocator(main_alloc_id_);
     header_ = main_alloc_->GetCustomHeader<LabstorShm>();
   }

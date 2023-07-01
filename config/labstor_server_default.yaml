@@ -2,14 +2,6 @@
 work_orchestrator:
   # The number of worker threads to spawn
   max_workers: 64
-  # The default depth of allocated queues
-  queue_depth: 256
-  # The shared memory allocator to use
-  shm_allocator: kScalablePageAllocator
-  # The name of the shared memory region to create
-  shmem_name: "labstor_shm"
-  # The size of the shared memory region to allocate
-  shmem_size: 0g
 
 ### Queue Manager settings
 queue_manager:
@@ -19,6 +11,12 @@ queue_manager:
   max_lanes: 16
   # The maximum number of queues
   max_queues: 1024
+  # The shared memory allocator to use
+  shm_allocator: kScalablePageAllocator
+  # The name of the shared memory region to create
+  shm_name: "labstor_shm"
+  # The size of the shared memory region to allocate
+  shm_size: 0g
 
 ### Define properties of RPCs
 rpc:

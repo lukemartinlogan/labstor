@@ -38,9 +38,9 @@ struct QueueManagerInfo {
   /** Shared memory allocator */
   std::string shm_allocator_;
   /** Shared memory region name */
-  std::string shmem_name_;
+  std::string shm_name_;
   /** Shared memory region size */
-  size_t shmem_size_;
+  size_t shm_size_;
 };
 
 /**

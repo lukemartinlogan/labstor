@@ -36,7 +36,7 @@ class Runtime : public ConfigurationManager {
     if (is_initialized_) {
       return this;
     }
-    mode_ = LabstorMode::kClient;
+    mode_ = LabstorMode::kServer;
     is_being_initialized_ = true;
     InitServer(std::move(server_config_path));
     LABSTOR_CLIENT->Create(server_config_path, "", true);
@@ -62,16 +62,16 @@ class Runtime : public ConfigurationManager {
   void InitSharedMemory() {
     // Create shared-memory allocator
     auto mem_mngr = HERMES_MEMORY_MANAGER;
-    if (server_config_.queue_manager_.shmem_size_ == 0) {
-      server_config_.queue_manager_.shmem_size_ =
+    if (server_config_.queue_manager_.shm_size_ == 0) {
+      server_config_.queue_manager_.shm_size_ =
         hipc::MemoryManager::GetDefaultBackendSize();
     }
     mem_mngr->CreateBackend<hipc::PosixShmMmap>(
-      server_config_.queue_manager_.shmem_size_,
-      server_config_.queue_manager_.shmem_name_);
+      server_config_.queue_manager_.shm_size_,
+      server_config_.queue_manager_.shm_name_);
     main_alloc_ =
       mem_mngr->CreateAllocator<hipc::ScalablePageAllocator>(
-        server_config_.queue_manager_.shmem_name_,
+        server_config_.queue_manager_.shm_name_,
         main_alloc_id_,
         sizeof(LabstorShm));
     header_ = main_alloc_->GetCustomHeader<LabstorShm>();
