@@ -91,7 +91,7 @@ add_custom_target(lint COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/lint.sh ${CMAKE_
 # Build + Enable Testing
 #-----------------------------------------------------------------------------
 enable_testing()
-# add_subdirectory(test)
+add_subdirectory(test)
 
 #-----------------------------------------------------------------------------
 # Install LabStor Headers

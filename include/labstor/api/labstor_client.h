@@ -80,4 +80,12 @@ class Client : public ConfigurationManager {
 
 }  // namespace labstor
 
+#define TRANSPARENT_LABSTOR\
+  if (!LABSTOR_CLIENT->IsInitialized() && \
+      !LABSTOR_CLIENT->IsBeingInitialized() && \
+      !LABSTOR_CLIENT->IsTerminated()) {\
+    LABSTOR_CLIENT->Create();\
+    LABSTOR_CLIENT->is_transparent_ = true;\
+  }
+
 #endif  // LABSTOR_INCLUDE_LABSTOR_CLIENT_LABSTOR_CLIENT_H_
