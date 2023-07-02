@@ -70,7 +70,7 @@ class ServerConfig : public BaseConfig {
   QueueManagerInfo queue_manager_;
   /** The RPC information */
   RpcInfo rpc_;
-  /** Bootstrap task registry */
+  /** Bootstrap task_templ registry */
   std::vector<std::string> task_libs_;
 
  public:

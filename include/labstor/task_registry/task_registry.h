@@ -20,8 +20,8 @@ namespace labstor {
 /** All information needed to create a trait */
 struct TaskLibInfo {
   void *lib_;  /**< The dlfcn library */
-  create_executor_t create_executor_;   /**< The create task function */
-  get_task_lib_name_t get_task_lib_name; /**< The get task name function */
+  create_executor_t create_executor_;   /**< The create task_templ function */
+  get_task_lib_name_t get_task_lib_name; /**< The get task_templ name function */
 
   /** Default constructor */
   TaskLibInfo() = default;
@@ -61,7 +61,7 @@ struct TaskLibInfo {
  * */
 class TaskRegistry {
  public:
-  /** The dirs to search for task libs */
+  /** The dirs to search for task_templ libs */
   std::vector<std::string> lib_dirs_;
   /** Map of a semantic lib name to lib info */
   std::unordered_map<std::string, TaskLibInfo> libs_;
@@ -108,7 +108,7 @@ class TaskRegistry {
     }
   }
 
-  /** Load a task lib */
+  /** Load a task_templ lib */
   bool RegisterTaskLib(const std::string &lib_name) {
     std::string lib_dir;
     for (const std::string &lib_dir : lib_dirs_) {
@@ -157,11 +157,11 @@ class TaskRegistry {
     return false;
   }
 
-  /** Destroy a task lib */
+  /** Destroy a task_templ lib */
   void DestroyTaskLib(const std::string &lib_name) {
     auto it = libs_.find(lib_name);
     if (it == libs_.end()) {
-      HELOG(kError, "Could not find the task lib: {}", lib_name);
+      HELOG(kError, "Could not find the task_templ lib: {}", lib_name);
       return;
     }
     libs_.erase(it);
@@ -172,22 +172,22 @@ class TaskRegistry {
     return TaskExecId(unique_.fetch_add(1), node_id);;
   }
 
-  /** Create a task executor */
+  /** Create a task_templ executor */
   TaskExecId CreateTaskExecutor(const char *lib_name,
                                 const char *exec_name,
                                 u32 node_id,
                                 const TaskExecId &exec_id,
                                 Task *task) {
-    // Find the task library to instantiate
+    // Find the task_templ library to instantiate
     auto it = libs_.find(lib_name);
     if (it == libs_.end()) {
-      HELOG(kError, "Could not find the task lib", lib_name);
+      HELOG(kError, "Could not find the task_templ lib", lib_name);
       return TaskExecId::GetNull();
     }
 
     // Check that the executor doesn't already exist
     if (exec_name && task_exec_ids_.find(exec_name) != task_exec_ids_.end()) {
-      HELOG(kError, "The task executor already exists: {}", exec_name);
+      HELOG(kError, "The task_templ executor already exists: {}", exec_name);
       return TaskExecId::GetNull();
     }
 
@@ -195,7 +195,7 @@ class TaskRegistry {
     TaskLibInfo &info = it->second;
     TaskExecutor *task_exec = info.create_executor_(task);
     if (!task_exec) {
-      HELOG(kError, "Could not create the task executor: {}", exec_name);
+      HELOG(kError, "Could not create the task_templ executor: {}", exec_name);
       return TaskExecId::GetNull();
     }
 
@@ -206,7 +206,7 @@ class TaskRegistry {
     return exec_id;
   }
 
-  /** Get a task executor's ID */
+  /** Get a task_templ executor's ID */
   TaskExecId GetTaskExecutorId(const std::string &exec_name) {
     auto it = task_exec_ids_.find(exec_name);
     if (it == task_exec_ids_.end()) {
@@ -215,7 +215,7 @@ class TaskRegistry {
     return it->second;
   }
 
-  /** Get a task executor instance */
+  /** Get a task_templ executor instance */
   TaskExecutor *GetTaskExecutor(const TaskExecId &task_exec_id) {
     auto it = task_execs_.find(task_exec_id);
     if (it == task_execs_.end()) {
@@ -224,11 +224,11 @@ class TaskRegistry {
     return it->second;
   }
 
-  /** Destroy a task executor */
+  /** Destroy a task_templ executor */
   void DestroyTaskExecutor(const TaskExecId &task_exec_id) {
     auto it = task_execs_.find(task_exec_id);
     if (it == task_execs_.end()) {
-      HELOG(kWarning, "Could not find the task executor");
+      HELOG(kWarning, "Could not find the task_templ executor");
       return;
     }
     TaskExecutor *task_exec = it->second;
@@ -238,7 +238,7 @@ class TaskRegistry {
   }
 };
 
-/** Singleton macro for task registry */
+/** Singleton macro for task_templ registry */
 #define LABSTOR_TASK_REGISTRY \
   (&LABSTOR_RUNTIME->task_registry_)
 }  // namespace labstor

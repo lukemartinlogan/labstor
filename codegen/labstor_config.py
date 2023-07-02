@@ -1,6 +1,6 @@
 """
 USAGE:
-    cd code_generators/bin
+    cd codegen/bin
     python3 labstor_config.py
 
 OUTPUT:
@@ -8,8 +8,8 @@ OUTPUT:
     ${HERMES}/src/config_server_default.h (if server)
 """
 
-from code_generators.labstor_config.generator import create_config
-from code_generators.util.paths import LABSTOR_ROOT
+from codegen.labstor_config.generator import create_config
+from codegen.util.paths import LABSTOR_ROOT
 
 create_config(
     path=f"{LABSTOR_ROOT}/config/labstor_client_default.yaml",

@@ -9,61 +9,61 @@
 
 namespace labstor {
 
-/** This task reads a state */
+/** This task_templ reads a state */
 #define TASK_READ (1 << 0)
-/** This task writes to a state */
+/** This task_templ writes to a state */
 #define TASK_WRITE (1 << 1)
-/** This task fundamentally updates a state */
+/** This task_templ fundamentally updates a state */
 #define TASK_UPDATE (1 << 2)
-/** This task is paused until a set of tasks complete */
+/** This task_templ is paused until a set of tasks complete */
 #define TASK_BLOCKED (1 << 3)
-/** This task is latency-sensitive */
+/** This task_templ is latency-sensitive */
 #define TASK_LOW_LATENCY (1 << 4)
-/** This task makes system calls and may hurt caching */
+/** This task_templ makes system calls and may hurt caching */
 #define TASK_SYSCALL (1 << 5)
-/** This task does not depend on state */
+/** This task_templ does not depend on state */
 #define TASK_STATELESS (1 << 6)
-/** This task does not depend on its position in the queue */
+/** This task_templ does not depend on its position in the queue */
 #define TASK_UNORDERED (1 << 7)
-/** This task was spawned as consequence of another task */
+/** This task_templ was spawned as consequence of another task_templ */
 #define TASK_INTERMEDIATE (1 << 8)
-/** This task is completed */
+/** This task_templ is completed */
 #define TASK_COMPLETE (1 << 9)
 
-/** Used to define task methods */
+/** Used to define task_templ methods */
 #define TASK_METHOD_T static const u32
 
 /** The baseline set of tasks */
 struct TaskMethod {
-  TASK_METHOD_T kConstruct = 0; /**< The constructor of the task */
-  TASK_METHOD_T kDestruct = 1;  /**< The destructor of the task */
+  TASK_METHOD_T kConstruct = 0; /**< The constructor of the task_templ */
+  TASK_METHOD_T kDestruct = 1;  /**< The destructor of the task_templ */
   TASK_METHOD_T kLast = 2;    /**< Where the next method should take place */
 };
 
-/** A generic task */
+/** A generic task base class */
 struct Task : public hipc::ShmContainer {
   SHM_CONTAINER_TEMPLATE((Task), (Task))
-  u32 key_;                 /**< Helps determine the lane task is keyed to */
-  TaskExecId task_exec_;    /**< The unique name of a task executor */
+  u32 key_;                 /**< Helps determine the lane task_templ is keyed to */
+  TaskExecId task_exec_;    /**< The unique name of a task_templ executor */
   u32 method_;              /**< The method to call in the executor */
-  bitfield32_t task_flags_;    /**< Properties of the task  */
-  u32 node_id_;                /**< The node that the task should run on */
+  bitfield32_t task_flags_;    /**< Properties of the task_templ  */
+  u32 node_id_;                /**< The node that the task_templ should run on */
 
   /**====================================
    * Task Helpers
    * ===================================*/
   
-  /** Check if task is complete */
+  /** Check if task_templ is complete */
   HSHM_ALWAYS_INLINE bool IsComplete() {
     return task_flags_.Any(TASK_COMPLETE);
   }
 
-  /** Set task as complete */
+  /** Set task_templ as complete */
   HSHM_ALWAYS_INLINE void SetComplete() {
     task_flags_.SetBits(TASK_COMPLETE);
   }
 
-  /** Wait for task to complete */
+  /** Wait for task_templ to complete */
   void Wait() {
     while (!IsComplete()) {
       HERMES_THREAD_MODEL->Yield();

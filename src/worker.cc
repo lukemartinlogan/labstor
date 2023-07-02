@@ -8,8 +8,8 @@
 
 namespace labstor {
 
-// Should queues work across task executors?
-// Should queues be specific to task executors?
+// Should queues work across task_templ executors?
+// Should queues be specific to task_templ executors?
 
 void Worker::Loop() {
   while (LABSTOR_WORK_ORCHESTRATOR->IsAlive()) {

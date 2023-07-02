@@ -57,10 +57,10 @@ class Runtime : public ConfigurationManager {
     work_orchestrator_.ServerInit(&server_config_);
 
     // Create the admin library
-    task_registry_.RegisterTaskLib("labstor_admin");
+    task_registry_.RegisterTaskLib("TASK_NAME");
     TaskExecId exec_id(0, 0);
-    task_registry_.CreateTaskExecutor("labstor_admin",
-                                      "labstor_admin",
+    task_registry_.CreateTaskExecutor("TASK_NAME",
+                                      "TASK_NAME",
                                       rpc_.node_id_,
                                       exec_id,
                                       nullptr);
@@ -98,4 +98,4 @@ class Runtime : public ConfigurationManager {
 
 }  // namespace labstor
 
-#endif //LABSTOR_INCLUDE_LABSTOR_CLIENT_LABSTOR_SERVER_H_
+#endif  // LABSTOR_INCLUDE_LABSTOR_CLIENT_LABSTOR_SERVER_H_

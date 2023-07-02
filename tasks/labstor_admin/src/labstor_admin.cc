@@ -5,42 +5,42 @@
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/api/labstor_runtime.h"
 
-namespace labstor {
+namespace labstor::Admin {
 
-class Admin : public TaskLib {
+class Server : public TaskLib {
   void Run(MultiQueue *queue, u32 method, Task *task) override {
     switch (method) {
-      case AdminMethod::kConstruct: {
+      case Method::kConstruct: {
         break;
       }
-      case AdminMethod::kDestruct: {
+      case Method::kDestruct: {
         break;
       }
-      case AdminMethod::kCreateQueue: {
+      case Method::kCreateQueue: {
         CreateQueue(queue, reinterpret_cast<CreateQueueTask *>(task));
         break;
       }
-      case AdminMethod::kDestroyQueue: {
+      case Method::kDestroyQueue: {
         DestroyQueue(queue, reinterpret_cast<DestroyQueueTask *>(task));
         break;
       }
-      case AdminMethod::kRegisterTaskLib: {
+      case Method::kRegisterTaskLib: {
         RegisterTaskLib(queue, reinterpret_cast<RegisterTaskLibTask *>(task));
         break;
       }
-      case AdminMethod::kDestroyTaskLib: {
+      case Method::kDestroyTaskLib: {
         DestroyTaskLib(queue, reinterpret_cast<DestroyTaskLibTask *>(task));
         break;
       }
-      case AdminMethod::kCreateTaskExecutor: {
+      case Method::kCreateTaskExecutor: {
         CreateTaskExecutor(queue, reinterpret_cast<CreateTaskExecutorTask *>(task));
         break;
       }
-      case AdminMethod::kGetTaskExecutorId: {
+      case Method::kGetTaskExecutorId: {
         GetTaskExecutorId(queue, reinterpret_cast<GetTaskExecutorIdTask *>(task));
         break;
       }
-      case AdminMethod::kDestroyTaskExecutor: {
+      case Method::kDestroyTaskExecutor: {
         DestroyTaskExecutor(queue, reinterpret_cast<DestroyTaskExecutorTask *>(task));
         break;
       }
@@ -106,4 +106,4 @@ class Admin : public TaskLib {
 
 }  // namespace labstor
 
-LABSTOR_TASK_CC(labstor::Admin, "labstor_admin");
+LABSTOR_TASK_CC(labstor::Admin::Server, "labstor_admin");
