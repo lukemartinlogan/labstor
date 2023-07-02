@@ -113,7 +113,7 @@ class Client {
   HSHM_ALWAYS_INLINE
   void Custom(u32 node_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(QueueManager::kAdminQueue);
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     auto *task = queue->Allocate<CustomTask>(
         LABSTOR_CLIENT->main_alloc_, p,
         id_, node_id);

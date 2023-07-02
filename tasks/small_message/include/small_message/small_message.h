@@ -55,6 +55,8 @@ struct DestructTask : public Task {
  * A custom task in small_message
  * */
 struct CustomTask : public Task {
+  OUT int ret_;
+
   HSHM_ALWAYS_INLINE
   CustomTask(hipc::Allocator *alloc,
              const TaskExecId &exec_id,
@@ -111,14 +113,17 @@ class Client {
 
   /** Create a queue with an ID */
   HSHM_ALWAYS_INLINE
-  void Custom(u32 node_id) {
+  int Custom(u32 node_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(QueueManager::kAdminQueue);
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     auto *task = queue->Allocate<CustomTask>(
         LABSTOR_CLIENT->main_alloc_, p,
         id_, node_id);
     queue->Emplace(0, p);
     task->Wait();
+    int ret = task->ret_;
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    return ret;
   }
 };
 

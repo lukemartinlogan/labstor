@@ -9,6 +9,10 @@
 namespace labstor::small_message {
 
 class Server : public TaskLib {
+ public:
+  int count_ = 0;
+
+ public:
   void Run(MultiQueue *queue, u32 method, Task *task) override {
     switch (method) {
       case Method::kConstruct: {
@@ -33,6 +37,7 @@ class Server : public TaskLib {
   }
 
   void Custom(MultiQueue *queue, CustomTask *task) {
+    task->ret_ = count_++;
   }
 };
 

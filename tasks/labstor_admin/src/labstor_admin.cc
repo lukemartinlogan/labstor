@@ -8,6 +8,7 @@
 namespace labstor::Admin {
 
 class Server : public TaskLib {
+ public:
   void Run(MultiQueue *queue, u32 method, Task *task) override {
     switch (method) {
       case Method::kConstruct: {

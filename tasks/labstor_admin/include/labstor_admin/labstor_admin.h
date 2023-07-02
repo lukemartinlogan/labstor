@@ -201,6 +201,7 @@ class Client {
                                                   max_lanes, num_lanes, depth, flags);
     queue->Emplace(0, p);
     task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
 
   /** Remove a queue */
@@ -211,6 +212,7 @@ class Client {
     auto *task = queue->Allocate<DestroyQueueTask>(LABSTOR_CLIENT->main_alloc_, p, node_id, id);
     queue->Emplace(0, p);
     task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
 
   /** Register a task_templ library */
@@ -223,6 +225,7 @@ class Client {
                                                 node_id, lib_name, std::forward<Args>(args)...);
     queue->Emplace(0, p);
     task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
 
   /** Unregister a task_templ */
@@ -233,6 +236,7 @@ class Client {
     auto *task = queue->Allocate<DestroyTaskLibTask>(LABSTOR_CLIENT->main_alloc_, p, node_id, lib_name);
     queue->Emplace(0, p);
     task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
 
   /** Spawn a task_templ executor */
@@ -247,7 +251,9 @@ class Client {
                                                          node_id, exec_name, lib_name, id);
     queue->Emplace(0, p);
     task->Wait();
-    return task->id_;
+    TaskExecId new_id = task->id_;
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    return new_id;
   }
 
   /** Get the ID of a task_templ executor */
@@ -257,7 +263,9 @@ class Client {
     auto *task = queue->Allocate<GetTaskExecutorIdTask>(LABSTOR_CLIENT->main_alloc_, p, node_id, exec_name);
     queue->Emplace(0, p);
     task->Wait();
-    return task->id_;
+    TaskExecId new_id = task->id_;
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    return new_id;
   }
 
   /** Terminate a task_templ executor */
@@ -268,6 +276,7 @@ class Client {
     auto *task = queue->Allocate<DestroyTaskExecutorTask>(LABSTOR_CLIENT->main_alloc_, p, id, node_id);
     queue->Emplace(0, p);
     task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
 };
 
