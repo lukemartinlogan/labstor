@@ -7,7 +7,7 @@
 
 #include "labstor/config/config_server.h"
 #include "labstor/labstor_types.h"
-#include "queue.h"
+#include "queue_factory.h"
 
 namespace labstor {
 

@@ -45,6 +45,10 @@ class Server : public TaskLib {
         DestroyTaskExecutor(queue, reinterpret_cast<DestroyTaskExecutorTask *>(task));
         break;
       }
+      case Method::kStopRuntime: {
+        StopRuntime(queue, reinterpret_cast<StopRuntimeTask *>(task));
+        break;
+      }
     }
   }
 
@@ -102,6 +106,10 @@ class Server : public TaskLib {
   void DestroyTaskExecutor(MultiQueue *queue, DestroyTaskExecutorTask *task) {
     LABSTOR_TASK_REGISTRY->DestroyTaskExecutor(task->id_);
     task->SetComplete();
+  }
+
+  void StopRuntime() {
+    LABSTOR_WORK_ORCHESTRATOR->FinalizeRuntime();
   }
 };
 

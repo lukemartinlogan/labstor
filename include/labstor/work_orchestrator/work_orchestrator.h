@@ -25,7 +25,7 @@ class WorkOrchestrator {
  public:
   ServerConfig *config_;  /**< The server configuration */
   std::vector<WorkerInfo> workers_;  /**< Workers execute tasks */
-  std::thread scheduler_; /**< Perform thread + queue scheduling tasks */
+  std::atomic<bool> stop_runtime_;  /**< Begin killing the runtime */
   std::atomic<bool> kill_requested_;  /**< Kill flushing threads eventually */
 
  public:
@@ -43,6 +43,8 @@ class WorkOrchestrator {
     for (u32 worker_id = 0; worker_id < num_workers; ++worker_id) {
       workers_.emplace_back(worker_id);
     }
+    stop_runtime_ = false;
+    kill_requested_ = false;
   }
 
   /** Set CPU affinity of worker */
@@ -69,14 +71,27 @@ class WorkOrchestrator {
     return workers_.size();
   }
 
+  /** Begin finalizing the runtime */
+  void FinalizeRuntime() {
+    stop_runtime_.store(true);
+  }
+
   /** Finalize thread pool */
-  void Finalize() {
+  void Join() {
     kill_requested_.store(true);
+    for (WorkerInfo &worker : workers_) {
+      worker.thread_.join();
+    }
   }
 
   /** Whether threads should still be executing */
   bool IsAlive() {
     return !kill_requested_.load();
+  }
+
+  /** Whether runtime should still be executing */
+  bool IsRuntimeAlive() {
+    return !stop_runtime_.load();
   }
 };
 

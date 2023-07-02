@@ -14,6 +14,7 @@
 #include <hermes_shm/data_structures/ipc/mpsc_queue.h>
 #include <hermes_shm/data_structures/ipc/ticket_queue.h>
 #include <hermes_shm/data_structures/containers/charbuf.h>
+#include <hermes_shm/data_structures/containers/spsc_queue.h>
 #include <hermes_shm/data_structures/containers/converters.h>
 #include "hermes_shm/data_structures/serialization/shm_serialize.h"
 #include <hermes_shm/util/auto_trace.h>

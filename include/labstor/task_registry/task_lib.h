@@ -7,7 +7,7 @@
 
 #include <dlfcn.h>
 #include "labstor/labstor_types.h"
-#include "labstor/queue_manager/queue.h"
+#include "labstor/queue_manager/queue_factory.h"
 #include "task.h"
 
 namespace labstor {

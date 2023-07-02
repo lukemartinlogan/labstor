@@ -8,7 +8,7 @@
 
 namespace labstor {
 
-// Should queues work across task_templ executors?
+// Should queues work across task executors?
 // Should queues be specific to task_templ executors?
 
 void Worker::Loop() {
@@ -19,10 +19,21 @@ void Worker::Loop() {
 }
 
 void Worker::Run() {
-  // Iterate over worker queue
-  // Get TaskExecutor instance from TaskRegistry
-    // Dequeue requests for this executor
-  // Get next executor
+  for (auto &[lane_id, queue] : work_queue_) {
+    Task *task;
+    if (poll_queues_.size() > 0) {
+      _PollQueues();
+    }
+    if (relinquish_queues_.size() > 0) {
+      _RelinquishQueues();
+    }
+
+    // TODO(llogan): make polling more fair
+    while (queue->Pop(lane_id, task)) {
+      TaskExecutor *exec = LABSTOR_TASK_REGISTRY->GetTaskExecutor(task->task_exec_);
+      exec->Run(queue, task->method_, task);
+    }
+  }
 }
 
 }  // namespace labstor

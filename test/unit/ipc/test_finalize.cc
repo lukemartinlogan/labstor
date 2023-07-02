@@ -6,5 +6,6 @@
 #include "labstor/api/labstor_client.h"
 #include "labstor_admin/labstor_admin.h"
 
-TEST_CASE("TestIpc") {
+TEST_CASE("TestFinalize") {
+  LABSTOR_ADMIN->StopRuntime(0);
 }

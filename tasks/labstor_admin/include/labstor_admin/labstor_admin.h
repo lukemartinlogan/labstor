@@ -19,6 +19,7 @@ struct Method : public TaskMethod {
   TASK_METHOD_T kCreateTaskExecutor = TaskMethod::kLast + 4;
   TASK_METHOD_T kGetTaskExecutorId = TaskMethod::kLast + 5;
   TASK_METHOD_T kDestroyTaskExecutor = TaskMethod::kLast + 6;
+  TASK_METHOD_T kStopRuntime = TaskMethod::kLast + 7;
 };
 
 /** A task_templ to create a queue */
@@ -182,6 +183,20 @@ struct DestroyTaskExecutorTask : public Task {
   }
 };
 
+/** A task_templ to destroy a Task Executor */
+struct StopRuntimeTask : public Task {
+  HSHM_ALWAYS_INLINE
+  StopRuntimeTask(hipc::Allocator *alloc,
+                  u32 node_id) : Task(alloc) {
+    // Initialize task_templ
+    key_ = 0;
+    task_exec_ = QueueManager::kAdminTaskExec;
+    method_ = Method::kStopRuntime;
+    task_flags_.SetBits(0);
+    node_id_ = node_id;
+  }
+};
+
 /** Create admin requests */
 class Client {
  public:
@@ -274,6 +289,16 @@ class Client {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(QueueManager::kAdminQueue);
     auto *task = queue->Allocate<DestroyTaskExecutorTask>(LABSTOR_CLIENT->main_alloc_, p, id, node_id);
+    queue->Emplace(0, p);
+    task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+  }
+
+  /** Terminate the runtime */
+  void StopRuntime(u32 node_id) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(QueueManager::kAdminQueue);
+    auto *task = queue->Allocate<StopRuntimeTask>(LABSTOR_CLIENT->main_alloc_, p, node_id);
     queue->Emplace(0, p);
     task->Wait();
     queue->Free(LABSTOR_CLIENT->main_alloc_, p);

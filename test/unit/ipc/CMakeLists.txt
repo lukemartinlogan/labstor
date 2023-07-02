@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(test_messages_exec
         ${TEST_MAIN}/main.cc
         test_init.cc
+        test_finalize.cc
         test_ipc.cc
 )
 

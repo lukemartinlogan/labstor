@@ -90,7 +90,13 @@ class Runtime : public ConfigurationManager {
   void Finalize() {}
 
   /** Run the Hermes core Daemon */
-  void RunDaemon() {}
+  void RunDaemon() {
+    while (LABSTOR_WORK_ORCHESTRATOR->IsRuntimeAlive()) {
+      // Scheduler callbacks?
+      HERMES_THREAD_MODEL->SleepForUs(1000);
+    }
+    LABSTOR_WORK_ORCHESTRATOR->Join();
+  }
 
   /** Stop the Hermes core Daemon */
   void StopDaemon() {}

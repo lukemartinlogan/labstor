@@ -5,7 +5,6 @@
 #ifndef LABSTOR_INCLUDE_LABSTOR_QUEUE_MANAGER_QUEUE_MANAGER_SERVER_H_
 #define LABSTOR_INCLUDE_LABSTOR_QUEUE_MANAGER_QUEUE_MANAGER_SERVER_H_
 
-#include "queue.h"
 #include "queue_manager.h"
 
 namespace labstor {
