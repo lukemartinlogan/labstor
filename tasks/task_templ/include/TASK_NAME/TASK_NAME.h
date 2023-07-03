@@ -99,14 +99,11 @@ class Client {
                                bitfield32_t(0));
   }
 
-  /** Create a queue with an ID */
+  /** Destroy task executor + queue */
   HSHM_ALWAYS_INLINE
   void Destroy(const std::string &exec_name, u32 node_id) {
-    id_ = TaskExecId::GetNull();
-    LABSTOR_ADMIN->CreateTaskExecutor(node_id,
-                                      exec_name,
-                                      "TASK_NAME",
-                                      id_);
+    LABSTOR_ADMIN->DestroyTaskExecutor(node_id, id_);
+    LABSTOR_ADMIN->DestroyQueue(node_id, queue_id_);
   }
 
   /** Create a queue with an ID */

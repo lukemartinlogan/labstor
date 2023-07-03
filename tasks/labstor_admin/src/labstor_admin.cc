@@ -108,8 +108,9 @@ class Server : public TaskLib {
     task->SetComplete();
   }
 
-  void StopRuntime() {
+  void StopRuntime(MultiQueue *queue, DestroyTaskExecutorTask *task) {
     LABSTOR_WORK_ORCHESTRATOR->FinalizeRuntime();
+    task->SetComplete();
   }
 };
 

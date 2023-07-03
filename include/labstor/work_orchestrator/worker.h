@@ -17,7 +17,6 @@ class Worker {
   u32 id_;
   u32 numa_node_;  // TODO(llogan): track NUMA affinity
   std::vector<WorkEntry> work_queue_;
-  // TODO(llogan): Implement SPSC queue
   hshm::spsc_queue<std::vector<WorkEntry>> poll_queues_;
   hshm::spsc_queue<std::vector<WorkEntry>> relinquish_queues_;
 
