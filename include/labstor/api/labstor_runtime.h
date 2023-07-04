@@ -58,11 +58,11 @@ class Runtime : public ConfigurationManager {
 
     // Create the admin library
     task_registry_.RegisterTaskLib("TASK_NAME");
-    TaskExecId exec_id(0, 0);
-    task_registry_.CreateTaskExecutor("TASK_NAME",
+    TaskStateId state_id(0, 0);
+    task_registry_.CreateTaskState("TASK_NAME",
                                       "TASK_NAME",
                                       rpc_.node_id_,
-                                      exec_id,
+                                      state_id,
                                       nullptr);
   }
 

@@ -16,9 +16,9 @@ struct Method : public TaskMethod {
   TASK_METHOD_T kDestroyQueue = TaskMethod::kLast + 1;
   TASK_METHOD_T kRegisterTaskLib = TaskMethod::kLast + 2;
   TASK_METHOD_T kDestroyTaskLib = TaskMethod::kLast + 3;
-  TASK_METHOD_T kCreateTaskExecutor = TaskMethod::kLast + 4;
-  TASK_METHOD_T kGetTaskExecutorId = TaskMethod::kLast + 5;
-  TASK_METHOD_T kDestroyTaskExecutor = TaskMethod::kLast + 6;
+  TASK_METHOD_T kCreateTaskState = TaskMethod::kLast + 4;
+  TASK_METHOD_T kGetTaskStateId = TaskMethod::kLast + 5;
+  TASK_METHOD_T kDestroyTaskState = TaskMethod::kLast + 6;
   TASK_METHOD_T kStopRuntime = TaskMethod::kLast + 7;
 };
 
@@ -38,7 +38,7 @@ struct CreateQueueTask : public Task {
                   u32 depth, bitfield32_t flags) : Task(alloc) {
     // Initialize task_templ
     key_ = 0;
-    task_exec_ = QueueManager::kAdminTaskExec;
+    task_state_ = QueueManager::kAdminTaskState;
     method_ = Method::kCreateQueue;
     task_flags_.SetBits(0);
     node_id_ = node_id;
@@ -62,7 +62,7 @@ struct DestroyQueueTask : public Task {
                    const QueueId &id): Task(alloc) {
     // Initialize task_templ
     key_ = 0;
-    task_exec_ = QueueManager::kAdminTaskExec;
+    task_state_ = QueueManager::kAdminTaskState;
     method_ = Method::kDestroyQueue;
     task_flags_.SetBits(0);
     node_id_ = node_id;
@@ -76,7 +76,7 @@ struct DestroyQueueTask : public Task {
 template<int method>
 struct RegisterTaskLibTaskTempl : public Task {
   IN hipc::ShmArchive<hipc::string> lib_name_;
-  OUT TaskExecId id_;
+  OUT TaskStateId id_;
 
   HSHM_ALWAYS_INLINE
   RegisterTaskLibTaskTempl(hipc::Allocator *alloc,
@@ -84,7 +84,7 @@ struct RegisterTaskLibTaskTempl : public Task {
                            const std::string &lib_name) : Task(alloc) {
     // Initialize task_templ
     key_ = 0;
-    task_exec_ = QueueManager::kAdminTaskExec;
+    task_state_ = QueueManager::kAdminTaskState;
     if constexpr(method == 0) {
       method_ = Method::kRegisterTaskLib;
     } else {
@@ -109,72 +109,72 @@ using RegisterTaskLibTask = RegisterTaskLibTaskTempl<0>;
 using DestroyTaskLibTask = RegisterTaskLibTaskTempl<1>;
 
 /** A task_templ to register a Task Executor */
-struct CreateTaskExecutorTask : public Task {
+struct CreateTaskStateTask : public Task {
   IN hipc::ShmArchive<hipc::string> lib_name_;
-  IN hipc::ShmArchive<hipc::string> exec_name_;
-  INOUT TaskExecId id_;
+  IN hipc::ShmArchive<hipc::string> state_name_;
+  INOUT TaskStateId id_;
 
   HSHM_ALWAYS_INLINE
-  CreateTaskExecutorTask(hipc::Allocator *alloc,
+  CreateTaskStateTask(hipc::Allocator *alloc,
                          u32 node_id,
-                         const std::string &exec_name,
+                         const std::string &state_name,
                          const std::string &lib_name,
-                         const TaskExecId &id = TaskExecId::GetNull()) : Task(alloc) {
+                         const TaskStateId &id = TaskStateId::GetNull()) : Task(alloc) {
     // Initialize task_templ
     key_ = 0;
-    task_exec_ = QueueManager::kAdminTaskExec;
-    method_ = Method::kCreateTaskExecutor;
+    task_state_ = QueueManager::kAdminTaskState;
+    method_ = Method::kCreateTaskState;
     task_flags_.SetBits(0);
     node_id_ = node_id;
 
     // Initialize
-    HSHM_MAKE_AR(exec_name_, alloc, exec_name);
+    HSHM_MAKE_AR(state_name_, alloc, state_name);
     HSHM_MAKE_AR(lib_name_, alloc, lib_name);
     id_ = id;
   }
 
-  ~CreateTaskExecutorTask() {
-    HSHM_DESTROY_AR(exec_name_);
+  ~CreateTaskStateTask() {
+    HSHM_DESTROY_AR(state_name_);
     HSHM_DESTROY_AR(lib_name_);
   }
 };
 
 /** A task_templ to retrieve the ID of a task_templ */
-struct GetTaskExecutorIdTask : public Task {
-  IN hipc::ShmArchive<hipc::string> exec_name_;
-  OUT TaskExecId id_;
+struct GetTaskStateIdTask : public Task {
+  IN hipc::ShmArchive<hipc::string> state_name_;
+  OUT TaskStateId id_;
 
   HSHM_ALWAYS_INLINE
-  GetTaskExecutorIdTask(hipc::Allocator *alloc, u32 node_id,
-                        const std::string &exec_name) : Task(alloc) {
+  GetTaskStateIdTask(hipc::Allocator *alloc, u32 node_id,
+                        const std::string &state_name) : Task(alloc) {
     // Initialize task_templ
     key_ = 0;
-    task_exec_ = QueueManager::kAdminTaskExec;
-    method_ = Method::kGetTaskExecutorId;
+    task_state_ = QueueManager::kAdminTaskState;
+    method_ = Method::kGetTaskStateId;
     task_flags_.SetBits(0);
     node_id_ = node_id;
 
     // Initialize
-    HSHM_MAKE_AR(exec_name_, alloc, exec_name);
+    HSHM_MAKE_AR(state_name_, alloc, state_name);
   }
 
-  ~GetTaskExecutorIdTask() {
-    HSHM_DESTROY_AR(exec_name_);
+  ~GetTaskStateIdTask() {
+    HSHM_DESTROY_AR(state_name_);
   }
 };
 
 /** A task_templ to destroy a Task Executor */
-struct DestroyTaskExecutorTask : public Task {
-  IN TaskExecId id_;
+struct DestroyTaskStateTask : public Task {
+  IN TaskStateId id_;
 
   HSHM_ALWAYS_INLINE
-  DestroyTaskExecutorTask(hipc::Allocator *alloc,
-                          const TaskExecId &id,
+  DestroyTaskStateTask(hipc::Allocator *alloc,
+                          const TaskStateId &id,
                           u32 node_id) : Task(alloc) {
     // Initialize task_templ
     key_ = 0;
-    task_exec_ = QueueManager::kAdminTaskExec;
-    method_ = Method::kDestroyTaskExecutor;
+    task_state_ = QueueManager::kAdminTaskState;
+    method_ = Method::kDestroyTaskState;
     task_flags_.SetBits(0);
     node_id_ = node_id;
 
@@ -190,7 +190,7 @@ struct StopRuntimeTask : public Task {
                   u32 node_id) : Task(alloc) {
     // Initialize task_templ
     key_ = 0;
-    task_exec_ = QueueManager::kAdminTaskExec;
+    task_state_ = QueueManager::kAdminTaskState;
     method_ = Method::kStopRuntime;
     task_flags_.SetBits(0);
     node_id_ = node_id;
@@ -256,39 +256,39 @@ class Client {
 
   /** Spawn a task_templ executor */
   HSHM_ALWAYS_INLINE
-  TaskExecId CreateTaskExecutor(u32 node_id,
-                          const std::string &exec_name,
+  TaskStateId CreateTaskState(u32 node_id,
+                          const std::string &state_name,
                           const std::string &lib_name,
-                          const TaskExecId &id = TaskExecId::GetNull()) {
+                          const TaskStateId &id = TaskStateId::GetNull()) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(QueueManager::kAdminQueue);
-    auto *task = queue->Allocate<CreateTaskExecutorTask>(LABSTOR_CLIENT->main_alloc_, p,
-                                                         node_id, exec_name, lib_name, id);
+    auto *task = queue->Allocate<CreateTaskStateTask>(LABSTOR_CLIENT->main_alloc_, p,
+                                                         node_id, state_name, lib_name, id);
     queue->Emplace(0, p);
     task->Wait();
-    TaskExecId new_id = task->id_;
+    TaskStateId new_id = task->id_;
     queue->Free(LABSTOR_CLIENT->main_alloc_, p);
     return new_id;
   }
 
   /** Get the ID of a task_templ executor */
-  TaskExecId GetTaskExecutorId(u32 node_id, const std::string &exec_name) {
+  TaskStateId GetTaskStateId(u32 node_id, const std::string &state_name) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(QueueManager::kAdminQueue);
-    auto *task = queue->Allocate<GetTaskExecutorIdTask>(LABSTOR_CLIENT->main_alloc_, p, node_id, exec_name);
+    auto *task = queue->Allocate<GetTaskStateIdTask>(LABSTOR_CLIENT->main_alloc_, p, node_id, state_name);
     queue->Emplace(0, p);
     task->Wait();
-    TaskExecId new_id = task->id_;
+    TaskStateId new_id = task->id_;
     queue->Free(LABSTOR_CLIENT->main_alloc_, p);
     return new_id;
   }
 
   /** Terminate a task_templ executor */
   HSHM_ALWAYS_INLINE
-  void DestroyTaskExecutor(u32 node_id, const TaskExecId &id) {
+  void DestroyTaskState(u32 node_id, const TaskStateId &id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(QueueManager::kAdminQueue);
-    auto *task = queue->Allocate<DestroyTaskExecutorTask>(LABSTOR_CLIENT->main_alloc_, p, id, node_id);
+    auto *task = queue->Allocate<DestroyTaskStateTask>(LABSTOR_CLIENT->main_alloc_, p, id, node_id);
     queue->Emplace(0, p);
     task->Wait();
     queue->Free(LABSTOR_CLIENT->main_alloc_, p);

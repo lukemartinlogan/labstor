@@ -23,11 +23,11 @@ struct Method : public TaskMethod {
 struct ConstructTask : public Task {
   HSHM_ALWAYS_INLINE
   ConstructTask(hipc::Allocator *alloc,
-                const TaskExecId &exec_id,
+                const TaskStateId &state_id,
                 u32 node_id) : Task(alloc) {
     // Initialize task
     key_ = 0;
-    task_exec_ = exec_id;
+    task_state_ = state_id;
     method_ = Method::kConstruct;
     task_flags_.SetBits(0);
     node_id_ = node_id;
@@ -40,11 +40,11 @@ struct ConstructTask : public Task {
 struct DestructTask : public Task {
   HSHM_ALWAYS_INLINE
   DestructTask(hipc::Allocator *alloc,
-               TaskExecId &exec_id,
+               TaskStateId &state_id,
                u32 node_id) : Task(alloc) {
     // Initialize task
     key_ = 0;
-    task_exec_ = exec_id;
+    task_state_ = state_id;
     method_ = Method::kDestruct;
     task_flags_.SetBits(0);
     node_id_ = node_id;
@@ -57,11 +57,11 @@ struct DestructTask : public Task {
 struct CustomTask : public Task {
   HSHM_ALWAYS_INLINE
   CustomTask(hipc::Allocator *alloc,
-             const TaskExecId &exec_id,
+             const TaskStateId &state_id,
              u32 node_id) : Task(alloc) {
     // Initialize task
     key_ = 0;
-    task_exec_ = exec_id;
+    task_state_ = state_id;
     method_ = Method::kCustom;
     task_flags_.SetBits(0);
     node_id_ = node_id;
@@ -73,7 +73,7 @@ struct CustomTask : public Task {
 /** Create admin requests */
 class Client {
  public:
-  TaskExecId id_;
+  TaskStateId id_;
   QueueId queue_id_;
 
  public:
@@ -85,10 +85,10 @@ class Client {
 
   /** Create a TASK_NAME */
   HSHM_ALWAYS_INLINE
-  void Create(const std::string &exec_name, u32 node_id) {
-    id_ = TaskExecId::GetNull();
-    id_ = LABSTOR_ADMIN->CreateTaskExecutor(node_id,
-                                      exec_name,
+  void Create(const std::string &state_name, u32 node_id) {
+    id_ = TaskStateId::GetNull();
+    id_ = LABSTOR_ADMIN->CreateTaskState(node_id,
+                                      state_name,
                                       "TASK_NAME",
                                       id_);
     queue_id_ = QueueId(id_.unique_, id_.node_id_);
@@ -101,8 +101,8 @@ class Client {
 
   /** Destroy task executor + queue */
   HSHM_ALWAYS_INLINE
-  void Destroy(const std::string &exec_name, u32 node_id) {
-    LABSTOR_ADMIN->DestroyTaskExecutor(node_id, id_);
+  void Destroy(const std::string &state_name, u32 node_id) {
+    LABSTOR_ADMIN->DestroyTaskState(node_id, id_);
     LABSTOR_ADMIN->DestroyQueue(node_id, queue_id_);
   }
 

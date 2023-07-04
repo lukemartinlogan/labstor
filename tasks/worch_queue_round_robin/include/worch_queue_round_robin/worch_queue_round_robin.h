@@ -22,11 +22,11 @@ typedef SchedulerMethod Method;
 struct ConstructTask : public Task {
   HSHM_ALWAYS_INLINE
   ConstructTask(hipc::Allocator *alloc,
-                const TaskExecId &exec_id,
+                const TaskStateId &state_id,
                 u32 node_id) : Task(alloc) {
     // Initialize task
     key_ = 0;
-    task_exec_ = exec_id;
+    task_state_ = state_id;
     method_ = Method::kConstruct;
     task_flags_.SetBits(0);
     node_id_ = node_id;
@@ -39,11 +39,11 @@ struct ConstructTask : public Task {
 struct DestructTask : public Task {
   HSHM_ALWAYS_INLINE
   DestructTask(hipc::Allocator *alloc,
-               TaskExecId &exec_id,
+               TaskStateId &state_id,
                u32 node_id) : Task(alloc) {
     // Initialize task
     key_ = 0;
-    task_exec_ = exec_id;
+    task_state_ = state_id;
     method_ = Method::kDestruct;
     task_flags_.SetBits(0);
     node_id_ = node_id;
@@ -53,7 +53,7 @@ struct DestructTask : public Task {
 /** Create admin requests */
 class Client {
  public:
-  TaskExecId id_;
+  TaskStateId id_;
   QueueId queue_id_;
 
  public:
@@ -65,18 +65,18 @@ class Client {
 
   /** Create a worch_queue_round_robin */
   HSHM_ALWAYS_INLINE
-  void Create(const std::string &exec_name, u32 node_id) {
-    id_ = TaskExecId::GetNull();
-    id_ = LABSTOR_ADMIN->CreateTaskExecutor(node_id,
-                                      exec_name,
+  void Create(const std::string &state_name, u32 node_id) {
+    id_ = TaskStateId::GetNull();
+    id_ = LABSTOR_ADMIN->CreateTaskState(node_id,
+                                      state_name,
                                       "worch_queue_round_robin",
                                       id_);
   }
 
   /** Destroy task executor */
   HSHM_ALWAYS_INLINE
-  void Destroy(const std::string &exec_name, u32 node_id) {
-    LABSTOR_ADMIN->DestroyTaskExecutor(node_id, id_);
+  void Destroy(const std::string &state_name, u32 node_id) {
+    LABSTOR_ADMIN->DestroyTaskState(node_id, id_);
   }
 };
 

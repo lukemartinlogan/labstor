@@ -22,7 +22,7 @@ class QueueManager {
  public:
   hipc::vector<MultiQueue> *queue_map_;
   static inline const QueueId kAdminQueue = QueueId(0, 0);
-  static inline const TaskExecId kAdminTaskExec = TaskExecId(0, 0);
+  static inline const TaskStateId kAdminTaskState = TaskStateId(0, 0);
 
  public:
   /**

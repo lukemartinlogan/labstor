@@ -35,21 +35,21 @@ struct TaskLibInfo {
 
   /** Emplace constructor */
   explicit TaskLibInfo(void *lib,
-                        create_executor_t create_task,
-                        get_task_lib_name_t get_task_name)
-    : lib_(lib), create_executor_(create_task), get_task_lib_name(get_task_name) {}
+                       create_executor_t create_task,
+                       get_task_lib_name_t get_task_name)
+      : lib_(lib), create_executor_(create_task), get_task_lib_name(get_task_name) {}
 
   /** Copy constructor */
   TaskLibInfo(const TaskLibInfo &other)
-    : lib_(other.lib_),
-      create_executor_(other.create_executor_),
-      get_task_lib_name(other.get_task_lib_name) {}
+      : lib_(other.lib_),
+        create_executor_(other.create_executor_),
+        get_task_lib_name(other.get_task_lib_name) {}
 
   /** Move constructor */
   TaskLibInfo(TaskLibInfo &&other) noexcept
-    : lib_(other.lib_),
-      create_executor_(other.create_executor_),
-      get_task_lib_name(other.get_task_lib_name) {
+      : lib_(other.lib_),
+        create_executor_(other.create_executor_),
+        get_task_lib_name(other.get_task_lib_name) {
     other.lib_ = nullptr;
     other.create_executor_ = nullptr;
     other.get_task_lib_name = nullptr;
@@ -57,7 +57,7 @@ struct TaskLibInfo {
 };
 
 /**
- * Stores the registered set of TaskLibs and TaskExecutors
+ * Stores the registered set of TaskLibs and TaskStates
  * */
 class TaskRegistry {
  public:
@@ -66,9 +66,9 @@ class TaskRegistry {
   /** Map of a semantic lib name to lib info */
   std::unordered_map<std::string, TaskLibInfo> libs_;
   /** Map of a semantic exec name to exec id */
-  std::unordered_map<std::string, TaskExecId> task_exec_ids_;
+  std::unordered_map<std::string, TaskStateId> task_state_ids_;
   /** Map of a semantic exec id to executor */
-  std::unordered_map<TaskExecId, TaskExecutor*> task_execs_;
+  std::unordered_map<TaskStateId, TaskState*> task_states_;
   /** A unique identifier counter */
   std::atomic<u64> unique_;
 
@@ -114,8 +114,8 @@ class TaskRegistry {
     for (const std::string &lib_dir : lib_dirs_) {
       // Determine if this directory contains the library
       std::string lib_path1 = hshm::Formatter::format("{}/{}.so",
-                                                       lib_dir,
-                                                       lib_name);
+                                                      lib_dir,
+                                                      lib_name);
       std::string lib_path2 = hshm::Formatter::format("{}/lib{}.so",
                                                       lib_dir,
                                                       lib_name);
@@ -136,14 +136,14 @@ class TaskRegistry {
         return false;
       }
       info.create_executor_ = (create_executor_t)dlsym(
-        info.lib_, "create_executor");
+          info.lib_, "create_executor");
       if (!info.create_executor_) {
         HELOG(kError, "The lib {} does not have create_executor symbol",
               lib_path);
         return false;
       }
       info.get_task_lib_name = (get_task_lib_name_t)dlsym(
-        info.lib_, "get_task_lib_name");
+          info.lib_, "get_task_lib_name");
       if (!info.get_task_lib_name) {
         HELOG(kError, "The lib {} does not have get_task_lib_name symbol",
               lib_path);
@@ -167,74 +167,74 @@ class TaskRegistry {
     libs_.erase(it);
   }
 
-  /** Get a TaskExecutor ID */
-  TaskExecId CreateTaskExecutorId(u32 node_id) {
-    return TaskExecId(unique_.fetch_add(1), node_id);;
+  /** Get a TaskState ID */
+  TaskStateId CreateTaskStateId(u32 node_id) {
+    return TaskStateId(unique_.fetch_add(1), node_id);;
   }
 
   /** Create a task_templ executor */
-  TaskExecId CreateTaskExecutor(const char *lib_name,
-                                const char *exec_name,
-                                u32 node_id,
-                                const TaskExecId &exec_id,
-                                Task *task) {
+  TaskStateId CreateTaskState(const char *lib_name,
+                             const char *state_name,
+                             u32 node_id,
+                             const TaskStateId &state_id,
+                             Task *task) {
     // Find the task_templ library to instantiate
     auto it = libs_.find(lib_name);
     if (it == libs_.end()) {
       HELOG(kError, "Could not find the task_templ lib", lib_name);
-      return TaskExecId::GetNull();
+      return TaskStateId::GetNull();
     }
 
     // Check that the executor doesn't already exist
-    if (exec_name && task_exec_ids_.find(exec_name) != task_exec_ids_.end()) {
-      HELOG(kError, "The task_templ executor already exists: {}", exec_name);
-      return TaskExecId::GetNull();
+    if (state_name && task_state_ids_.find(state_name) != task_state_ids_.end()) {
+      HELOG(kError, "The task_templ executor already exists: {}", state_name);
+      return TaskStateId::GetNull();
     }
 
     // Create the executor instance
     TaskLibInfo &info = it->second;
-    TaskExecutor *task_exec = info.create_executor_(task);
-    if (!task_exec) {
-      HELOG(kError, "Could not create the task_templ executor: {}", exec_name);
-      return TaskExecId::GetNull();
+    TaskState *task_state = info.create_executor_(task);
+    if (!task_state) {
+      HELOG(kError, "Could not create the task_templ executor: {}", state_name);
+      return TaskStateId::GetNull();
     }
 
     // Add the executor to the registry
-    task_exec->id_ = exec_id;
-    task_exec_ids_.emplace(exec_name, exec_id);
-    task_execs_.emplace(exec_id, task_exec);
-    return exec_id;
+    task_state->id_ = state_id;
+    task_state_ids_.emplace(state_name, state_id);
+    task_states_.emplace(state_id, task_state);
+    return state_id;
   }
 
   /** Get a task_templ executor's ID */
-  TaskExecId GetTaskExecutorId(const std::string &exec_name) {
-    auto it = task_exec_ids_.find(exec_name);
-    if (it == task_exec_ids_.end()) {
-      return TaskExecId::GetNull();
+  TaskStateId GetTaskStateId(const std::string &state_name) {
+    auto it = task_state_ids_.find(state_name);
+    if (it == task_state_ids_.end()) {
+      return TaskStateId::GetNull();
     }
     return it->second;
   }
 
   /** Get a task_templ executor instance */
-  TaskExecutor *GetTaskExecutor(const TaskExecId &task_exec_id) {
-    auto it = task_execs_.find(task_exec_id);
-    if (it == task_execs_.end()) {
+  TaskState *GetTaskState(const TaskStateId &task_state_id) {
+    auto it = task_states_.find(task_state_id);
+    if (it == task_states_.end()) {
       return nullptr;
     }
     return it->second;
   }
 
   /** Destroy a task_templ executor */
-  void DestroyTaskExecutor(const TaskExecId &task_exec_id) {
-    auto it = task_execs_.find(task_exec_id);
-    if (it == task_execs_.end()) {
+  void DestroyTaskState(const TaskStateId &task_state_id) {
+    auto it = task_states_.find(task_state_id);
+    if (it == task_states_.end()) {
       HELOG(kWarning, "Could not find the task_templ executor");
       return;
     }
-    TaskExecutor *task_exec = it->second;
-    task_exec_ids_.erase(task_exec->name_);
-    task_execs_.erase(it);
-    delete task_exec;
+    TaskState *task_state = it->second;
+    task_state_ids_.erase(task_state->name_);
+    task_states_.erase(it);
+    delete task_state;
   }
 };
 

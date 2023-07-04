@@ -129,7 +129,7 @@ struct UniqueId {
 
 /** Uniquely identify a task_templ library */
 /** Uniquely identify a task_templ executor */
-using TaskExecId = UniqueId<1>;
+using TaskStateId = UniqueId<1>;
 /** Uniquely identify a queue */
 using QueueId = UniqueId<2>;
 

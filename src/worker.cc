@@ -30,7 +30,7 @@ void Worker::Run() {
 
     // TODO(llogan): make polling more fair
     while (queue->Pop(lane_id, task)) {
-      TaskExecutor *exec = LABSTOR_TASK_REGISTRY->GetTaskExecutor(task->task_exec_);
+      TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
       exec->Run(queue, task->method_, task);
     }
   }

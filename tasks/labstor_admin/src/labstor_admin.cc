@@ -33,16 +33,16 @@ class Server : public TaskLib {
         DestroyTaskLib(queue, reinterpret_cast<DestroyTaskLibTask *>(task));
         break;
       }
-      case Method::kCreateTaskExecutor: {
-        CreateTaskExecutor(queue, reinterpret_cast<CreateTaskExecutorTask *>(task));
+      case Method::kCreateTaskState: {
+        CreateTaskState(queue, reinterpret_cast<CreateTaskStateTask *>(task));
         break;
       }
-      case Method::kGetTaskExecutorId: {
-        GetTaskExecutorId(queue, reinterpret_cast<GetTaskExecutorIdTask *>(task));
+      case Method::kGetTaskStateId: {
+        GetTaskStateId(queue, reinterpret_cast<GetTaskStateIdTask *>(task));
         break;
       }
-      case Method::kDestroyTaskExecutor: {
-        DestroyTaskExecutor(queue, reinterpret_cast<DestroyTaskExecutorTask *>(task));
+      case Method::kDestroyTaskState: {
+        DestroyTaskState(queue, reinterpret_cast<DestroyTaskStateTask *>(task));
         break;
       }
       case Method::kStopRuntime: {
@@ -80,35 +80,35 @@ class Server : public TaskLib {
     task->SetComplete();
   }
 
-  void CreateTaskExecutor(MultiQueue *queue, CreateTaskExecutorTask *task) {
+  void CreateTaskState(MultiQueue *queue, CreateTaskStateTask *task) {
     std::string lib_name = task->lib_name_->str();
-    std::string exec_name = task->exec_name_->str();
-    if (!LABSTOR_TASK_REGISTRY->GetTaskExecutorId(exec_name).IsNull()) {
+    std::string state_name = task->state_name_->str();
+    if (!LABSTOR_TASK_REGISTRY->GetTaskStateId(state_name).IsNull()) {
       return;
     }
     if (task->id_.IsNull()) {
-      task->id_ = LABSTOR_TASK_REGISTRY->CreateTaskExecutorId(task->node_id_);
+      task->id_ = LABSTOR_TASK_REGISTRY->CreateTaskStateId(task->node_id_);
     }
-    LABSTOR_TASK_REGISTRY->CreateTaskExecutor(lib_name.c_str(),
-                                              exec_name.c_str(),
+    LABSTOR_TASK_REGISTRY->CreateTaskState(lib_name.c_str(),
+                                              state_name.c_str(),
                                               task->node_id_,
                                               task->id_,
                                               task);
     task->SetComplete();
   }
 
-  void GetTaskExecutorId(MultiQueue *queue, GetTaskExecutorIdTask *task) {
-    std::string exec_name = task->exec_name_->str();
-    task->id_ = LABSTOR_TASK_REGISTRY->GetTaskExecutorId(exec_name);
+  void GetTaskStateId(MultiQueue *queue, GetTaskStateIdTask *task) {
+    std::string state_name = task->state_name_->str();
+    task->id_ = LABSTOR_TASK_REGISTRY->GetTaskStateId(state_name);
     task->SetComplete();
   }
 
-  void DestroyTaskExecutor(MultiQueue *queue, DestroyTaskExecutorTask *task) {
-    LABSTOR_TASK_REGISTRY->DestroyTaskExecutor(task->id_);
+  void DestroyTaskState(MultiQueue *queue, DestroyTaskStateTask *task) {
+    LABSTOR_TASK_REGISTRY->DestroyTaskState(task->id_);
     task->SetComplete();
   }
 
-  void StopRuntime(MultiQueue *queue, DestroyTaskExecutorTask *task) {
+  void StopRuntime(MultiQueue *queue, StopRuntimeTask *task) {
     LABSTOR_WORK_ORCHESTRATOR->FinalizeRuntime();
     task->SetComplete();
   }

@@ -18,14 +18,14 @@ namespace labstor {
  * */
 class TaskLib {
  public:
-  TaskExecId id_;    /**< The unique name of a task_templ executor */
+  TaskStateId id_;    /**< The unique name of a task_templ executor */
   std::string name_; /**< The unique semantic name of a task_templ executor */
 
   /** Default constructor */
-  TaskLib() : id_(TaskExecId::GetNull()) {}
+  TaskLib() : id_(TaskStateId::GetNull()) {}
 
   /** Emplace Constructor */
-  void Init(TaskExecId id, const std::string &name) {
+  void Init(TaskStateId id, const std::string &name) {
     id_ = id;
     name_ = name;
   }
@@ -38,11 +38,11 @@ class TaskLib {
 };
 
 /** Represents a TaskLib in action */
-typedef TaskLib TaskExecutor;
+typedef TaskLib TaskState;
 
 extern "C" {
 /** The two methods provided by all tasks */
-typedef TaskExecutor* (*create_executor_t)(Task *task);
+typedef TaskState* (*create_executor_t)(Task *task);
 /** Get the name of a task_templ */
 typedef const char* (*get_task_lib_name_t)(void);
 }  // extern c
@@ -51,7 +51,7 @@ typedef const char* (*get_task_lib_name_t)(void);
 #define LABSTOR_TASK_CC(TRAIT_CLASS, TASK_NAME) \
     extern "C" {                              \
         void* create_executor(labstor::Task *task) { \
-          labstor::TaskExecutor *exec = new TYPE_UNWRAP(TRAIT_CLASS)(); \
+          labstor::TaskState *exec = new TYPE_UNWRAP(TRAIT_CLASS)(); \
           exec->Run(nullptr, labstor::TaskMethod::kConstruct, task); \
           return exec; \
         } \

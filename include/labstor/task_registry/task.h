@@ -44,7 +44,7 @@ struct TaskMethod {
 struct Task : public hipc::ShmContainer {
   SHM_CONTAINER_TEMPLATE((Task), (Task))
   u32 key_;                 /**< Helps determine the lane task_templ is keyed to */
-  TaskExecId task_exec_;    /**< The unique name of a task_templ executor */
+  TaskStateId task_state_;    /**< The unique name of a task_templ executor */
   u32 method_;              /**< The method to call in the executor */
   bitfield32_t task_flags_;    /**< Properties of the task_templ  */
   u32 node_id_;                /**< The node that the task_templ should run on */
