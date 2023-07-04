@@ -20,8 +20,8 @@ namespace labstor {
 /** All information needed to create a trait */
 struct TaskLibInfo {
   void *lib_;  /**< The dlfcn library */
-  create_executor_t create_executor_;   /**< The create task_templ function */
-  get_task_lib_name_t get_task_lib_name; /**< The get task_templ name function */
+  create_state_t create_state_;   /**< The create task function */
+  get_task_lib_name_t get_task_lib_name; /**< The get task name function */
 
   /** Default constructor */
   TaskLibInfo() = default;
@@ -35,23 +35,23 @@ struct TaskLibInfo {
 
   /** Emplace constructor */
   explicit TaskLibInfo(void *lib,
-                       create_executor_t create_task,
+                       create_state_t create_task,
                        get_task_lib_name_t get_task_name)
-      : lib_(lib), create_executor_(create_task), get_task_lib_name(get_task_name) {}
+      : lib_(lib), create_state_(create_task), get_task_lib_name(get_task_name) {}
 
   /** Copy constructor */
   TaskLibInfo(const TaskLibInfo &other)
       : lib_(other.lib_),
-        create_executor_(other.create_executor_),
+        create_state_(other.create_state_),
         get_task_lib_name(other.get_task_lib_name) {}
 
   /** Move constructor */
   TaskLibInfo(TaskLibInfo &&other) noexcept
       : lib_(other.lib_),
-        create_executor_(other.create_executor_),
+        create_state_(other.create_state_),
         get_task_lib_name(other.get_task_lib_name) {
     other.lib_ = nullptr;
-    other.create_executor_ = nullptr;
+    other.create_state_ = nullptr;
     other.get_task_lib_name = nullptr;
   }
 };
@@ -61,20 +61,20 @@ struct TaskLibInfo {
  * */
 class TaskRegistry {
  public:
-  /** The dirs to search for task_templ libs */
+  /** The dirs to search for task libs */
   std::vector<std::string> lib_dirs_;
   /** Map of a semantic lib name to lib info */
   std::unordered_map<std::string, TaskLibInfo> libs_;
   /** Map of a semantic exec name to exec id */
   std::unordered_map<std::string, TaskStateId> task_state_ids_;
-  /** Map of a semantic exec id to executor */
+  /** Map of a semantic exec id to state */
   std::unordered_map<TaskStateId, TaskState*> task_states_;
   /** A unique identifier counter */
   std::atomic<u64> unique_;
 
  public:
   /** Default constructor */
-  TaskRegistry() : unique_(1) {}
+  TaskRegistry() : unique_(0) {}
 
   /** Initialize the Task Registry */
   void ServerInit(ServerConfig *config) {
@@ -108,7 +108,7 @@ class TaskRegistry {
     }
   }
 
-  /** Load a task_templ lib */
+  /** Load a task lib */
   bool RegisterTaskLib(const std::string &lib_name) {
     std::string lib_dir;
     for (const std::string &lib_dir : lib_dirs_) {
@@ -135,10 +135,10 @@ class TaskRegistry {
         HELOG(kError, "Could not open the lib library: {}", lib_path);
         return false;
       }
-      info.create_executor_ = (create_executor_t)dlsym(
-          info.lib_, "create_executor");
-      if (!info.create_executor_) {
-        HELOG(kError, "The lib {} does not have create_executor symbol",
+      info.create_state_ = (create_state_t)dlsym(
+          info.lib_, "create_state");
+      if (!info.create_state_) {
+        HELOG(kError, "The lib {} does not have create_state symbol",
               lib_path);
         return false;
       }
@@ -157,11 +157,11 @@ class TaskRegistry {
     return false;
   }
 
-  /** Destroy a task_templ lib */
+  /** Destroy a task lib */
   void DestroyTaskLib(const std::string &lib_name) {
     auto it = libs_.find(lib_name);
     if (it == libs_.end()) {
-      HELOG(kError, "Could not find the task_templ lib: {}", lib_name);
+      HELOG(kError, "Could not find the task lib: {}", lib_name);
       return;
     }
     libs_.erase(it);
@@ -172,41 +172,41 @@ class TaskRegistry {
     return TaskStateId(unique_.fetch_add(1), node_id);;
   }
 
-  /** Create a task_templ executor */
+  /** Create a task state */
   TaskStateId CreateTaskState(const char *lib_name,
                              const char *state_name,
                              u32 node_id,
                              const TaskStateId &state_id,
                              Task *task) {
-    // Find the task_templ library to instantiate
+    // Find the task library to instantiate
     auto it = libs_.find(lib_name);
     if (it == libs_.end()) {
-      HELOG(kError, "Could not find the task_templ lib", lib_name);
+      HELOG(kError, "Could not find the task lib: {}", lib_name);
       return TaskStateId::GetNull();
     }
 
-    // Check that the executor doesn't already exist
+    // Check that the state doesn't already exist
     if (state_name && task_state_ids_.find(state_name) != task_state_ids_.end()) {
-      HELOG(kError, "The task_templ executor already exists: {}", state_name);
+      HELOG(kError, "The task state already exists: {}", state_name);
       return TaskStateId::GetNull();
     }
 
-    // Create the executor instance
+    // Create the state instance
     TaskLibInfo &info = it->second;
-    TaskState *task_state = info.create_executor_(task);
+    TaskState *task_state = info.create_state_(task);
     if (!task_state) {
-      HELOG(kError, "Could not create the task_templ executor: {}", state_name);
+      HELOG(kError, "Could not create the task state: {}", state_name);
       return TaskStateId::GetNull();
     }
 
-    // Add the executor to the registry
+    // Add the state to the registry
     task_state->id_ = state_id;
     task_state_ids_.emplace(state_name, state_id);
     task_states_.emplace(state_id, task_state);
     return state_id;
   }
 
-  /** Get a task_templ executor's ID */
+  /** Get a task state's ID */
   TaskStateId GetTaskStateId(const std::string &state_name) {
     auto it = task_state_ids_.find(state_name);
     if (it == task_state_ids_.end()) {
@@ -215,7 +215,7 @@ class TaskRegistry {
     return it->second;
   }
 
-  /** Get a task_templ executor instance */
+  /** Get a task state instance */
   TaskState *GetTaskState(const TaskStateId &task_state_id) {
     auto it = task_states_.find(task_state_id);
     if (it == task_states_.end()) {
@@ -224,11 +224,11 @@ class TaskRegistry {
     return it->second;
   }
 
-  /** Destroy a task_templ executor */
+  /** Destroy a task state */
   void DestroyTaskState(const TaskStateId &task_state_id) {
     auto it = task_states_.find(task_state_id);
     if (it == task_states_.end()) {
-      HELOG(kWarning, "Could not find the task_templ executor");
+      HELOG(kWarning, "Could not find the task state");
       return;
     }
     TaskState *task_state = it->second;
@@ -238,7 +238,7 @@ class TaskRegistry {
   }
 };
 
-/** Singleton macro for task_templ registry */
+/** Singleton macro for task registry */
 #define LABSTOR_TASK_REGISTRY \
   (&LABSTOR_RUNTIME->task_registry_)
 }  // namespace labstor

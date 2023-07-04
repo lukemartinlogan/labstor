@@ -4,11 +4,18 @@
 
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/api/labstor_runtime.h"
+#include "labstor/work_orchestrator/scheduler.h"
 
 namespace labstor::Admin {
 
 class Server : public TaskLib {
  public:
+  Task *queue_sched_;
+  Task *proc_sched_;
+
+ public:
+  Server() : queue_sched_(nullptr), proc_sched_(nullptr) {}
+
   void Run(MultiQueue *queue, u32 method, Task *task) override {
     switch (method) {
       case Method::kConstruct: {
@@ -111,6 +118,32 @@ class Server : public TaskLib {
   void StopRuntime(MultiQueue *queue, StopRuntimeTask *task) {
     LABSTOR_WORK_ORCHESTRATOR->FinalizeRuntime();
     task->SetComplete();
+  }
+
+  void SetWorkOrchestratorQueuePolicy(MultiQueue *queue, SetWorkOrchestratorQueuePolicyTask *task) {
+    if (queue_sched_) {
+      queue_sched_->SetExternalComplete();
+    }
+    if (queue_sched_ && !queue_sched_->IsComplete()) {
+      return;
+    }
+    hipc::Pointer p;
+    queue_sched_ = queue->Allocate<Task>(
+        LABSTOR_CLIENT->main_alloc_, p, 0, task->policy_id_, SchedulerMethod::kSchedule, 0);
+    queue->Emplace(0, p);
+  }
+
+  void SetWorkOrchestratorProcessPolicy(MultiQueue *queue, SetWorkOrchestratorProcessPolicyTask *task) {
+    if (proc_sched_) {
+      proc_sched_->SetExternalComplete();
+    }
+    if (proc_sched_ && !proc_sched_->IsComplete()) {
+      return;
+    }
+    hipc::Pointer p;
+    proc_sched_ = queue->Allocate<Task>(
+        LABSTOR_CLIENT->main_alloc_, p, 0, task->policy_id_, SchedulerMethod::kSchedule, 0);
+    queue->Emplace(0, p);
   }
 };
 

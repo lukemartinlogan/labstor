@@ -73,7 +73,7 @@ class Client {
                                       id_);
   }
 
-  /** Destroy task executor */
+  /** Destroy task state */
   HSHM_ALWAYS_INLINE
   void Destroy(const std::string &state_name, u32 node_id) {
     LABSTOR_ADMIN->DestroyTaskState(node_id, id_);

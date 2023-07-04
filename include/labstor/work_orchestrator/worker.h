@@ -46,8 +46,6 @@ class Worker {
     return relinquish_queues_.size() > 0;
   }
 
-
-
   /** The work loop */
   void Loop();
 

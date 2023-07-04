@@ -141,18 +141,18 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
     return (*lanes_)[lane_id];
   }
 
-  /** Allocate a task_templ */
+  /** Allocate a task */
   template<typename T, typename ...Args>
   static T* Allocate(hipc::Allocator *alloc, hipc::Pointer &p, Args&& ...args) {
     return alloc->AllocateConstructObjs<T>(1, p, alloc, std::forward<Args>(args)...);
   }
 
-  /** Free a task_templ */
+  /** Free a task */
   void Free(hipc::Allocator *alloc, hipc::Pointer &p) {
     alloc->Free(p);
   }
 
-  /** Emplace a SHM pointer to a task_templ */
+  /** Emplace a SHM pointer to a task */
   bool Emplace(u32 hash, hipc::Pointer &p) {
     if (IsEmplacePlugged()) {
       WaitForEmplacePlug();
@@ -164,10 +164,9 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
     return !ret.IsNull();
   }
 
-  /** Pop a regular pointer to a task_templ */
-  bool Pop(u32 lane_id, Task *&task) {
+  /** Pop a regular pointer to a task */
+  bool Pop(u32 lane_id, Task *&task, hipc::Pointer &p) {
     Lane &lane = (*lanes_)[lane_id];
-    hipc::Pointer p;
     hshm::qtok_t ret = lane.pop(p);
     if (ret.IsNull()) {
       return false;

@@ -51,16 +51,9 @@ class Client : public ConfigurationManager {
     LoadClientConfig(client_config_path);
     LoadSharedMemory();
     queue_manager_.ClientInit(main_alloc_, header_->queue_manager_);
-
-    // Initialize references to SHM types
-    // rpc_.InitClient();
     if (!server) {
       HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kPthread);
     }
-
-    // Initialize queue manager
-
-    // Initialize work orchestrator
   }
 
  public:

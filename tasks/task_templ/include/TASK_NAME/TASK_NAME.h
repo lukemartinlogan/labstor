@@ -99,7 +99,7 @@ class Client {
                                bitfield32_t(0));
   }
 
-  /** Destroy task executor + queue */
+  /** Destroy task state + queue */
   HSHM_ALWAYS_INLINE
   void Destroy(const std::string &state_name, u32 node_id) {
     LABSTOR_ADMIN->DestroyTaskState(node_id, id_);
