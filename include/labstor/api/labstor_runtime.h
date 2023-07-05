@@ -126,7 +126,9 @@ class Runtime : public ConfigurationManager {
   }
 
   /** Stop the Hermes core Daemon */
-  void StopDaemon() {}
+  void StopDaemon() {
+    LABSTOR_WORK_ORCHESTRATOR->FinalizeRuntime();
+  }
 };
 
 }  // namespace labstor

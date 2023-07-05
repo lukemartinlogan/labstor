@@ -31,7 +31,10 @@ void Worker::Run() {
     hipc::Pointer p;
 
     // TODO(llogan): make polling more fair
-    while (queue->Pop(lane_id, task, p)) {
+    for(u32 i = 0; i < 20; ++i) {
+      if (!queue->Pop(lane_id, task, p)) {
+        break;
+      }
       TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
       if (!exec) {
         HELOG(kError, "Could not find the task state: {}", task->task_state_);
