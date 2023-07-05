@@ -240,7 +240,9 @@ class Client {
 
   /** Create a queue with an ID */
   HSHM_ALWAYS_INLINE
-  void CreateQueue(u32 node_id, QueueId id, u32 max_lanes, u32 num_lanes, u32 depth, bitfield32_t flags) {
+  void CreateQueue(u32 node_id, QueueId id,
+                   u32 max_lanes, u32 num_lanes,
+                   u32 depth, bitfield32_t flags) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(QueueManager::kAdminQueue);
     auto *task = queue->Allocate<CreateQueueTask>(LABSTOR_CLIENT->main_alloc_, p,

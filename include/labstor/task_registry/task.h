@@ -31,6 +31,8 @@ namespace labstor {
 #define TASK_COMPLETE (1 << 9)
 /** This task was marked completed outside of the worker thread */
 #define TASK_EXTERNAL_COMPLETE (1 << 10)
+/** This task is long-running */
+#define TASK_LONG_RUNNING (1 << 11)
 
 /** Used to define task methods */
 #define TASK_METHOD_T static inline const u32
@@ -44,7 +46,7 @@ struct TaskMethod {
 
 /** A generic task base class */
 struct Task : public hipc::ShmContainer {
-  SHM_CONTAINER_TEMPLATE((Task), (Task))
+ SHM_CONTAINER_TEMPLATE((Task), (Task))
   u32 key_;                 /**< Helps determine the lane task is keyed to */
   TaskStateId task_state_;    /**< The unique name of a task state */
   u32 method_;              /**< The method to call in the state */
@@ -54,7 +56,7 @@ struct Task : public hipc::ShmContainer {
   /**====================================
    * Task Helpers
    * ===================================*/
-  
+
   /** Check if task is complete */
   HSHM_ALWAYS_INLINE bool IsComplete() {
     return task_flags_.Any(TASK_COMPLETE);
@@ -62,7 +64,7 @@ struct Task : public hipc::ShmContainer {
 
   /** Set task as externally complete */
   HSHM_ALWAYS_INLINE void SetExternalComplete() {
-      task_flags_.SetBits(TASK_EXTERNAL_COMPLETE);
+    task_flags_.SetBits(TASK_EXTERNAL_COMPLETE);
   }
 
   /** Check if a task marked complete externally */
@@ -87,19 +89,23 @@ struct Task : public hipc::ShmContainer {
    * ===================================*/
 
   /** Default SHM constructor */
-  HSHM_ALWAYS_INLINE Task(hipc::Allocator *alloc) {
+  HSHM_ALWAYS_INLINE explicit
+  Task(hipc::Allocator *alloc) {
     shm_init_container(alloc);
   }
 
   /** Emplace constructor */
-  HSHM_ALWAYS_INLINE Task(hipc::Allocator *alloc, u32 key,
-                          TaskStateId task_state,
-                          u32 method, u32 node_id) {
+  HSHM_ALWAYS_INLINE explicit
+  Task(hipc::Allocator *alloc, u32 key,
+       TaskStateId task_state,
+       u32 method, u32 node_id,
+       bitfield32_t task_flags) {
     shm_init_container(alloc);
     key_ = key;
     task_state_ = task_state;
     method_ = method;
     node_id_ = node_id;
+    task_flags_ = task_flags;
   }
 
   /**====================================

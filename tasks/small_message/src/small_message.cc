@@ -31,9 +31,11 @@ class Server : public TaskLib {
   }
 
   void Construct(MultiQueue *queue, ConstructTask *task) {
+    task->SetComplete();
   }
 
   void Destruct(MultiQueue *queue, DestructTask *task) {
+    task->SetComplete();
   }
 
   void Custom(MultiQueue *queue, CustomTask *task) {

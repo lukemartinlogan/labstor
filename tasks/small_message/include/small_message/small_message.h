@@ -90,15 +90,17 @@ class Client {
   void Create(const std::string &state_name, u32 node_id) {
     id_ = TaskStateId::GetNull();
     id_ = LABSTOR_ADMIN->CreateTaskState(node_id,
-                                      state_name,
-                                      "small_message",
-                                      id_);
-    queue_id_ = QueueId(id_.unique_, id_.node_id_);
+                                         state_name,
+                                         "small_message",
+                                         id_);
+    queue_id_ = QueueId(id_);
     LABSTOR_ADMIN->CreateQueue(node_id, queue_id_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
                                bitfield32_t(0));
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    HILOG(kDebug, "Created small_message queue {}", queue->num_lanes_);
   }
 
   /** Destroy state + queue */
@@ -115,7 +117,7 @@ class Client {
     auto *task = queue->Allocate<CustomTask>(
         LABSTOR_CLIENT->main_alloc_, p,
         id_, node_id);
-    queue->Emplace(0, p);
+    queue->Emplace(1, p);
     task->Wait();
     int ret = task->ret_;
     return ret;

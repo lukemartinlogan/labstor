@@ -91,7 +91,7 @@ class Client {
                                       state_name,
                                       "TASK_NAME",
                                       id_);
-    queue_id_ = QueueId(id_.unique_, id_.node_id_);
+    queue_id_ = QueueId(id_);
     LABSTOR_ADMIN->CreateQueue(node_id, queue_id_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,

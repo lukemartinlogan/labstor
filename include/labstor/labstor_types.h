@@ -53,41 +53,48 @@ enum class LabstorMode {
 /** Represents unique ID for BlobId and TagId */
 template<int TYPE>
 struct UniqueId {
-  u64 unique_;   /**< A unique id for the blob */
   u32 node_id_;  /**< The node the content is on */
+  u64 unique_;   /**< A unique id for the blob */
 
   /** Default constructor */
   UniqueId() = default;
 
   /** Emplace constructor */
-  UniqueId(u64 unique, u32 node_id) : unique_(unique), node_id_(node_id) {}
+  UniqueId(u32 node_id, u64 unique) : node_id_(node_id), unique_(unique) {}
 
   /** Copy constructor */
   UniqueId(const UniqueId &other) {
-    unique_ = other.unique_;
     node_id_ = other.node_id_;
+    unique_ = other.unique_;
+  }
+
+  /** Copy constructor */
+  template<int OTHER_TYPE=TYPE>
+  UniqueId(const UniqueId<OTHER_TYPE> &other) {
+    node_id_ = other.node_id_;
+    unique_ = other.unique_;
   }
 
   /** Copy assignment */
   UniqueId& operator=(const UniqueId &other) {
     if (this != &other) {
-      unique_ = other.unique_;
       node_id_ = other.node_id_;
+      unique_ = other.unique_;
     }
     return *this;
   }
 
   /** Move constructor */
   UniqueId(UniqueId &&other) noexcept {
-    unique_ = other.unique_;
     node_id_ = other.node_id_;
+    unique_ = other.unique_;
   }
 
   /** Move assignment */
   UniqueId& operator=(UniqueId &&other) noexcept {
     if (this != &other) {
-      unique_ = other.unique_;
       node_id_ = other.node_id_;
+      unique_ = other.unique_;
     }
     return *this;
   }
@@ -147,7 +154,7 @@ struct hash<labstor::UniqueId<TYPE>> {
   std::size_t operator()(const labstor::UniqueId<TYPE> &key) const {
     return
       std::hash<labstor::u64>{}(key.unique_) +
-        std::hash<labstor::i32>{}(key.node_id_);
+        std::hash<labstor::u32>{}(key.node_id_);
   }
 };
 }  // namespace std

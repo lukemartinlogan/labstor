@@ -28,9 +28,15 @@ class Server : public TaskLib {
   }
 
   void Construct(MultiQueue *queue, ConstructTask *task) {
+    if (task) {
+      task->SetComplete();
+    }
   }
 
   void Destruct(MultiQueue *queue, DestructTask *task) {
+    if (task) {
+      task->SetComplete();
+    }
   }
 
   void Schedule(MultiQueue *queue, Task *task) {

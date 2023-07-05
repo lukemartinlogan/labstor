@@ -13,7 +13,7 @@ namespace labstor {
 void Worker::Loop() {
   while (LABSTOR_WORK_ORCHESTRATOR->IsAlive()) {
     Run();
-    Yield();
+    // Yield();
   }
   Run();
 }
@@ -34,6 +34,9 @@ void Worker::Run() {
     for(u32 i = 0; i < 20; ++i) {
       if (!queue->Pop(lane_id, task, p)) {
         break;
+      }
+      if (!task->task_flags_.Any(TASK_LONG_RUNNING)) {
+        HILOG(kDebug, "Running task: {} on worker {}", task->task_state_, id_)
       }
       TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
       if (!exec) {

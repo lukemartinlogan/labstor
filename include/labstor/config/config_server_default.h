@@ -4,7 +4,7 @@ const char* kServerDefaultConfigStr =
 "### Runtime orchestration settings\n"
 "work_orchestrator:\n"
 "  # The number of worker threads to spawn\n"
-"  max_workers: 64\n"
+"  max_workers: 4\n"
 "\n"
 "### Queue Manager settings\n"
 "queue_manager:\n"

@@ -170,7 +170,7 @@ class TaskRegistry {
 
   /** Get a TaskState ID */
   TaskStateId CreateTaskStateId(u32 node_id) {
-    return TaskStateId(unique_.fetch_add(1), node_id);;
+    return TaskStateId(node_id, unique_.fetch_add(1));
   }
 
   /** Create a task state */

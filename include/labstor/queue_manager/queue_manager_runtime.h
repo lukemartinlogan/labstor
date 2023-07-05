@@ -41,7 +41,7 @@ class QueueManagerRuntime : public QueueManager {
     // Initialize queue map
     HSHM_MAKE_AR0(shm.queue_map_, alloc)
     queue_map_ = shm.queue_map_.get();
-    queue_map_->reserve(max_queues_);
+    queue_map_->resize(max_queues_);
     // Create the admin queue
     CreateQueue(kAdminQueue,
                 qm_conf.max_lanes_,

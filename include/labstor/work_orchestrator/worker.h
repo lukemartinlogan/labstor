@@ -34,7 +34,7 @@ class Worker {
     poll_queues_.Resize(256);
     relinquish_queues_.Resize(256);
     id_ = id;
-    sleep_us_ = 100;
+    sleep_us_ = 0;
     retries_ = 1;
   }
 
@@ -81,6 +81,9 @@ class Worker {
  private:
   /** Worker yields for a period of time */
   void Yield() {
+    if (flags_.Any(WORKER_CONTINUOUS_POLLING)) {
+      return;
+    }
     if (sleep_us_ > 0) {
       HERMES_THREAD_MODEL->SleepForUs(sleep_us_);
     } else {

@@ -15,7 +15,7 @@ add_executable(test_performance_exec
 
 add_dependencies(test_performance_exec labstor_client)
 target_link_libraries(test_performance_exec
-        labstor_client Catch2::Catch2)
+        labstor_client Catch2::Catch2 ${ZMQ_LIBRARIES})
 
 #------------------------------------------------------------------------------
 # Test Cases

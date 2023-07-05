@@ -1,7 +1,7 @@
 ### Runtime orchestration settings
 work_orchestrator:
   # The number of worker threads to spawn
-  max_workers: 64
+  max_workers: 4
 
 ### Queue Manager settings
 queue_manager:

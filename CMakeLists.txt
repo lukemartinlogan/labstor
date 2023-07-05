@@ -14,7 +14,15 @@ option(LABSTOR_ENABLE_DOXYGEN "Check how well the code is documented" OFF)
 # Compiler Optimization
 #-----------------------------------------------------------------------------
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "-O0")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message("IN DEBUG MODE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
+    add_compile_definitions(HERMES_LOG_VERBOSITY=10)
+else()
+    message("IN RELEASE MODE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3")
+    add_compile_definitions(HERMES_LOG_VERBOSITY=1)
+endif()
 
 #-----------------------------------------------------------------------------
 # Find Packages
@@ -43,11 +51,21 @@ if(BUILD_OpenMP_TESTS)
     message(STATUS "found omp.h at ${OpenMP_CXX_INCLUDE_DIRS}")
 endif()
 
-#Cereal
+# Cereal
 find_package(cereal REQUIRED)
 if(cereal)
     message(STATUS "found cereal")
 endif()
+
+# Pkg-Config
+find_package(PkgConfig REQUIRED)
+if(PkgConfig)
+    message(STATUS "found pkg config")
+endif()
+
+# Zeromq
+pkg_check_modules(ZMQ REQUIRED libzmq)
+include_directories(${ZeroMQ_INCLUDE_DIRS})
 
 #------------------------------------------------------------------------------
 # Setup CMake Environment

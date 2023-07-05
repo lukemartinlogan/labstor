@@ -49,7 +49,7 @@ class Client : public ConfigurationManager {
                   bool server) {
     LoadServerConfig(server_config_path);
     LoadClientConfig(client_config_path);
-    LoadSharedMemory();
+    LoadSharedMemory(server);
     queue_manager_.ClientInit(main_alloc_, header_->queue_manager_);
     if (!server) {
       HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kPthread);
@@ -58,13 +58,13 @@ class Client : public ConfigurationManager {
 
  public:
   /** Connect to a Daemon's shared memory */
-  void LoadSharedMemory() {
+  void LoadSharedMemory(bool server) {
     // Load shared-memory allocator
     auto mem_mngr = HERMES_MEMORY_MANAGER;
-    try {
+    if (!server) {
       mem_mngr->AttachBackend(hipc::MemoryBackendType::kPosixShmMmap,
                               server_config_.queue_manager_.shm_name_);
-    } catch (hshm::Error &e) {}
+    }
     main_alloc_ = mem_mngr->GetAllocator(main_alloc_id_);
     header_ = main_alloc_->GetCustomHeader<LabstorShm>();
   }

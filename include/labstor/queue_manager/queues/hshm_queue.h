@@ -155,12 +155,12 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
   }
 
   /** Emplace a SHM pointer to a task */
-  bool Emplace(u32 hash, hipc::Pointer &p) {
+  bool Emplace(u32 key, hipc::Pointer &p) {
     if (IsEmplacePlugged()) {
       WaitForEmplacePlug();
     }
     hipc::vector<Lane> *lanes = lanes_.get();
-    u32 lane_id = hash % num_lanes_;
+    u32 lane_id = key % num_lanes_;
     Lane &lane = (*lanes)[lane_id];
     hshm::qtok_t ret = lane.emplace(p);
     return !ret.IsNull();

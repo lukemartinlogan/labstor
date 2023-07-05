@@ -86,7 +86,7 @@ class Server : public TaskLib {
   }
 
   void RegisterTaskLib(MultiQueue *queue, RegisterTaskLibTask *task) {
-     std::string lib_name = task->lib_name_->str();
+    std::string lib_name = task->lib_name_->str();
     LABSTOR_TASK_REGISTRY->RegisterTaskLib(lib_name);
     task->SetComplete();
   }
@@ -107,10 +107,10 @@ class Server : public TaskLib {
       task->id_ = LABSTOR_TASK_REGISTRY->CreateTaskStateId(task->node_id_);
     }
     LABSTOR_TASK_REGISTRY->CreateTaskState(lib_name.c_str(),
-                                              state_name.c_str(),
-                                              task->node_id_,
-                                              task->id_,
-                                              task);
+                                           state_name.c_str(),
+                                           task->node_id_,
+                                           task->id_,
+                                           task);
     task->SetComplete();
   }
 
@@ -139,7 +139,10 @@ class Server : public TaskLib {
     }
     hipc::Pointer p;
     queue_sched_ = queue->Allocate<Task>(
-        LABSTOR_CLIENT->main_alloc_, p, 0, task->policy_id_, SchedulerMethod::kSchedule, 0);
+        LABSTOR_CLIENT->main_alloc_, p,
+        0, task->policy_id_,
+        SchedulerMethod::kSchedule, 0,
+        bitfield32_t(TASK_LONG_RUNNING));
     queue->Emplace(0, p);
     task->SetComplete();
   }
@@ -153,7 +156,10 @@ class Server : public TaskLib {
     }
     hipc::Pointer p;
     proc_sched_ = queue->Allocate<Task>(
-        LABSTOR_CLIENT->main_alloc_, p, 0, task->policy_id_, SchedulerMethod::kSchedule, 0);
+        LABSTOR_CLIENT->main_alloc_, p,
+        0, task->policy_id_,
+        SchedulerMethod::kSchedule, 0,
+        bitfield32_t(TASK_LONG_RUNNING));
     queue->Emplace(0, p);
     task->SetComplete();
   }
