@@ -132,6 +132,13 @@ using TaskStateId = UniqueId<1>;
 /** Uniquely identify a queue */
 using QueueId = UniqueId<2>;
 
+/** Allow unique ids to be printed as strings */
+template<int num>
+std::ostream &operator<<(std::ostream &os, UniqueId<num> const &obj) {
+  return os << (std::to_string(obj.node_id_) + "."
+      + std::to_string(obj.unique_));
+}
+
 }  // namespace labstor
 
 namespace std {

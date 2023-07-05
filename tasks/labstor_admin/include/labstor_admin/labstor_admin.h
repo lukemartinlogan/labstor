@@ -5,6 +5,7 @@
 #ifndef LABSTOR_TASKS_LABSTOR_ADMIN_LABSTOR_ADMIN_H_
 #define LABSTOR_TASKS_LABSTOR_ADMIN_LABSTOR_ADMIN_H_
 
+#include "labstor/work_orchestrator/scheduler.h"
 #include "labstor/api/labstor_client.h"
 #include "labstor/queue_manager/queue_manager_client.h"
 
@@ -22,6 +23,8 @@ struct Method : public TaskMethod {
   TASK_METHOD_T kStopRuntime = TaskMethod::kLast + 7;
   TASK_METHOD_T kSetWorkOrchestratorQueuePolicy = TaskMethod::kLast + 8;
   TASK_METHOD_T kSetWorkOrchestratorProcessPolicy = TaskMethod::kLast + 9;
+  TASK_METHOD_T kWorkerPollQueue = TaskMethod::kLast + 10;
+  TASK_METHOD_T kWorkerRelinquishQueue = TaskMethod::kLast + 11;
 };
 
 /** A task to create a queue */
@@ -226,6 +229,7 @@ struct SetWorkOrchestratorPolicyTask : public Task {
 };
 using SetWorkOrchestratorQueuePolicyTask = SetWorkOrchestratorPolicyTask<0>;
 using SetWorkOrchestratorProcessPolicyTask = SetWorkOrchestratorPolicyTask<1>;
+
 
 /** Create admin requests */
 class Client {

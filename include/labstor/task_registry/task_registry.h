@@ -85,14 +85,14 @@ class TaskRegistry {
       ld_lib_path = ld_lib_path_env;
     }
 
-    // Load the HERMES_TRAIT_PATH variable
+    // Load the LABSTOR_TASK_PATH variable
     std::string hermes_lib_path;
-    auto hermes_lib_path_env = getenv("HERMES_TRAIT_PATH");
+    auto hermes_lib_path_env = getenv("LABSTOR_TASK_PATH");
     if (hermes_lib_path_env) {
       hermes_lib_path = hermes_lib_path_env;
     }
 
-    // Combine LD_LIBRARY_PATH and HERMES_TRAIT_PATH
+    // Combine LD_LIBRARY_PATH and LABSTOR_TASK_PATH
     std::string paths = hermes_lib_path + ":" + ld_lib_path;
     std::stringstream ss(paths);
     std::string lib_dir;
@@ -132,7 +132,7 @@ class TaskRegistry {
       TaskLibInfo info;
       info.lib_ = dlopen(lib_path.c_str(), RTLD_GLOBAL | RTLD_NOW);
       if (!info.lib_) {
-        HELOG(kError, "Could not open the lib library: {}", lib_path);
+        HELOG(kError, "Could not open the lib library: {}. Reason: {}", lib_path, dlerror());
         return false;
       }
       info.create_state_ = (create_state_t)dlsym(
@@ -154,6 +154,7 @@ class TaskRegistry {
       libs_.emplace(task_lib_name, std::move(info));
       return true;
     }
+    HELOG(kError, "Could not find the lib: {}", lib_name);
     return false;
   }
 

@@ -21,12 +21,13 @@ class Hshm {};
 template<>
 struct MultiQueueT<Hshm> : public hipc::ShmContainer {
   SHM_CONTAINER_TEMPLATE((MultiQueueT), (MultiQueueT))
-  QueueId id_;
-  bitfield32_t flags_;
-  u32 max_lanes_;
-  u32 num_lanes_;
-  u32 depth_;
-  hipc::ShmArchive<hipc::vector<Lane>> lanes_;
+  QueueId id_;          /**< Globally unique ID of this queue */
+  bitfield32_t flags_;  /**< Scheduling hints for the queue */
+  u32 max_lanes_;       /**< Maximum number of lanes in the queue */
+  u32 num_lanes_;       /**< Current number of lanes in use */
+  u32 num_scheduled_;   /**< The number of lanes currently scheduled on workers */
+  u32 depth_;           /**< The maximum depth of individual lanes */
+  hipc::ShmArchive<hipc::vector<Lane>> lanes_;  /**< The lanes of the queue */
 
  public:
   /**====================================

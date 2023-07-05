@@ -18,7 +18,6 @@ class QueueManagerRuntime : public QueueManager {
   ServerConfig *config_;
   size_t max_queues_;
   hipc::split_ticket_queue<u64> *tickets_;
-  hipc::vector<MultiQueue> *queue_map_;
   u32 node_id_;
 
  public:

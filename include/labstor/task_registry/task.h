@@ -33,7 +33,7 @@ namespace labstor {
 #define TASK_EXTERNAL_COMPLETE (1 << 10)
 
 /** Used to define task methods */
-#define TASK_METHOD_T static const u32
+#define TASK_METHOD_T static inline const u32
 
 /** The baseline set of tasks */
 struct TaskMethod {

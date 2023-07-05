@@ -7,6 +7,7 @@
 
 #include "labstor/labstor_types.h"
 #include "labstor/api/labstor_runtime.h"
+#include "labstor/queue_manager/queue_manager_runtime.h"
 #include "worker.h"
 #include <thread>
 
@@ -36,7 +37,7 @@ class WorkOrchestrator {
   ~WorkOrchestrator() = default;
 
   /** Create thread pool */
-  void ServerInit(ServerConfig *config) {
+  void ServerInit(ServerConfig *config, QueueManager &qm) {
     config_ = config;
     size_t num_workers = config_->wo_.max_workers_;
     workers_.reserve(num_workers);
@@ -45,6 +46,17 @@ class WorkOrchestrator {
     }
     stop_runtime_ = false;
     kill_requested_ = false;
+
+    // Initially round-robin admin queue across workers
+    u32 count = 0;
+    for (MultiQueue &queue : *qm.queue_map_) {
+      for (u32 lane_id = 0; lane_id < queue.num_lanes_; ++lane_id) {
+        u32 worker_id = count % workers_.size();
+        Worker &worker = workers_[worker_id].worker_;
+        worker.PollQueues({WorkEntry(lane_id, &queue)});
+        count += 1;
+      }
+    }
   }
 
   /** Set CPU affinity of worker */

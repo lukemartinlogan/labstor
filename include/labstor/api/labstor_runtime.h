@@ -52,10 +52,11 @@ class Runtime : public ConfigurationManager {
     InitSharedMemory();
     task_registry_.ServerInit(&server_config_);
     rpc_.ServerInit(&server_config_);
+    // Queue manager + client must be initialized before Work Orchestrator
     queue_manager_.ServerInit(main_alloc_, rpc_.node_id_, &server_config_, header_->queue_manager_);
-    HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kPthread);
-    work_orchestrator_.ServerInit(&server_config_);
     LABSTOR_CLIENT->Create(server_config_path, "", true);
+    HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kPthread);
+    work_orchestrator_.ServerInit(&server_config_, queue_manager_);
 
     // Create the admin library
     task_registry_.CreateTaskStateId(0);
@@ -65,8 +66,6 @@ class Runtime : public ConfigurationManager {
                                    rpc_.node_id_,
                                    QueueManager::kAdminTaskState,
                                    nullptr);
-    TaskState *admin = task_registry_.GetTaskState(
-        QueueManager::kAdminTaskState);
 
     // Create the work orchestrator queue scheduling library
     TaskStateId queue_sched_id = task_registry_.CreateTaskStateId(0);
@@ -86,21 +85,9 @@ class Runtime : public ConfigurationManager {
                                    proc_sched_id,
                                    nullptr);
 
-    // Begin spawning long-running tasks
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(QueueManager::kAdminQueue);
-
     // Set the work orchestrator queue scheduler
-    auto *queue_sched_task = queue->Allocate<Admin::SetWorkOrchestratorProcessPolicyTask>(
-        LABSTOR_CLIENT->main_alloc_, p, 0, queue_sched_id);
-    admin->Run(queue, queue_sched_task->method_, queue_sched_task);
-    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
-
-    // Set the work orchestrator process scheduler
-    auto *proc_sched_task = queue->Allocate<Admin::SetWorkOrchestratorProcessPolicyTask>(
-        LABSTOR_CLIENT->main_alloc_, p, 0, queue_sched_id);
-    admin->Run(queue, proc_sched_task->method_, proc_sched_task);
-    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    LABSTOR_ADMIN->SetWorkOrchestratorQueuePolicy(0, queue_sched_id);
+    LABSTOR_ADMIN->SetWorkOrchestratorProcessPolicy(0, proc_sched_id);
   }
 
  public:
@@ -128,11 +115,14 @@ class Runtime : public ConfigurationManager {
 
   /** Run the Hermes core Daemon */
   void RunDaemon() {
+    HILOG(kInfo, "Daemon is running")
     while (LABSTOR_WORK_ORCHESTRATOR->IsRuntimeAlive()) {
       // Scheduler callbacks?
       HERMES_THREAD_MODEL->SleepForUs(1000);
     }
+    HILOG(kInfo, "Finishing up last requests")
     LABSTOR_WORK_ORCHESTRATOR->Join();
+    HILOG(kInfo, "Daemon is exiting")
   }
 
   /** Stop the Hermes core Daemon */

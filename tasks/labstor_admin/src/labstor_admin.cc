@@ -56,6 +56,16 @@ class Server : public TaskLib {
         StopRuntime(queue, reinterpret_cast<StopRuntimeTask *>(task));
         break;
       }
+      case Method::kSetWorkOrchestratorQueuePolicy: {
+        SetWorkOrchestratorQueuePolicy(queue,
+                                       reinterpret_cast<SetWorkOrchestratorQueuePolicyTask *>(task));
+        break;
+      }
+      case Method::kSetWorkOrchestratorProcessPolicy: {
+        SetWorkOrchestratorProcessPolicy(
+            queue, reinterpret_cast<SetWorkOrchestratorProcessPolicyTask *>(task));
+        break;
+      }
     }
   }
 
@@ -131,6 +141,7 @@ class Server : public TaskLib {
     queue_sched_ = queue->Allocate<Task>(
         LABSTOR_CLIENT->main_alloc_, p, 0, task->policy_id_, SchedulerMethod::kSchedule, 0);
     queue->Emplace(0, p);
+    task->SetComplete();
   }
 
   void SetWorkOrchestratorProcessPolicy(MultiQueue *queue, SetWorkOrchestratorProcessPolicyTask *task) {
@@ -144,6 +155,7 @@ class Server : public TaskLib {
     proc_sched_ = queue->Allocate<Task>(
         LABSTOR_CLIENT->main_alloc_, p, 0, task->policy_id_, SchedulerMethod::kSchedule, 0);
     queue->Emplace(0, p);
+    task->SetComplete();
   }
 };
 
