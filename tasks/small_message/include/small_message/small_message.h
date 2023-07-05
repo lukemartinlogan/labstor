@@ -107,6 +107,19 @@ class Client {
     LABSTOR_ADMIN->DestroyTaskState(node_id, id_);
     LABSTOR_ADMIN->DestroyQueue(node_id, queue_id_);
   }
+
+  /** Custom task */
+  int Custom(u32 node_id) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    auto *task = queue->Allocate<CustomTask>(
+        LABSTOR_CLIENT->main_alloc_, p,
+        id_, node_id);
+    queue->Emplace(0, p);
+    task->Wait();
+    int ret = task->ret_;
+    return ret;
+  }
 };
 
 }  // namespace labstor

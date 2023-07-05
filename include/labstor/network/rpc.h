@@ -10,8 +10,8 @@
  * have access to the file, you may request a copy from help@hdfgroup.org.   *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef HERMES_RPC_H_
-#define HERMES_RPC_H_
+#ifndef LABSTOR_RPC_H_
+#define LABSTOR_RPC_H_
 
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -87,4 +87,4 @@ class RpcContext {
 
 }  // namespace hermes
 
-#endif  // HERMES_RPC_H_
+#endif  // LABSTOR_RPC_H_

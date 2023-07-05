@@ -10,33 +10,14 @@
  * have access to the file, you may request a copy from help@hdfgroup.org.   *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef LABSTOR_SRC_CONFIG_CLIENT_H_
-#define LABSTOR_SRC_CONFIG_CLIENT_H_
 
-#include <filesystem>
-#include "config.h"
+#include "labstor/api/labstor_client.h"
+#include "basic_test.h"
+#include "test_init.h"
 
-namespace stdfs = std::filesystem;
+void MainPretest() {
+  TRANSPARENT_LABSTOR
+}
 
-namespace labstor::config {
-
-/**
- * Configuration used to intialize client
- * */
-class ClientConfig : public BaseConfig {
- public:
-  /** The thread model of the application */
-  std::string thread_model_;
-
- private:
-  void ParseYAML(YAML::Node &yaml_conf) override;
-  void LoadDefault() override;
-};
-
-}  // namespace labstor::config
-
-namespace labstor {
-using ClientConfig = config::ClientConfig;
-}  // namespace labstor
-
-#endif  // LABSTOR_SRC_CONFIG_CLIENT_H_
+void MainPosttest() {
+}

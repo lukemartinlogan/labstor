@@ -263,13 +263,12 @@ class Client {
   }
 
   /** Register a task library */
-  template<typename RegisterTaskT, typename ...Args>
   HSHM_ALWAYS_INLINE
-  void RegisterTaskLibrary(u32 node_id, const std::string &lib_name, Args&& ...args) {
+  void RegisterTaskLibrary(u32 node_id, const std::string &lib_name) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(QueueManager::kAdminQueue);
-    auto *task = queue->Allocate<RegisterTaskT>(LABSTOR_CLIENT->main_alloc_, p,
-                                                node_id, lib_name, std::forward<Args>(args)...);
+    auto *task = queue->Allocate<RegisterTaskLibTask>(LABSTOR_CLIENT->main_alloc_, p,
+                                                      node_id, lib_name);
     queue->Emplace(0, p);
     task->Wait();
     queue->Free(LABSTOR_CLIENT->main_alloc_, p);
@@ -288,10 +287,10 @@ class Client {
 
   /** Spawn a task state */
   HSHM_ALWAYS_INLINE
-      TaskStateId CreateTaskState(u32 node_id,
-  const std::string &state_name,
-  const std::string &lib_name,
-  const TaskStateId &id = TaskStateId::GetNull()) {
+  TaskStateId CreateTaskState(u32 node_id,
+                              const std::string &state_name,
+                              const std::string &lib_name,
+                              const TaskStateId &id = TaskStateId::GetNull()) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(QueueManager::kAdminQueue);
     auto *task = queue->Allocate<CreateTaskStateTask>(LABSTOR_CLIENT->main_alloc_, p,

@@ -10,8 +10,8 @@
  * have access to the file, you may request a copy from help@hdfgroup.org.   *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef HERMES_SRC_CONFIG_SERVER_H_
-#define HERMES_SRC_CONFIG_SERVER_H_
+#ifndef LABSTOR_SRC_CONFIG_SERVER_H_
+#define LABSTOR_SRC_CONFIG_SERVER_H_
 
 #include "config.h"
 
@@ -90,4 +90,4 @@ namespace labstor {
 using ServerConfig = config::ServerConfig;
 }  // namespace labstor
 
-#endif  // HERMES_SRC_CONFIG_SERVER_H_
+#endif  // LABSTOR_SRC_CONFIG_SERVER_H_

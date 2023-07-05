@@ -55,6 +55,7 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
     for (u32 lane_id = 0; lane_id < num_lanes; ++lane_id) {
       lanes_->emplace_back(depth);
     }
+    hipc::vector<Lane> *lanes = lanes_.get();
     flags_.Clear();
     SetNull();
   }
@@ -159,7 +160,7 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
       WaitForEmplacePlug();
     }
     hipc::vector<Lane> *lanes = lanes_.get();
-    u32 lane_id = hash % lanes->size();
+    u32 lane_id = hash % num_lanes_;
     Lane &lane = (*lanes)[lane_id];
     hshm::qtok_t ret = lane.emplace(p);
     return !ret.IsNull();

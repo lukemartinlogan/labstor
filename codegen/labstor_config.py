@@ -4,8 +4,8 @@ USAGE:
     python3 labstor_config.py
 
 OUTPUT:
-    ${HERMES}/src/config_client_default.h (if client)
-    ${HERMES}/src/config_server_default.h (if server)
+    ${LABSTOR}/src/config_client_default.h (if client)
+    ${LABSTOR}/src/config_server_default.h (if server)
 """
 
 from codegen.labstor_config.generator import create_config

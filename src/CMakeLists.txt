@@ -46,9 +46,9 @@ target_link_libraries(labstor_stop_runtime labstor_client)
 #-----------------------------------------------------------------------------
 install(
   FILES
-    ${HERMES_HEADERS}
+    ${LABSTOR_HEADERS}
   DESTINATION
-    ${HERMES_INSTALL_INCLUDE_DIR}
+    ${LABSTOR_INSTALL_INCLUDE_DIR}
   COMPONENT
     headers
 )

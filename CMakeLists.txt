@@ -84,8 +84,13 @@ include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/tasks)
 include_directories(${CMAKE_SOURCE_DIR}/tasks/labstor_admin/include)
+include_directories(${CMAKE_SOURCE_DIR}/tasks/small_message/include)
+include_directories(${CMAKE_SOURCE_DIR}/test/unit)
+
+set(TEST_MAIN ${CMAKE_SOURCE_DIR}/test/unit)
 add_subdirectory(src)
 add_subdirectory(tasks)
+add_subdirectory(benchmark)
 add_custom_target(lint COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/lint.sh ${CMAKE_SOURCE_DIR})
 
 #-----------------------------------------------------------------------------

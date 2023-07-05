@@ -7,15 +7,14 @@ set(CMAKE_CXX_STANDARD 17)
 # Build Tests
 #------------------------------------------------------------------------------
 
-add_executable(test_messages_exec
+add_executable(test_performance_exec
         ${TEST_MAIN}/main.cc
         test_init.cc
-        test_finalize.cc
-        test_ipc.cc
+        test_latency.cc
 )
 
-add_dependencies(test_messages_exec labstor_client)
-target_link_libraries(test_messages_exec
+add_dependencies(test_performance_exec labstor_client)
+target_link_libraries(test_performance_exec
         labstor_client Catch2::Catch2)
 
 #------------------------------------------------------------------------------
@@ -23,14 +22,14 @@ target_link_libraries(test_messages_exec
 #------------------------------------------------------------------------------
 
 # STRING TESTS
-add_test(NAME test_ipc COMMAND
-        ${CMAKE_BINARY_DIR}/bin/test_messages "TestIpc")
+add_test(NAME test_performance_exec COMMAND
+        ${CMAKE_BINARY_DIR}/bin/test_performance_exec "TestIpc")
 
 #------------------------------------------------------------------------------
 # Install Targets
 #------------------------------------------------------------------------------
 install(TARGETS
-        test_messages_exec
+        test_performance_exec
         EXPORT
         ${LABSTOR_EXPORTED_TARGETS}
         LIBRARY DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
@@ -41,5 +40,5 @@ install(TARGETS
 # Coverage
 #-----------------------------------------------------------------------------
 if(LABSTOR_ENABLE_COVERAGE)
-    set_coverage_flags(test_messages)
+    set_coverage_flags(test_performance_exec)
 endif()

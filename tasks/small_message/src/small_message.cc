@@ -38,6 +38,7 @@ class Server : public TaskLib {
 
   void Custom(MultiQueue *queue, CustomTask *task) {
     task->ret_ = count_++;
+    task->SetComplete();
   }
 };
 
