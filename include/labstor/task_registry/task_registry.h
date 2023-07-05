@@ -150,7 +150,7 @@ class TaskRegistry {
         return false;
       }
       std::string task_lib_name = info.get_task_lib_name();
-      HILOG(kDebug, "Finished loading the lib: {}", task_lib_name)
+      HILOG(kInfo, "Finished loading the lib: {}", task_lib_name)
       libs_.emplace(task_lib_name, std::move(info));
       return true;
     }

@@ -7,6 +7,7 @@
 #include "labstor_admin/labstor_admin.h"
 #include "small_message/small_message.h"
 #include "hermes_shm/util/timer.h"
+#include "labstor/work_orchestrator/affinity.h"
 #include <zmq.hpp>
 
 /** The performance of getting a queue */
@@ -157,6 +158,9 @@ TEST_CASE("TestRoundTripLatency") {
   LABSTOR_ADMIN->RegisterTaskLibrary(0, "small_message");
   client.Create("ipc_test", 0);
   hshm::Timer t;
+
+  int pid = getpid();
+  ProcessAffiner::SetCpuAffinity(pid, 8);
 
   t.Resume();
   size_t ops = 256;

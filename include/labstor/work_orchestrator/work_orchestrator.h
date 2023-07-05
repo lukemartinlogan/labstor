@@ -13,19 +13,10 @@
 
 namespace labstor {
 
-struct WorkerInfo {
-  Worker worker_;
-  std::thread thread_;
-
-  /** Emplace constructor */
-  explicit WorkerInfo(u32 id)
-  : worker_(id), thread_(&Worker::Loop, &worker_) {}
-};
-
 class WorkOrchestrator {
  public:
   ServerConfig *config_;  /**< The server configuration */
-  std::vector<WorkerInfo> workers_;  /**< Workers execute tasks */
+  std::vector<Worker> workers_;  /**< Workers execute tasks */
   std::atomic<bool> stop_runtime_;  /**< Begin killing the runtime */
   std::atomic<bool> kill_requested_;  /**< Kill flushing threads eventually */
 
@@ -52,30 +43,18 @@ class WorkOrchestrator {
     for (MultiQueue &queue : *qm.queue_map_) {
       for (u32 lane_id = 0; lane_id < queue.num_lanes_; ++lane_id) {
         u32 worker_id = count % workers_.size();
-        Worker &worker = workers_[worker_id].worker_;
+        Worker &worker = workers_[worker_id];
         worker.PollQueues({WorkEntry(lane_id, &queue)});
         count += 1;
       }
     }
-  }
 
-  /** Set CPU affinity of worker */
-  void SetAffinity(u32 worker_id, u32 cpu) {
-    cpu_set_t cpuSet;
-    CPU_ZERO(&cpuSet);
-    CPU_SET(cpu, &cpuSet);
-    auto &thread = workers_[worker_id].thread_;
-    pthread_t threadId = thread.native_handle();
-    int result = pthread_setaffinity_np(threadId,
-                                        sizeof(cpu_set_t), &cpuSet);
-    if (result != 0) {
-      std::cerr << "Failed to set CPU affinity: " << result << std::endl;
-    }
+    HILOG(kInfo, "Started {} workers", num_workers);
   }
 
   /** Get worker with this id */
   Worker& GetWorker(u32 worker_id) {
-    return workers_[worker_id].worker_;
+    return workers_[worker_id];
   }
 
   /** Get the number of workers */
@@ -91,7 +70,7 @@ class WorkOrchestrator {
   /** Finalize thread pool */
   void Join() {
     kill_requested_.store(true);
-    for (WorkerInfo &worker : workers_) {
+    for (Worker &worker : workers_) {
       worker.thread_.join();
     }
   }

@@ -8,6 +8,8 @@
 #include "labstor/labstor_types.h"
 #include "hermes_shm/data_structures/ipc/mpsc_queue.h"
 #include "labstor/queue_manager/queue_manager_runtime.h"
+#include <thread>
+#include "affinity.h"
 
 namespace labstor {
 
@@ -17,8 +19,11 @@ typedef std::pair<u32, MultiQueue*> WorkEntry;
 
 class Worker {
  public:
-  u32 id_;
-  u32 numa_node_;  // TODO(llogan): track NUMA affinity
+  u32 id_;  /**< Unique identifier of this worker */
+  std::thread thread_;  /**< The worker thread handle */
+  int pthread_id_;      /**< The worker pthread handle */
+  int pid_;             /**< The worker process id */
+  u32 numa_node_;       // TODO(llogan): track NUMA affinity
   std::vector<WorkEntry> work_queue_;  /**< The set of queues to poll */
   /** A set of queues to begin polling in a worker */
   hshm::spsc_queue<std::vector<WorkEntry>> poll_queues_;
@@ -30,12 +35,14 @@ class Worker {
 
  public:
   /** Constructor */
-  Worker(u32 id) {
+  Worker(u32 id) : thread_(&Worker::Loop, this) {
     poll_queues_.Resize(256);
     relinquish_queues_.Resize(256);
     id_ = id;
     sleep_us_ = 0;
     retries_ = 1;
+    pthread_id_ = thread_.native_handle();
+    pid_ = 0;
   }
 
   /**
@@ -73,6 +80,11 @@ class Worker {
   /** Disable continuous polling */
   void DisableContinuousPolling() {
     flags_.UnsetBits(WORKER_CONTINUOUS_POLLING);
+  }
+
+  /** Set the CPU affinity of this worker */
+  void SetCpuAffinity(int cpu_id) {
+    ProcessAffiner::SetCpuAffinity(pid_, cpu_id);
   }
 
   /** The work loop */

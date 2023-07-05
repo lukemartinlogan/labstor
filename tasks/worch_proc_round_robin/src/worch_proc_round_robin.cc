@@ -40,6 +40,11 @@ class Server : public TaskLib {
   }
 
   void Schedule(MultiQueue *queue, Task *task) {
+    int rr = 0;
+    for (Worker &worker : LABSTOR_WORK_ORCHESTRATOR->workers_) {
+      worker.SetCpuAffinity(rr % HERMES_SYSTEM_INFO->ncpu_);
+      ++rr;
+    }
   }
 };
 

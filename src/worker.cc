@@ -11,6 +11,7 @@ namespace labstor {
 // Should queues work across task states?
 
 void Worker::Loop() {
+  pid_ = gettid();
   while (LABSTOR_WORK_ORCHESTRATOR->IsAlive()) {
     Run();
     // Yield();
