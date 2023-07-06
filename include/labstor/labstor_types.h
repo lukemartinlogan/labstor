@@ -12,6 +12,7 @@
 #include <hermes_shm/data_structures/data_structure.h>
 #include <hermes_shm/data_structures/ipc/string.h>
 #include <hermes_shm/data_structures/ipc/mpsc_queue.h>
+#include <hermes_shm/data_structures/ipc/mpsc_ptr_queue.h>
 #include <hermes_shm/data_structures/ipc/ticket_queue.h>
 #include <hermes_shm/data_structures/containers/charbuf.h>
 #include <hermes_shm/data_structures/containers/spsc_queue.h>

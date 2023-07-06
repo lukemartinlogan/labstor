@@ -117,7 +117,7 @@ class Client {
     auto *task = queue->Allocate<CustomTask>(
         LABSTOR_CLIENT->main_alloc_, p,
         id_, node_id);
-    queue->Emplace(1, p);
+    queue->Emplace(3, p);
     task->Wait();
     int ret = task->ret_;
     return ret;

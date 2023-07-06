@@ -36,9 +36,6 @@ void Worker::Run() {
       if (!queue->Pop(lane_id, task, p)) {
         break;
       }
-      if (!task->task_flags_.Any(TASK_LONG_RUNNING)) {
-        HILOG(kDebug, "Running task: {} on worker {}", task->task_state_, id_)
-      }
       TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
       if (!exec) {
         HELOG(kError, "Could not find the task state: {}", task->task_state_);

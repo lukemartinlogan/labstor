@@ -6,7 +6,6 @@
 #define LABSTOR_INCLUDE_LABSTOR_WORK_ORCHESTRATOR_WORKER_H_
 
 #include "labstor/labstor_types.h"
-#include "hermes_shm/data_structures/ipc/mpsc_queue.h"
 #include "labstor/queue_manager/queue_manager_runtime.h"
 #include <thread>
 #include "affinity.h"
@@ -40,6 +39,7 @@ class Worker {
     relinquish_queues_.Resize(256);
     id_ = id;
     sleep_us_ = 0;
+    EnableContinuousPolling();
     retries_ = 1;
     pthread_id_ = thread_.native_handle();
     pid_ = 0;

@@ -54,7 +54,7 @@ class QueueManagerRuntime : public QueueManager {
   void CreateQueue(const QueueId &id,
                    u32 max_lanes, u32 num_lanes,
                    u32 depth, bitfield32_t flags) {
-    queue_map_->emplace(queue_map_->begin() + id.unique_,
+    queue_map_->replace(queue_map_->begin() + id.unique_,
                         id, max_lanes, num_lanes, depth, flags);
   }
 

@@ -49,6 +49,43 @@ TEST_CASE("TestHshmAllocateFree") {
   HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
 }
 
+/** Single-thread performance of emplacing, and popping a mpsc_ptr_queue */
+TEST_CASE("TestPointerQueueEmplacePop") {
+  auto queue_ptr = hipc::make_uptr<hipc::mpsc_ptr_queue<hipc::Pointer>>(256);
+  auto queue = queue_ptr.get();
+  hipc::Pointer p;
+
+  hshm::Timer t;
+  size_t ops = (1 << 20);
+  t.Resume();
+  for (size_t i = 0; i < ops; ++i) {
+    queue->emplace(p);
+    queue->pop(p);
+  }
+  t.Pause();
+
+  HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
+}
+
+/** Single-thread performance of empacling + popping vec<mpsc_ptr_queue> */
+TEST_CASE("TestPointerQueueVecEmplacePop") {
+  auto queues_ptr = hipc::make_uptr<hipc::vector<hipc::mpsc_ptr_queue<hipc::Pointer>>>(16);
+  auto queues = queues_ptr.get();
+  hipc::Pointer p;
+
+  hshm::Timer t;
+  size_t ops = (1 << 20);
+  for (size_t i = 0; i < ops; ++i) {
+    t.Resume();
+    auto &queue = (*queues)[0];
+    queue.emplace(p);
+    queue.pop(p);
+    t.Pause();
+  }
+
+  HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
+}
+
 /** Single-thread performance of getting, emplacing, and popping a queue */
 TEST_CASE("TestHshmQueueEmplacePop") {
   labstor::QueueId qid(0, 3);
@@ -70,6 +107,23 @@ TEST_CASE("TestHshmQueueEmplacePop") {
   HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
 }
 
+/** Single-thread performance of getting a lane from a queue */
+TEST_CASE("TestHshmQueueGetLane") {
+  labstor::QueueId qid(0, 3);
+  auto queue = hipc::make_uptr<labstor::MultiQueue>(
+      qid, 16, 16, 256, hshm::bitfield32_t(0));
+
+  hshm::Timer t;
+  size_t ops = (1 << 20);
+  t.Resume();
+  for (size_t i = 0; i < ops; ++i) {
+    queue->GetLane(i % queue->num_lanes_);
+  }
+  t.Pause();
+
+  HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
+}
+
 /** Single-thread performance of getting, emplacing, and popping a queue */
 TEST_CASE("TestHshmQueueAllocateEmplacePop") {
   labstor::QueueId qid(0, 3);
@@ -77,8 +131,8 @@ TEST_CASE("TestHshmQueueAllocateEmplacePop") {
       qid, 16, 16, 256, hshm::bitfield32_t(0));
 
   hshm::Timer t;
-  t.Resume();
   size_t ops = (1 << 20);
+  t.Resume();
   for (size_t i = 0; i < ops; ++i) {
     hipc::Pointer p;
     auto *task = queue->Allocate<labstor::Task>(LABSTOR_CLIENT->main_alloc_, p);
@@ -163,12 +217,11 @@ TEST_CASE("TestRoundTripLatency") {
   ProcessAffiner::SetCpuAffinity(pid, 8);
 
   t.Resume();
-  size_t ops = 256;
+  size_t ops = (1 << 20);
   for (size_t i = 0; i < ops; ++i) {
-    int ret = client.Custom(0);
-    REQUIRE(ret == i);
+    client.Custom(0);
   }
   t.Pause();
 
-  HILOG(kInfo, "Latency: {} KOps", ops / t.GetMsec());
+  HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
 }

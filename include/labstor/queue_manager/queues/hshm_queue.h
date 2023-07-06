@@ -42,8 +42,8 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
 
   /** SHM constructor. */
   explicit MultiQueueT(hipc::Allocator *alloc, const QueueId &id,
-                      u32 max_lanes, u32 num_lanes,
-                      u32 depth, bitfield32_t flags) {
+                       u32 max_lanes, u32 num_lanes,
+                       u32 depth, bitfield32_t flags) {
     shm_init_container(alloc);
     id_ = id;
     max_lanes_ = max_lanes;
@@ -91,7 +91,7 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
 
   /** SHM move constructor. */
   MultiQueueT(hipc::Allocator *alloc,
-             MultiQueueT &&other) noexcept {
+              MultiQueueT &&other) noexcept {
     shm_init_container(alloc);
     if (GetAllocator() == other.GetAllocator()) {
       (*lanes_) = std::move(*other.lanes_);
@@ -139,18 +139,19 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
    * ===================================*/
 
   /** Get a lane of the queue */
-  Lane& GetLane(u32 lane_id) {
+  HSHM_ALWAYS_INLINE Lane& GetLane(u32 lane_id) {
     return (*lanes_)[lane_id];
   }
 
   /** Allocate a task */
   template<typename T, typename ...Args>
-  static T* Allocate(hipc::Allocator *alloc, hipc::Pointer &p, Args&& ...args) {
+  HSHM_ALWAYS_INLINE static T* Allocate(hipc::Allocator *alloc, hipc::Pointer &p,
+      Args&& ...args) {
     return alloc->AllocateConstructObjs<T>(1, p, alloc, std::forward<Args>(args)...);
   }
 
   /** Free a task */
-  void Free(hipc::Allocator *alloc, hipc::Pointer &p) {
+  HSHM_ALWAYS_INLINE static void Free(hipc::Allocator *alloc, hipc::Pointer &p) {
     alloc->Free(p);
   }
 
@@ -159,16 +160,15 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
     if (IsEmplacePlugged()) {
       WaitForEmplacePlug();
     }
-    hipc::vector<Lane> *lanes = lanes_.get();
     u32 lane_id = key % num_lanes_;
-    Lane &lane = (*lanes)[lane_id];
+    Lane &lane = GetLane(lane_id);
     hshm::qtok_t ret = lane.emplace(p);
     return !ret.IsNull();
   }
 
   /** Pop a regular pointer to a task */
   bool Pop(u32 lane_id, Task *&task, hipc::Pointer &p) {
-    Lane &lane = (*lanes_)[lane_id];
+    Lane &lane = GetLane(lane_id);
     hshm::qtok_t ret = lane.pop(p);
     if (ret.IsNull()) {
       return false;
@@ -201,7 +201,7 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
   }
 
   /** Begin plugging the queue for resize */
-  bool PlugForResize() {
+  HSHM_ALWAYS_INLINE bool PlugForResize() {
     // Mark this queue as QUEUE_RESIZE
     if (!flags_.Any(QUEUE_RESIZE)) {
       flags_.SetBits(QUEUE_RESIZE);
@@ -216,7 +216,7 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
   }
 
   /** Begin plugging the queue for update tasks */
-  bool PlugForUpdateTask() {
+  HSHM_ALWAYS_INLINE bool PlugForUpdateTask() {
     // Mark this queue as QUEUE_UPDATE
     flags_.SetBits(QUEUE_UPDATE);
     // Check if all lanes have been marked QUEUE_UPDATE
@@ -229,12 +229,12 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
   }
 
   /** Check if emplace operations are plugged */
-  bool IsEmplacePlugged() {
+  HSHM_ALWAYS_INLINE bool IsEmplacePlugged() {
     return flags_.Any(QUEUE_RESIZE);
   }
 
   /** Check if pop operations are plugged */
-  bool IsPopPlugged() {
+  HSHM_ALWAYS_INLINE bool IsPopPlugged() {
     return flags_.Any(QUEUE_UPDATE | QUEUE_RESIZE);
   }
 
@@ -247,12 +247,12 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
   }
 
   /** Enable emplace & pop */
-  void UnplugForResize() {
+  HSHM_ALWAYS_INLINE void UnplugForResize() {
     flags_.UnsetBits(QUEUE_RESIZE);
   }
 
   /** Enable pop */
-  void UnplugForUpdateTask() {
+  HSHM_ALWAYS_INLINE void UnplugForUpdateTask() {
     flags_.UnsetBits(QUEUE_UPDATE);
   }
 };
