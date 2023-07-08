@@ -23,13 +23,13 @@ struct ConstructTask : public Task {
   HSHM_ALWAYS_INLINE
   ConstructTask(hipc::Allocator *alloc,
                 const TaskStateId &state_id,
-                u32 node_id) : Task(alloc) {
+                const DomainId &domain_id) : Task(alloc) {
     // Initialize task
     key_ = 0;
     task_state_ = state_id;
     method_ = Method::kConstruct;
     task_flags_.SetBits(0);
-    node_id_ = node_id;
+    domain_id_ = domain_id;
 
     // Custom params
   }
@@ -40,13 +40,13 @@ struct DestructTask : public Task {
   HSHM_ALWAYS_INLINE
   DestructTask(hipc::Allocator *alloc,
                TaskStateId &state_id,
-               u32 node_id) : Task(alloc) {
+               const DomainId &domain_id) : Task(alloc) {
     // Initialize task
     key_ = 0;
     task_state_ = state_id;
     method_ = Method::kDestruct;
     task_flags_.SetBits(0);
-    node_id_ = node_id;
+    domain_id_ = domain_id;
   }
 };
 
@@ -65,9 +65,9 @@ class Client {
 
   /** Create a worch_queue_round_robin */
   HSHM_ALWAYS_INLINE
-  void Create(const std::string &state_name, u32 node_id) {
+  void Create(const std::string &state_name, const DomainId &domain_id) {
     id_ = TaskStateId::GetNull();
-    id_ = LABSTOR_ADMIN->CreateTaskState(node_id,
+    id_ = LABSTOR_ADMIN->CreateTaskState(domain_id,
                                       state_name,
                                       "worch_queue_round_robin",
                                       id_);
@@ -75,8 +75,8 @@ class Client {
 
   /** Destroy task state */
   HSHM_ALWAYS_INLINE
-  void Destroy(const std::string &state_name, u32 node_id) {
-    LABSTOR_ADMIN->DestroyTaskState(node_id, id_);
+  void Destroy(const std::string &state_name, const DomainId &domain_id) {
+    LABSTOR_ADMIN->DestroyTaskState(domain_id, id_);
   }
 };
 

@@ -72,6 +72,11 @@ class ConfigurationManager {
     HILOG(kDebug, "Loading client configuration: {}", config_path);
     client_config_.LoadFromFile(config_path);
   }
+
+  /** Get number of nodes */
+  HSHM_ALWAYS_INLINE int GetNumNodes() {
+    return server_config_.rpc_.host_names_.size();
+  }
 };
 
 }  // namespace labstor

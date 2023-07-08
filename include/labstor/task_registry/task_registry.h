@@ -169,14 +169,14 @@ class TaskRegistry {
   }
 
   /** Get a TaskState ID */
-  TaskStateId CreateTaskStateId(u32 node_id) {
-    return TaskStateId(node_id, unique_.fetch_add(1));
+  TaskStateId CreateTaskStateId(const DomainId &domain_id) {
+    return TaskStateId(domain_id, unique_.fetch_add(1));
   }
 
   /** Create a task state */
   TaskStateId CreateTaskState(const char *lib_name,
                              const char *state_name,
-                             u32 node_id,
+                             const DomainId &domain_id,
                              const TaskStateId &state_id,
                              Task *task) {
     // Find the task library to instantiate

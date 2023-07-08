@@ -28,9 +28,9 @@ class QueueManagerRuntime : public QueueManager {
   ~QueueManagerRuntime() = default;
 
   /** Create queues in shared memory */
-  void ServerInit(hipc::Allocator *alloc, int node_id, ServerConfig *config, QueueManagerShm &shm) {
+  void ServerInit(hipc::Allocator *alloc, int domain_id, ServerConfig *config, QueueManagerShm &shm) {
     config_ = config;
-    node_id_ = node_id;
+    domain_id_ = domain_id;
     auto &qm_conf = config_->queue_manager_;
     // Initialize ticket queue (ticket 0 is for admin queue)
     max_queues_ = qm_conf.max_queues_;

@@ -2,15 +2,15 @@
 // Created by lukemartinlogan on 6/29/23.
 //
 
-#ifndef LABSTOR_small_message_H_
-#define LABSTOR_small_message_H_
+#ifndef LABSTOR_hermes_bpm_H_
+#define LABSTOR_hermes_bpm_H_
 
 #include "labstor/api/labstor_client.h"
 #include "labstor/task_registry/task_lib.h"
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/queue_manager/queue_manager_client.h"
 
-namespace labstor::small_message {
+namespace labstor::hermes_bpm {
 
 /** The set of methods in the admin task */
 struct Method : public TaskMethod {
@@ -18,7 +18,7 @@ struct Method : public TaskMethod {
 };
 
 /**
- * A task to create small_message
+ * A task to create hermes_bpm
  * */
 struct ConstructTask : public Task {
   HSHM_ALWAYS_INLINE
@@ -36,7 +36,7 @@ struct ConstructTask : public Task {
   }
 };
 
-/** A task to destroy small_message */
+/** A task to destroy hermes_bpm */
 struct DestructTask : public Task {
   HSHM_ALWAYS_INLINE
   DestructTask(hipc::Allocator *alloc,
@@ -52,11 +52,9 @@ struct DestructTask : public Task {
 };
 
 /**
- * A custom task in small_message
+ * A custom task in hermes_bpm
  * */
 struct CustomTask : public Task {
-  OUT int ret_;
-
   HSHM_ALWAYS_INLINE
   CustomTask(hipc::Allocator *alloc,
              const TaskStateId &state_id,
@@ -85,45 +83,42 @@ class Client {
   /** Destructor */
   ~Client() = default;
 
-  /** Create a small_message */
+  /** Create a hermes_bpm */
   HSHM_ALWAYS_INLINE
   void Create(const std::string &state_name, const DomainId &domain_id) {
     id_ = TaskStateId::GetNull();
     id_ = LABSTOR_ADMIN->CreateTaskState(domain_id,
-                                         state_name,
-                                         "small_message",
-                                         id_);
+                                      state_name,
+                                      "hermes_bpm",
+                                      id_);
     queue_id_ = QueueId(id_);
     LABSTOR_ADMIN->CreateQueue(domain_id, queue_id_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
                                bitfield32_t(0));
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    HILOG(kDebug, "Created small_message queue {}", queue->num_lanes_);
   }
 
-  /** Destroy state + queue */
+  /** Destroy task state + queue */
   HSHM_ALWAYS_INLINE
   void Destroy(const std::string &state_name, const DomainId &domain_id) {
     LABSTOR_ADMIN->DestroyTaskState(domain_id, id_);
     LABSTOR_ADMIN->DestroyQueue(domain_id, queue_id_);
   }
 
-  /** Custom task */
-  int Custom(const DomainId &domain_id) {
+  /** Create a queue with an ID */
+  HSHM_ALWAYS_INLINE
+  void Custom(const DomainId &domain_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     auto *task = queue->Allocate<CustomTask>(
         LABSTOR_CLIENT->main_alloc_, p,
         id_, domain_id);
-    queue->Emplace(3, p);
+    queue->Emplace(0, p);
     task->Wait();
-    int ret = task->ret_;
-    return ret;
   }
 };
 
 }  // namespace labstor
 
-#endif  // LABSTOR_small_message_H_
+#endif  // LABSTOR_hermes_bpm_H_

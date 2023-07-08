@@ -60,16 +60,16 @@ class RpcContext {
   void ServerInit(ServerConfig *config);
 
   /** get RPC address */
-  std::string GetRpcAddress(u32 node_id, int port);
+  std::string GetRpcAddress(const DomainId &domain_id, int port);
 
   /** Get RPC address for this node */
   std::string GetMyRpcAddress();
 
   /** get host name from node ID */
-  std::string GetHostNameFromNodeId(u32 node_id);
+  std::string GetHostNameFromNodeId(const DomainId &domain_id);
 
   /** get host name from node ID */
-  std::string GetIpAddressFromNodeId(u32 node_id);
+  std::string GetIpAddressFromNodeId(const DomainId &domain_id);
 
   /** Get RPC protocol */
   std::string GetProtocol();

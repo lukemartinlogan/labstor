@@ -83,4 +83,6 @@ class Client : public ConfigurationManager {
     LABSTOR_CLIENT->is_transparent_ = true;\
   }
 
+#define HASH_TO_NODE_ID(hash) (1 + ((hash) % LABSTOR_CLIENT->GetNumNodes()))
+
 #endif  // LABSTOR_INCLUDE_LABSTOR_CLIENT_LABSTOR_CLIENT_H_

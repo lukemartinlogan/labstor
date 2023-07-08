@@ -47,11 +47,11 @@ struct TaskMethod {
 /** A generic task base class */
 struct Task : public hipc::ShmContainer {
  SHM_CONTAINER_TEMPLATE((Task), (Task))
-  u32 key_;                 /**< Helps determine the lane task is keyed to */
-  TaskStateId task_state_;    /**< The unique name of a task state */
-  u32 method_;              /**< The method to call in the state */
+  u32 key_;                    /**< Helps determine the lane task is keyed to */
+  TaskStateId task_state_;     /**< The unique name of a task state */
+  u32 method_;                 /**< The method to call in the state */
   bitfield32_t task_flags_;    /**< Properties of the task  */
-  u32 node_id_;                /**< The node that the task should run on */
+  DomainId domain_id_;         /**< The node that the task should run on */
 
   /**====================================
    * Task Helpers
@@ -98,13 +98,13 @@ struct Task : public hipc::ShmContainer {
   HSHM_ALWAYS_INLINE explicit
   Task(hipc::Allocator *alloc, u32 key,
        TaskStateId task_state,
-       u32 method, u32 node_id,
+       u32 method, const DomainId &domain_id,
        bitfield32_t task_flags) {
     shm_init_container(alloc);
     key_ = key;
     task_state_ = task_state;
     method_ = method;
-    node_id_ = node_id;
+    domain_id_ = domain_id;
     task_flags_ = task_flags;
   }
 

@@ -24,13 +24,13 @@ struct ConstructTask : public Task {
   HSHM_ALWAYS_INLINE
   ConstructTask(hipc::Allocator *alloc,
                 const TaskStateId &state_id,
-                u32 node_id) : Task(alloc) {
+                const DomainId &domain_id) : Task(alloc) {
     // Initialize task
     key_ = 0;
     task_state_ = state_id;
     method_ = Method::kConstruct;
     task_flags_.SetBits(0);
-    node_id_ = node_id;
+    domain_id_ = domain_id;
 
     // Custom params
   }
@@ -41,13 +41,13 @@ struct DestructTask : public Task {
   HSHM_ALWAYS_INLINE
   DestructTask(hipc::Allocator *alloc,
                TaskStateId &state_id,
-               u32 node_id) : Task(alloc) {
+               const DomainId &domain_id) : Task(alloc) {
     // Initialize task
     key_ = 0;
     task_state_ = state_id;
     method_ = Method::kDestruct;
     task_flags_.SetBits(0);
-    node_id_ = node_id;
+    domain_id_ = domain_id;
   }
 };
 
@@ -58,13 +58,13 @@ struct CustomTask : public Task {
   HSHM_ALWAYS_INLINE
   CustomTask(hipc::Allocator *alloc,
              const TaskStateId &state_id,
-             u32 node_id) : Task(alloc) {
+             const DomainId &domain_id) : Task(alloc) {
     // Initialize task
     key_ = 0;
     task_state_ = state_id;
     method_ = Method::kCustom;
     task_flags_.SetBits(0);
-    node_id_ = node_id;
+    domain_id_ = domain_id;
 
     // Custom params
   }
@@ -85,14 +85,14 @@ class Client {
 
   /** Create a TASK_NAME */
   HSHM_ALWAYS_INLINE
-  void Create(const std::string &state_name, u32 node_id) {
+  void Create(const std::string &state_name, const DomainId &domain_id) {
     id_ = TaskStateId::GetNull();
-    id_ = LABSTOR_ADMIN->CreateTaskState(node_id,
+    id_ = LABSTOR_ADMIN->CreateTaskState(domain_id,
                                       state_name,
                                       "TASK_NAME",
                                       id_);
     queue_id_ = QueueId(id_);
-    LABSTOR_ADMIN->CreateQueue(node_id, queue_id_,
+    LABSTOR_ADMIN->CreateQueue(domain_id, queue_id_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
@@ -101,19 +101,19 @@ class Client {
 
   /** Destroy task state + queue */
   HSHM_ALWAYS_INLINE
-  void Destroy(const std::string &state_name, u32 node_id) {
-    LABSTOR_ADMIN->DestroyTaskState(node_id, id_);
-    LABSTOR_ADMIN->DestroyQueue(node_id, queue_id_);
+  void Destroy(const std::string &state_name, const DomainId &domain_id) {
+    LABSTOR_ADMIN->DestroyTaskState(domain_id, id_);
+    LABSTOR_ADMIN->DestroyQueue(domain_id, queue_id_);
   }
 
   /** Create a queue with an ID */
   HSHM_ALWAYS_INLINE
-  void Custom(u32 node_id) {
+  void Custom(const DomainId &domain_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     auto *task = queue->Allocate<CustomTask>(
         LABSTOR_CLIENT->main_alloc_, p,
-        id_, node_id);
+        id_, domain_id);
     queue->Emplace(0, p);
     task->Wait();
   }
