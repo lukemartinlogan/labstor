@@ -4,9 +4,9 @@
 
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/api/labstor_runtime.h"
-#include "hermes_bpm/hermes_bpm.h"
+#include "hermes_dpe/hermes_dpe.h"
 
-namespace hermes::bpm {
+namespace hermes::dpe {
 
 class Server : public TaskLib {
  public:
@@ -39,4 +39,4 @@ class Server : public TaskLib {
 
 }  // namespace labstor
 
-LABSTOR_TASK_CC(hermes::bpm::Server, "hermes_bpm");
+LABSTOR_TASK_CC(hermes::dpe::Server, "hermes_dpe");

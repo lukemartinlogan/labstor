@@ -2,16 +2,15 @@
 // Created by lukemartinlogan on 6/29/23.
 //
 
-#ifndef LABSTOR_hermes_bpm_H_
-#define LABSTOR_hermes_bpm_H_
+#ifndef LABSTOR_hermes_stats_H_
+#define LABSTOR_hermes_stats_H_
 
 #include "labstor/api/labstor_client.h"
 #include "labstor/task_registry/task_lib.h"
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/queue_manager/queue_manager_client.h"
-#include "hermes/hermes_types.h"
 
-namespace hermes::bpm {
+namespace labstor::hermes_stats {
 
 /** The set of methods in the admin task */
 struct Method : public TaskMethod {
@@ -19,7 +18,7 @@ struct Method : public TaskMethod {
 };
 
 /**
- * A task to create hermes_bpm
+ * A task to create hermes_stats
  * */
 struct ConstructTask : public Task {
   HSHM_ALWAYS_INLINE
@@ -37,7 +36,7 @@ struct ConstructTask : public Task {
   }
 };
 
-/** A task to destroy hermes_bpm */
+/** A task to destroy hermes_stats */
 struct DestructTask : public Task {
   HSHM_ALWAYS_INLINE
   DestructTask(hipc::Allocator *alloc,
@@ -53,7 +52,7 @@ struct DestructTask : public Task {
 };
 
 /**
- * A custom task in hermes_bpm
+ * A custom task in hermes_stats
  * */
 struct CustomTask : public Task {
   HSHM_ALWAYS_INLINE
@@ -84,13 +83,13 @@ class Client {
   /** Destructor */
   ~Client() = default;
 
-  /** Create a hermes_bpm */
+  /** Create a hermes_stats */
   HSHM_ALWAYS_INLINE
   void Create(const std::string &state_name, const DomainId &domain_id) {
     id_ = TaskStateId::GetNull();
     id_ = LABSTOR_ADMIN->CreateTaskState(domain_id,
                                       state_name,
-                                      "hermes_bpm",
+                                      "hermes_stats",
                                       id_);
     queue_id_ = QueueId(id_);
     LABSTOR_ADMIN->CreateQueue(domain_id, queue_id_,
@@ -122,4 +121,4 @@ class Client {
 
 }  // namespace labstor
 
-#endif  // LABSTOR_hermes_bpm_H_
+#endif  // LABSTOR_hermes_stats_H_

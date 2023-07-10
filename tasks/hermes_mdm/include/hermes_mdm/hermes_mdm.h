@@ -9,15 +9,9 @@
 #include "labstor/task_registry/task_lib.h"
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/queue_manager/queue_manager_client.h"
+#include "hermes/hermes_types.h"
 
-namespace labstor::hermes_mdm {
-
-typedef UniqueId<3> BlobId;
-typedef UniqueId<4> BucketId;
-typedef UniqueId<5> TagId;
-typedef TaskStateId TargetId;
-typedef TaskStateId TraitId;
-typedef hshm::charbuf Blob;
+namespace hermes::mdm {
 
 /** The set of methods in the admin task */
 struct Method : public TaskMethod {
@@ -294,16 +288,17 @@ struct TagClearBlobsTask : public Task {
 
 /** A task to put data in a blob */
 struct PutBlobTask : public Task {
-  BlobId blob_id_;
-  IN hipc::ShmArchive<hipc::string> data_;
-  OUT BlobId blob_id_;
+  IN hshm::charbuf blob_name_;
+  IN std::vector<BufferInfo> buffers_;
+  INOUT BlobId blob_id_;
 
   HSHM_ALWAYS_INLINE
   PutBlobTask(hipc::Allocator *alloc,
               const TaskStateId &state_id,
               const DomainId &domain_id,
               const BlobId &blob_id,
-              const hshm::charbuf &blob_name) : Task(alloc) {
+              const hshm::charbuf &blob_name,
+              const std::vector<BufferInfo> &buffers) : Task(alloc) {
     // Initialize task
     key_ = std::hash<BlobId>{}(blob_id);
     task_state_ = state_id;
@@ -313,11 +308,8 @@ struct PutBlobTask : public Task {
 
     // Custom params
     blob_id_ = blob_id;
-    HSHM_MAKE_AR(data_, LABSTOR_CLIENT->main_alloc_, data)
-  }
-
-  ~PutBlobTask() {
-    HSHM_DESTROY_AR(data_)
+    buffers_ = buffers;
+    blob_name_ = blob_name;
   }
 };
 

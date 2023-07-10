@@ -5,6 +5,7 @@ add_subdirectory(labstor_admin)
 add_subdirectory(worch_proc_round_robin)
 add_subdirectory(worch_queue_round_robin)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/hermes/include)
 add_subdirectory(hermes_bpm)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/hermes_bpm/include)
 add_subdirectory(hermes_mdm)

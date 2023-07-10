@@ -99,12 +99,21 @@ endif()
 #-----------------------------------------------------------------------------
 # Build Labstor Main Packages
 #-----------------------------------------------------------------------------
+# Main includes
 include_directories(${HermesShm_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/include)
+# Task includes
 include_directories(${CMAKE_SOURCE_DIR}/tasks)
 include_directories(${CMAKE_SOURCE_DIR}/tasks/labstor_admin/include)
 include_directories(${CMAKE_SOURCE_DIR}/tasks/small_message/include)
+include_directories(${CMAKE_SOURCE_DIR}/tasks/small_message/include)
+include_directories(${CMAKE_SOURCE_DIR}/tasks/hermes/include)
+include_directories(${CMAKE_SOURCE_DIR}/tasks/hermes_mdm/include)
+include_directories(${CMAKE_SOURCE_DIR}/tasks/hermes_bpm/include)
+include_directories(${CMAKE_SOURCE_DIR}/tasks/hermes_dpe/include)
+include_directories(${CMAKE_SOURCE_DIR}/tasks/hermes_stats/include)
+# Test includes
 include_directories(${CMAKE_SOURCE_DIR}/test/unit)
 
 set(TEST_MAIN ${CMAKE_SOURCE_DIR}/test/unit)

@@ -7,7 +7,7 @@
 #include "hermes_mdm/hermes_mdm.h"
 #include "hermes_bpm/hermes_bpm.h"
 
-namespace labstor::hermes_mdm {
+namespace hermes::mdm {
 
 /** Represents an allocated fraction of a target */
 struct BufferInfo {

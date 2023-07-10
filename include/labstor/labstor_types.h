@@ -25,15 +25,6 @@
 #include "hermes_shm/util/singleton.h"
 #include "hermes_shm/constants/macros.h"
 
-namespace labstor {
-
-using hshm::RwLock;
-using hshm::Mutex;
-using hshm::bitfield32_t;
-using hshm::ScopedRwReadLock;
-using hshm::ScopedRwWriteLock;
-typedef hshm::bitfield<uint64_t> bitfield64_t;
-
 typedef uint8_t u8;   /**< 8-bit unsigned integer */
 typedef uint16_t u16; /**< 16-bit unsigned integer */
 typedef uint32_t u32; /**< 32-bit unsigned integer */
@@ -44,6 +35,15 @@ typedef int32_t i32;  /**< 32-bit signed integer */
 typedef int64_t i64;  /**< 64-bit signed integer */
 typedef float f32;    /**< 32-bit float */
 typedef double f64;   /**< 64-bit float */
+
+namespace labstor {
+
+using hshm::RwLock;
+using hshm::Mutex;
+using hshm::bitfield32_t;
+using hshm::ScopedRwReadLock;
+using hshm::ScopedRwWriteLock;
+typedef hshm::bitfield<uint64_t> bitfield64_t;
 
 /** Determine the mode that LabStor is initialized for */
 enum class LabstorMode {
