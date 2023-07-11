@@ -15,7 +15,7 @@ namespace hermes::bpm {
 
 /** The set of methods in the admin task */
 struct Method : public TaskMethod {
-  TASK_METHOD_T kCustom = TaskMethod::kLast;
+  TASK_METHOD_T kPut = TaskMethod::kLast;
 };
 
 /**
@@ -33,7 +33,7 @@ struct ConstructTask : public Task {
     task_flags_.SetBits(0);
     domain_id_ = domain_id;
 
-    // Custom params
+    // Put params
   }
 };
 
@@ -55,19 +55,19 @@ struct DestructTask : public Task {
 /**
  * A custom task in hermes_bpm
  * */
-struct CustomTask : public Task {
+struct PutTask : public Task {
   HSHM_ALWAYS_INLINE
-  CustomTask(hipc::Allocator *alloc,
-             const TaskStateId &state_id,
-             const DomainId &domain_id) : Task(alloc) {
+  PutTask(hipc::Allocator *alloc,
+          const TaskStateId &state_id,
+          const DomainId &domain_id) : Task(alloc) {
     // Initialize task
     key_ = 0;
     task_state_ = state_id;
-    method_ = Method::kCustom;
+    method_ = Method::kPut;
     task_flags_.SetBits(0);
     domain_id_ = domain_id;
 
-    // Custom params
+    // Put params
   }
 };
 
@@ -89,9 +89,9 @@ class Client {
   void Create(const std::string &state_name, const DomainId &domain_id) {
     id_ = TaskStateId::GetNull();
     id_ = LABSTOR_ADMIN->CreateTaskState(domain_id,
-                                      state_name,
-                                      "hermes_bpm",
-                                      id_);
+                                         state_name,
+                                         "hermes_bpm",
+                                         id_);
     queue_id_ = QueueId(id_);
     LABSTOR_ADMIN->CreateQueue(domain_id, queue_id_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
@@ -109,10 +109,10 @@ class Client {
 
   /** Create a queue with an ID */
   HSHM_ALWAYS_INLINE
-  void Custom(const DomainId &domain_id) {
+  void Put(const DomainId &domain_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    auto *task = queue->Allocate<CustomTask>(
+    auto *task = queue->Allocate<PutTask>(
         LABSTOR_CLIENT->main_alloc_, p,
         id_, domain_id);
     queue->Emplace(0, p);

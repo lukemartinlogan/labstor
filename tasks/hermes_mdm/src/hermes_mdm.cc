@@ -4,6 +4,7 @@
 
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/api/labstor_runtime.h"
+#include "hermes/config_server.h"
 #include "hermes_mdm/hermes_mdm.h"
 #include "hermes_bpm/hermes_bpm.h"
 
@@ -171,6 +172,11 @@ typedef hipc::mpsc_queue<IoStat> IO_PATTERN_LOG_T;
 class Server : public TaskLib {
  public:
   /**====================================
+   * Configuration
+   * ===================================*/
+   ServerConfig server_config_;
+
+  /**====================================
    * Maps
    * ===================================*/
   BLOB_ID_MAP_T blob_id_map_;
@@ -189,7 +195,7 @@ class Server : public TaskLib {
   /**====================================
    * Targets + devices
    * ===================================*/
-  std::vector<hermes_bpm::Client> targets_;
+  std::vector<bpm::Client> targets_;
 
  public:
   void Run(MultiQueue *queue, u32 method, Task *task) override {
@@ -202,8 +208,8 @@ class Server : public TaskLib {
         Destruct(queue, reinterpret_cast<DestructTask *>(task));
         break;
       }
-      case Method::kCustom: {
-        Custom(queue, reinterpret_cast<CustomTask *>(task));
+      case Method::kGetOrCreateTag: {
+        GetOrCreateTag(queue, reinterpret_cast<GetOrCreateTagTask *>(task));
         break;
       }
     }
@@ -211,6 +217,18 @@ class Server : public TaskLib {
 
   void Construct(MultiQueue *queue, ConstructTask *task) {
     id_alloc_ = 0;
+    hipc::string &config_path = task->server_config_path_.get_ref();
+
+    // Load hermes config
+    if (config_path.size() == 0) {
+      config_path = GetEnvSafe(Constant::kHermesServerConf);
+    }
+    HILOG(kInfo, "Loading server configuration: {}", config_path.str())
+    server_config_.LoadFromFile(config_path);
+
+    // Parse targets
+
+    // Create targets
     task->SetComplete();
   }
 

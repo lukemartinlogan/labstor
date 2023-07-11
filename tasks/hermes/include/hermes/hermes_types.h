@@ -11,11 +11,13 @@
 
 namespace hermes {
 
+using labstor::TaskLib;
 using labstor::TaskMethod;
 using labstor::UniqueId;
 using labstor::TaskStateId;
 using labstor::DomainId;
 using labstor::Task;
+using hshm::bitfield32_t;
 
 /** Queue id */
 using labstor::QueueId;
@@ -40,6 +42,9 @@ typedef TaskStateId TraitId;
 
 /** Represents a blob  */
 typedef hshm::charbuf Blob;
+
+/** Represents a blob in shared memory */
+typedef hipc::uptr<hipc::charbuf> IpcBlob;
 
 /** Represents an allocated fraction of a target */
 struct BufferInfo {
@@ -92,20 +97,12 @@ struct BufferInfo {
   }
 };
 
-/** Hermes API call context */
-struct Context {
-  /** The blob's score */
-  float blob_score_;
-
-  Context() {}
-};
-
 /** Supported data placement policies */
 enum class PlacementPolicy {
   kRandom,         /**< Random blob placement */
   kRoundRobin,     /**< Round-Robin (around devices) blob placement */
   kMinimizeIoTime, /**< LP-based blob placement, minimize I/O time */
-  kNone,           /**< No DPE for cases we want it disabled */
+  kNone,           /**< No Dpe for cases we want it disabled */
 };
 
 /** A class to convert placement policy enum value to string */
@@ -143,6 +140,118 @@ class PlacementPolicyConv {
     }
     return PlacementPolicy::kNone;
   }
+};
+
+/** Hermes API call context */
+struct Context {
+  /** Data placement engine */
+  PlacementPolicy dpe_;
+
+  /** The blob's score */
+  float blob_score_;
+
+  Context() {}
+};
+
+/**
+ * Represents the fraction of a blob to place
+ * on a particular target during data placement
+ * */
+struct SubPlacement {
+  size_t size_;   /**< Size (bytes) */
+  TargetId tid_;  /**< Target destination of data */
+
+  SubPlacement() = default;
+
+  explicit SubPlacement(size_t size, TargetId tid)
+      : size_(size), tid_(tid) {}
+};
+
+/**
+ * The organization of a particular blob in the storage
+ * hierarchy during data placement.
+ */
+struct PlacementSchema {
+  std::vector<SubPlacement> plcmnts_;
+
+  void AddSubPlacement(size_t size, TargetId tid) {
+    plcmnts_.emplace_back(size, tid);
+  }
+
+  void Clear() {
+    plcmnts_.clear();
+  }
+};
+
+/** Represents the current status of a target */
+struct TargetInfo {
+  TargetId id_;         /**< unique Target ID */
+  size_t max_cap_;      /**< maximum capacity of the target */
+  size_t rem_cap_;      /**< remaining capacity of the target */
+  double bandwidth_;    /**< the bandwidth of the device */
+  double latency_;      /**< the latency of the device */
+  float score_;         /**< Relative importance of this tier */
+
+  /** Default constructor */
+  TargetInfo() = default;
+
+  /** Primary constructor */
+  TargetInfo(TargetId id, size_t max_cap, size_t rem_cap,
+             double bandwidth, double latency)
+      : id_(id), max_cap_(max_cap), rem_cap_(rem_cap),
+        bandwidth_(bandwidth), latency_(latency) {}
+};
+
+/** The types of topologies */
+enum class TopologyType {
+  Local,
+  Neighborhood,
+  Global,
+
+  kCount
+};
+
+/** The flushing mode */
+enum class FlushingMode {
+  kSync,
+  kAsync
+};
+
+/** Convert flushing modes to strings */
+class FlushingModeConv {
+ public:
+  static FlushingMode GetEnum(const std::string &str) {
+    if (str == "kSync") {
+      return FlushingMode::kSync;
+    }
+    if (str == "kAsync") {
+      return FlushingMode::kAsync;
+    }
+    return FlushingMode::kAsync;
+  }
+};
+
+/** A class with static constants */
+#define CONST_T inline const static
+class Constant {
+ public:
+  /** Hermes server environment variable */
+  CONST_T char* kHermesServerConf = "HERMES_CONF";
+
+  /** Hermes client environment variable */
+  CONST_T char* kHermesClientConf = "HERMES_CLIENT_CONF";
+
+  /** Hermes adapter mode environment variable */
+  CONST_T char* kHermesAdapterMode = "HERMES_ADAPTER_MODE";
+
+  /** Filesystem page size environment variable */
+  CONST_T char* kHermesPageSize = "HERMES_PAGE_SIZE";
+
+  /** Stop daemon environment variable */
+  CONST_T char* kHermesStopDaemon = "HERMES_STOP_DAEMON";
+
+  /** Maximum path length environment variable */
+  CONST_T size_t kMaxPathLength = 4096;
 };
 
 }  // namespace hermes

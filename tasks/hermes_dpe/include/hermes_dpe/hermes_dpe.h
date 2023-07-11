@@ -10,12 +10,14 @@
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/queue_manager/queue_manager_client.h"
 #include "hermes/hermes_types.h"
+#include "hermes_mdm/hermes_mdm.h"
+#include "hermes_bpm/hermes_bpm.h"
 
 namespace hermes::dpe {
 
 /** The set of methods in the admin task */
 struct Method : public TaskMethod {
-  TASK_METHOD_T kCustom = TaskMethod::kLast;
+  TASK_METHOD_T kPut = TaskMethod::kLast;
 };
 
 /**
@@ -55,19 +57,38 @@ struct DestructTask : public Task {
 /**
  * A custom task in hermes_dpe
  * */
-struct CustomTask : public Task {
+struct PutTask : public Task {
+  IN BlobId blob_id_;
+  IN hipc::ShmArchive<hipc::charbuf> blob_name_;
+  IN hipc::Pointer data_;
+  IN size_t data_size_;
+  IN Context ctx_;
+
   HSHM_ALWAYS_INLINE
-  CustomTask(hipc::Allocator *alloc,
-             const TaskStateId &state_id,
-             const DomainId &domain_id) : Task(alloc) {
+  PutTask(hipc::Allocator *alloc,
+           const TaskStateId &state_id,
+           const DomainId &domain_id,
+           const BlobId &blob_id,
+           const hshm::charbuf &blob_name,
+           const hipc::Pointer &data,
+           size_t data_size) : Task(alloc) {
     // Initialize task
     key_ = 0;
     task_state_ = state_id;
-    method_ = Method::kCustom;
+    method_ = Method::kPut;
     task_flags_.SetBits(0);
     domain_id_ = domain_id;
 
     // Custom params
+    blob_id_ = blob_id;
+    HSHM_MAKE_AR(blob_name_, LABSTOR_CLIENT->main_alloc_, blob_name);
+    data_ = data;
+    data_size_ = data_size;
+  }
+
+  HSHM_ALWAYS_INLINE
+  ~PutTask() {
+    HSHM_DESTROY_AR(blob_name_);
   }
 };
 
@@ -109,14 +130,62 @@ class Client {
 
   /** Create a queue with an ID */
   HSHM_ALWAYS_INLINE
-  void Custom(const DomainId &domain_id) {
+  BlobId Put(const BlobId &blob_id,
+             const hshm::charbuf &blob_name,
+             const hipc::Pointer &data,
+             size_t data_size) {
+    if (blob_id.IsNull()) {
+      return Put(blob_name, data, data_size);
+    } else {
+      return Put(blob_id, data, data_size);
+    }
+  }
+
+  /** Put data into an existing blob */
+  HSHM_ALWAYS_INLINE
+  BlobId Put(const BlobId &blob_id,
+             const hipc::Pointer &data,
+             size_t data_size) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    auto *task = queue->Allocate<CustomTask>(
-        LABSTOR_CLIENT->main_alloc_, p,
-        id_, domain_id);
-    queue->Emplace(0, p);
+    u32 hash = std::hash<u64>{}(blob_id.unique_);
+    auto *task = queue->Allocate<PutTask>(
+        LABSTOR_CLIENT->main_alloc_,
+        id_,
+        DomainId::GetNode(blob_id.node_id_),
+        blob_id,
+        "",
+        data,
+        data_size);
+    queue->Emplace(hash, p);
     task->Wait();
+    hshm::string tag_name = hshm::to_charbuf<hipc::string>(*task->tag_name_.get());
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    return blob_id;
+  }
+
+  /** Put data into a new or existing blob */
+  HSHM_ALWAYS_INLINE
+  BlobId Put(const hshm::charbuf &blob_name,
+             const hipc::Pointer &data,
+             size_t data_size) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    u32 hash = std::hash<hshm::charbuf>{}(blob_name);
+    auto *task = queue->Allocate<PutTask>(
+        LABSTOR_CLIENT->main_alloc_,
+        id_,
+        DomainId::GetNode(HASH_TO_NODE_ID(hash)),
+        BlobId::GetNull(),
+        "",
+        data,
+        data_size);
+    queue->Emplace(hash, p);
+    task->Wait();
+    hshm::string tag_name = hshm::to_charbuf<hipc::string>(*task->tag_name_.get());
+    BlobId blob_id = task->blob_id_;
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    return blob_id;
   }
 };
 

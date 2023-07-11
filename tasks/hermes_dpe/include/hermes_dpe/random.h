@@ -13,15 +13,16 @@
 #ifndef HERMES_SRC_DPE_RANDOM_H_
 #define HERMES_SRC_DPE_RANDOM_H_
 
-#include "data_placement_engine.h"
+#include "dpe.h"
 #include <cstdlib>
 #include <ctime>
 
 namespace hermes {
+
 /**
  A class to represent data placement engine that places data randomly.
 */
-class Random : public DPE {
+class Random : public Dpe {
  public:
   Random() {
     // TODO(llogan): make seed configurable
@@ -30,8 +31,42 @@ class Random : public DPE {
   ~Random() = default;
   Status Placement(const std::vector<size_t> &blob_sizes,
                    std::vector<TargetInfo> &targets,
-                   api::Context &ctx,
-                   std::vector<PlacementSchema> &output) override;
+                   Context &ctx,
+                   std::vector<PlacementSchema> &output) override {
+    for (size_t blob_size : blob_sizes) {
+      // Initialize blob's size, score, and schema
+      size_t rem_blob_size = blob_size;
+      output.emplace_back();
+      PlacementSchema &blob_schema = output.back();
+
+      // Choose RR target and iterate
+      size_t target_id = std::rand() % targets.size();
+      for (size_t i = 0; i < targets.size(); ++i) {
+        TargetInfo &target = targets[(target_id + i) % targets.size()];
+
+        // NOTE(llogan): We skip targets that can't fit the ENTIRE blob
+        if (target.rem_cap_ < blob_size) {
+          continue;
+        }
+        if (ctx.blob_score_ == -1) {
+          ctx.blob_score_ = target.score_;
+        }
+
+        // Place the blob on this target
+        blob_schema.plcmnts_.emplace_back(rem_blob_size,
+                                          target.id_);
+        target.rem_cap_ -= rem_blob_size;
+        rem_blob_size = 0;
+        break;
+      }
+
+      if (rem_blob_size > 0) {
+        return DPE_MIN_IO_TIME_NO_SOLUTION;
+      }
+    }
+
+    return Status();
+  }
 };
 
 }  // namespace hermes

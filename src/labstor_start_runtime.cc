@@ -11,6 +11,3 @@ int main(int argc, char **argv) {
   LABSTOR_RUNTIME->Finalize();
   return 0;
 }
-
-/** Runtime singleton */
-DEFINE_SINGLETON_CC(labstor::Runtime)

@@ -35,10 +35,13 @@ struct Method : public TaskMethod {
 
 /** A task to create hermes_mdm */
 struct ConstructTask : public Task {
+  hipc::ShmArchive<hipc::string> server_config_path_;
+
   HSHM_ALWAYS_INLINE
   ConstructTask(hipc::Allocator *alloc,
                 const TaskStateId &state_id,
-                const DomainId &domain_id) : Task(alloc) {
+                const DomainId &domain_id,
+                const std::string &server_config_path = "") : Task(alloc) {
     // Initialize task
     key_ = 0;
     task_state_ = state_id;
@@ -47,6 +50,12 @@ struct ConstructTask : public Task {
     domain_id_ = domain_id;
 
     // Custom params
+    HSHM_MAKE_AR(server_config_path_, alloc, server_config_path);
+  }
+
+  HSHM_ALWAYS_INLINE
+  ~ConstructTask() {
+    HSHM_DESTROY_AR(server_config_path_);
   }
 };
 

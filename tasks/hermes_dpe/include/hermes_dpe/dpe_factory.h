@@ -22,7 +22,7 @@ namespace hermes {
 /**
  A class to represent Data Placement Engine Factory
 */
-class DPEFactory {
+class DpeFactory {
  public:
   /**
    * return a pointer to data placement engine given a policy type.
@@ -32,7 +32,7 @@ class DPEFactory {
    *            data placement engine factory.
    * @return pointer to DataPlacementEngine given \a type PlacementPolicy.
    */
-  static DPE* Get(const PlacementPolicy &type) {
+  static Dpe* Get(const PlacementPolicy &type) {
     switch (type) {
       case PlacementPolicy::kRandom: {
         return hshm::EasySingleton<Random>::GetInstance();

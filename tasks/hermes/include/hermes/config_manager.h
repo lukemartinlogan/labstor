@@ -25,7 +25,7 @@ class ConfigurationManager {
   void ClientInit() {
     // Create connection to MDM
     mdm_.Create("hermes_mdm", DomainId::GetLocal());
-    // Create connection to DPE
+    // Create connection to Dpe
     dpe_.Create("hermes_dpe", DomainId::GetLocal());
   }
 

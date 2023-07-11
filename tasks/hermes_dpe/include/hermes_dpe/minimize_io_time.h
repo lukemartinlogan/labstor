@@ -13,20 +13,69 @@
 #ifndef HERMES_SRC_DPE_MINIMIZE_IO_TIME_H_
 #define HERMES_SRC_DPE_MINIMIZE_IO_TIME_H_
 
-#include "data_placement_engine.h"
+#include "dpe.h"
 
 namespace hermes {
 /**
  A class to represent data placement engine that minimizes I/O time.
 */
-class MinimizeIoTime : public DPE {
+class MinimizeIoTime : public Dpe {
  public:
   MinimizeIoTime() = default;
   ~MinimizeIoTime() = default;
   Status Placement(const std::vector<size_t> &blob_sizes,
                    std::vector<TargetInfo> &targets,
-                   api::Context &ctx,
-                   std::vector<PlacementSchema> &output);
+                   Context &ctx,
+                   std::vector<PlacementSchema> &output) {
+    for (size_t blob_size : blob_sizes) {
+      // Initialize blob's size, score, and schema
+      size_t rem_blob_size = blob_size;
+      float score = ctx.blob_score_;
+      if (ctx.blob_score_ == -1) {
+        score = 1;
+      }
+      output.emplace_back();
+      PlacementSchema &blob_schema = output.back();
+
+      for (TargetInfo &target : targets) {
+        // NOTE(llogan): We skip targets that are too high of priority or
+        // targets that can't fit the ENTIRE blob
+        if (target.score_ > score ||
+            target.rem_cap_ < blob_size) {
+          // TODO(llogan): add other considerations of this Dpe
+          continue;
+        }
+        if (ctx.blob_score_ == -1) {
+          ctx.blob_score_ = target.score_;
+        }
+
+        // NOTE(llogan): we assume the TargetInfo list is sorted
+        if (target.rem_cap_ >= rem_blob_size) {
+          blob_schema.plcmnts_.emplace_back(rem_blob_size,
+                                            target.id_);
+          target.rem_cap_ -= rem_blob_size;
+          rem_blob_size = 0;
+        } else {
+          // NOTE(llogan): this code technically never gets called,
+          // but it might in the future
+          blob_schema.plcmnts_.emplace_back(target.rem_cap_,
+                                            target.id_);
+          rem_blob_size -= target.rem_cap_;
+          target.rem_cap_ = 0;
+        }
+
+        if (rem_blob_size == 0) {
+          break;
+        }
+      }
+
+      if (rem_blob_size > 0) {
+        return DPE_MIN_IO_TIME_NO_SOLUTION;
+      }
+    }
+
+    return Status();
+  }
 };
 
 }  // namespace hermes

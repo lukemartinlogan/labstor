@@ -24,13 +24,13 @@ namespace hermes {
 /**
  A class to represent data placement engine
 */
-class DPE {
+class Dpe {
  public:
   /** Constructor. */
-  DPE();
+  Dpe();
 
   /** Destructor. */
-  virtual ~DPE() = default;
+  virtual ~Dpe() = default;
 
   /**
    * Calculate the placement of a set of blobs using a particular
@@ -38,16 +38,8 @@ class DPE {
    * */
   virtual Status Placement(const std::vector<size_t> &blob_sizes,
                            std::vector<TargetInfo> &targets,
-                           api::Context &ctx,
+                           Context &ctx,
                            std::vector<PlacementSchema> &output) = 0;
-
-  /**
-   * Calculate the total placement for all blobs and output a schema for
-   * each blob.
-   * */
-  Status CalculatePlacement(const std::vector<size_t> &blob_sizes,
-                            std::vector<PlacementSchema> &output,
-                            api::Context &api_context);
 };
 
 }  // namespace hermes

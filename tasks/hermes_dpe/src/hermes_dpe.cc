@@ -5,10 +5,14 @@
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/api/labstor_runtime.h"
 #include "hermes_dpe/hermes_dpe.h"
+#include "hermes_dpe/dpe_factory.h"
 
 namespace hermes::dpe {
 
 class Server : public TaskLib {
+ public:
+  mdm::Client *mdm_;
+
  public:
   void Run(MultiQueue *queue, u32 method, Task *task) override {
     switch (method) {
@@ -20,8 +24,8 @@ class Server : public TaskLib {
         Destruct(queue, reinterpret_cast<DestructTask *>(task));
         break;
       }
-      case Method::kCustom: {
-        Custom(queue, reinterpret_cast<CustomTask *>(task));
+      case Method::kPut: {
+        Put(queue, reinterpret_cast<PutTask *>(task));
         break;
       }
     }
@@ -33,7 +37,24 @@ class Server : public TaskLib {
   void Destruct(MultiQueue *queue, DestructTask *task) {
   }
 
-  void Custom(MultiQueue *queue, CustomTask *task) {
+  void Put(MultiQueue *queue, PutTask *task) {
+    AUTO_TRACE(1)
+    Status result;
+    std::vector<PlacementSchema> output;
+
+    // Get the capacity/bandwidth of targets
+    std::vector<TargetInfo> targets;
+    // targets = mdm_->LocalGetTargetInfo();
+    if (targets.size() == 0) {
+      task->SetComplete();
+      return;
+    }
+    // Calculate a placement schema
+    auto *dpe =  DpeFactory::Get(task->ctx_.dpe_);
+    dpe->Placement({task->data_size_}, targets, task->ctx_, output);
+
+    // Pass result to targets
+    hipc::mptr<char> data(task->data_);
   }
 };
 

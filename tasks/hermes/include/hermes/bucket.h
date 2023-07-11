@@ -7,13 +7,15 @@
 
 #include "hermes_types.h"
 #include "hermes_mdm/hermes_mdm.h"
+#include "hermes_dpe/hermes_dpe.h"
 #include "hermes/config_manager.h"
 
 namespace hermes {
 
 class Bucket {
  private:
-  TaskStateId mdm_;
+  mdm::Client *mdm_;
+  dpe::Client *dpe_;
   TagId id_;
   std::string name_;
   Context ctx_;
@@ -33,6 +35,8 @@ class Bucket {
   explicit Bucket(const std::string &bkt_name,
                   Context &ctx,
                   size_t backend_size = 0) {
+    mdm_ = &HERMES_CONF->mdm_;
+    dpe_ = &HERMES_CONF->dpe_;
   }
 
   /**
@@ -41,6 +45,8 @@ class Bucket {
   explicit Bucket(TagId tag_id) {
     id_ = tag_id;
     did_create_ = false;
+    mdm_ = &HERMES_CONF->mdm_;
+    dpe_ = &HERMES_CONF->dpe_;
   }
 
   /**
@@ -177,15 +183,11 @@ class Bucket {
   /**
    * Put \a blob_name Blob into the bucket
    * */
-  Status Put(std::string blob_name,
+  Status Put(const std::string &blob_name,
              const Blob &blob,
              BlobId &blob_id,
              Context &ctx) {
-    // Send message to DPE to put blob
-    // DPE queries buffer capacity from StatManager
-      // StatManager asynchronously polls targets for capacity
-    // DPE sends message to target to place data
-    // Target sends message to MDM to place buffers
+    dpe_->Put(blob_name, )
   }
 
   /**
