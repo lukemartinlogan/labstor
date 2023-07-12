@@ -10,6 +10,7 @@
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/queue_manager/queue_manager_client.h"
 #include "hermes/hermes_types.h"
+#include "hermes/config_server.h"
 
 namespace hermes::bpm {
 
@@ -22,10 +23,13 @@ struct Method : public TaskMethod {
  * A task to create hermes_bpm
  * */
 struct ConstructTask : public Task {
+  IN DeviceInfo *dev_info_;
+
   HSHM_ALWAYS_INLINE
   ConstructTask(hipc::Allocator *alloc,
                 const TaskStateId &state_id,
-                const DomainId &domain_id) : Task(alloc) {
+                const DomainId &domain_id,
+                DeviceInfo &dev_info) : Task(alloc) {
     // Initialize task
     key_ = 0;
     task_state_ = state_id;
@@ -34,6 +38,7 @@ struct ConstructTask : public Task {
     domain_id_ = domain_id;
 
     // Put params
+    dev_info_ = &dev_info;
   }
 };
 
@@ -86,12 +91,16 @@ class Client {
 
   /** Create a hermes_bpm */
   HSHM_ALWAYS_INLINE
-  void Create(const std::string &state_name, const DomainId &domain_id) {
+  void Create(const std::string &state_name,
+              const DomainId &domain_id,
+              DeviceInfo &dev_info) {
     id_ = TaskStateId::GetNull();
-    id_ = LABSTOR_ADMIN->CreateTaskState(domain_id,
-                                         state_name,
-                                         "hermes_bpm",
-                                         id_);
+    id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
+        domain_id,
+        state_name,
+        "hermes_bpm",
+        id_,
+        dev_info);
     queue_id_ = QueueId(id_);
     LABSTOR_ADMIN->CreateQueue(domain_id, queue_id_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,

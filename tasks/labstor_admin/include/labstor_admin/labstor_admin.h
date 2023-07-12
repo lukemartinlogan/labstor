@@ -288,11 +288,13 @@ class Client {
   }
 
   /** Spawn a task state */
+  template<typename CreateTaskStateT, typename ...Args>
   HSHM_ALWAYS_INLINE
   TaskStateId CreateTaskState(const DomainId &domain_id,
                               const std::string &state_name,
                               const std::string &lib_name,
-                              const TaskStateId &id = TaskStateId::GetNull()) {
+                              const TaskStateId &id,
+                              Args&& ...args) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(QueueManager::kAdminQueue);
     auto *task = queue->Allocate<CreateTaskStateTask>(LABSTOR_CLIENT->main_alloc_, p,

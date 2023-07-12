@@ -51,7 +51,8 @@ typedef const char* (*get_task_lib_name_t)(void);
 #define LABSTOR_TASK_CC(TRAIT_CLASS, TASK_NAME) \
     extern "C" {                              \
         void* create_state(labstor::Task *task) { \
-          labstor::TaskState *exec = new TYPE_UNWRAP(TRAIT_CLASS)(); \
+          labstor::TaskState *exec = reinterpret_cast<labstor::TaskState*>( \
+            new TYPE_UNWRAP(TRAIT_CLASS)()); \
           exec->Run(nullptr, labstor::TaskMethod::kConstruct, task); \
           return exec; \
         } \

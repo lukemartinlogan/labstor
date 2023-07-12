@@ -31,17 +31,15 @@ enum class IoInterface {
 /**
  * DeviceInfo shared-memory representation
  * */
-class DeviceInfo : public hipc::ShmContainer {
-  SHM_CONTAINER_TEMPLATE(DeviceInfo, DeviceInfo)
-
+struct DeviceInfo {
   /** The human-readable name of the device */
-  hipc::ShmArchive<hipc::string> dev_name_;
+  std::string dev_name_;
   /** The unit of each slab, a multiple of the Device's block size */
-  hipc::ShmArchive<hipc::vector<size_t>> slab_sizes_;
+  std::vector<size_t> slab_sizes_;
   /** The directory the device is mounted on */
-  hipc::ShmArchive<hipc::string> mount_dir_;
+  std::string mount_dir_;
   /** The file to create on the device */
-  hipc::ShmArchive<hipc::string> mount_point_;
+  std::string mount_point_;
   /** The I/O interface for the device */
   IoInterface io_api_;
   /** The minimum transfer size of each device */
@@ -56,128 +54,6 @@ class DeviceInfo : public hipc::ShmContainer {
   bool is_shared_;
   /** BORG's minimum and maximum capacity threshold for device */
   f32 borg_min_thresh_, borg_max_thresh_;
-
-  /**====================================
-   * Default Constructor
-   * ===================================*/
-
-  /** SHM Constructor. Default. */
-  explicit DeviceInfo(hipc::Allocator *alloc) {
-    shm_init_container(alloc);
-    HSHM_MAKE_AR0(dev_name_, alloc);
-    HSHM_MAKE_AR0(slab_sizes_, alloc);
-    HSHM_MAKE_AR0(mount_dir_, alloc);
-    HSHM_MAKE_AR0(mount_point_, alloc);
-  }
-
-  /**====================================
-   * Copy Constructors
-   * ===================================*/
-
-  /** SHM copy constructor. From DeviceInfo. */
-  explicit DeviceInfo(hipc::Allocator *alloc,
-                      const DeviceInfo &other) {
-    shm_init_container(alloc);
-    shm_strong_copy_constructor_main(alloc, other);
-  }
-
-  /** Internal copy */
-  void strong_copy(const DeviceInfo &other) {
-    io_api_ = other.io_api_;
-    block_size_ = other.block_size_;
-    capacity_ = other.capacity_;
-    bandwidth_ = other.bandwidth_;
-    latency_ = other.latency_;
-    is_shared_ = other.is_shared_;
-    borg_min_thresh_ = other.borg_min_thresh_;
-    borg_max_thresh_ = other.borg_max_thresh_;
-  }
-
-  /** Copy constructor main. */
-  void shm_strong_copy_constructor_main(hipc::Allocator *alloc,
-                                        const DeviceInfo &other) {
-    strong_copy(other);
-    HSHM_MAKE_AR(dev_name_, alloc, *other.dev_name_);
-    HSHM_MAKE_AR(slab_sizes_, alloc, *other.slab_sizes_);
-    HSHM_MAKE_AR(mount_dir_, alloc, *other.mount_dir_);
-    HSHM_MAKE_AR(mount_point_, alloc, *other.mount_point_);
-  }
-
-  /** SHM copy assignment operator. From DeviceInfo. */
-  DeviceInfo& operator=(const DeviceInfo &other) {
-    if (this != &other) {
-      shm_destroy();
-      shm_strong_copy_op_main(other);
-    }
-    return *this;
-  }
-
-  /** Copy assignment operator main. */
-  void shm_strong_copy_op_main(const DeviceInfo &other) {
-    strong_copy(other);
-    (*dev_name_) = (*other.dev_name_);
-    (*slab_sizes_) = (*other.slab_sizes_);
-    (*mount_dir_) = (*other.mount_dir_);
-    (*mount_point_) = (*other.mount_point_);
-  }
-
-  /**====================================
-   * Move Constructors
-   * ===================================*/
-
-  /** SHM move constructor. */
-  DeviceInfo(hipc::Allocator *alloc,
-             DeviceInfo &&other) {
-    shm_init_container(alloc);
-    if (GetAllocator() == other.GetAllocator()) {
-      strong_copy(other);
-      HSHM_MAKE_AR(dev_name_, alloc, std::move(*other.dev_name_));
-      HSHM_MAKE_AR(slab_sizes_, alloc, std::move(*other.slab_sizes_));
-      HSHM_MAKE_AR(mount_dir_, alloc, std::move(*other.mount_dir_));
-      HSHM_MAKE_AR(mount_point_, alloc, std::move(*other.mount_point_));
-      other.SetNull();
-    } else {
-      shm_strong_copy_constructor_main(alloc, other);
-      other.shm_destroy();
-    }
-  }
-
-  /** SHM move assignment operator. */
-  DeviceInfo& operator=(DeviceInfo &&other) noexcept {
-    if (this != &other) {
-      shm_destroy();
-      if (GetAllocator() == other.GetAllocator()) {
-        strong_copy(other);
-        (*dev_name_) = std::move(*other.dev_name_);
-        (*slab_sizes_) = std::move(*other.slab_sizes_);
-        (*mount_dir_) = std::move(*other.mount_dir_);
-        (*mount_point_) = std::move(*other.mount_point_);
-        other.SetNull();
-      } else {
-        shm_strong_copy_op_main(other);
-        other.shm_destroy();
-      }
-    }
-    return *this;
-  }
-
-  /**====================================
-   * Destructor
-   * ===================================*/
-
-  /** Whether DeviceInfo is NULL */
-  bool IsNull() { return false; }
-
-  /** Set DeviceInfo to NULL */
-  void SetNull() {}
-
-  /** Free shared memory */
-  void shm_destroy_main() {
-    (*dev_name_).shm_destroy();
-    (*slab_sizes_).shm_destroy();
-    (*mount_dir_).shm_destroy();
-    (*mount_point_).shm_destroy();
-  }
 };
 
 /**
@@ -203,7 +79,7 @@ struct RpcInfo {
  * */
 struct DpeInfo {
   /** The default blob placement policy. */
-  api::PlacementPolicy default_policy_;
+  PlacementPolicy default_policy_;
 
   /** Whether blob splitting is enabled for Round-Robin blob placement. */
   bool default_rr_split_;
@@ -266,7 +142,7 @@ struct MdmInfo {
 class ServerConfig : public BaseConfig {
  public:
   /** The device information */
-  hipc::uptr<hipc::vector<DeviceInfo>> devices_;
+  std::vector<DeviceInfo> devices_;
 
   /** The RPC information */
   RpcInfo rpc_;
@@ -301,26 +177,177 @@ class ServerConfig : public BaseConfig {
   std::string shmem_name_;
 
  public:
+  /** Default constructor */
   ServerConfig() = default;
-  void LoadDefault();
+
+  /** Load the default configuration */
+  void LoadDefault() {
+    LoadText(kServerDefaultConfigStr, false);
+  }
 
  private:
-  void ParseYAML(YAML::Node &yaml_conf);
-  void CheckConstraints();
-  void ParseRpcInfo(YAML::Node yaml_conf);
-  void ParseDeviceInfo(YAML::Node yaml_conf);
-  void ParseDpeInfo(YAML::Node yaml_conf);
-  void ParseBorgInfo(YAML::Node yaml_conf);
-  void ParsePrefetchInfo(YAML::Node yaml_conf);
-  void ParseTracingInfo(YAML::Node yaml_conf);
-  void ParseTraitInfo(YAML::Node yaml_conf);
-  void ParseMdmInfo(YAML::Node yaml_conf);
+  /** parse the YAML node */
+  void ParseYAML(YAML::Node &yaml_conf)  {
+    if (yaml_conf["devices"]) {
+      ParseDeviceInfo(yaml_conf["devices"]);
+    }
+    if (yaml_conf["dpe"]) {
+      ParseDpeInfo(yaml_conf["dpe"]);
+    }
+    if (yaml_conf["buffer_organizer"]) {
+      ParseBorgInfo(yaml_conf["buffer_organizer"]);
+    }
+    if (yaml_conf["tracing"]) {
+      ParseTracingInfo(yaml_conf["tracing"]);
+    }
+    if (yaml_conf["prefetch"]) {
+      ParsePrefetchInfo(yaml_conf["prefetch"]);
+    }
+    if (yaml_conf["mdm"]) {
+      ParseMdmInfo(yaml_conf["mdm"]);
+    }
+    if (yaml_conf["system_view_state_update_interval_ms"]) {
+      system_view_state_update_interval_ms =
+          yaml_conf["system_view_state_update_interval_ms"].as<int>();
+    }
+    if (yaml_conf["traits"]) {
+      ParseTraitInfo(yaml_conf["traits"]);
+    }
+    if (yaml_conf["shmem_name"]) {
+      shmem_name_ = yaml_conf["shmem_name"].as<std::string>();
+    }
+    if (yaml_conf["max_memory"]) {
+      max_memory_ = hshm::ConfigParse::ParseSize(
+          yaml_conf["max_memory"].as<std::string>());
+    }
+  }
+
+
+  /** parse device information from YAML config */
+  void ParseDeviceInfo(YAML::Node yaml_conf) {
+    for (auto device : yaml_conf) {
+      devices_.emplace_back();
+      DeviceInfo &dev = devices_.back();
+      auto dev_info = device.second;
+      dev.dev_name_ = device.first.as<std::string>();
+      dev.mount_dir_ = hshm::ConfigParse::ExpandPath(
+          dev_info["mount_point"].as<std::string>());
+      dev.borg_min_thresh_ =
+          dev_info["borg_capacity_thresh"][0].as<float>();
+      dev.borg_max_thresh_ =
+          dev_info["borg_capacity_thresh"][1].as<float>();
+      dev.is_shared_ =
+          dev_info["is_shared_device"].as<bool>();
+      dev.block_size_ =
+          hshm::ConfigParse::ParseSize(dev_info["block_size"].as<std::string>());
+      dev.capacity_ =
+          hshm::ConfigParse::ParseSize(dev_info["capacity"].as<std::string>());
+      dev.bandwidth_ =
+          hshm::ConfigParse::ParseSize(dev_info["bandwidth"].as<std::string>());
+      dev.latency_ =
+          hshm::ConfigParse::ParseLatency(dev_info["latency"].as<std::string>());
+      std::vector<std::string> size_vec;
+      ParseVector<std::string, std::vector<std::string>>(
+          dev_info["slab_sizes"], size_vec);
+      dev.slab_sizes_.reserve(size_vec.size());
+      for (const std::string &size_str : size_vec) {
+        dev.slab_sizes_.emplace_back(hshm::ConfigParse::ParseSize(size_str));
+      }
+    }
+  }
+
+  /** parse dpe information from YAML config */
+  void ParseDpeInfo(YAML::Node yaml_conf) {
+    if (yaml_conf["default_placement_policy"]) {
+      std::string policy =
+          yaml_conf["default_placement_policy"].as<std::string>();
+      dpe_.default_policy_ = PlacementPolicyConv::to_enum(policy);
+    }
+  }
+
+  /** parse buffer organizer information from YAML config */
+  void ParseBorgInfo(YAML::Node yaml_conf) {
+    if (yaml_conf["num_threads"]) {
+      borg_.num_threads_ = yaml_conf["num_threads"].as<int>();
+    }
+    if (yaml_conf["flush_period"]) {
+      borg_.flush_period_ = yaml_conf["flush_period"].as<size_t>();
+    }
+    if (yaml_conf["blob_reorg_period"]) {
+      borg_.blob_reorg_period_ = yaml_conf["blob_reorg_period"].as<size_t>();
+    }
+    if (yaml_conf["recency_min"]) {
+      borg_.recency_min_ = yaml_conf["recency_min"].as<float>();
+    }
+    if (yaml_conf["recency_max"]) {
+      borg_.recency_max_ = yaml_conf["recency_max"].as<float>();
+    }
+    if (yaml_conf["freq_max"]) {
+      borg_.freq_max_ = yaml_conf["freq_max"].as<float>();
+    }
+    if (yaml_conf["freq_min"]) {
+      borg_.freq_min_ = yaml_conf["freq_min"].as<float>();
+    }
+  }
+
+  /** parse I/O tracing information from YAML config */
+  void ParsePrefetchInfo(YAML::Node yaml_conf) {
+    if (yaml_conf["enabled"]) {
+      tracing_.enabled_ = yaml_conf["enabled"].as<bool>();
+    }
+    if (yaml_conf["output"]) {
+      tracing_.output_ = hshm::ConfigParse::ExpandPath(
+          yaml_conf["output"].as<std::string>());
+    }
+  }
+
+  /** parse prefetch information from YAML config */
+  void ParseTracingInfo(YAML::Node yaml_conf) {
+    if (yaml_conf["enabled"]) {
+      prefetcher_.enabled_ = yaml_conf["enabled"].as<bool>();
+    }
+    if (yaml_conf["io_trace_path"]) {
+      prefetcher_.trace_path_ = hshm::ConfigParse::ExpandPath(
+          yaml_conf["io_trace_path"].as<std::string>());
+    }
+    if (yaml_conf["epoch_ms"]) {
+      prefetcher_.epoch_ms_ = yaml_conf["epoch_ms"].as<size_t>();
+    }
+    if (yaml_conf["is_mpi"]) {
+      prefetcher_.is_mpi_ = yaml_conf["is_mpi"].as<bool>();
+    }
+    if (yaml_conf["apriori_schema_path"]) {
+      prefetcher_.apriori_schema_path_ =
+          yaml_conf["apriori_schema_path"].as<std::string>();
+    }
+  }
+
+  /** parse prefetch information from YAML config */
+  void ParseTraitInfo(YAML::Node yaml_conf) {
+    std::vector<std::string> trait_names;
+    ParseVector<std::string, std::vector<std::string>>(
+        yaml_conf, trait_names);
+    trait_paths_.reserve(trait_names.size());
+    for (auto &name : trait_names) {
+      name = hshm::ConfigParse::ExpandPath(name);
+      trait_paths_.emplace_back(
+          hshm::Formatter::format("lib{}.so", name));
+    }
+  }
+
+  /** parse prefetch information from YAML config */
+  void ParseMdmInfo(YAML::Node yaml_conf) {
+    mdm_.num_blobs_ = yaml_conf["est_blob_count"].as<size_t>();
+    mdm_.num_bkts_ = yaml_conf["est_blob_count"].as<size_t>();
+    mdm_.num_traits_ = yaml_conf["est_num_traits"].as<size_t>();
+  }
 };
 
 }  // namespace hermes::config
 
 namespace hermes {
 using config::ServerConfig;
+using config::DeviceInfo;
 }  // namespace hermes
 
 #endif  // HERMES_SRC_CONFIG_SERVER_H_

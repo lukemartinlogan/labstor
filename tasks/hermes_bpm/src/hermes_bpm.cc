@@ -20,8 +20,8 @@ class Server : public TaskLib {
         Destruct(queue, reinterpret_cast<DestructTask *>(task));
         break;
       }
-      case Method::kCustom: {
-        Custom(queue, reinterpret_cast<CustomTask *>(task));
+      case Method::kPut: {
+        Put(queue, reinterpret_cast<PutTask *>(task));
         break;
       }
     }
@@ -33,7 +33,7 @@ class Server : public TaskLib {
   void Destruct(MultiQueue *queue, DestructTask *task) {
   }
 
-  void Custom(MultiQueue *queue, CustomTask *task) {
+  void Put(MultiQueue *queue, PutTask *task) {
   }
 };
 
