@@ -6,7 +6,8 @@
 #include "labstor/api/labstor_runtime.h"
 #include "hermes/config_server.h"
 #include "hermes_mdm/hermes_mdm.h"
-#include "hermes_bpm/hermes_bpm.h"
+#include "hermes_bdev/hermes_bdev.h"
+#include "bdev/bdev.h"
 
 namespace hermes::mdm {
 
@@ -43,7 +44,7 @@ class Server : public TaskLib {
   /**====================================
    * Targets + devices
    * ===================================*/
-  std::vector<bpm::Client> targets_;
+  std::vector<bdev::Client> targets_;
 
  public:
   void Run(MultiQueue *queue, u32 method, Task *task) override {
@@ -72,12 +73,21 @@ class Server : public TaskLib {
       config_path = GetEnvSafe(Constant::kHermesServerConf);
     }
     HILOG(kInfo, "Loading server configuration: {}", config_path.str())
-    server_config_.LoadFromFile(config_path);
+    server_config_.LoadFromFile(config_path.str());
 
     // Parse targets
-    for (auto &dev : server_config_.devices_) {
-      bpm::Client client;
-      client.Create(dev);
+    for (DeviceInfo &dev : server_config_.devices_) {
+      bdev::Client client;
+      std::string dev_type;
+      if (dev.mount_point_.empty()) {
+        dev_type = "posix_bdev";
+      } else {
+        dev_type = "ram_bdev";
+      }
+      client.Create("hermes_" + dev.dev_name_,
+                    dev_type,
+                    DomainId::GetLocal(),
+                    dev);
       targets_.emplace_back(std::move(client));
     }
     targets_.emplace_back();

@@ -17,6 +17,8 @@ using labstor::UniqueId;
 using labstor::TaskStateId;
 using labstor::DomainId;
 using labstor::Task;
+using labstor::LocalTask;
+using labstor::IpcTask;
 using hshm::bitfield32_t;
 
 /** Queue id */

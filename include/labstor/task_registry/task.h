@@ -146,6 +146,12 @@ struct Task : public hipc::ShmContainer {
   HSHM_ALWAYS_INLINE void SetNull() {}
 };
 
+/** A task is NOT compatible with shared memory */
+typedef Task LocalTask;
+
+/** A task IS compatible with shared memory */
+typedef Task IpcTask;
+
 /** Decorator macros */
 #define IN
 #define OUT

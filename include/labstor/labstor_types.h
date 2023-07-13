@@ -16,6 +16,7 @@
 #include <hermes_shm/data_structures/ipc/ticket_queue.h>
 #include <hermes_shm/data_structures/containers/charbuf.h>
 #include <hermes_shm/data_structures/containers/spsc_queue.h>
+#include <hermes_shm/data_structures/containers/split_ticket_queue.h>
 #include <hermes_shm/data_structures/containers/converters.h>
 #include "hermes_shm/data_structures/serialization/shm_serialize.h"
 #include <hermes_shm/util/auto_trace.h>
@@ -173,7 +174,7 @@ struct UniqueId {
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE
-  UniqueId(u32 domain_id, u64 unique) : node_id_(node_id), unique_(unique) {}
+  UniqueId(u32 node_id, u64 unique) : node_id_(node_id), unique_(unique) {}
 
   /** Copy constructor */
   HSHM_ALWAYS_INLINE
@@ -266,7 +267,6 @@ using QueueId = UniqueId<2>;
 
 /** Allow unique ids to be printed as strings */
 template<int num>
-HSHM_ALWAYS_INLINE
 std::ostream &operator<<(std::ostream &os, UniqueId<num> const &obj) {
   return os << (std::to_string(obj.node_id_) + "."
       + std::to_string(obj.unique_));
@@ -280,8 +280,8 @@ struct hash<labstor::UniqueId<TYPE>> {
   HSHM_ALWAYS_INLINE
   std::size_t operator()(const labstor::UniqueId<TYPE> &key) const {
     return
-      std::hash<labstor::u64>{}(key.unique_) +
-        std::hash<labstor::u32>{}(key.node_id_);
+      std::hash<u64>{}(key.unique_) +
+        std::hash<u32>{}(key.node_id_);
   }
 };
 }  // namespace std

@@ -1,0 +1,25 @@
+#------------------------------------------------------------------------------
+# Build Small Message Task Library
+#------------------------------------------------------------------------------
+add_library(ram_bdev SHARED
+        ram_bdev.cc)
+add_dependencies(ram_bdev labstor_runtime)
+target_link_libraries(ram_bdev labstor_runtime)
+
+#------------------------------------------------------------------------------
+# Install Small Message Task Library
+#------------------------------------------------------------------------------
+install(
+        TARGETS
+        ram_bdev
+        LIBRARY DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
+        ARCHIVE DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
+        RUNTIME DESTINATION ${LABSTOR_INSTALL_BIN_DIR}
+)
+
+#------------------------------------------------------------------------------
+# Coverage
+#------------------------------------------------------------------------------
+if(LABSTOR_ENABLE_COVERAGE)
+    set_coverage_flags(ram_bdev)
+endif()

@@ -12,7 +12,7 @@
 
 namespace labstor::TASK_NAME {
 
-/** The set of methods in the admin task */
+/** The set of methods in the TASK_NAME task */
 struct Method : public TaskMethod {
   TASK_METHOD_T kCustom = TaskMethod::kLast;
 };
@@ -70,7 +70,7 @@ struct CustomTask : public Task {
   }
 };
 
-/** Create admin requests */
+/** Create TASK_NAME requests */
 class Client {
  public:
   TaskStateId id_;
@@ -87,10 +87,11 @@ class Client {
   HSHM_ALWAYS_INLINE
   void Create(const std::string &state_name, const DomainId &domain_id) {
     id_ = TaskStateId::GetNull();
-    id_ = LABSTOR_ADMIN->CreateTaskState(domain_id,
-                                      state_name,
-                                      "TASK_NAME",
-                                      id_);
+    id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
+        domain_id,
+        state_name,
+        "TASK_NAME",
+        id_);
     queue_id_ = QueueId(id_);
     LABSTOR_ADMIN->CreateQueue(domain_id, queue_id_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
@@ -106,7 +107,7 @@ class Client {
     LABSTOR_ADMIN->DestroyQueue(domain_id, queue_id_);
   }
 
-  /** Create a queue with an ID */
+  /** Call a custom method */
   HSHM_ALWAYS_INLINE
   void Custom(const DomainId &domain_id) {
     hipc::Pointer p;

@@ -13,7 +13,7 @@
 /** The performance of getting a queue */
 TEST_CASE("TestGetQueue") {
   labstor::QueueId qid(0, 3);
-  LABSTOR_ADMIN->CreateQueue(0, qid,
+  LABSTOR_ADMIN->CreateQueue(labstor::DomainId::GetLocal(), qid,
                              16, 16, 256,
                              hshm::bitfield32_t(0));
   LABSTOR_QM_CLIENT->GetQueue(qid);
@@ -209,8 +209,8 @@ TEST_CASE("TestZeromqAllocateEmplacePop") {
 /** Time to process a request */
 TEST_CASE("TestRoundTripLatency") {
   labstor::small_message::Client client;
-  LABSTOR_ADMIN->RegisterTaskLibrary(0, "small_message");
-  client.Create("ipc_test", 0);
+  LABSTOR_ADMIN->RegisterTaskLibrary(labstor::DomainId::GetLocal(), "small_message");
+  client.Create("ipc_test", labstor::DomainId::GetLocal());
   hshm::Timer t;
 
   int pid = getpid();
@@ -219,7 +219,7 @@ TEST_CASE("TestRoundTripLatency") {
   t.Resume();
   size_t ops = (1 << 20);
   for (size_t i = 0; i < ops; ++i) {
-    client.Custom(0);
+    client.Custom(labstor::DomainId::GetLocal());
   }
   t.Pause();
 
