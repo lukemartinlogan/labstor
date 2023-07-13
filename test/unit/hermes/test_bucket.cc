@@ -5,7 +5,16 @@
 #include "basic_test.h"
 #include "labstor/api/labstor_client.h"
 #include "labstor_admin/labstor_admin.h"
-#include "hermes/hermes.h"
+#include "hermes_mdm/hermes_mdm.h"
+#include "hermes/bucket.h"
 
-TEST_CASE("TestIpc") {
+
+TEST_CASE("TestHermes") {
+  // Initialize Hermes on all nodes
+  // TODO(llogan): re-make hermes singleton
+  HERMES->ClientInit();
+
+  // Create a bucket
+  hermes::Context ctx;
+  hermes::Bucket bkt("hello", ctx);
 }

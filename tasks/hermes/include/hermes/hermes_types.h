@@ -8,6 +8,7 @@
 #include "labstor/labstor_types.h"
 #include "labstor/api/labstor_client.h"
 #include "status.h"
+#include "statuses.h"
 
 namespace hermes {
 
@@ -187,7 +188,7 @@ class FlushingModeConv {
 class Constant {
  public:
   /** Hermes server environment variable */
-  CONST_T char* kHermesServerConf = "HERMES_CONF";
+  CONST_T char* kHermesServerConf = "HERMES";
 
   /** Hermes client environment variable */
   CONST_T char* kHermesClientConf = "HERMES_CLIENT_CONF";

@@ -7,5 +7,5 @@
 #include "labstor_admin/labstor_admin.h"
 
 TEST_CASE("TestFinalize") {
-  LABSTOR_ADMIN->StopRuntime(0);
+  LABSTOR_ADMIN->StopRuntime(labstor::DomainId::GetGlobal());
 }

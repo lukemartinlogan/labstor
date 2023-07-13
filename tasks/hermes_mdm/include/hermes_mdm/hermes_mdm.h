@@ -413,10 +413,11 @@ class Client {
   HSHM_ALWAYS_INLINE
   void Create(const std::string &state_name, const DomainId &domain_id) {
     id_ = TaskStateId::GetNull();
-    id_ = LABSTOR_ADMIN->CreateTaskState(domain_id,
-                                         state_name,
-                                         "hermes_mdm",
-                                         id_);
+    id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
+        domain_id,
+        state_name,
+        "hermes_mdm",
+        id_);
     queue_id_ = QueueId(id_);
     LABSTOR_ADMIN->CreateQueue(domain_id, queue_id_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
@@ -557,8 +558,8 @@ class Client {
     }
 
   /**====================================
-* Blob Operations
-* ===================================*/
+   * Blob Operations
+   * ===================================*/
 
     /** Put blob */
 

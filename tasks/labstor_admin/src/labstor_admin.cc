@@ -104,11 +104,11 @@ class Server : public TaskLib {
       return;
     }
     if (task->id_.IsNull()) {
-      task->id_ = LABSTOR_TASK_REGISTRY->CreateTaskStateId(task->node_id_);
+      task->id_ = LABSTOR_TASK_REGISTRY->CreateTaskStateId(task->domain_id_.id_);
     }
     LABSTOR_TASK_REGISTRY->CreateTaskState(lib_name.c_str(),
                                            state_name.c_str(),
-                                           task->node_id_,
+                                           task->domain_id_,
                                            task->id_,
                                            task);
     task->SetComplete();
@@ -141,7 +141,7 @@ class Server : public TaskLib {
     queue_sched_ = queue->Allocate<Task>(
         LABSTOR_CLIENT->main_alloc_, p,
         0, task->policy_id_,
-        SchedulerMethod::kSchedule, 0,
+        SchedulerMethod::kSchedule, DomainId::GetLocal(),
         bitfield32_t(TASK_LONG_RUNNING));
     queue->Emplace(0, p);
     task->SetComplete();
@@ -158,7 +158,7 @@ class Server : public TaskLib {
     proc_sched_ = queue->Allocate<Task>(
         LABSTOR_CLIENT->main_alloc_, p,
         0, task->policy_id_,
-        SchedulerMethod::kSchedule, 0,
+        SchedulerMethod::kSchedule, DomainId::GetLocal(),
         bitfield32_t(TASK_LONG_RUNNING));
     queue->Emplace(0, p);
     task->SetComplete();

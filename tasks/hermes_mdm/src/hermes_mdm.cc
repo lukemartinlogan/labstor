@@ -6,7 +6,6 @@
 #include "labstor/api/labstor_runtime.h"
 #include "hermes/config_server.h"
 #include "hermes_mdm/hermes_mdm.h"
-#include "hermes_bdev/hermes_bdev.h"
 #include "bdev/bdev.h"
 
 namespace hermes::mdm {

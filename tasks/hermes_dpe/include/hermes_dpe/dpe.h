@@ -15,7 +15,6 @@
 
 #include <map>
 
-#include "hermes/hermes.h"
 #include "hermes/hermes_types.h"
 #include "hermes_mdm/hermes_mdm.h"
 

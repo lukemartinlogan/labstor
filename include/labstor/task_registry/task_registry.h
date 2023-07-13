@@ -169,8 +169,8 @@ class TaskRegistry {
   }
 
   /** Get a TaskState ID */
-  TaskStateId CreateTaskStateId(const DomainId &domain_id) {
-    return TaskStateId(domain_id, unique_.fetch_add(1));
+  TaskStateId CreateTaskStateId(u32 node_id) {
+    return TaskStateId(node_id, unique_.fetch_add(1));
   }
 
   /** Create a task state */

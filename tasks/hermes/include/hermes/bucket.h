@@ -35,8 +35,8 @@ class Bucket {
   explicit Bucket(const std::string &bkt_name,
                   Context &ctx,
                   size_t backend_size = 0) {
-    mdm_ = &HERMES_CONF->mdm_;
-    dpe_ = &HERMES_CONF->dpe_;
+    mdm_ = &HERMES->mdm_;
+    dpe_ = &HERMES->dpe_;
   }
 
   /**
@@ -45,8 +45,8 @@ class Bucket {
   explicit Bucket(TagId tag_id) {
     id_ = tag_id;
     did_create_ = false;
-    mdm_ = &HERMES_CONF->mdm_;
-    dpe_ = &HERMES_CONF->dpe_;
+    mdm_ = &HERMES->mdm_;
+    dpe_ = &HERMES->dpe_;
   }
 
   /**
@@ -187,7 +187,6 @@ class Bucket {
              const Blob &blob,
              BlobId &blob_id,
              Context &ctx) {
-    dpe_->Put(blob_name, )
   }
 
   /**

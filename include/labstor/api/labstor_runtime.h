@@ -63,7 +63,7 @@ class Runtime : public ConfigurationManager {
     task_registry_.RegisterTaskLib("labstor_admin");
     task_registry_.CreateTaskState("labstor_admin",
                                    "labstor_admin",
-                                   rpc_.node_id_,
+                                   labstor::DomainId::GetNode(rpc_.node_id_),
                                    QueueManager::kAdminTaskState,
                                    nullptr);
 
@@ -72,7 +72,7 @@ class Runtime : public ConfigurationManager {
     task_registry_.RegisterTaskLib("worch_queue_round_robin");
     task_registry_.CreateTaskState("worch_queue_round_robin",
                                    "worch_queue_round_robin",
-                                   rpc_.node_id_,
+                                   labstor::DomainId::GetNode(rpc_.node_id_),
                                    queue_sched_id,
                                    nullptr);
 
@@ -81,13 +81,13 @@ class Runtime : public ConfigurationManager {
     task_registry_.RegisterTaskLib("worch_proc_round_robin");
     task_registry_.CreateTaskState("worch_proc_round_robin",
                                    "worch_proc_round_robin",
-                                   rpc_.node_id_,
+                                   labstor::DomainId::GetNode(rpc_.node_id_),
                                    proc_sched_id,
                                    nullptr);
 
     // Set the work orchestrator queue scheduler
-    LABSTOR_ADMIN->SetWorkOrchestratorQueuePolicy(0, queue_sched_id);
-    LABSTOR_ADMIN->SetWorkOrchestratorProcessPolicy(0, proc_sched_id);
+    LABSTOR_ADMIN->SetWorkOrchestratorQueuePolicy(labstor::DomainId::GetLocal(), queue_sched_id);
+    LABSTOR_ADMIN->SetWorkOrchestratorProcessPolicy(labstor::DomainId::GetLocal(), proc_sched_id);
   }
 
  public:

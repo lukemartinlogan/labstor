@@ -67,10 +67,11 @@ class Client {
   HSHM_ALWAYS_INLINE
   void Create(const std::string &state_name, const DomainId &domain_id) {
     id_ = TaskStateId::GetNull();
-    id_ = LABSTOR_ADMIN->CreateTaskState(domain_id,
-                                      state_name,
-                                      "worch_proc_round_robin",
-                                      id_);
+    id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
+        domain_id,
+        state_name,
+        "worch_proc_round_robin",
+        id_);
   }
 
   /** Destroy state */
