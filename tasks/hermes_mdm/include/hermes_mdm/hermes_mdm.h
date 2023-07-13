@@ -311,7 +311,9 @@ struct PutBlobTask : public Task {
   IN size_t blob_size_;
   IN std::vector<BufferInfo> buffers_;
   IN float score_;
+  IN bool replace_;
   INOUT BlobId blob_id_;
+  OUT bool did_create_;
 
   HSHM_ALWAYS_INLINE
   PutBlobTask(hipc::Allocator *alloc,
@@ -322,7 +324,8 @@ struct PutBlobTask : public Task {
               const BlobId &blob_id,
               size_t blob_size,
               const std::vector<BufferInfo> &buffers,
-              float score) : Task(alloc) {
+              float score,
+              bool replace) : Task(alloc) {
     // Initialize task
     key_ = blob_id.unique_;
     task_state_ = state_id;
@@ -337,6 +340,7 @@ struct PutBlobTask : public Task {
     blob_id_ = blob_id;
     blob_size_ = blob_size;
     score_ = score;
+    replace_ = replace;
   }
 };
 
@@ -782,12 +786,14 @@ class Client {
    * @param blob_size the amount of data placed
    * @param buffers the buffers corresponding to data
    * @param score the current score of the blob
-   * @param did_create whether the blob was created or not
+   * @param replace whether to replace the blob if it exists
+   * @param[OUT] did_create whether the blob was created or not
    * */
   void PutBlob(
       TagId tag_id, const hshm::charbuf &blob_name,
       BlobId &blob_id, size_t blob_size,
-      std::vector<BufferInfo> &buffers, float score, bool &did_create) {
+      std::vector<BufferInfo> &buffers, float score,
+      bool replace, bool &did_create) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     u32 hash = tag_id.unique_;
@@ -795,10 +801,11 @@ class Client {
         LABSTOR_CLIENT->main_alloc_, p,
         id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
         tag_id, blob_name, blob_id, blob_size,
-        buffers, score);
+        buffers, score, replace);
     queue->Emplace(hash, p);
     task->Wait();
     blob_id = task->blob_id_;
+    did_create = task->did_create_;
     queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
   
