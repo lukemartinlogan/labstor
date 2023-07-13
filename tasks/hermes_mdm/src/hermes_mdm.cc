@@ -99,6 +99,10 @@ class Server : public TaskLib {
     task->SetComplete();
   }
 
+  /**====================================
+   * Tag Operations
+   * ===================================*/
+
   /** Get or create a tag */
   void GetOrCreateTag(MultiQueue *queue, GetOrCreateTagTask *task) {
     TagId tag_id;
@@ -135,6 +139,236 @@ class Server : public TaskLib {
 
     task->tag_id_ = tag_id;
     // task->did_create_ = did_create;
+    task->SetComplete();
+  }
+
+  /** Get tag ID */
+  void GetTagId(MultiQueue *queue, GetTagIdTask *task) {
+    auto it = tag_id_map_.find(task->tag_name_->str());
+    if (it == tag_id_map_.end()) {
+      task->tag_id_ = TagId::GetNull();
+      task->SetComplete();
+      return;
+    }
+    task->tag_id_ = it->second;
+    task->SetComplete();
+  }
+
+  /** Get tag name */
+  void GetTagName(MultiQueue *queue, GetTagNameTask *task) {
+    auto it = tag_map_.find(task->tag_id_);
+    if (it == tag_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    (*task->tag_name_) = it->second.name_;
+    task->SetComplete();
+  }
+
+  /** Rename tag */
+  void RenameTag(MultiQueue *queue, RenameTagTask *task) {
+    auto it = tag_map_.find(task->tag_id_);
+    if (it == tag_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    (*task->tag_name_) = (*task->tag_name_);
+    task->SetComplete();
+  }
+
+  /** Destroy tag */
+  void DestroyTag(MultiQueue *queue, DestroyTagTask *task) {
+    auto it = tag_map_.find(task->tag_id_);
+    if (it == tag_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    tag_id_map_.erase(it->second.name_);
+    tag_map_.erase(it);
+    task->SetComplete();
+  }
+
+  /** Add a blob to a tag */
+  void TagAddBlob(MultiQueue *queue, TagAddBlobTask *task) {
+    auto it = tag_map_.find(task->tag_id_);
+    if (it == tag_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    TagInfo &tag = it->second;
+    return task->SetComplete();
+  }
+
+  /** Remove a blob from a tag */
+  void TagRemoveBlob(MultiQueue *queue, TagRemoveBlobTask *task) {
+    auto it = tag_map_.find(task->tag_id_);
+    if (it == tag_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    TagInfo &tag = it->second;
+    auto blob_it = std::find(tag.blobs_.begin(), tag.blobs_.end(), task->blob_id_);
+    tag.blobs_.erase(blob_it);
+    return task->SetComplete();
+  }
+
+  /** Clear blobs from a tag */
+  void TagClearBlobs(MultiQueue *queue, TagClearBlobsTask *task) {
+    auto it = tag_map_.find(task->tag_id_);
+    if (it == tag_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    TagInfo &tag = it->second;
+    tag.blobs_.clear();
+    return task->SetComplete();
+  }
+
+  /**====================================
+   * Blob Operations
+   * ===================================*/
+
+  /**
+   * Create a blob's metadata
+   * */
+  void PutBlob(MultiQueue *queue, PutBlobTask *task) {
+    // TODO(llogan)
+  }
+
+  /** Get a blob's data */
+  void GetBlob(MultiQueue *queue, GetBlobTask *task) {
+    // TODO(llogan)
+  }
+
+  /**
+   * Tag a blob
+   * */
+  void TagBlob(MultiQueue *queue, TagBlobTask *task) {
+    auto it = blob_map_.find(task->blob_id_);
+    if (it == blob_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    BlobInfo &blob = it->second;
+    blob.tags_.push_back(task->tag_);
+    return task->SetComplete();
+  }
+
+  /**
+   * Check if blob has a tag
+   * */
+  void BlobHasTag(MultiQueue *queue, BlobHasTagTask *task) {
+    auto it = blob_map_.find(task->blob_id_);
+    if (it == blob_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    BlobInfo &blob = it->second;
+    task->has_tag_ = std::find(blob.tags_.begin(),
+                               blob.tags_.end(),
+                               task->tag_) != blob.tags_.end();
+    return task->SetComplete();
+  }
+
+  /**
+   * Get \a blob_name BLOB from \a bkt_id bucket
+   * */
+  void GetBlobId(MultiQueue *queue, GetBlobIdTask *task) {
+    auto it = blob_id_map_.find(task->blob_name_->str());
+    if (it == blob_id_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    task->blob_id_ = it->second;
+    return task->SetComplete();
+  }
+
+  /**
+   * Get \a blob_name BLOB name from \a blob_id BLOB id
+   * */
+  void GetBlobName(MultiQueue *queue, GetBlobNameTask *task) {
+    auto it = blob_map_.find(task->blob_id_);
+    if (it == blob_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    BlobInfo &blob = it->second;
+    (*task->blob_name_) = blob.name_;
+    return task->SetComplete();
+  }
+
+  /**
+   * Get \a score from \a blob_id BLOB id
+   * */
+  void GetBlobScore(MultiQueue *queue, GetBlobScoreTask *task) {
+    auto it = blob_map_.find(task->blob_id_);
+    if (it == blob_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    BlobInfo &blob = it->second;
+    task->score_ = blob.score_;
+    return task->SetComplete();
+  }
+
+  /**
+   * Get \a blob_id blob's buffers
+   * */
+  void GetBlobBuffers(MultiQueue *queue, GetBlobBuffersTask *task) {
+    auto it = blob_map_.find(task->blob_id_);
+    if (it == blob_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    BlobInfo &blob = it->second;
+    (*task->buffers_) = blob.buffers_;
+    return task->SetComplete();
+  }
+
+  /**
+   * Rename \a blob_id blob to \a new_blob_name new blob name
+   * in \a bkt_id bucket.
+   * */
+  void RenameBlob(MultiQueue *queue, RenameBlobTask *task) {
+    auto it = blob_map_.find(task->blob_id_);
+    if (it == blob_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    BlobInfo &blob = it->second;
+    blob_id_map_.erase(blob.name_);
+    blob_id_map_[blob.name_] = task->blob_id_;
+    blob.name_ = task->new_blob_name_->str();
+    return task->SetComplete();
+  }
+
+  /**
+   * Truncate a blob to a new size
+   * */
+  void TruncateBlob(MultiQueue *queue, TruncateBlobTask *task) {
+    auto it = blob_map_.find(task->blob_id_);
+    if (it == blob_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    BlobInfo &blob = it->second;
+    // TODO(llogan): truncate blob
+    return task->SetComplete();
+  }
+
+  /**
+   * Destroy \a blob_id blob in \a bkt_id bucket
+   * */
+  void DestroyBlob(MultiQueue *queue, DestroyBlobTask *task) {
+    auto it = blob_map_.find(task->blob_id_);
+    if (it == blob_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    BlobInfo &blob = it->second;
+    blob_id_map_.erase(blob.name_);
+    blob_map_.erase(it);
+    return task->SetComplete();
   }
 };
 
