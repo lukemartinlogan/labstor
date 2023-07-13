@@ -306,17 +306,21 @@ struct TagClearBlobsTask : public Task {
 
 /** A task to put data in a blob */
 struct PutBlobTask : public Task {
+  IN TagId tag_id_;
   IN hshm::charbuf blob_name_;
   IN std::vector<BufferInfo> buffers_;
+  IN float score_;
   INOUT BlobId blob_id_;
 
   HSHM_ALWAYS_INLINE
   PutBlobTask(hipc::Allocator *alloc,
               const TaskStateId &state_id,
               const DomainId &domain_id,
-              const BlobId &blob_id,
+              const TagId &tag_id,
               const hshm::charbuf &blob_name,
-              const std::vector<BufferInfo> &buffers) : Task(alloc) {
+              const BlobId &blob_id,
+              const std::vector<BufferInfo> &buffers,
+              float score) : Task(alloc) {
     // Initialize task
     key_ = blob_id.unique_;
     task_state_ = state_id;
@@ -325,22 +329,28 @@ struct PutBlobTask : public Task {
     domain_id_ = domain_id;
 
     // Custom params
-    blob_id_ = blob_id;
+    tag_id_ = tag_id;
     buffers_ = buffers;
     blob_name_ = blob_name;
+    blob_id_ = blob_id;
+    score_ = score;
   }
 };
 
 /** A task to get data from a blob */
 struct GetBlobTask : public Task {
-  BlobId blob_id_;
+  IN BlobId blob_id_;
+  IN char* buffer_;
+  IN size_t size_;
   OUT hipc::ShmArchive<hipc::string> data_;
 
   HSHM_ALWAYS_INLINE
   GetBlobTask(hipc::Allocator *alloc,
               const TaskStateId &state_id,
               const DomainId &domain_id,
-              const BlobId &blob_id) : Task(alloc) {
+              const BlobId &blob_id,
+              char *buffer,
+              size_t size) : Task(alloc) {
     // Initialize task
     key_ = blob_id.unique_;
     task_state_ = state_id;
@@ -350,6 +360,8 @@ struct GetBlobTask : public Task {
 
     // Custom params
     blob_id_ = blob_id;
+    buffer_ = buffer;
+    size_ = size;
   }
 };
 
@@ -408,6 +420,7 @@ struct BlobHasTagTask : public Task {
  * Get \a blob_name BLOB from \a bkt_id bucket
  * */
 struct GetBlobIdTask : public Task {
+  IN TagId tag_id_;
   IN hipc::ShmArchive<hipc::charbuf> blob_name_;
   OUT BlobId blob_id_;
 
@@ -415,6 +428,7 @@ struct GetBlobIdTask : public Task {
   GetBlobIdTask(hipc::Allocator *alloc,
                 const TaskStateId &state_id,
                 const DomainId &domain_id,
+                const TagId &tag_id,
                 const hshm::charbuf &blob_name) : Task(alloc) {
     // Initialize task
     key_ = std::hash<hshm::charbuf>{}(blob_name);
@@ -424,6 +438,7 @@ struct GetBlobIdTask : public Task {
     domain_id_ = domain_id;
 
     // Custom
+    tag_id_ = tag_id;
     HSHM_MAKE_AR(blob_name_, LABSTOR_CLIENT->main_alloc_, blob_name)
   }
 
@@ -669,7 +684,7 @@ class Client {
   hshm::string GetTagName(const TagId &tag_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    u32 hash = std::hash<TagId>{}(tag_id);
+    u32 hash = tag_id.unique_;
     auto *task = queue->Allocate<GetTagNameTask>(
         LABSTOR_CLIENT->main_alloc_, p,
         id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
@@ -685,7 +700,7 @@ class Client {
   void RenameTag(const TagId &tag_id, const hshm::charbuf &new_tag_name) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    u32 hash = std::hash<TagId>{}(tag_id);
+    u32 hash = tag_id.unique_;
     auto *task = queue->Allocate<RenameTagTask>(
         LABSTOR_CLIENT->main_alloc_, p,
         id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
@@ -699,7 +714,7 @@ class Client {
   void DestroyTag(const TagId &tag_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    u32 hash = std::hash<TagId>{}(tag_id);
+    u32 hash = tag_id.unique_;
     auto *task = queue->Allocate<DestroyTagTask>(
         LABSTOR_CLIENT->main_alloc_, p,
         id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
@@ -713,7 +728,7 @@ class Client {
   void TagAddBlob(const TagId &tag_id, const BlobId &blob_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    u32 hash = std::hash<TagId>{}(tag_id);
+    u32 hash = tag_id.unique_;
     auto *task = queue->Allocate<TagAddBlobTask>(
         LABSTOR_CLIENT->main_alloc_, p,
         id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
@@ -727,7 +742,7 @@ class Client {
   void TagRemoveBlob(const TagId &tag_id, const BlobId &blob_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    u32 hash = std::hash<TagId>{}(tag_id);
+    u32 hash = tag_id.unique_;
     auto *task = queue->Allocate<TagRemoveBlobTask>(
         LABSTOR_CLIENT->main_alloc_, p,
         id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
@@ -741,7 +756,7 @@ class Client {
   void TagClearBlobs(const TagId &tag_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    u32 hash = std::hash<TagId>{}(tag_id);
+    u32 hash = tag_id.unique_;
     auto *task = queue->Allocate<TagClearBlobsTask>(
         LABSTOR_CLIENT->main_alloc_, p,
         id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
@@ -758,20 +773,43 @@ class Client {
   /**
    * Create a blob's metadata
    *
-   * @param bkt_id id of the bucket
+   * @param tag_id id of the bucket
    * @param blob_name semantic blob name
+   * @param[INOUT] blob_id the id of the blob
    * @param blob_size the amount of data placed
    * @param buffers the buffers corresponding to data
    * @param score the current score of the blob
    * @param did_create whether the blob was created or not
    * */
-  BlobId PutBlob(
-      TagId bkt_id, const std::string &blob_name, size_t blob_size,
+  void PutBlob(
+      TagId tag_id, const hshm::charbuf &blob_name,
+      BlobId &blob_id, size_t blob_size,
       std::vector<BufferInfo> &buffers, float score, bool &did_create) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    u32 hash = tag_id.unique_;
+    auto *task = queue->Allocate<PutBlobTask>(
+        LABSTOR_CLIENT->main_alloc_, p,
+        id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
+        tag_id, blob_name, blob_id, blob_size,
+        buffers, score);
+    queue->Emplace(hash, p);
+    task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
   
   /** Get a blob's data */
   void GetBlob(BlobId blob_id, char *buffer, size_t size) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    u32 hash = blob_id.unique_;
+    auto *task = queue->Allocate<GetBlobTask>(
+        LABSTOR_CLIENT->main_alloc_, p,
+        id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
+        blob_id, buffer, size);
+    queue->Emplace(hash, p);
+    task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
 
   /**
@@ -781,57 +819,145 @@ class Client {
    * @param tag_name tag name
    * */
   Status TagBlob(BlobId blob_id, TagId tag_id) {
-
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    u32 hash = blob_id.unique_;
+    auto *task = queue->Allocate<TagBlobTask>(
+        LABSTOR_CLIENT->main_alloc_, p,
+        id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
+        blob_id, tag_id);
+    queue->Emplace(hash, p);
+    task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
 
   /**
    * Check if blob has a tag
    * */
   bool BlobHasTag(BlobId blob_id, TagId tag_id) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    u32 hash = blob_id.unique_;
+    auto *task = queue->Allocate<BlobHasTagTask>(
+        LABSTOR_CLIENT->main_alloc_, p,
+        id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
+        blob_id, tag_id);
+    queue->Emplace(hash, p);
+    task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
 
   /**
    * Get \a blob_name BLOB from \a bkt_id bucket
    * */
-  BlobId GetBlobId(TagId bkt_id, const std::string &blob_name) {
+  BlobId GetBlobId(TagId tag_id, const hshm::charbuf &blob_name) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    u32 hash = std::hash<hshm::charbuf>{}(blob_name);
+    auto *task = queue->Allocate<GetBlobIdTask>(
+        LABSTOR_CLIENT->main_alloc_, p,
+        id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
+        tag_id, blob_name);
+    queue->Emplace(hash, p);
+    task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
 
   /**
    * Get \a blob_name BLOB name from \a blob_id BLOB id
    * */
   std::string GetBlobName(BlobId blob_id) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    u32 hash = blob_id.unique_;
+    auto *task = queue->Allocate<GetBlobNameTask>(
+        LABSTOR_CLIENT->main_alloc_, p,
+        id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
+        blob_id);
+    queue->Emplace(hash, p);
+    task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
 
   /**
    * Get \a score from \a blob_id BLOB id
    * */
   float GetBlobScore(BlobId blob_id) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    u32 hash = blob_id.unique_;
+    auto *task = queue->Allocate<GetBlobScoreTask>(
+        LABSTOR_CLIENT->main_alloc_, p,
+        id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
+        blob_id);
+    queue->Emplace(hash, p);
+    task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
 
   /**
    * Get \a blob_id blob's buffers
    * */
   std::vector<BufferInfo> GetBlobBuffers(BlobId blob_id) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    u32 hash = blob_id.unique_;
+    auto *task = queue->Allocate<GetBlobBuffersTask>(
+        LABSTOR_CLIENT->main_alloc_, p,
+        id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
+        blob_id);
+    queue->Emplace(hash, p);
+    task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
 
   /**
    * Rename \a blob_id blob to \a new_blob_name new blob name
    * in \a bkt_id bucket.
    * */
-  bool RenameBlob(TagId bkt_id, BlobId blob_id,
-                       const std::string &new_blob_name) {
+  bool RenameBlob(BlobId blob_id, const hshm::charbuf &new_blob_name) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    u32 hash = blob_id.unique_;
+    auto *task = queue->Allocate<RenameBlobTask>(
+        LABSTOR_CLIENT->main_alloc_, p,
+        id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
+        blob_id, new_blob_name);
+    queue->Emplace(hash, p);
+    task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
 
   /**
    * Truncate a blob to a new size
    * */
   void TruncateBlob(BlobId blob_id, size_t new_size) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    u32 hash = blob_id.unique_;
+    auto *task = queue->Allocate<TruncateBlobTask>(
+        LABSTOR_CLIENT->main_alloc_, p,
+        id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
+        blob_id, new_size);
+    queue->Emplace(hash, p);
+    task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
 
   /**
    * Destroy \a blob_id blob in \a bkt_id bucket
    * */
-  bool DestroyBlob(TagId bkt_id, BlobId blob_id) {
+  bool DestroyBlob(BlobId blob_id) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    u32 hash = blob_id.unique_;
+    auto *task = queue->Allocate<DestroyBlobTask>(
+        LABSTOR_CLIENT->main_alloc_, p,
+        id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
+        blob_id);
+    queue->Emplace(hash, p);
+    task->Wait();
+    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
 };
 
