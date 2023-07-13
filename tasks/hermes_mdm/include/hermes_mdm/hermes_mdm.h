@@ -798,6 +798,7 @@ class Client {
         buffers, score);
     queue->Emplace(hash, p);
     task->Wait();
+    blob_id = task->blob_id_;
     queue->Free(LABSTOR_CLIENT->main_alloc_, p);
   }
   
@@ -821,7 +822,7 @@ class Client {
    * @param blob_id id of the blob being tagged
    * @param tag_name tag name
    * */
-  Status TagBlob(BlobId blob_id, TagId tag_id) {
+  void TagBlob(BlobId blob_id, TagId tag_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
@@ -847,7 +848,9 @@ class Client {
         blob_id, tag_id);
     queue->Emplace(hash, p);
     task->Wait();
+    bool has_tag = task->has_tag_;
     queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    return has_tag;
   }
 
   /**
@@ -863,7 +866,9 @@ class Client {
         tag_id, blob_name);
     queue->Emplace(hash, p);
     task->Wait();
+    BlobId blob_id = task->blob_id_;
     queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    return blob_id;
   }
 
   /**
@@ -879,7 +884,9 @@ class Client {
         blob_id);
     queue->Emplace(hash, p);
     task->Wait();
+    std::string blob_name = task->blob_name_->str();
     queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    return blob_name;
   }
 
   /**
@@ -895,7 +902,9 @@ class Client {
         blob_id);
     queue->Emplace(hash, p);
     task->Wait();
+    float score = task->score_;
     queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    return score;
   }
 
   /**
@@ -911,14 +920,17 @@ class Client {
         blob_id);
     queue->Emplace(hash, p);
     task->Wait();
+    std::vector<BufferInfo> buffers =
+        hshm::to_stl_vector<BufferInfo>(*task->buffers_);
     queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    return buffers;
   }
 
   /**
    * Rename \a blob_id blob to \a new_blob_name new blob name
    * in \a bkt_id bucket.
    * */
-  bool RenameBlob(BlobId blob_id, const hshm::charbuf &new_blob_name) {
+  void RenameBlob(BlobId blob_id, const hshm::charbuf &new_blob_name) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
@@ -950,7 +962,7 @@ class Client {
   /**
    * Destroy \a blob_id blob in \a bkt_id bucket
    * */
-  bool DestroyBlob(BlobId blob_id) {
+  void DestroyBlob(BlobId blob_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
