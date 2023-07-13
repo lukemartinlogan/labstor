@@ -308,6 +308,7 @@ struct TagClearBlobsTask : public Task {
 struct PutBlobTask : public Task {
   IN TagId tag_id_;
   IN hshm::charbuf blob_name_;
+  IN size_t blob_size_;
   IN std::vector<BufferInfo> buffers_;
   IN float score_;
   INOUT BlobId blob_id_;
@@ -319,6 +320,7 @@ struct PutBlobTask : public Task {
               const TagId &tag_id,
               const hshm::charbuf &blob_name,
               const BlobId &blob_id,
+              size_t blob_size,
               const std::vector<BufferInfo> &buffers,
               float score) : Task(alloc) {
     // Initialize task
@@ -333,6 +335,7 @@ struct PutBlobTask : public Task {
     buffers_ = buffers;
     blob_name_ = blob_name;
     blob_id_ = blob_id;
+    blob_size_ = blob_size;
     score_ = score;
   }
 };
