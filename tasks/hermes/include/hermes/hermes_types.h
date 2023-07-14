@@ -259,8 +259,9 @@ struct BufferInfo {
 
 /** Data structure used to store Blob information */
 struct BlobInfo {
-  BlobId id_;  /**< Unique ID of the blob */
-  std::string name_;  /**< Name of the blob */
+  TagId tag_id_;    /**< Tag the blob is on */
+  BlobId blob_id_;  /**< Unique ID of the blob */
+  hshm::charbuf name_;  /**< Name of the blob */
   std::vector<BufferInfo> buffers_;  /**< Set of buffers */
   std::vector<TagId> tags_;  /**< Set of tags */
   size_t blob_size_;  /**< The overall size of the blob */
@@ -269,12 +270,41 @@ struct BlobInfo {
   u64 last_access_;  /**< Last time blob accessed */
   std::atomic<size_t> mod_count_;   /**< The number of times blob modified */
   std::atomic<size_t> last_flush_;  /**< The last mod that was flushed */
+
+  BlobInfo() = default;
+
+  BlobInfo(const BlobInfo &other) {
+    blob_id_ = other.blob_id_;
+    tag_id_ = other.tag_id_;
+    blob_size_ = other.blob_size_;
+    score_ = other.score_;
+    mod_count_ = other.mod_count_.load();
+    last_flush_ = other.last_flush_.load();
+  }
+
+  void UpdateWriteStats() {
+    mod_count_.fetch_add(1);
+    UpdateReadStats();
+  }
+
+  void UpdateReadStats() {
+    last_access_ = GetTimeFromStartNs();
+    access_freq_.fetch_add(1);
+  }
+
+  static u64 GetTimeFromStartNs() {
+    struct timespec currentTime;
+    clock_gettime(CLOCK_MONOTONIC, &currentTime);
+    unsigned long long nanoseconds =
+        currentTime.tv_sec * 1000000000ULL + currentTime.tv_nsec;
+    return nanoseconds;
+  }
 };
 
 /** Data structure used to store Bucket information */
 struct TagInfo {
   TagId tag_id_;
-  std::string name_;
+  hshm::charbuf name_;
   std::list<BlobId> blobs_;
   std::list<Task*> traits_;
   size_t internal_size_;

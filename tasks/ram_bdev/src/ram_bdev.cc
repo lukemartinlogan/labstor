@@ -52,21 +52,23 @@ class Server : public TaskLib {
     task->SetComplete();
   }
 
-  void Write(MultiQueue *queue, WriteTask *task) {
+  void Alloc(MultiQueue *queue, AllocTask *task) {
     alloc_.Allocate(task->size_, task->buffers_, task->alloc_size_);
-    for (BufferInfo &buf : task->buffers_) {
-      memcpy(mem_ptr_ + buf.t_off_, task->buf_ + task->off_, task->size_);
-    }
-    task->SetComplete();
-  }
-
-  void Read(MultiQueue *queue, ReadTask *task) {
-    memcpy(task->buf_, mem_ptr_ + task->disk_off_, task->size_);
     task->SetComplete();
   }
 
   void Free(MultiQueue *queue, FreeTask *task) {
     alloc_.Free(*task->buffers_);
+    task->SetComplete();
+  }
+
+  void Write(MultiQueue *queue, WriteTask *task) {
+    memcpy(mem_ptr_ + task->disk_off_, task->buf_, task->size_);
+    task->SetComplete();
+  }
+
+  void Read(MultiQueue *queue, ReadTask *task) {
+    memcpy(task->buf_, mem_ptr_ + task->disk_off_, task->size_);
     task->SetComplete();
   }
 };

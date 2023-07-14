@@ -64,6 +64,31 @@ struct DestructTask : public LocalTask {
 /**
  * A custom task in bdev
  * */
+struct AllocTask : public LocalTask {
+  IN size_t size_;  /**< Size in buf */
+  OUT std::vector<BufferInfo> buffers_;
+  OUT size_t alloc_size_;
+
+  HSHM_ALWAYS_INLINE
+  AllocTask(hipc::Allocator *alloc,
+            const TaskStateId &state_id,
+            const DomainId &domain_id,
+            size_t size) : Task(alloc) {
+    // Initialize task
+    key_ = 0;
+    task_state_ = state_id;
+    method_ = Method::kAlloc;
+    task_flags_.SetBits(0);
+    domain_id_ = domain_id;
+
+    // Free params
+    size_ = size;
+  }
+};
+
+/**
+ * A custom task in bdev
+ * */
 struct FreeTask : public LocalTask {
   IN const std::vector<BufferInfo> *buffers_;
 
@@ -89,17 +114,15 @@ struct FreeTask : public LocalTask {
  * */
 struct WriteTask : public LocalTask {
   IN const char *buf_;    /**< Data in memory */
-  IN size_t off_;   /**< Offset in buf */
+  IN size_t disk_off_;   /**< Offset on disk */
   IN size_t size_;  /**< Size in buf */
-  OUT std::vector<BufferInfo> buffers_;
-  OUT size_t alloc_size_;
 
   HSHM_ALWAYS_INLINE
   WriteTask(hipc::Allocator *alloc,
            const TaskStateId &state_id,
            const DomainId &domain_id,
            const char *buf,
-           size_t off,
+           size_t disk_off,
            size_t size) : Task(alloc) {
     // Initialize task
     key_ = 0;
@@ -110,7 +133,7 @@ struct WriteTask : public LocalTask {
 
     // Free params
     buf_ = buf;
-    off_ = off;
+    disk_off_ = disk_off;
     size_ = size;
   }
 };
@@ -181,6 +204,20 @@ class Client {
     LABSTOR_ADMIN->DestroyQueue(domain_id, queue_id_);
   }
 
+  /** Allocate buffers from the bdev */
+  HSHM_ALWAYS_INLINE
+  void Allocate(const DomainId &domain_id,
+                size_t size, std::vector<BufferInfo> &buffers,
+                size_t &total_size) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    auto *task = queue->Allocate<AllocTask>(
+        LABSTOR_CLIENT->main_alloc_, p,
+        id_, domain_id, size);
+    queue->Emplace(0, p);
+    task->Wait();
+  }
+
   /** Free data */
   HSHM_ALWAYS_INLINE
   void Free(const DomainId &domain_id,
@@ -197,9 +234,7 @@ class Client {
   /** Allocate buffers from the bdev */
   HSHM_ALWAYS_INLINE
   void Write(const DomainId &domain_id,
-             const char *data, size_t off, size_t size,
-             std::vector<BufferInfo> &buffers,
-             size_t &total_size) {
+             const char *data, size_t off, size_t size) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     auto *task = queue->Allocate<WriteTask>(

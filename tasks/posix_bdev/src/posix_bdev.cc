@@ -65,14 +65,21 @@ class Server : public TaskLib {
     free(mem_ptr_);
   }
 
-  void Write(MultiQueue *queue, WriteTask *task) {
+  void Alloc(MultiQueue *queue, AllocTask *task) {
     alloc_.Allocate(task->size_, task->buffers_, task->alloc_size_);
-    for (BufferInfo &buf : task->buffers_) {
-      size_t count = pwrite(fd_, task->buf_, task->size_, (off_t)buf.t_off_);
-      if (count != task->size_) {
-        HELOG(kError, "BORG: wrote {} bytes, but expected {}",
-              count, task->size_);
-      }
+    task->SetComplete();
+  }
+
+  void Free(MultiQueue *queue, FreeTask *task) {
+    alloc_.Free(*task->buffers_);
+    task->SetComplete();
+  }
+
+  void Write(MultiQueue *queue, WriteTask *task) {
+    size_t count = pwrite(fd_, task->buf_, task->size_, (off_t)task->disk_off_);
+    if (count != task->size_) {
+      HELOG(kError, "BORG: wrote {} bytes, but expected {}",
+            count, task->size_);
     }
     task->SetComplete();
   }
@@ -85,10 +92,6 @@ class Server : public TaskLib {
             count, task->size_);
     }
     task->SetComplete();
-  }
-
-  void Free(MultiQueue *queue, FreeTask *task) {
-    alloc_.Free(*task->buffers_);
   }
 };
 

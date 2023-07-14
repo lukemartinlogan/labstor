@@ -18,6 +18,7 @@ namespace hermes::posix_bdev {
 using bdev::Method;
 using bdev::ConstructTask;
 using bdev::DestructTask;
+using bdev::AllocTask;
 using bdev::FreeTask;
 using bdev::ReadTask;
 using bdev::WriteTask;

@@ -10,7 +10,6 @@
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/queue_manager/queue_manager_client.h"
 #include "hermes/hermes_types.h"
-#include "hermes_mdm/hermes_mdm.h"
 
 namespace hermes::dpe {
 

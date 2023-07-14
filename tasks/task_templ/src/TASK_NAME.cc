@@ -10,6 +10,8 @@ namespace labstor::TASK_NAME {
 
 class Server : public TaskLib {
  public:
+  Server() = default;
+
   void Run(MultiQueue *queue, u32 method, Task *task) override {
     switch (method) {
       case Method::kConstruct: {

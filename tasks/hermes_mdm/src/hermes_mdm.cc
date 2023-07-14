@@ -6,13 +6,14 @@
 #include "labstor/api/labstor_runtime.h"
 #include "hermes/config_server.h"
 #include "hermes_mdm/hermes_mdm.h"
+#include "hermes_dpe/hermes_dpe.h"
 #include "bdev/bdev.h"
 
 namespace hermes::mdm {
 
 /** Type name simplification for the various map types */
-typedef std::unordered_map<std::string, BlobId> BLOB_ID_MAP_T;
-typedef std::unordered_map<std::string, TagId> TAG_ID_MAP_T;
+typedef std::unordered_map<hshm::charbuf, BlobId> BLOB_ID_MAP_T;
+typedef std::unordered_map<hshm::charbuf, TagId> TAG_ID_MAP_T;
 typedef std::unordered_map<BlobId, BlobInfo> BLOB_MAP_T;
 typedef std::unordered_map<TagId, TagInfo> TAG_MAP_T;
 typedef hipc::mpsc_queue<IoStat> IO_PATTERN_LOG_T;
@@ -23,6 +24,7 @@ class Server : public TaskLib {
    * Configuration
    * ===================================*/
    ServerConfig server_config_;
+   u32 node_id_;
 
   /**====================================
    * Maps
@@ -46,6 +48,8 @@ class Server : public TaskLib {
   std::vector<bdev::Client> targets_;
 
  public:
+  Server() = default;
+
   void Run(MultiQueue *queue, u32 method, Task *task) override {
     switch (method) {
       case Method::kConstruct: {
@@ -73,6 +77,7 @@ class Server : public TaskLib {
     }
     HILOG(kInfo, "Loading server configuration: {}", config_path.str())
     server_config_.LoadFromFile(config_path.str());
+    node_id_ = 0;  // TODO(llogan)
 
     // Parse targets
     for (DeviceInfo &dev : server_config_.devices_) {
@@ -108,7 +113,7 @@ class Server : public TaskLib {
     TagId tag_id;
 
     // Check if the tag exists
-    std::string tag_name = task->tag_name_->str();
+    hshm::charbuf tag_name = hshm::to_charbuf(*task->tag_name_);
     bool did_create;
     if (tag_name.size() == 0) {
       did_create = tag_id_map_.find(tag_name) == tag_id_map_.end();
@@ -144,7 +149,8 @@ class Server : public TaskLib {
 
   /** Get tag ID */
   void GetTagId(MultiQueue *queue, GetTagIdTask *task) {
-    auto it = tag_id_map_.find(task->tag_name_->str());
+    hshm::charbuf tag_name = hshm::to_charbuf(*task->tag_name_);
+    auto it = tag_id_map_.find(tag_name);
     if (it == tag_id_map_.end()) {
       task->tag_id_ = TagId::GetNull();
       task->SetComplete();
@@ -232,7 +238,55 @@ class Server : public TaskLib {
    * Create a blob's metadata
    * */
   void PutBlob(MultiQueue *queue, PutBlobTask *task) {
+    // Get the blob info data structure
+    task->did_create_ = false;
+    if (task->blob_name_.size() > 0) {
+      auto it = blob_id_map_.find(task->blob_name_);
+      if (it == blob_id_map_.end()) {
+        task->did_create_ = true;
+      }
+    } else {
+      auto it = blob_map_.find(task->blob_id_);
+      if (it == blob_map_.end()) {
+        task->did_create_ = true;
+      }
+    }
+
+    if (task->did_create_) {
+      // Create new blob and emplace in map
+      BlobId blob_id(node_id_, id_alloc_.fetch_add(1));
+      blob_map_.emplace(blob_id, BlobInfo());
+      task->blob_id_ = blob_id;
+    }
+
+    BlobInfo &blob_info = blob_map_[task->blob_id_];
+    if (task->did_create_) {
+      // Update blob info
+      blob_info.name_ = task->blob_name_;
+      blob_info.blob_id_ = task->blob_id_;
+      blob_info.tag_id_ = task->tag_id_;
+      blob_info.blob_size_ = task->data_size_;
+      blob_info.score_ = task->score_;
+      blob_info.mod_count_ = 0;
+      blob_info.access_freq_ = 0;
+      blob_info.last_flush_ = 0;
+      blob_info.UpdateWriteStats();
+    } else {
+      // Modify existing blob
+      blob_info.UpdateWriteStats();
+    }
+
     // TODO(llogan)
+    // Allocate new buffers using DPE if necessary
+    BufferInfo &disk_buf = blob_info.buffers_.back();
+    size_t max_cur_space = disk_buf.blob_off_ + disk_buf.t_size_;
+    size_t needed_space = task->blob_off_ + task->data_size_;
+    if (max_cur_space < needed_space) {
+      // Allocate more buffers
+      size_t size_diff = needed_space - max_cur_space;
+      disk_buf.blob_size_ = needed_space;
+    }
+    // Modify blob data
   }
 
   /** Get a blob's data */
@@ -274,7 +328,7 @@ class Server : public TaskLib {
    * Get \a blob_name BLOB from \a bkt_id bucket
    * */
   void GetBlobId(MultiQueue *queue, GetBlobIdTask *task) {
-    auto it = blob_id_map_.find(task->blob_name_->str());
+    auto it = blob_id_map_.find(hshm::to_charbuf(*task->blob_name_));
     if (it == blob_id_map_.end()) {
       task->SetComplete();
       return;
@@ -338,7 +392,7 @@ class Server : public TaskLib {
     BlobInfo &blob = it->second;
     blob_id_map_.erase(blob.name_);
     blob_id_map_[blob.name_] = task->blob_id_;
-    blob.name_ = task->new_blob_name_->str();
+    blob.name_ = hshm::to_charbuf(*task->new_blob_name_);
     return task->SetComplete();
   }
 

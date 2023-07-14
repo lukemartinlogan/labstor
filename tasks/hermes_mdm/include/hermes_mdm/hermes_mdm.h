@@ -308,8 +308,9 @@ struct TagClearBlobsTask : public Task {
 struct PutBlobTask : public Task {
   IN TagId tag_id_;
   IN hshm::charbuf blob_name_;
-  IN size_t blob_size_;
-  IN std::vector<BufferInfo> buffers_;
+  IN size_t blob_off_;
+  IN size_t data_size_;
+  IN hipc::Pointer data_;
   IN float score_;
   IN bool replace_;
   INOUT BlobId blob_id_;
@@ -322,8 +323,9 @@ struct PutBlobTask : public Task {
               const TagId &tag_id,
               const hshm::charbuf &blob_name,
               const BlobId &blob_id,
-              size_t blob_size,
-              const std::vector<BufferInfo> &buffers,
+              size_t blob_off,
+              size_t data_size,
+              const hipc::Pointer &data,
               float score,
               bool replace) : Task(alloc) {
     // Initialize task
@@ -335,10 +337,11 @@ struct PutBlobTask : public Task {
 
     // Custom params
     tag_id_ = tag_id;
-    buffers_ = buffers;
     blob_name_ = blob_name;
     blob_id_ = blob_id;
-    blob_size_ = blob_size;
+    blob_off_ = blob_off;
+    data_size_ = data_size;
+    data_ = data;
     score_ = score;
     replace_ = replace;
   }
@@ -783,16 +786,17 @@ class Client {
    * @param tag_id id of the bucket
    * @param blob_name semantic blob name
    * @param[INOUT] blob_id the id of the blob
-   * @param blob_size the amount of data placed
-   * @param buffers the buffers corresponding to data
+   * @param blob_off the offset of the data placed in existing blob
+   * @param blob_size the amount of data being placed
+   * @param blob a SHM pointer to the data to place
    * @param score the current score of the blob
    * @param replace whether to replace the blob if it exists
    * @param[OUT] did_create whether the blob was created or not
    * */
   void PutBlob(
       TagId tag_id, const hshm::charbuf &blob_name,
-      BlobId &blob_id, size_t blob_size,
-      std::vector<BufferInfo> &buffers, float score,
+      BlobId &blob_id, size_t blob_off, size_t blob_size,
+      const hipc::Pointer &blob, float score,
       bool replace, bool &did_create) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
@@ -800,8 +804,9 @@ class Client {
     auto *task = queue->Allocate<PutBlobTask>(
         LABSTOR_CLIENT->main_alloc_, p,
         id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
-        tag_id, blob_name, blob_id, blob_size,
-        buffers, score, replace);
+        tag_id, blob_name, blob_id,
+        blob_off, blob_size,
+        blob, score, replace);
     queue->Emplace(hash, p);
     task->Wait();
     blob_id = task->blob_id_;
