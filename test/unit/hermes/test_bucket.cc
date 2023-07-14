@@ -11,7 +11,6 @@
 
 TEST_CASE("TestHermes") {
   // Initialize Hermes on all nodes
-  // TODO(llogan): re-make hermes singleton
   HERMES->ClientInit();
 
   // Create a bucket

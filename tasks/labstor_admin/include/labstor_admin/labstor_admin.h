@@ -290,15 +290,11 @@ class Client {
   /** Spawn a task state */
   template<typename CreateTaskStateT, typename ...Args>
   HSHM_ALWAYS_INLINE
-  TaskStateId CreateTaskState(const DomainId &domain_id,
-                              const std::string &state_name,
-                              const std::string &lib_name,
-                              const TaskStateId &id,
-                              Args&& ...args) {
+  TaskStateId CreateTaskState(Args&& ...args) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(QueueManager::kAdminQueue);
-    auto *task = queue->Allocate<CreateTaskStateTask>(LABSTOR_CLIENT->main_alloc_, p,
-                                                      domain_id, state_name, lib_name, id);
+    auto *task = queue->Allocate<CreateTaskStateT>(LABSTOR_CLIENT->main_alloc_, p,
+                                                   std::forward<Args>(args)...);
     queue->Emplace(0, p);
     task->Wait();
     TaskStateId new_id = task->id_;

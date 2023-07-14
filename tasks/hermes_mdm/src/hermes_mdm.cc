@@ -6,7 +6,7 @@
 #include "labstor/api/labstor_runtime.h"
 #include "hermes/config_server.h"
 #include "hermes_mdm/hermes_mdm.h"
-#include "hermes_dpe/hermes_dpe.h"
+#include "hermes/dpe/dpe_factory.h"
 #include "bdev/bdev.h"
 
 namespace hermes::mdm {
@@ -69,14 +69,14 @@ class Server : public TaskLib {
 
   void Construct(MultiQueue *queue, ConstructTask *task) {
     id_alloc_ = 0;
-    hipc::string &config_path = task->server_config_path_.get_ref();
+    std::string config_path = task->server_config_path_->str();
 
     // Load hermes config
-    if (config_path.size() == 0) {
+    if (config_path.empty()) {
       config_path = GetEnvSafe(Constant::kHermesServerConf);
     }
-    HILOG(kInfo, "Loading server configuration: {}", config_path.str())
-    server_config_.LoadFromFile(config_path.str());
+    HILOG(kInfo, "Loading server configuration: {}", config_path)
+    server_config_.LoadFromFile(config_path);
     node_id_ = 0;  // TODO(llogan)
 
     // Parse targets
@@ -88,9 +88,9 @@ class Server : public TaskLib {
       } else {
         dev_type = "ram_bdev";
       }
-      client.Create("hermes_" + dev.dev_name_,
+      client.Create(DomainId::GetLocal(),
+                    "hermes_" + dev.dev_name_,
                     dev_type,
-                    DomainId::GetLocal(),
                     dev);
       targets_.emplace_back(std::move(client));
     }
@@ -123,7 +123,7 @@ class Server : public TaskLib {
     if (did_create) {
       tag_id.unique_ = id_alloc_.fetch_add(1);
       tag_id.node_id_ = LABSTOR_RUNTIME->rpc_.node_id_;
-      HILOG(kDebug, "Creating tag for the first time: {} {}", tag_name, tag_id)
+      HILOG(kDebug, "Creating tag for the first time: {} {}", tag_name.str(), tag_id)
       tag_id_map_.emplace(tag_name, tag_id);
       tag_map_.emplace(tag_id, TagInfo());
       TagInfo &info = tag_map_[tag_id];
@@ -133,7 +133,7 @@ class Server : public TaskLib {
       info.internal_size_ = task->backend_size_;
     } else {
       if (tag_name.size()) {
-        HILOG(kDebug, "Found existing tag: {}", tag_name)
+        HILOG(kDebug, "Found existing tag: {}", tag_name.str())
         tag_id = tag_id_map_[tag_name];
       } else {
         HILOG(kDebug, "Found existing tag: {}", task->tag_id_)
@@ -283,10 +283,33 @@ class Server : public TaskLib {
     size_t needed_space = task->blob_off_ + task->data_size_;
     if (max_cur_space < needed_space) {
       // Allocate more buffers
+      Context ctx;
       size_t size_diff = needed_space - max_cur_space;
       disk_buf.blob_size_ = needed_space;
+      _DPE(size_diff, ctx, blob_info.buffers_);
     }
-    // Modify blob data
+    // Modify blob buffers
+    hipc::mptr<char> blob_data_mptr(task->data_);
+    char *blob_data = blob_data_mptr.get();
+    for (auto &buf : blob_info.buffers_) {
+      size_t buf_off = buf.blob_off_ - task->blob_off_;
+      size_t buf_size = buf.t_size_;
+      // TODO(llogan): use BPM to write data
+    }
+  }
+
+  /** Allocate buffers to fit a blob */
+  void _DPE(size_t blob_size, Context &ctx, std::vector<BufferInfo> &buffers) {
+    std::vector<TargetInfo> targets;
+    std::vector<PlacementSchema> output;
+
+    // Get the capacity/bandwidth of targets
+    if (targets.size() == 0) {
+      return;
+    }
+    // Calculate a placement schema
+    auto *dpe =  DpeFactory::Get(ctx.dpe_);
+    dpe->Placement({blob_size}, targets, ctx, output);
   }
 
   /** Get a blob's data */

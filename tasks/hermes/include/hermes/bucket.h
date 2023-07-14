@@ -7,7 +7,6 @@
 
 #include "hermes_types.h"
 #include "hermes_mdm/hermes_mdm.h"
-#include "hermes_dpe/hermes_dpe.h"
 #include "hermes/config_manager.h"
 
 namespace hermes {
@@ -15,7 +14,6 @@ namespace hermes {
 class Bucket {
  private:
   mdm::Client *mdm_;
-  dpe::Client *dpe_;
   TagId id_;
   std::string name_;
   Context ctx_;
@@ -36,7 +34,7 @@ class Bucket {
                   Context &ctx,
                   size_t backend_size = 0) {
     mdm_ = &HERMES->mdm_;
-    dpe_ = &HERMES->dpe_;
+    mdm_->GetOrCreateTag(hshm::charbuf(bkt_name), true, {}, backend_size);
   }
 
   /**
@@ -46,7 +44,6 @@ class Bucket {
     id_ = tag_id;
     did_create_ = false;
     mdm_ = &HERMES->mdm_;
-    dpe_ = &HERMES->dpe_;
   }
 
   /**

@@ -210,7 +210,7 @@ TEST_CASE("TestZeromqAllocateEmplacePop") {
 TEST_CASE("TestRoundTripLatency") {
   labstor::small_message::Client client;
   LABSTOR_ADMIN->RegisterTaskLibrary(labstor::DomainId::GetLocal(), "small_message");
-  client.Create("ipc_test", labstor::DomainId::GetLocal());
+  client.Create(labstor::DomainId::GetLocal(), "ipc_test");
   hshm::Timer t;
 
   int pid = getpid();

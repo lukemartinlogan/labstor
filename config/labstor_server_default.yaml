@@ -45,4 +45,8 @@ rpc:
   num_threads: 4
 
 ### Task Registry
-task_registry: []
+task_registry: [
+  'hermes_mdm',
+  'posix_bdev',
+  'ram_bdev'
+]

@@ -20,35 +20,29 @@ struct Method : public TaskMethod {
 /**
  * A task to create small_message
  * */
-struct ConstructTask : public Task {
+using labstor::Admin::CreateTaskStateTask;
+struct ConstructTask : public CreateTaskStateTask {
   HSHM_ALWAYS_INLINE
   ConstructTask(hipc::Allocator *alloc,
-                const TaskStateId &state_id,
-                const DomainId &domain_id) : Task(alloc) {
-    // Initialize task
-    key_ = 0;
-    task_state_ = state_id;
-    method_ = Method::kConstruct;
-    task_flags_.SetBits(0);
-    domain_id_ = domain_id;
-
+                const DomainId &domain_id,
+                const std::string &state_name,
+                const TaskStateId &state_id)
+      : CreateTaskStateTask(alloc, domain_id,
+                            state_name,
+                            "small_message",
+                            state_id) {
     // Custom params
   }
 };
 
 /** A task to destroy small_message */
-struct DestructTask : public Task {
+using labstor::Admin::DestroyTaskStateTask;
+struct DestructTask : public DestroyTaskStateTask {
   HSHM_ALWAYS_INLINE
   DestructTask(hipc::Allocator *alloc,
                TaskStateId &state_id,
-               const DomainId &domain_id) : Task(alloc) {
-    // Initialize task
-    key_ = 0;
-    task_state_ = state_id;
-    method_ = Method::kDestruct;
-    task_flags_.SetBits(0);
-    domain_id_ = domain_id;
-  }
+               const DomainId &domain_id)
+      : DestroyTaskStateTask(alloc, domain_id, state_id) {}
 };
 
 /**
@@ -87,12 +81,11 @@ class Client {
 
   /** Create a small_message */
   HSHM_ALWAYS_INLINE
-  void Create(const std::string &state_name, const DomainId &domain_id) {
+  void Create(const DomainId &domain_id, const std::string &state_name) {
     id_ = TaskStateId::GetNull();
     id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
         domain_id,
         state_name,
-        "small_message",
         id_);
     queue_id_ = QueueId(id_);
     LABSTOR_ADMIN->CreateQueue(domain_id, queue_id_,
@@ -106,7 +99,7 @@ class Client {
 
   /** Destroy state + queue */
   HSHM_ALWAYS_INLINE
-  void Destroy(const std::string &state_name, const DomainId &domain_id) {
+  void Destroy(const DomainId &domain_id) {
     LABSTOR_ADMIN->DestroyTaskState(domain_id, id_);
     LABSTOR_ADMIN->DestroyQueue(domain_id, queue_id_);
   }

@@ -24,41 +24,36 @@ struct Method : public TaskMethod {
 };
 
 /**
- * A task to create bdev
+ * A task to create hermes_mdm
  * */
-struct ConstructTask : public LocalTask {
+using labstor::Admin::CreateTaskStateTask;
+struct ConstructTask : public CreateTaskStateTask {
   IN DeviceInfo *info_;
 
   HSHM_ALWAYS_INLINE
   ConstructTask(hipc::Allocator *alloc,
-                const TaskStateId &state_id,
                 const DomainId &domain_id,
-                DeviceInfo &info) : Task(alloc) {
-    // Initialize task
-    key_ = 0;
-    task_state_ = state_id;
-    method_ = Method::kConstruct;
-    task_flags_.SetBits(0);
-    domain_id_ = domain_id;
-
+                const std::string &state_name,
+                const std::string &lib_name,
+                const TaskStateId &state_id,
+                DeviceInfo &info)
+      : CreateTaskStateTask(alloc, domain_id,
+                            state_name,
+                            lib_name,
+                            state_id) {
     // Custom params
     info_ = &info;
   }
 };
 
-/** A task to destroy bdev */
-struct DestructTask : public LocalTask {
+/** A task to destroy hermes_mdm */
+using labstor::Admin::DestroyTaskStateTask;
+struct DestructTask : public DestroyTaskStateTask {
   HSHM_ALWAYS_INLINE
   DestructTask(hipc::Allocator *alloc,
                TaskStateId &state_id,
-               const DomainId &domain_id) : Task(alloc) {
-    // Initialize task
-    key_ = 0;
-    task_state_ = state_id;
-    method_ = Method::kDestruct;
-    task_flags_.SetBits(0);
-    domain_id_ = domain_id;
-  }
+               const DomainId &domain_id)
+      : DestroyTaskStateTask(alloc, domain_id, state_id) {}
 };
 
 /**
@@ -178,15 +173,15 @@ class Client {
  public:
   /** Create a bdev */
   HSHM_ALWAYS_INLINE
-  void Create(const std::string &state_name,
-              const std::string &dev_type,
-              const DomainId &domain_id,
+  void Create(const DomainId &domain_id,
+              const std::string &state_name,
+              const std::string &lib_name,
               DeviceInfo &dev_info) {
     id_ = TaskStateId::GetNull();
     id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
         domain_id,
         state_name,
-        dev_type,
+        lib_name,
         id_,
         dev_info);
     queue_id_ = QueueId(id_);
@@ -199,7 +194,7 @@ class Client {
 
   /** Destroy task state + queue */
   HSHM_ALWAYS_INLINE
-  void Destroy(const std::string &state_name, const DomainId &domain_id) {
+  void Destroy(const DomainId &domain_id, const std::string &state_name) {
     LABSTOR_ADMIN->DestroyTaskState(domain_id, id_);
     LABSTOR_ADMIN->DestroyQueue(domain_id, queue_id_);
   }

@@ -48,5 +48,9 @@ const char* kServerDefaultConfigStr =
 "  num_threads: 4\n"
 "\n"
 "### Task Registry\n"
-"task_registry: []\n";
+"task_registry: [\n"
+"  \'hermes_mdm\',\n"
+"  \'posix_bdev\',\n"
+"  \'ram_bdev\'\n"
+"]\n";
 #endif  // LABSTOR_SRC_CONFIG_SERVER_DEFAULT_H_

@@ -113,7 +113,6 @@ include_directories(${CMAKE_SOURCE_DIR}/tasks/bdev/include)
 include_directories(${CMAKE_SOURCE_DIR}/tasks/ram_bdev/include)
 include_directories(${CMAKE_SOURCE_DIR}/tasks/posix_bdev/include)
 include_directories(${CMAKE_SOURCE_DIR}/tasks/hermes_mdm/include)
-include_directories(${CMAKE_SOURCE_DIR}/tasks/hermes_dpe/include)
 include_directories(${CMAKE_SOURCE_DIR}/tasks/hermes_stats/include)
 # Test includes
 include_directories(${CMAKE_SOURCE_DIR}/test/unit)
