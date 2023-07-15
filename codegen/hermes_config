@@ -16,14 +16,14 @@ from codegen.util.paths import LABSTOR_ROOT
 HERMES_ROOT = f'{LABSTOR_ROOT}/tasks/hermes'
 create_config(
     path=f"{HERMES_ROOT}/config/hermes_client_default.yaml",
-    var_name="kClientDefaultConfigStr",
+    var_name="kHermesClientDefaultConfigStr",
     config_path=f"{HERMES_ROOT}/include/hermes/config_client_default.h",
     macro_name="CLIENT"
 )
 
 create_config(
     path=f"{HERMES_ROOT}/config/hermes_server_default.yaml",
-    var_name="kServerDefaultConfigStr",
+    var_name="kHermesServerDefaultConfigStr",
     config_path=f"{HERMES_ROOT}/include/hermes/config_server_default.h",
     macro_name="SERVER"
 )

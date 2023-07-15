@@ -111,11 +111,18 @@ using RegisterTaskLibTask = RegisterTaskLibTaskTempl<0>;
 /** A task to destroy a Task Library */
 using DestroyTaskLibTask = RegisterTaskLibTaskTempl<1>;
 
+class CreateTaskStatePhase {
+ public:
+  TASK_METHOD_T kAllocate = 0;
+  TASK_METHOD_T kLast = 1;
+};
+
 /** A task to register a Task state */
 struct CreateTaskStateTask : public Task {
   IN hipc::ShmArchive<hipc::string> lib_name_;
   IN hipc::ShmArchive<hipc::string> state_name_;
   INOUT TaskStateId id_;
+  OUT int phase_;
 
   HSHM_ALWAYS_INLINE
   CreateTaskStateTask(hipc::Allocator *alloc,
@@ -134,6 +141,7 @@ struct CreateTaskStateTask : public Task {
     HSHM_MAKE_AR(state_name_, alloc, state_name);
     HSHM_MAKE_AR(lib_name_, alloc, lib_name);
     id_ = id;
+    phase_ = CreateTaskStatePhase::kAllocate;
   }
 
   ~CreateTaskStateTask() {
@@ -229,6 +237,12 @@ using SetWorkOrchestratorQueuePolicyTask = SetWorkOrchestratorPolicyTask<0>;
 using SetWorkOrchestratorProcessPolicyTask = SetWorkOrchestratorPolicyTask<1>;
 
 
+/** Stores a CreateQueue + CreateTaskState task */
+struct CreateTaskStateInfo {
+  CreateQueueTask *queue_task_;
+  CreateTaskStateTask *state_task_;
+};
+
 /** Create admin requests */
 class Client {
  public:
@@ -238,19 +252,28 @@ class Client {
   /** Destructor */
   ~Client() = default;
 
+  /** Async create a queue with an ID */
+  HSHM_ALWAYS_INLINE
+  CreateQueueTask* ACreateQueue(const DomainId &domain_id, QueueId id,
+                                u32 max_lanes, u32 num_lanes,
+                                u32 depth, bitfield32_t flags) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
+    auto *task = LABSTOR_CLIENT->NewTask<CreateQueueTask>(
+        p,  domain_id, id,
+        max_lanes, num_lanes, depth, flags);
+    queue->Emplace(0, p);
+    return task;
+  }
+
   /** Create a queue with an ID */
   HSHM_ALWAYS_INLINE
   void CreateQueue(const DomainId &domain_id, QueueId id,
                    u32 max_lanes, u32 num_lanes,
                    u32 depth, bitfield32_t flags) {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
-    auto *task = queue->Allocate<CreateQueueTask>(LABSTOR_CLIENT->main_alloc_, p,
-                                                  domain_id, id,
-                                                  max_lanes, num_lanes, depth, flags);
-    queue->Emplace(0, p);
+    auto task = ACreateQueue(domain_id, id, max_lanes, num_lanes, depth, flags);
     task->Wait();
-    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    LABSTOR_CLIENT->DelTask(task);
   }
 
   /** Remove a queue */
@@ -258,10 +281,10 @@ class Client {
   void DestroyQueue(const DomainId &domain_id, QueueId id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
-    auto *task = queue->Allocate<DestroyQueueTask>(LABSTOR_CLIENT->main_alloc_, p, domain_id, id);
+    auto *task = LABSTOR_CLIENT->NewTask<DestroyQueueTask>(p, domain_id, id);
     queue->Emplace(0, p);
     task->Wait();
-    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    LABSTOR_CLIENT->DelTask(task);
   }
 
   /** Register a task library */
@@ -269,11 +292,11 @@ class Client {
   void RegisterTaskLibrary(const DomainId &domain_id, const std::string &lib_name) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
-    auto *task = queue->Allocate<RegisterTaskLibTask>(LABSTOR_CLIENT->main_alloc_, p,
+    auto *task = LABSTOR_CLIENT->NewTask<RegisterTaskLibTask>(p,
                                                       domain_id, lib_name);
     queue->Emplace(0, p);
     task->Wait();
-    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    LABSTOR_CLIENT->DelTask(task);
   }
 
   /** Unregister a task */
@@ -281,10 +304,21 @@ class Client {
   void DestroyTaskLibrary(const DomainId &domain_id, const std::string &lib_name) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
-    auto *task = queue->Allocate<DestroyTaskLibTask>(LABSTOR_CLIENT->main_alloc_, p, domain_id, lib_name);
+    auto *task = LABSTOR_CLIENT->NewTask<DestroyTaskLibTask>(p, domain_id, lib_name);
     queue->Emplace(0, p);
     task->Wait();
-    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    LABSTOR_CLIENT->DelTask(task);
+  }
+
+  /** Asynchronously spawn a task state */
+  template<typename CreateTaskStateT, typename ...Args>
+  HSHM_ALWAYS_INLINE
+  CreateTaskStateT* ACreateTaskState(Args&& ...args) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
+    auto *task = LABSTOR_CLIENT->NewTask<CreateTaskStateT>(p, std::forward<Args>(args)...);
+    queue->Emplace(0, p);
+    return task;
   }
 
   /** Spawn a task state */
@@ -293,12 +327,12 @@ class Client {
   TaskStateId CreateTaskState(Args&& ...args) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
-    auto *task = queue->Allocate<CreateTaskStateT>(LABSTOR_CLIENT->main_alloc_, p,
+    auto *task = LABSTOR_CLIENT->NewTask<CreateTaskStateT>(p,
                                                    std::forward<Args>(args)...);
     queue->Emplace(0, p);
     task->Wait();
     TaskStateId new_id = task->id_;
-    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    LABSTOR_CLIENT->DelTask(task);
     return new_id;
   }
 
@@ -306,11 +340,11 @@ class Client {
   TaskStateId GetTaskStateId(const DomainId &domain_id, const std::string &state_name) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
-    auto *task = queue->Allocate<GetTaskStateIdTask>(LABSTOR_CLIENT->main_alloc_, p, domain_id, state_name);
+    auto *task = LABSTOR_CLIENT->NewTask<GetTaskStateIdTask>(p, domain_id, state_name);
     queue->Emplace(0, p);
     task->Wait();
     TaskStateId new_id = task->id_;
-    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    LABSTOR_CLIENT->DelTask(task);
     return new_id;
   }
 
@@ -319,42 +353,42 @@ class Client {
   void DestroyTaskState(const DomainId &domain_id, const TaskStateId &id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
-    auto *task = queue->Allocate<DestroyTaskStateTask>(LABSTOR_CLIENT->main_alloc_, p, domain_id, id);
+    auto *task = LABSTOR_CLIENT->NewTask<DestroyTaskStateTask>(p, domain_id, id);
     queue->Emplace(0, p);
     task->Wait();
-    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    LABSTOR_CLIENT->DelTask(task);
   }
 
   /** Terminate the runtime */
   void StopRuntime(const DomainId &domain_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
-    auto *task = queue->Allocate<StopRuntimeTask>(LABSTOR_CLIENT->main_alloc_, p, domain_id);
+    auto *task = LABSTOR_CLIENT->NewTask<StopRuntimeTask>(p, domain_id);
     queue->Emplace(0, p);
     task->Wait();
-    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    LABSTOR_CLIENT->DelTask(task);
   }
 
   /** Set work orchestrator queue policy */
   void SetWorkOrchestratorQueuePolicy(const DomainId &domain_id, const TaskStateId &policy) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
-    auto *task = queue->Allocate<SetWorkOrchestratorQueuePolicyTask>(
-        LABSTOR_CLIENT->main_alloc_, p, domain_id, policy);
+    auto *task = LABSTOR_CLIENT->NewTask<SetWorkOrchestratorQueuePolicyTask>(
+        p, domain_id, policy);
     queue->Emplace(0, p);
     task->Wait();
-    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    LABSTOR_CLIENT->DelTask(task);
   }
 
   /** Set work orchestrator process policy */
   void SetWorkOrchestratorProcessPolicy(const DomainId &domain_id, const TaskStateId &policy) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
-    auto *task = queue->Allocate<SetWorkOrchestratorProcessPolicyTask>(
-        LABSTOR_CLIENT->main_alloc_, p, domain_id, policy);
+    auto *task = LABSTOR_CLIENT->NewTask<SetWorkOrchestratorProcessPolicyTask>(
+        p, domain_id, policy);
     queue->Emplace(0, p);
     task->Wait();
-    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    LABSTOR_CLIENT->DelTask(task);
   }
 };
 

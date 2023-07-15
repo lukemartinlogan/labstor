@@ -98,16 +98,26 @@ class Server : public TaskLib {
   }
 
   void CreateTaskState(MultiQueue *queue, CreateTaskStateTask *task) {
-    std::string lib_name = task->lib_name_->str();
-    std::string state_name = task->state_name_->str();
-    if (!LABSTOR_TASK_REGISTRY->GetTaskStateId(state_name).IsNull()) {
-      return;
+    switch (task->phase_) {
+      case CreateTaskStatePhase::kAllocate: {
+        std::string lib_name = task->lib_name_->str();
+        std::string state_name = task->state_name_->str();
+        if (!LABSTOR_TASK_REGISTRY->GetTaskStateId(state_name).IsNull()) {
+          return;
+        }
+        task->id_ = LABSTOR_TASK_REGISTRY->CreateTaskState(
+            lib_name.c_str(),
+            state_name.c_str(),
+            task->id_,
+            task);
+        return;
+      }
+      default: {
+        auto exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->id_);
+        exec->Run(queue, task->method_, task);
+        return;
+      }
     }
-    LABSTOR_TASK_REGISTRY->CreateTaskState(lib_name.c_str(),
-                                           state_name.c_str(),
-                                           task->id_,
-                                           task);
-    task->SetComplete();
   }
 
   void GetTaskStateId(MultiQueue *queue, GetTaskStateIdTask *task) {
@@ -134,8 +144,8 @@ class Server : public TaskLib {
       return;
     }
     hipc::Pointer p;
-    queue_sched_ = queue->Allocate<Task>(
-        LABSTOR_CLIENT->main_alloc_, p,
+    queue_sched_ = LABSTOR_CLIENT->NewTask<Task>(
+        p,
         0, task->policy_id_,
         SchedulerMethod::kSchedule, DomainId::GetLocal(),
         bitfield32_t(TASK_LONG_RUNNING));
@@ -151,8 +161,8 @@ class Server : public TaskLib {
       return;
     }
     hipc::Pointer p;
-    proc_sched_ = queue->Allocate<Task>(
-        LABSTOR_CLIENT->main_alloc_, p,
+    proc_sched_ = LABSTOR_CLIENT->NewTask<Task>(
+        p,
         0, task->policy_id_,
         SchedulerMethod::kSchedule, DomainId::GetLocal(),
         bitfield32_t(TASK_LONG_RUNNING));

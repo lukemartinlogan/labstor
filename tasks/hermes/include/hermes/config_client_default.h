@@ -1,6 +1,6 @@
 #ifndef LABSTOR_SRC_CONFIG_CLIENT_DEFAULT_H_
 #define LABSTOR_SRC_CONFIG_CLIENT_DEFAULT_H_
-const char* kClientDefaultConfigStr = 
+const char* kHermesClientDefaultConfigStr = 
 "stop_daemon: false\n"
 "path_inclusions: [\"/tmp/test_hermes\"]\n"
 "path_exclusions: [\"/\"]\n"

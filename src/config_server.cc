@@ -97,7 +97,7 @@ void ServerConfig::ParseYAML(YAML::Node &yaml_conf) {
 
 /** Load the default configuration */
 void ServerConfig::LoadDefault() {
-  LoadText(kServerDefaultConfigStr, false);
+  LoadText(kLabstorServerDefaultConfigStr, false);
 }
 
 }  // namespace labstor::config

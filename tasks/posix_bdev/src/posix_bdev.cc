@@ -63,6 +63,7 @@ class Server : public TaskLib {
 
   void Destruct(MultiQueue *queue, DestructTask *task) {
     free(mem_ptr_);
+    task->SetComplete();
   }
 
   void Alloc(MultiQueue *queue, AllocTask *task) {

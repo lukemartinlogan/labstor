@@ -188,7 +188,7 @@ class FlushingModeConv {
 class Constant {
  public:
   /** Hermes server environment variable */
-  CONST_T char* kHermesServerConf = "HERMES";
+  CONST_T char* kHermesServerConf = "HERMES_CONF";
 
   /** Hermes client environment variable */
   CONST_T char* kHermesClientConf = "HERMES_CLIENT_CONF";

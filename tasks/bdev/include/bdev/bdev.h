@@ -14,6 +14,8 @@
 
 namespace hermes::bdev {
 
+using labstor::Admin::CreateTaskStateInfo;
+
 /** The set of methods in the admin task */
 struct Method : public TaskMethod {
   TASK_METHOD_T kWrite = TaskMethod::kLast;
@@ -171,6 +173,35 @@ class Client {
   QueueId queue_id_;
 
  public:
+  /** Async create task state */
+  HSHM_ALWAYS_INLINE
+  void ACreateTaskState(const DomainId &domain_id,
+                        const std::string &state_name,
+                        const std::string &lib_name,
+                        DeviceInfo &dev_info,
+                        CreateTaskStateInfo &info) {
+    id_ = TaskStateId::GetNull();
+    info.state_task_ = LABSTOR_ADMIN->ACreateTaskState<ConstructTask>(
+        domain_id,
+        state_name,
+        lib_name,
+        id_,
+        dev_info);
+  }
+
+  /** Async create queue */
+  HSHM_ALWAYS_INLINE
+  void ACreateQueue(const DomainId &domain_id,
+                    CreateTaskStateInfo &info) {
+    id_ = info.state_task_->id_;
+    info.queue_task_ = LABSTOR_ADMIN->ACreateQueue(
+        domain_id, id_,
+        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
+        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
+        LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
+        bitfield32_t(0));
+  }
+
   /** Create a bdev */
   HSHM_ALWAYS_INLINE
   void Create(const DomainId &domain_id,
@@ -206,8 +237,8 @@ class Client {
                 size_t &total_size) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    auto *task = queue->Allocate<AllocTask>(
-        LABSTOR_CLIENT->main_alloc_, p,
+    auto *task = LABSTOR_CLIENT->NewTask<AllocTask>(
+        p,
         id_, domain_id, size);
     queue->Emplace(0, p);
     task->Wait();
@@ -219,8 +250,8 @@ class Client {
             const std::vector<BufferInfo> &buffers) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    auto *task = queue->Allocate<FreeTask>(
-        LABSTOR_CLIENT->main_alloc_, p,
+    auto *task = LABSTOR_CLIENT->NewTask<FreeTask>(
+        p,
         id_, domain_id, buffers);
     queue->Emplace(0, p);
     task->Wait();
@@ -232,8 +263,8 @@ class Client {
              const char *data, size_t off, size_t size) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    auto *task = queue->Allocate<WriteTask>(
-        LABSTOR_CLIENT->main_alloc_, p,
+    auto *task = LABSTOR_CLIENT->NewTask<WriteTask>(
+        p,
         id_, domain_id, data, off, size);
     queue->Emplace(0, p);
     task->Wait();
@@ -245,8 +276,8 @@ class Client {
             char *data, size_t off, size_t size) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    auto *task = queue->Allocate<ReadTask>(
-        LABSTOR_CLIENT->main_alloc_, p,
+    auto *task = LABSTOR_CLIENT->NewTask<ReadTask>(
+        p,
         id_, domain_id, data, off, size);
     queue->Emplace(0, p);
     task->Wait();

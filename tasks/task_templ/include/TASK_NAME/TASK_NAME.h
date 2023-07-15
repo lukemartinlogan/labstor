@@ -110,8 +110,8 @@ class Client {
   void Custom(const DomainId &domain_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    auto *task = queue->Allocate<CustomTask>(
-        LABSTOR_CLIENT->main_alloc_, p,
+    auto *task = LABSTOR_CLIENT->NewTask<CustomTask>(
+        p,
         id_, domain_id);
     queue->Emplace(0, p);
     task->Wait();

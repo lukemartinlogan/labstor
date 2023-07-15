@@ -65,7 +65,7 @@ class ClientConfig : public BaseConfig {
  public:
   ClientConfig() = default;
   void LoadDefault() override {
-    LoadText(kClientDefaultConfigStr, false);
+    LoadText(kHermesClientDefaultConfigStr, false);
   }
 
   void SetBaseAdapterMode(AdapterMode mode) {

@@ -42,8 +42,8 @@ TEST_CASE("TestHshmAllocateFree") {
   size_t ops = (1 << 20);
   for (size_t i = 0; i < ops; ++i) {
     hipc::Pointer p;
-    queue->Allocate<labstor::Task>(LABSTOR_CLIENT->main_alloc_, p);
-    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    labstor::Task *task = LABSTOR_CLIENT->NewTask<labstor::Task>(p);
+    LABSTOR_CLIENT->DelTask(task);
   }
   t.Pause();
   HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
@@ -92,7 +92,7 @@ TEST_CASE("TestHshmQueueEmplacePop") {
   auto queue = hipc::make_uptr<labstor::MultiQueue>(
       qid, 16, 16, 256, hshm::bitfield32_t(0));
   hipc::Pointer p;
-  auto *task = queue->Allocate<labstor::Task>(LABSTOR_CLIENT->main_alloc_, p);
+  auto *task = LABSTOR_CLIENT->NewTask<labstor::Task>(p);
 
   hshm::Timer t;
   t.Resume();
@@ -103,7 +103,7 @@ TEST_CASE("TestHshmQueueEmplacePop") {
   }
   t.Pause();
 
-  queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+  LABSTOR_CLIENT->DelTask(task);
   HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
 }
 
@@ -135,10 +135,10 @@ TEST_CASE("TestHshmQueueAllocateEmplacePop") {
   t.Resume();
   for (size_t i = 0; i < ops; ++i) {
     hipc::Pointer p;
-    auto *task = queue->Allocate<labstor::Task>(LABSTOR_CLIENT->main_alloc_, p);
+    auto *task = LABSTOR_CLIENT->NewTask<labstor::Task>(p);
     queue->Emplace(0, p);
     queue->Pop(0, task, p);
-    queue->Free(LABSTOR_CLIENT->main_alloc_, p);
+    LABSTOR_CLIENT->DelTask(task);
   }
   t.Pause();
 

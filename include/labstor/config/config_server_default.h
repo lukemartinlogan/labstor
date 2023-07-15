@@ -1,6 +1,6 @@
 #ifndef LABSTOR_SRC_CONFIG_SERVER_DEFAULT_H_
 #define LABSTOR_SRC_CONFIG_SERVER_DEFAULT_H_
-const char* kServerDefaultConfigStr = 
+const char* kLabstorServerDefaultConfigStr = 
 "### Runtime orchestration settings\n"
 "work_orchestrator:\n"
 "  # The number of worker threads to spawn\n"

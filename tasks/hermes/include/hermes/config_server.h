@@ -182,7 +182,7 @@ class ServerConfig : public BaseConfig {
 
   /** Load the default configuration */
   void LoadDefault() {
-    LoadText(kServerDefaultConfigStr, false);
+    LoadText(kHermesServerDefaultConfigStr, false);
   }
 
  private:

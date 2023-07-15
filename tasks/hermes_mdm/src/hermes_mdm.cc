@@ -11,6 +11,8 @@
 
 namespace hermes::mdm {
 
+using labstor::Admin::CreateTaskStateInfo;
+
 /** Type name simplification for the various map types */
 typedef std::unordered_map<hshm::charbuf, BlobId> BLOB_ID_MAP_T;
 typedef std::unordered_map<hshm::charbuf, TagId> TAG_ID_MAP_T;
@@ -45,6 +47,7 @@ class Server : public TaskLib {
   /**====================================
    * Targets + devices
    * ===================================*/
+  std::vector<CreateTaskStateInfo> target_tasks_;
   std::vector<bdev::Client> targets_;
 
  public:
@@ -68,35 +71,78 @@ class Server : public TaskLib {
   }
 
   void Construct(MultiQueue *queue, ConstructTask *task) {
-    id_alloc_ = 0;
-    std::string config_path = task->server_config_path_->str();
+    switch (task->phase_) {
+      case ConstructTaskPhase::kLoadConfig: {
+        id_alloc_ = 0;
+        std::string config_path = task->server_config_path_->str();
 
-    // Load hermes config
-    if (config_path.empty()) {
-      config_path = GetEnvSafe(Constant::kHermesServerConf);
-    }
-    HILOG(kInfo, "Loading server configuration: {}", config_path)
-    server_config_.LoadFromFile(config_path);
-    node_id_ = 0;  // TODO(llogan)
-
-    // Parse targets
-    for (DeviceInfo &dev : server_config_.devices_) {
-      bdev::Client client;
-      std::string dev_type;
-      if (dev.mount_point_.empty()) {
-        dev_type = "posix_bdev";
-      } else {
-        dev_type = "ram_bdev";
+        // Load hermes config
+        if (config_path.empty()) {
+          config_path = GetEnvSafe(Constant::kHermesServerConf);
+        }
+        HILOG(kInfo, "Loading server configuration: {}", config_path)
+        server_config_.LoadFromFile(config_path);
+        node_id_ = LABSTOR_QM_CLIENT->node_id_;
+        task->phase_ = ConstructTaskPhase::kCreateTaskStates;
       }
-      client.Create(DomainId::GetLocal(),
-                    "hermes_" + dev.dev_name_,
-                    dev_type,
-                    dev);
-      targets_.emplace_back(std::move(client));
+
+      case ConstructTaskPhase::kCreateTaskStates: {
+        target_tasks_.reserve(server_config_.devices_.size());
+        for (DeviceInfo &dev : server_config_.devices_) {
+          bdev::Client client;
+          std::string dev_type;
+          if (dev.mount_dir_.empty()) {
+            dev_type = "ram_bdev";
+            dev.mount_point_ = hshm::Formatter::format("{}/{}", dev.mount_dir_, dev.dev_name_);
+          } else {
+            dev_type = "posix_bdev";
+          }
+          target_tasks_.emplace_back();
+          client.ACreateTaskState(DomainId::GetLocal(),
+                                  "hermes_" + dev.dev_name_,
+                                  dev_type,
+                                  dev,
+                                  target_tasks_.back());
+          targets_.emplace_back(std::move(client));
+        }
+        task->phase_ = ConstructTaskPhase::kWaitForTaskStates;
+      }
+
+      case ConstructTaskPhase::kWaitForTaskStates: {
+        HILOG(kDebug, "Wait for states")
+        for (auto &tgt_task : target_tasks_) {
+          if (!tgt_task.state_task_->IsComplete()) {
+            return;
+          }
+        }
+        task->phase_ = ConstructTaskPhase::kCreateQueues;
+      }
+
+      case ConstructTaskPhase::kCreateQueues: {
+        HILOG(kDebug, "Create queues")
+        int i = 0;
+        for (auto &client : targets_) {
+          auto &tgt_task = target_tasks_[i];
+          client.ACreateQueue(DomainId::GetLocal(), tgt_task);
+          LABSTOR_CLIENT->DelTask(tgt_task.state_task_);
+          ++i;
+        }
+        task->phase_ = ConstructTaskPhase::kWaitForQueues;
+      }
+
+      case ConstructTaskPhase::kWaitForQueues: {
+        HILOG(kDebug, "Wait for queues")
+        for (auto &tgt_task : target_tasks_) {
+          if (!tgt_task.queue_task_->IsComplete()) {
+            return;
+          }
+          LABSTOR_CLIENT->DelTask(tgt_task.queue_task_);
+        }
+      }
     }
-    targets_.emplace_back();
 
     // Create targets
+    HILOG(kDebug, "Created MDM")
     task->SetComplete();
   }
 
@@ -114,8 +160,8 @@ class Server : public TaskLib {
 
     // Check if the tag exists
     hshm::charbuf tag_name = hshm::to_charbuf(*task->tag_name_);
-    bool did_create;
-    if (tag_name.size() == 0) {
+    bool did_create = false;
+    if (tag_name.size() > 0) {
       did_create = tag_id_map_.find(tag_name) == tag_id_map_.end();
     }
 

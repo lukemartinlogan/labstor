@@ -73,6 +73,20 @@ class Client : public ConfigurationManager {
 
   /** Finalize Hermes explicitly */
   void Finalize() {}
+
+  /** Create a task */
+  template<typename TaskT, typename ...Args>
+  HSHM_ALWAYS_INLINE
+  TaskT* NewTask(hipc::Pointer &p, Args&& ...args) {
+    return main_alloc_->NewObj<TaskT>(p, main_alloc_, std::forward<Args>(args)...);
+  }
+
+  /** Destroy a task */
+  template<typename TaskT>
+  HSHM_ALWAYS_INLINE
+  void DelTask(TaskT *task) {
+    main_alloc_->DelObj<TaskT>(task);
+  }
 };
 
 }  // namespace labstor

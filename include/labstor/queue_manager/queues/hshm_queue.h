@@ -143,18 +143,6 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
     return (*lanes_)[lane_id];
   }
 
-  /** Allocate a task */
-  template<typename T, typename ...Args>
-  HSHM_ALWAYS_INLINE static T* Allocate(hipc::Allocator *alloc, hipc::Pointer &p,
-      Args&& ...args) {
-    return alloc->AllocateConstructObjs<T>(1, p, alloc, std::forward<Args>(args)...);
-  }
-
-  /** Free a task */
-  HSHM_ALWAYS_INLINE static void Free(hipc::Allocator *alloc, hipc::Pointer &p) {
-    alloc->Free(p);
-  }
-
   /** Emplace a SHM pointer to a task */
   bool Emplace(u32 key, hipc::Pointer &p) {
     if (IsEmplacePlugged()) {
