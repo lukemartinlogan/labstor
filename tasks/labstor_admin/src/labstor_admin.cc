@@ -103,12 +103,8 @@ class Server : public TaskLib {
     if (!LABSTOR_TASK_REGISTRY->GetTaskStateId(state_name).IsNull()) {
       return;
     }
-    if (task->id_.IsNull()) {
-      task->id_ = LABSTOR_TASK_REGISTRY->CreateTaskStateId(task->domain_id_.id_);
-    }
     LABSTOR_TASK_REGISTRY->CreateTaskState(lib_name.c_str(),
                                            state_name.c_str(),
-                                           task->domain_id_,
                                            task->id_,
                                            task);
     task->SetComplete();

@@ -61,6 +61,8 @@ struct TaskLibInfo {
  * */
 class TaskRegistry {
  public:
+  /** The node the registry is on */
+  u32 node_id_;
   /** The dirs to search for task libs */
   std::vector<std::string> lib_dirs_;
   /** Map of a semantic lib name to lib info */
@@ -77,7 +79,9 @@ class TaskRegistry {
   TaskRegistry() : unique_(0) {}
 
   /** Initialize the Task Registry */
-  void ServerInit(ServerConfig *config) {
+  void ServerInit(ServerConfig *config, u32 node_id) {
+    node_id_ = node_id;
+
     // Load the LD_LIBRARY_PATH variable
     auto ld_lib_path_env = getenv("LD_LIBRARY_PATH");
     std::string ld_lib_path;
@@ -168,17 +172,16 @@ class TaskRegistry {
     libs_.erase(it);
   }
 
-  /** Get a TaskState ID */
-  TaskStateId CreateTaskStateId(u32 node_id) {
-    return TaskStateId(node_id, unique_.fetch_add(1));
+  /** Allocate a task state ID */
+  TaskStateId CreateTaskStateId() {
+    return TaskStateId(node_id_, unique_.fetch_add(1));
   }
 
   /** Create a task state */
   TaskStateId CreateTaskState(const char *lib_name,
-                             const char *state_name,
-                             const DomainId &domain_id,
-                             const TaskStateId &state_id,
-                             Task *task) {
+                              const char *state_name,
+                              const TaskStateId &state_id,
+                              Task *task) {
     // Find the task library to instantiate
     auto it = libs_.find(lib_name);
     if (it == libs_.end()) {
@@ -192,6 +195,12 @@ class TaskRegistry {
       return TaskStateId::GetNull();
     }
 
+    // Check if state_id needs to be allocated
+    TaskStateId new_id = state_id;
+    if (new_id.IsNull()) {
+      new_id = CreateTaskStateId();
+    }
+
     // Create the state instance
     TaskLibInfo &info = it->second;
     TaskState *task_state = info.create_state_(task);
@@ -201,10 +210,11 @@ class TaskRegistry {
     }
 
     // Add the state to the registry
-    task_state->id_ = state_id;
-    task_state_ids_.emplace(state_name, state_id);
-    task_states_.emplace(state_id, task_state);
-    return state_id;
+    task_state->id_ = new_id;
+    task_state_ids_.emplace(state_name, new_id);
+    task_states_.emplace(new_id, task_state);
+    HILOG(kDebug, "Created an instance of {} with name {} and ID {}", lib_name, state_name, new_id)
+    return new_id;
   }
 
   /** Get a task state's ID */

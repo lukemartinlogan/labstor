@@ -21,10 +21,17 @@ struct QueueManagerShm {
 class QueueManager {
  public:
   hipc::vector<MultiQueue> *queue_map_;
-  static inline const QueueId kAdminQueue = QueueId(0, 0);
-  static inline const TaskStateId kAdminTaskState = TaskStateId(0, 0);
+  u32 node_id_;
+  QueueId admin_queue_;
+  TaskStateId admin_task_state_;
 
  public:
+  void Init(u32 node_id) {
+    node_id_ = node_id;
+    admin_queue_ = QueueId(node_id_, 0);
+    admin_task_state_ = TaskStateId(node_id_, 0);
+  }
+
   /**
    * Get a queue by ID
    *

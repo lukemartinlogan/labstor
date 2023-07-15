@@ -50,40 +50,41 @@ class Runtime : public ConfigurationManager {
   void InitServer(std::string server_config_path) {
     LoadServerConfig(server_config_path);
     InitSharedMemory();
-    task_registry_.ServerInit(&server_config_);
     rpc_.ServerInit(&server_config_);
+    header_->node_id_ = rpc_.node_id_;
+    task_registry_.ServerInit(&server_config_, rpc_.node_id_);
     // Queue manager + client must be initialized before Work Orchestrator
-    queue_manager_.ServerInit(main_alloc_, rpc_.node_id_, &server_config_, header_->queue_manager_);
+    queue_manager_.ServerInit(main_alloc_,
+                              rpc_.node_id_,
+                              &server_config_,
+                              header_->queue_manager_);
     LABSTOR_CLIENT->Create(server_config_path, "", true);
     HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kPthread);
     work_orchestrator_.ServerInit(&server_config_, queue_manager_);
 
     // Create the admin library
-    task_registry_.CreateTaskStateId(0);
     task_registry_.RegisterTaskLib("labstor_admin");
-    task_registry_.CreateTaskState("labstor_admin",
-                                   "labstor_admin",
-                                   labstor::DomainId::GetNode(rpc_.node_id_),
-                                   QueueManager::kAdminTaskState,
-                                   nullptr);
+    task_registry_.CreateTaskState(
+        "labstor_admin",
+        "labstor_admin",
+        TaskStateId::GetNull(),
+        nullptr);
 
     // Create the work orchestrator queue scheduling library
-    TaskStateId queue_sched_id = task_registry_.CreateTaskStateId(0);
     task_registry_.RegisterTaskLib("worch_queue_round_robin");
-    task_registry_.CreateTaskState("worch_queue_round_robin",
-                                   "worch_queue_round_robin",
-                                   labstor::DomainId::GetNode(rpc_.node_id_),
-                                   queue_sched_id,
-                                   nullptr);
+    auto queue_sched_id = task_registry_.CreateTaskState(
+        "worch_queue_round_robin",
+        "worch_queue_round_robin",
+        TaskStateId::GetNull(),
+        nullptr);
 
     // Create the work orchestrator process scheduling library
-    TaskStateId proc_sched_id = task_registry_.CreateTaskStateId(0);
     task_registry_.RegisterTaskLib("worch_proc_round_robin");
-    task_registry_.CreateTaskState("worch_proc_round_robin",
-                                   "worch_proc_round_robin",
-                                   labstor::DomainId::GetNode(rpc_.node_id_),
-                                   proc_sched_id,
-                                   nullptr);
+    auto proc_sched_id = task_registry_.CreateTaskState(
+        "worch_proc_round_robin",
+        "worch_proc_round_robin",
+        TaskStateId::GetNull(),
+        nullptr);
 
     // Set the work orchestrator queue scheduler
     LABSTOR_ADMIN->SetWorkOrchestratorQueuePolicy(labstor::DomainId::GetLocal(), queue_sched_id);

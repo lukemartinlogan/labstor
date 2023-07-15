@@ -6,6 +6,7 @@
 #define LABSTOR_INCLUDE_LABSTOR_QUEUE_MANAGER_QUEUE_MANAGER_SERVER_H_
 
 #include "queue_manager.h"
+#include "queue_manager_client.h"
 
 namespace labstor {
 
@@ -30,7 +31,7 @@ class QueueManagerRuntime : public QueueManager {
   /** Create queues in shared memory */
   void ServerInit(hipc::Allocator *alloc, u32 node_id, ServerConfig *config, QueueManagerShm &shm) {
     config_ = config;
-    node_id_ = node_id;
+    Init(node_id);
     auto &qm_conf = config_->queue_manager_;
     // Initialize ticket queue (ticket 0 is for admin queue)
     max_queues_ = qm_conf.max_queues_;
@@ -43,7 +44,7 @@ class QueueManagerRuntime : public QueueManager {
     queue_map_ = shm.queue_map_.get();
     queue_map_->resize(max_queues_);
     // Create the admin queue
-    CreateQueue(kAdminQueue,
+    CreateQueue(admin_queue_,
                 qm_conf.max_lanes_,
                 qm_conf.max_lanes_,
                 qm_conf.queue_depth_,

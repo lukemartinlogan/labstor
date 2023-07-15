@@ -221,7 +221,9 @@ struct UniqueId {
 
   /** Check if null */
   [[nodiscard]]
-  HSHM_ALWAYS_INLINE bool IsNull() const { return unique_ == 0; }
+  HSHM_ALWAYS_INLINE bool IsNull() const {
+    return node_id_ == 0;
+  }
 
   /** Get null id */
   HSHM_ALWAYS_INLINE

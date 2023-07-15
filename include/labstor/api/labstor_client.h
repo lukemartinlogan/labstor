@@ -50,7 +50,9 @@ class Client : public ConfigurationManager {
     LoadServerConfig(server_config_path);
     LoadClientConfig(client_config_path);
     LoadSharedMemory(server);
-    queue_manager_.ClientInit(main_alloc_, header_->queue_manager_);
+    queue_manager_.ClientInit(main_alloc_,
+                              header_->queue_manager_,
+                              header_->node_id_);
     if (!server) {
       HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kPthread);
     }

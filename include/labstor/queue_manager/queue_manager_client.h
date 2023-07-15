@@ -26,9 +26,10 @@ class QueueManagerClient : public QueueManager {
   ~QueueManagerClient() = default;
 
   /** Initialize client */
-  void ClientInit(hipc::Allocator *alloc, QueueManagerShm &shm) {
+  void ClientInit(hipc::Allocator *alloc, QueueManagerShm &shm, u32 node_id) {
     alloc_ = alloc;
     queue_map_ = shm.queue_map_.get();
+    Init(node_id);
   }
 };
 
