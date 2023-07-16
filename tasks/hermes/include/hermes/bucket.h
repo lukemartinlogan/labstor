@@ -184,6 +184,41 @@ class Bucket {
              const Blob &blob,
              BlobId &blob_id,
              Context &ctx) {
+    // Copy data to shared memory
+    hipc::Pointer p = LABSTOR_CLIENT->AllocateBuffer(blob.size());
+    char *data = LABSTOR_CLIENT->GetPrivatePointer(p);
+    memcpy(data, blob.data(), blob.size());
+    bool did_create;
+    // Put to shared memory
+    blob_id = BlobId::GetNull();
+    mdm_->PutBlob(id_, hshm::to_charbuf(blob_name),
+    blob_id, 0, blob.size(), p, ctx.blob_score_, true, did_create);
+    // Free shared memory
+    LABSTOR_CLIENT->FreeBuffer(p);
+    return Status();
+  }
+
+  /**
+   * Put \a blob_name Blob into the bucket
+   * */
+  Status PartialPut(const std::string &blob_name,
+                    const Blob &update,
+                    size_t blob_off_,
+                    BlobId &blob_id,
+                    Context &ctx) {
+    // Copy data to shared memory
+    hipc::Pointer p = LABSTOR_CLIENT->AllocateBuffer(update.size());
+    char *data = LABSTOR_CLIENT->GetPrivatePointer(p);
+    memcpy(data, update.data(), update.size());
+    bool did_create;
+    // Put to shared memory
+    blob_id = BlobId::GetNull();
+    mdm_->PutBlob(id_, hshm::to_charbuf(blob_name),
+                  blob_id, blob_off_, update.size(), p, ctx.blob_score_,
+                  false, did_create);
+    // Free shared memory
+    LABSTOR_CLIENT->FreeBuffer(p);
+    return Status();
   }
 
   /**

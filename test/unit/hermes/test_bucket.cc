@@ -16,4 +16,7 @@ TEST_CASE("TestHermes") {
   // Create a bucket
   hermes::Context ctx;
   hermes::Bucket bkt("hello", ctx);
+  hermes::Blob blob(MEGABYTES(1));
+  hermes::BlobId blob_id;
+  bkt.Put("hello", blob, blob_id, ctx);
 }

@@ -49,6 +49,7 @@ class Server : public TaskLib {
    * ===================================*/
   std::vector<CreateTaskStateInfo> target_tasks_;
   std::vector<bdev::Client> targets_;
+  std::unordered_map<TargetId, TargetInfo*> target_map_;
 
  public:
   Server() = default;
@@ -65,6 +66,78 @@ class Server : public TaskLib {
       }
       case Method::kGetOrCreateTag: {
         GetOrCreateTag(queue, reinterpret_cast<GetOrCreateTagTask *>(task));
+        break;
+      }
+      case Method::kGetTagId: {
+        GetTagId(queue, reinterpret_cast<GetTagIdTask *>(task));
+        break;
+      }
+      case Method::kGetTagName: {
+        GetTagName(queue, reinterpret_cast<GetTagNameTask *>(task));
+        break;
+      }
+      case Method::kRenameTag: {
+        RenameTag(queue, reinterpret_cast<RenameTagTask *>(task));
+        break;
+      }
+      case Method::kDestroyTag: {
+        DestroyTag(queue, reinterpret_cast<DestroyTagTask *>(task));
+        break;
+      }
+      case Method::kTagAddBlob: {
+        TagAddBlob(queue, reinterpret_cast<TagAddBlobTask *>(task));
+        break;
+      }
+      case Method::kTagRemoveBlob: {
+        TagRemoveBlob(queue, reinterpret_cast<TagRemoveBlobTask *>(task));
+        break;
+      }
+      case Method::kTagClearBlobs: {
+        TagClearBlobs(queue, reinterpret_cast<TagClearBlobsTask *>(task));
+        break;
+      }
+      case Method::kPutBlob: {
+        PutBlob(queue, reinterpret_cast<PutBlobTask *>(task));
+        break;
+      }
+      case Method::kGetBlob: {
+        GetBlob(queue, reinterpret_cast<GetBlobTask *>(task));
+        break;
+      }
+      case Method::kTagBlob: {
+        TagBlob(queue, reinterpret_cast<TagBlobTask *>(task));
+        break;
+      }
+      case Method::kBlobHasTag: {
+        BlobHasTag(queue, reinterpret_cast<BlobHasTagTask *>(task));
+        break;
+      }
+      case Method::kGetBlobId: {
+        GetBlobId(queue, reinterpret_cast<GetBlobIdTask *>(task));
+        break;
+      }
+      case Method::kGetBlobName: {
+        GetBlobName(queue, reinterpret_cast<GetBlobNameTask *>(task));
+        break;
+      }
+      case Method::kGetBlobScore: {
+        GetBlobScore(queue, reinterpret_cast<GetBlobScoreTask *>(task));
+        break;
+      }
+      case Method::kGetBlobBuffers: {
+        GetBlobBuffers(queue, reinterpret_cast<GetBlobBuffersTask *>(task));
+        break;
+      }
+      case Method::kRenameBlob: {
+        RenameBlob(queue, reinterpret_cast<RenameBlobTask *>(task));
+        break;
+      }
+      case Method::kTruncateBlob: {
+        TruncateBlob(queue, reinterpret_cast<TruncateBlobTask *>(task));
+        break;
+      }
+      case Method::kDestroyBlob: {
+        DestroyBlob(queue, reinterpret_cast<DestroyBlobTask *>(task));
         break;
       }
     }
@@ -104,6 +177,7 @@ class Server : public TaskLib {
                                   dev,
                                   target_tasks_.back());
           targets_.emplace_back(std::move(client));
+          target_map_.emplace(targets_.back().id_, &targets_.back());
         }
         task->phase_ = ConstructTaskPhase::kWaitForTaskStates;
       }
@@ -284,78 +358,134 @@ class Server : public TaskLib {
    * Create a blob's metadata
    * */
   void PutBlob(MultiQueue *queue, PutBlobTask *task) {
-    // Get the blob info data structure
-    task->did_create_ = false;
-    if (task->blob_name_.size() > 0) {
-      auto it = blob_id_map_.find(task->blob_name_);
-      if (it == blob_id_map_.end()) {
-        task->did_create_ = true;
+    switch (task->phase_) {
+      case PutBlobPhase::kCreate: {
+        HILOG(kDebug, "PutBlobPhase::kCreate");
+        // Get the blob info data structure
+        task->did_create_ = false;
+        if (task->blob_name_.size() > 0) {
+          auto it = blob_id_map_.find(task->blob_name_);
+          if (it == blob_id_map_.end()) {
+            task->did_create_ = true;
+          }
+        } else {
+          auto it = blob_map_.find(task->blob_id_);
+          if (it == blob_map_.end()) {
+            task->did_create_ = true;
+          }
+        }
+
+        if (task->did_create_) {
+          // Create new blob and emplace in map
+          BlobId blob_id(node_id_, id_alloc_.fetch_add(1));
+          blob_map_.emplace(blob_id, BlobInfo());
+          task->blob_id_ = blob_id;
+        }
+
+        BlobInfo &blob_info = blob_map_[task->blob_id_];
+        if (task->did_create_) {
+          // Update blob info
+          blob_info.name_ = task->blob_name_;
+          blob_info.blob_id_ = task->blob_id_;
+          blob_info.tag_id_ = task->tag_id_;
+          blob_info.blob_size_ = task->data_size_;
+          blob_info.score_ = task->score_;
+          blob_info.mod_count_ = 0;
+          blob_info.access_freq_ = 0;
+          blob_info.last_flush_ = 0;
+          blob_info.UpdateWriteStats();
+        } else {
+          // Modify existing blob
+          blob_info.UpdateWriteStats();
+        }
+
+        // TODO(llogan)
+        // Use DPE to decide how much space from each target to allocate
+        BufferInfo &disk_buf = blob_info.buffers_.back();
+        size_t max_cur_space = disk_buf.blob_off_ + disk_buf.t_size_;
+        size_t needed_space = task->blob_off_ + task->data_size_;
+        HSHM_MAKE_AR0(task->schema_, nullptr);
+        std::vector<PlacementSchema> *output = task->schema_.get();
+        if (max_cur_space < needed_space) {
+          Context ctx;
+          size_t size_diff = needed_space - max_cur_space;
+          disk_buf.blob_size_ = needed_space;
+          auto *dpe =  DpeFactory::Get(ctx.dpe_);
+          dpe->Placement({size_diff}, targets_, ctx, *output);
+        }
       }
-    } else {
-      auto it = blob_map_.find(task->blob_id_);
-      if (it == blob_map_.end()) {
-        task->did_create_ = true;
+
+      case PutBlobPhase::kAllocate: {
+        HILOG(kDebug, "PutBlobPhase::kAllocate");
+        BlobInfo &blob_info = blob_map_[task->blob_id_];
+        PlacementSchema &schema = (*task->schema_)[task->plcmnt_idx_];
+        SubPlacement &placement = schema.plcmnts_[task->sub_plcmnt_idx_];
+        TargetInfo &bdev = *target_map_[placement.tid_];
+        task->cur_bdev_alloc_ = bdev.AsyncAllocate(placement.size_,
+                                                   blob_info.buffers_);
+        task->phase_ = PutBlobPhase::kWaitAllocate;
+      }
+
+      case PutBlobPhase::kWaitAllocate: {
+        HILOG(kDebug, "PutBlobPhase::kWaitAllocate");
+        if (!task->cur_bdev_alloc_->IsComplete()){
+          return;
+        }
+        if (task->cur_bdev_alloc_->alloc_size_ < task->cur_bdev_alloc_->size_) {
+          size_t diff = task->cur_bdev_alloc_->size_ - task->cur_bdev_alloc_->alloc_size_;
+          // TODO(llogan): Pass remaining capacity to next schema
+          return;
+        }
+        LABSTOR_CLIENT->DelTask(task->cur_bdev_alloc_);
+        BlobInfo &blob_info = blob_map_[task->blob_id_];
+        PlacementSchema &schema = (*task->schema_)[task->plcmnt_idx_];
+        ++task->sub_plcmnt_idx_;
+        if (task->sub_plcmnt_idx_ >= schema.plcmnts_.size()) {
+          ++task->plcmnt_idx_;
+          task->sub_plcmnt_idx_ = 0;
+        }
+        if (task->plcmnt_idx_ < task->schema_->size()) {
+          task->phase_ = PutBlobPhase::kAllocate;
+          return;
+        } else {
+          task->phase_ = PutBlobPhase::kModify;
+          HSHM_MAKE_AR(task->bdev_writes_, nullptr, blob_info.buffers_.size());
+        }
+      }
+
+      case PutBlobPhase::kModify: {
+        HILOG(kDebug, "PutBlobPhase::kModify");
+        BlobInfo &blob_info = blob_map_[task->blob_id_];
+        hipc::mptr<char> blob_data_mptr(task->data_);
+        char *blob_data = blob_data_mptr.get();
+        std::vector<bdev::WriteTask*> &write_tasks = *task->bdev_writes_;
+        for (BufferInfo &buf : blob_info.buffers_) {
+          if (buf.blob_off_ <= task->blob_off_ &&
+              task->blob_off_ + task->data_size_ <= buf.blob_off_ + buf.blob_size_) {
+            size_t rel_off = task->blob_off_ - buf.blob_off_;
+            size_t tgt_off = buf.t_off_ + rel_off;
+            size_t buf_size = buf.t_size_ - rel_off;
+            TargetInfo &target = *target_map_[buf.tid_];
+            auto write_task = target.AsyncWrite(blob_data, tgt_off, buf_size);
+            write_tasks.emplace_back(write_task);
+          }
+        }
+        task->phase_ = PutBlobPhase::kWaitModify;
+      }
+
+      case PutBlobPhase::kWaitModify: {
+        HILOG(kDebug, "PutBlobPhase::kWaitModify");
+        std::vector<bdev::WriteTask*> &write_tasks = *task->bdev_writes_;
+        for (auto &write_task : write_tasks) {
+          if (!write_task->IsComplete()) {
+            return;
+          } else {
+            LABSTOR_CLIENT->DelTask(write_task);
+          }
+        }
+        task->SetComplete();
       }
     }
-
-    if (task->did_create_) {
-      // Create new blob and emplace in map
-      BlobId blob_id(node_id_, id_alloc_.fetch_add(1));
-      blob_map_.emplace(blob_id, BlobInfo());
-      task->blob_id_ = blob_id;
-    }
-
-    BlobInfo &blob_info = blob_map_[task->blob_id_];
-    if (task->did_create_) {
-      // Update blob info
-      blob_info.name_ = task->blob_name_;
-      blob_info.blob_id_ = task->blob_id_;
-      blob_info.tag_id_ = task->tag_id_;
-      blob_info.blob_size_ = task->data_size_;
-      blob_info.score_ = task->score_;
-      blob_info.mod_count_ = 0;
-      blob_info.access_freq_ = 0;
-      blob_info.last_flush_ = 0;
-      blob_info.UpdateWriteStats();
-    } else {
-      // Modify existing blob
-      blob_info.UpdateWriteStats();
-    }
-
-    // TODO(llogan)
-    // Allocate new buffers using DPE if necessary
-    BufferInfo &disk_buf = blob_info.buffers_.back();
-    size_t max_cur_space = disk_buf.blob_off_ + disk_buf.t_size_;
-    size_t needed_space = task->blob_off_ + task->data_size_;
-    if (max_cur_space < needed_space) {
-      // Allocate more buffers
-      Context ctx;
-      size_t size_diff = needed_space - max_cur_space;
-      disk_buf.blob_size_ = needed_space;
-      _DPE(size_diff, ctx, blob_info.buffers_);
-    }
-    // Modify blob buffers
-    hipc::mptr<char> blob_data_mptr(task->data_);
-    char *blob_data = blob_data_mptr.get();
-    for (auto &buf : blob_info.buffers_) {
-      size_t buf_off = buf.blob_off_ - task->blob_off_;
-      size_t buf_size = buf.t_size_;
-      // TODO(llogan): use BPM to write data
-    }
-  }
-
-  /** Allocate buffers to fit a blob */
-  void _DPE(size_t blob_size, Context &ctx, std::vector<BufferInfo> &buffers) {
-    std::vector<TargetInfo> targets;
-    std::vector<PlacementSchema> output;
-
-    // Get the capacity/bandwidth of targets
-    if (targets.size() == 0) {
-      return;
-    }
-    // Calculate a placement schema
-    auto *dpe =  DpeFactory::Get(ctx.dpe_);
-    dpe->Placement({blob_size}, targets, ctx, output);
   }
 
   /** Get a blob's data */

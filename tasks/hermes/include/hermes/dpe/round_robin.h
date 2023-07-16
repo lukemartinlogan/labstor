@@ -39,11 +39,12 @@ class RoundRobin : public Dpe {
 
       // Choose RR target and iterate
       size_t target_id = counter_.fetch_add(1) % targets.size();
-      for (size_t i = 0; i < targets.size(); ++i) {
-        TargetInfo &target = targets[(target_id + i) % targets.size()];
+      for (size_t tgt_idx = 0; tgt_idx < targets.size(); ++tgt_idx) {
+        TargetInfo &target = targets[(target_id + tgt_idx) % targets.size()];
+        size_t rem_cap = target.GetRemCap();
 
         // NOTE(llogan): We skip targets that can't fit the ENTIRE blob
-        if (target.rem_cap_ < blob_size) {
+        if (rem_cap < blob_size) {
           continue;
         }
         if (ctx.blob_score_ == -1) {
@@ -53,7 +54,6 @@ class RoundRobin : public Dpe {
         // Place the blob on this target
         blob_schema.plcmnts_.emplace_back(rem_blob_size,
                                           target.id_);
-        target.rem_cap_ -= rem_blob_size;
         rem_blob_size = 0;
         break;
       }

@@ -17,6 +17,7 @@
 
 #include "hermes/hermes_types.h"
 #include "hermes_mdm/hermes_mdm.h"
+#include "bdev/bdev.h"
 
 namespace hermes {
 

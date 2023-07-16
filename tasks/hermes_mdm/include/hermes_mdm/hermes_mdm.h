@@ -10,6 +10,7 @@
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/queue_manager/queue_manager_client.h"
 #include "hermes/hermes_types.h"
+#include "bdev/bdev.h"
 
 namespace hermes::mdm {
 
@@ -311,6 +312,16 @@ struct TagClearBlobsTask : public Task {
  * Blob Operations
  * ===================================*/
 
+/** Phases for the put task */
+class PutBlobPhase {
+ public:
+  TASK_METHOD_T kCreate = 0;
+  TASK_METHOD_T kAllocate = 1;
+  TASK_METHOD_T kWaitAllocate = 2;
+  TASK_METHOD_T kModify = 3;
+  TASK_METHOD_T kWaitModify = 4;
+};
+
 /** A task to put data in a blob */
 struct PutBlobTask : public Task {
   IN TagId tag_id_;
@@ -322,6 +333,12 @@ struct PutBlobTask : public Task {
   IN bool replace_;
   INOUT BlobId blob_id_;
   OUT bool did_create_;
+  OUT int phase_;
+  OUT hipc::ShmArchive<std::vector<PlacementSchema>> schema_;
+  OUT int plcmnt_idx_;
+  OUT int sub_plcmnt_idx_;
+  OUT hermes::bdev::AllocTask *cur_bdev_alloc_;
+  OUT hipc::ShmArchive<std::vector<hermes::bdev::WriteTask*>> bdev_writes_;
 
   HSHM_ALWAYS_INLINE
   PutBlobTask(hipc::Allocator *alloc,
@@ -351,6 +368,8 @@ struct PutBlobTask : public Task {
     data_ = data;
     score_ = score;
     replace_ = replace;
+    phase_ = PutBlobPhase::kCreate;
+    plcmnt_idx_ = 0;
   }
 };
 

@@ -87,6 +87,24 @@ class Client : public ConfigurationManager {
   void DelTask(TaskT *task) {
     main_alloc_->DelObj<TaskT>(task);
   }
+
+  /** Allocate a buffer */
+  HSHM_ALWAYS_INLINE
+  hipc::Pointer AllocateBuffer(size_t size) {
+    return main_alloc_->Allocate(size);
+  }
+
+  /** Convert pointer to char* */
+  HSHM_ALWAYS_INLINE
+  char* GetPrivatePointer(const hipc::Pointer &p) {
+    return main_alloc_->Convert<char, hipc::Pointer>(p);
+  }
+
+  /** Free a buffer */
+  HSHM_ALWAYS_INLINE
+  void FreeBuffer(hipc::Pointer &p) {
+    main_alloc_->Free(p);
+  }
 };
 
 }  // namespace labstor

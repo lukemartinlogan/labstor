@@ -111,11 +111,11 @@ struct Context {
  * */
 struct SubPlacement {
   size_t size_;   /**< Size (bytes) */
-  TargetId tid_;  /**< Target destination of data */
+  TargetId tid_;  /**< Index in the target vector */
 
   SubPlacement() = default;
 
-  explicit SubPlacement(size_t size, TargetId tid)
+  explicit SubPlacement(size_t size, const TargetId &tid)
       : size_(size), tid_(tid) {}
 };
 
@@ -126,32 +126,13 @@ struct SubPlacement {
 struct PlacementSchema {
   std::vector<SubPlacement> plcmnts_;
 
-  void AddSubPlacement(size_t size, TargetId tid) {
+  void AddSubPlacement(size_t size, const TargetId &tid) {
     plcmnts_.emplace_back(size, tid);
   }
 
   void Clear() {
     plcmnts_.clear();
   }
-};
-
-/** Represents the current status of a target */
-struct TargetInfo {
-  TargetId id_;         /**< unique Target ID */
-  size_t max_cap_;      /**< maximum capacity of the target */
-  size_t rem_cap_;      /**< remaining capacity of the target */
-  double bandwidth_;    /**< the bandwidth of the device */
-  double latency_;      /**< the latency of the device */
-  float score_;         /**< Relative importance of this tier */
-
-  /** Default constructor */
-  TargetInfo() = default;
-
-  /** Primary constructor */
-  TargetInfo(TargetId id, size_t max_cap, size_t rem_cap,
-             double bandwidth, double latency)
-      : id_(id), max_cap_(max_cap), rem_cap_(rem_cap),
-        bandwidth_(bandwidth), latency_(latency) {}
 };
 
 /** The types of topologies */

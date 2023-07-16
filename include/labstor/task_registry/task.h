@@ -33,6 +33,8 @@ namespace labstor {
 #define TASK_EXTERNAL_COMPLETE (1 << 10)
 /** This task is long-running */
 #define TASK_LONG_RUNNING (1 << 11)
+/** This task is fire and forget. Free when completed */
+#define TASK_FIRE_AND_FORGET (1 << 12)
 
 /** Used to define task methods */
 #define TASK_METHOD_T static inline const u32
