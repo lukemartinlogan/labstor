@@ -672,8 +672,7 @@ class Client {
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     u32 hash = std::hash<hshm::charbuf>{}(tag_name);
     auto *task = LABSTOR_CLIENT->NewTask<GetOrCreateTagTask>(
-        p,
-        id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
+        p, id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
         tag_name, blob_owner, traits, backend_size);
     queue->Emplace(hash, p);
     task->Wait();

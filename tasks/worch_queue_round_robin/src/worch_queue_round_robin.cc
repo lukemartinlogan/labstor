@@ -43,6 +43,9 @@ class Server : public TaskLib {
     // Check if any new queues need to be scheduled
     u32 count = 0;
     for (MultiQueue &queue : *LABSTOR_QM_RUNTIME->queue_map_) {
+      if (queue.id_.IsNull()) {
+        continue;
+      }
       for (u32 lane_id = queue.num_scheduled_; lane_id < queue.num_lanes_; ++lane_id) {
         u32 worker_id = count % LABSTOR_WORK_ORCHESTRATOR->workers_.size();
         Worker &worker = LABSTOR_WORK_ORCHESTRATOR->workers_[worker_id];

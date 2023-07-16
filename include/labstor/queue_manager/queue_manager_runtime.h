@@ -55,6 +55,15 @@ class QueueManagerRuntime : public QueueManager {
   void CreateQueue(const QueueId &id,
                    u32 max_lanes, u32 num_lanes,
                    u32 depth, bitfield32_t flags) {
+    MultiQueue *queue = GetQueue(id);
+    if (id.IsNull()) {
+      HILOG(kDebug, "Cannot create null queue {}", id);
+      return;
+    }
+    if (!queue->id_.IsNull()) {
+      HILOG(kDebug, "Queue {} already exists", id);
+      return;
+    }
     HILOG(kDebug, "Creating queue {} with {} lanes", id, num_lanes);
     queue_map_->replace(queue_map_->begin() + id.unique_,
                         id, max_lanes, num_lanes, depth, flags);

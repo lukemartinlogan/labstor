@@ -173,8 +173,26 @@ class TaskRegistry {
   }
 
   /** Allocate a task state ID */
+  HSHM_ALWAYS_INLINE
   TaskStateId CreateTaskStateId() {
     return TaskStateId(node_id_, unique_.fetch_add(1));
+  }
+
+  /** Check if task state exists by ID */
+  HSHM_ALWAYS_INLINE
+  bool TaskStateExists(const TaskStateId &state_id) {
+    auto it = task_states_.find(state_id);
+    return it != task_states_.end();
+  }
+
+  /** Check if task state exists by name */
+  HSHM_ALWAYS_INLINE
+  bool TaskStateExists(const char *state_name) {
+    if (state_name == nullptr) {
+      return false;
+    }
+    auto it = task_state_ids_.find(state_name);
+    return it != task_state_ids_.end();
   }
 
   /** Create a task state */
@@ -190,7 +208,7 @@ class TaskRegistry {
     }
 
     // Check that the state doesn't already exist
-    if (state_name && task_state_ids_.find(state_name) != task_state_ids_.end()) {
+    if (TaskStateExists(state_name) || TaskStateExists(state_id)) {
       HELOG(kError, "The task state already exists: {}", state_name);
       return TaskStateId::GetNull();
     }
@@ -206,6 +224,7 @@ class TaskRegistry {
     TaskState *task_state = info.create_state_(task);
     if (!task_state) {
       HELOG(kError, "Could not create the task state: {}", state_name);
+      task->SetComplete();
       return TaskStateId::GetNull();
     }
 
@@ -227,12 +246,21 @@ class TaskRegistry {
   }
 
   /** Get a task state instance */
-  TaskState *GetTaskState(const TaskStateId &task_state_id) {
+  TaskState* GetTaskState(const TaskStateId &task_state_id) {
     auto it = task_states_.find(task_state_id);
     if (it == task_states_.end()) {
       return nullptr;
     }
     return it->second;
+  }
+
+  /** Get task state instance by name OR by ID */
+  TaskState* GetTaskState(const std::string &task_name, const TaskStateId &task_state_id) {
+    TaskStateId id = task_state_id;
+    if (TaskStateExists(task_name.c_str())) {
+      id = GetTaskStateId(task_name);
+    }
+    return GetTaskState(id);
   }
 
   /** Destroy a task state */

@@ -113,8 +113,9 @@ using DestroyTaskLibTask = RegisterTaskLibTaskTempl<1>;
 
 class CreateTaskStatePhase {
  public:
-  TASK_METHOD_T kAllocate = 0;
-  TASK_METHOD_T kLast = 1;
+  // NOTE(llogan): kLast is intentially 0 so that the constructor
+  // can seamlessly pass data to submethods
+  TASK_METHOD_T kLast = 0;
 };
 
 /** A task to register a Task state */
@@ -141,7 +142,6 @@ struct CreateTaskStateTask : public Task {
     HSHM_MAKE_AR(state_name_, alloc, state_name);
     HSHM_MAKE_AR(lib_name_, alloc, lib_name);
     id_ = id;
-    phase_ = CreateTaskStatePhase::kAllocate;
   }
 
   ~CreateTaskStateTask() {
@@ -254,13 +254,14 @@ class Client {
 
   /** Async create a queue with an ID */
   HSHM_ALWAYS_INLINE
-  CreateQueueTask* ACreateQueue(const DomainId &domain_id, QueueId id,
+  CreateQueueTask* ACreateQueue(const DomainId &domain_id,
+                                const QueueId &id,
                                 u32 max_lanes, u32 num_lanes,
                                 u32 depth, bitfield32_t flags) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
     auto *task = LABSTOR_CLIENT->NewTask<CreateQueueTask>(
-        p,  domain_id, id,
+        p, domain_id, id,
         max_lanes, num_lanes, depth, flags);
     queue->Emplace(0, p);
     return task;
@@ -268,7 +269,7 @@ class Client {
 
   /** Create a queue with an ID */
   HSHM_ALWAYS_INLINE
-  void CreateQueue(const DomainId &domain_id, QueueId id,
+  void CreateQueue(const DomainId &domain_id, const QueueId &id,
                    u32 max_lanes, u32 num_lanes,
                    u32 depth, bitfield32_t flags) {
     auto task = ACreateQueue(domain_id, id, max_lanes, num_lanes, depth, flags);
@@ -328,7 +329,7 @@ class Client {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
     auto *task = LABSTOR_CLIENT->NewTask<CreateTaskStateT>(p,
-                                                   std::forward<Args>(args)...);
+                                                           std::forward<Args>(args)...);
     queue->Emplace(0, p);
     task->Wait();
     TaskStateId new_id = task->id_;

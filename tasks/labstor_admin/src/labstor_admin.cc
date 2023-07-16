@@ -98,25 +98,23 @@ class Server : public TaskLib {
   }
 
   void CreateTaskState(MultiQueue *queue, CreateTaskStateTask *task) {
-    switch (task->phase_) {
-      case CreateTaskStatePhase::kAllocate: {
-        std::string lib_name = task->lib_name_->str();
-        std::string state_name = task->state_name_->str();
-        if (!LABSTOR_TASK_REGISTRY->GetTaskStateId(state_name).IsNull()) {
-          return;
-        }
-        task->id_ = LABSTOR_TASK_REGISTRY->CreateTaskState(
-            lib_name.c_str(),
-            state_name.c_str(),
-            task->id_,
-            task);
-        return;
-      }
-      default: {
-        auto exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->id_);
-        exec->Run(queue, task->method_, task);
-        return;
-      }
+    std::string lib_name = task->lib_name_->str();
+    std::string state_name = task->state_name_->str();
+    TaskState *task_state = LABSTOR_TASK_REGISTRY->GetTaskState(state_name, task->id_);
+    if (task_state) {
+      // The tasks exists and is initialized
+      task->id_ = task_state->id_;
+      task->SetComplete();
+    } else {
+      // The state is being created
+      // NOTE(llogan): this does NOT return since task creations can have phases
+      task->method_ = Method::kConstruct;
+      task->id_ = LABSTOR_TASK_REGISTRY->CreateTaskState(
+          lib_name.c_str(),
+          state_name.c_str(),
+          task->id_,
+          task);
+      task->task_state_ = task->id_;
     }
   }
 
