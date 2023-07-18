@@ -488,6 +488,8 @@ class Server : public TaskLib {
         for (auto &write_task : write_tasks) {
           LABSTOR_CLIENT->DelTask(write_task);
         }
+        HSHM_DESTROY_AR(task->schema_);
+        HSHM_DESTROY_AR(task->bdev_writes_);
         task->SetComplete();
       }
     }
@@ -533,6 +535,7 @@ class Server : public TaskLib {
         for (auto &read_task : read_tasks) {
           LABSTOR_CLIENT->DelTask(read_task);
         }
+        HSHM_DESTROY_AR(task->bdev_reads_);
         task->SetComplete();
       }
     }

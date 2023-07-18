@@ -158,6 +158,7 @@ typedef Task IpcTask;
 #define IN
 #define OUT
 #define INOUT
+#define TEMP
 
 }  // namespace labstor
 

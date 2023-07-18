@@ -333,12 +333,12 @@ struct PutBlobTask : public Task {
   IN bool replace_;
   INOUT BlobId blob_id_;
   OUT bool did_create_;
-  OUT int phase_;
-  OUT hipc::ShmArchive<std::vector<PlacementSchema>> schema_;
-  OUT int plcmnt_idx_;
-  OUT int sub_plcmnt_idx_;
-  OUT hermes::bdev::AllocTask *cur_bdev_alloc_;
-  OUT hipc::ShmArchive<std::vector<hermes::bdev::WriteTask*>> bdev_writes_;
+  TEMP int phase_;
+  TEMP int plcmnt_idx_;
+  TEMP int sub_plcmnt_idx_;
+  TEMP hermes::bdev::AllocTask *cur_bdev_alloc_;
+  TEMP hipc::ShmArchive<std::vector<PlacementSchema>> schema_;
+  TEMP hipc::ShmArchive<std::vector<hermes::bdev::WriteTask*>> bdev_writes_;
 
   HSHM_ALWAYS_INLINE
   PutBlobTask(hipc::Allocator *alloc,
@@ -370,12 +370,6 @@ struct PutBlobTask : public Task {
     replace_ = replace;
     phase_ = PutBlobPhase::kCreate;
     plcmnt_idx_ = 0;
-  }
-
-  HSHM_ALWAYS_INLINE
-  ~PutBlobTask() {
-    // HSHM_DESTROY_AR(schema_);
-    // HSHM_DESTROY_AR(bdev_writes_);
   }
 };
 
