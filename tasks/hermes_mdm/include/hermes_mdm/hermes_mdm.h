@@ -371,22 +371,37 @@ struct PutBlobTask : public Task {
     phase_ = PutBlobPhase::kCreate;
     plcmnt_idx_ = 0;
   }
+
+  HSHM_ALWAYS_INLINE
+  ~PutBlobTask() {
+    // HSHM_DESTROY_AR(schema_);
+    // HSHM_DESTROY_AR(bdev_writes_);
+  }
+};
+
+/** Phases for the get task */
+class GetBlobPhase {
+ public:
+  TASK_METHOD_T kStart = 0;
+  TASK_METHOD_T kWait = 1;
 };
 
 /** A task to get data from a blob */
 struct GetBlobTask : public Task {
   IN BlobId blob_id_;
-  IN char* buffer_;
-  IN size_t size_;
-  OUT hipc::ShmArchive<hipc::string> data_;
+  IN size_t blob_off_;
+  INOUT ssize_t data_size_;
+  OUT int phase_;
+  OUT hipc::ShmArchive<std::vector<bdev::ReadTask*>> bdev_reads_;
+  OUT hipc::Pointer data_;
 
   HSHM_ALWAYS_INLINE
   GetBlobTask(hipc::Allocator *alloc,
               const TaskStateId &state_id,
               const DomainId &domain_id,
               const BlobId &blob_id,
-              char *buffer,
-              size_t size) : Task(alloc) {
+              size_t off,
+              ssize_t size) : Task(alloc) {
     // Initialize task
     key_ = blob_id.unique_;
     task_state_ = state_id;
@@ -396,8 +411,8 @@ struct GetBlobTask : public Task {
 
     // Custom params
     blob_id_ = blob_id;
-    buffer_ = buffer;
-    size_ = size;
+    blob_off_ = off;
+    data_size_ = size;
   }
 };
 
@@ -837,19 +852,22 @@ class Client {
     did_create = task->did_create_;
     LABSTOR_CLIENT->DelTask(task);
   }
-  
+
   /** Get a blob's data */
-  void GetBlob(BlobId blob_id, char *buffer, size_t size) {
+  hipc::Pointer GetBlob(BlobId blob_id, size_t off, ssize_t &size) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<GetBlobTask>(
         p,
         id_, DomainId::GetNode(HASH_TO_NODE_ID(hash)),
-        blob_id, buffer, size);
+        blob_id, off, size);
     queue->Emplace(hash, p);
     task->Wait();
+    hipc::Pointer data = task->data_;
+    size = task->data_size_;
     LABSTOR_CLIENT->DelTask(task);
+    return data;
   }
 
   /**

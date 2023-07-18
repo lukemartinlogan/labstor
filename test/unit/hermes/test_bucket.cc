@@ -16,7 +16,15 @@ TEST_CASE("TestHermes") {
   // Create a bucket
   hermes::Context ctx;
   hermes::Bucket bkt("hello", ctx);
+
+  // Put a blob
   hermes::Blob blob(MEGABYTES(1));
+  memset(blob.data(), 10, blob.size());
   hermes::BlobId blob_id;
   bkt.Put("hello", blob, blob_id, ctx);
+
+  // Get a blob
+  hermes::Blob blob2;
+  bkt.Get(blob_id, blob2, ctx);
+  REQUIRE(blob == blob2);
 }

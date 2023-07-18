@@ -469,7 +469,7 @@ class Server : public TaskLib {
             size_t tgt_off = buf.t_off_ + rel_off;
             size_t buf_size = buf.t_size_ - rel_off;
             TargetInfo &target = *target_map_[buf.tid_];
-            auto write_task = target.AsyncWrite(blob_data, tgt_off, buf_size);
+            auto write_task = target.AsyncWrite(blob_data + blob_off, tgt_off, buf_size);
             write_tasks.emplace_back(write_task);
           }
           blob_off += buf.t_size_;
@@ -483,9 +483,10 @@ class Server : public TaskLib {
         for (auto &write_task : write_tasks) {
           if (!write_task->IsComplete()) {
             return;
-          } else {
-            LABSTOR_CLIENT->DelTask(write_task);
           }
+        }
+        for (auto &write_task : write_tasks) {
+          LABSTOR_CLIENT->DelTask(write_task);
         }
         task->SetComplete();
       }
@@ -494,7 +495,47 @@ class Server : public TaskLib {
 
   /** Get a blob's data */
   void GetBlob(MultiQueue *queue, GetBlobTask *task) {
-    // TODO(llogan)
+    switch (task->phase_) {
+      case GetBlobPhase::kStart: {
+        BlobInfo &blob_info = blob_map_[task->blob_id_];
+        HSHM_MAKE_AR0(task->bdev_reads_, nullptr);
+        std::vector<bdev::ReadTask*> &read_tasks = *task->bdev_reads_;
+        read_tasks.reserve(blob_info.buffers_.size());
+        size_t blob_off = 0;
+        if (task->data_size_ < 0) {
+          task->data_size_ = (ssize_t)(blob_info.blob_size_ - task->blob_off_);
+        }
+        task->data_ = LABSTOR_CLIENT->AllocateBuffer(task->data_size_);
+        hipc::mptr<char> blob_data_mptr(task->data_);
+        char *blob_data = blob_data_mptr.get();
+        for (BufferInfo &buf : blob_info.buffers_) {
+          if (blob_off <= task->blob_off_ &&
+              task->blob_off_ + task->data_size_ <= blob_off + buf.t_size_) {
+            size_t rel_off = task->blob_off_ - blob_off;
+            size_t tgt_off = buf.t_off_ + rel_off;
+            size_t buf_size = buf.t_size_ - rel_off;
+            TargetInfo &target = *target_map_[buf.tid_];
+            auto read_task = target.AsyncRead(blob_data + blob_off, tgt_off, buf_size);
+            read_tasks.emplace_back(read_task);
+          }
+          blob_off += buf.t_size_;
+        }
+        blob_info.max_blob_size_ = blob_off;
+        task->phase_ = GetBlobPhase::kWait;
+      }
+      case GetBlobPhase::kWait: {
+        std::vector<bdev::ReadTask*> &read_tasks = *task->bdev_reads_;
+        for (auto &read_task : read_tasks) {
+          if (!read_task->IsComplete()) {
+            return;
+          }
+        }
+        for (auto &read_task : read_tasks) {
+          LABSTOR_CLIENT->DelTask(read_task);
+        }
+        task->SetComplete();
+      }
+    }
   }
 
   /**

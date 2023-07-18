@@ -227,7 +227,15 @@ class Bucket {
   Status Get(BlobId blob_id,
              Blob &blob,
              Context &ctx) {
-    // Send message to MDM to get blob
+    // Get from shared memory
+    ssize_t data_size = -1;
+    hipc::Pointer data_p = mdm_->GetBlob(blob_id, 0, data_size);
+    char *data = LABSTOR_CLIENT->GetPrivatePointer(data_p);
+    blob.resize(data_size);
+    memcpy(blob.data(), data, data_size);
+    // Free shared memory
+    LABSTOR_CLIENT->FreeBuffer(data_p);
+    return Status();
   }
 
   /**
