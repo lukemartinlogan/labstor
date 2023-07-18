@@ -74,6 +74,11 @@ struct Task : public hipc::ShmContainer {
     return task_flags_.Any(TASK_EXTERNAL_COMPLETE);
   }
 
+  /** Check if a task is fire & forget */
+  HSHM_ALWAYS_INLINE bool IsFireAndForget() {
+    return task_flags_.Any(TASK_FIRE_AND_FORGET);
+  }
+
   /** Set task as complete */
   HSHM_ALWAYS_INLINE void SetComplete() {
     task_flags_.SetBits(TASK_COMPLETE);

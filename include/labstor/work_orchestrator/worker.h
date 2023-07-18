@@ -130,6 +130,10 @@ class Worker {
    * @return true if work was found, false otherwise
    * */
   void Run();
+
+  void PollOrdered(u32 lane_id, MultiQueue *queue);
+
+  void PollUnordered(u32 lane_id, MultiQueue *queue);
 };
 
 }  // namespace labstor

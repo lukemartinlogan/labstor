@@ -15,6 +15,8 @@
 #define QUEUE_RESIZE (1 << 1)
 /** This queue is currently processing updates */
 #define QUEUE_UPDATE (1 << 2)
+/** Requests in this queue can be processed in any order */
+#define QUEUE_UNORDERED (1 << 3)
 
 namespace labstor {
 

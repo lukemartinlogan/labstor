@@ -48,7 +48,7 @@ class QueueManagerRuntime : public QueueManager {
                 qm_conf.max_lanes_,
                 qm_conf.max_lanes_,
                 qm_conf.queue_depth_,
-                bitfield32_t(TASK_LOW_LATENCY));
+                bitfield32_t(QUEUE_UNORDERED | QUEUE_LOW_LATENCY));
   }
 
   /** Create a new queue (with pre-allocated ID) in the map */

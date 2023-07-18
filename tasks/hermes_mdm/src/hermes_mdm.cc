@@ -362,10 +362,13 @@ class Server : public TaskLib {
         HILOG(kDebug, "PutBlobPhase::kCreate");
         // Get the blob info data structure
         task->did_create_ = false;
-        if (task->blob_name_.size() > 0) {
-          auto it = blob_id_map_.find(task->blob_name_);
+        hshm::charbuf blob_name = hshm::to_charbuf(*task->blob_name_);
+        if (blob_name.size() > 0) {
+          auto it = blob_id_map_.find(blob_name);
           if (it == blob_id_map_.end()) {
             task->did_create_ = true;
+          } else {
+            task->blob_id_ = it->second;
           }
         } else {
           auto it = blob_map_.find(task->blob_id_);
@@ -377,6 +380,7 @@ class Server : public TaskLib {
         if (task->did_create_) {
           // Create new blob and emplace in map
           BlobId blob_id(node_id_, id_alloc_.fetch_add(1));
+          blob_id_map_.emplace(blob_name, blob_id);
           blob_map_.emplace(blob_id, BlobInfo());
           task->blob_id_ = blob_id;
         }
@@ -384,7 +388,7 @@ class Server : public TaskLib {
         BlobInfo &blob_info = blob_map_[task->blob_id_];
         if (task->did_create_) {
           // Update blob info
-          blob_info.name_ = task->blob_name_;
+          blob_info.name_ = std::move(blob_name);
           blob_info.blob_id_ = task->blob_id_;
           blob_info.tag_id_ = task->tag_id_;
           blob_info.blob_size_ = task->data_size_;
@@ -399,8 +403,7 @@ class Server : public TaskLib {
           blob_info.UpdateWriteStats();
         }
 
-        // TODO(llogan)
-        // Use DPE to decide how much space from each target to allocate
+        // Determine amount of additional buffering space needed
         Context ctx;
         size_t size_diff;
         HSHM_MAKE_AR0(task->schema_, nullptr);
@@ -413,12 +416,18 @@ class Server : public TaskLib {
         } else {
           size_diff = task->blob_off_ + task->data_size_;
         }
-        auto *dpe = DpeFactory::Get(ctx.dpe_);
-        dpe->Placement({size_diff}, targets_, ctx, *schema);
+
+        // Use DPE
+        if (size_diff > 0) {
+          auto *dpe = DpeFactory::Get(ctx.dpe_);
+          dpe->Placement({size_diff}, targets_, ctx, *schema);
+        } else {
+          task->phase_ = PutBlobPhase::kModify;
+          return;
+        }
       }
 
       case PutBlobPhase::kAllocate: {
-        HILOG(kDebug, "PutBlobPhase::kAllocate");
         BlobInfo &blob_info = blob_map_[task->blob_id_];
         PlacementSchema &schema = (*task->schema_)[task->plcmnt_idx_];
         SubPlacement &placement = schema.plcmnts_[task->sub_plcmnt_idx_];
@@ -435,7 +444,6 @@ class Server : public TaskLib {
         if (task->cur_bdev_alloc_->alloc_size_ < task->cur_bdev_alloc_->size_) {
           size_t diff = task->cur_bdev_alloc_->size_ - task->cur_bdev_alloc_->alloc_size_;
           // TODO(llogan): Pass remaining capacity to next schema
-          return;
         }
         LABSTOR_CLIENT->DelTask(task->cur_bdev_alloc_);
         BlobInfo &blob_info = blob_map_[task->blob_id_];
@@ -450,13 +458,13 @@ class Server : public TaskLib {
           return;
         } else {
           task->phase_ = PutBlobPhase::kModify;
+          HSHM_DESTROY_AR(task->schema_);
           HSHM_MAKE_AR0(task->bdev_writes_, nullptr);
           task->bdev_writes_->reserve(blob_info.buffers_.size());
         }
       }
 
       case PutBlobPhase::kModify: {
-        HILOG(kDebug, "PutBlobPhase::kModify");
         BlobInfo &blob_info = blob_map_[task->blob_id_];
         hipc::mptr<char> blob_data_mptr(task->data_);
         char *blob_data = blob_data_mptr.get();
@@ -488,8 +496,8 @@ class Server : public TaskLib {
         for (auto &write_task : write_tasks) {
           LABSTOR_CLIENT->DelTask(write_task);
         }
-        HSHM_DESTROY_AR(task->schema_);
         HSHM_DESTROY_AR(task->bdev_writes_);
+        HILOG(kDebug, "PutBlobTask complete");
         task->SetComplete();
       }
     }
@@ -499,6 +507,7 @@ class Server : public TaskLib {
   void GetBlob(MultiQueue *queue, GetBlobTask *task) {
     switch (task->phase_) {
       case GetBlobPhase::kStart: {
+        HILOG(kDebug, "GetBlobTask start");
         BlobInfo &blob_info = blob_map_[task->blob_id_];
         HSHM_MAKE_AR0(task->bdev_reads_, nullptr);
         std::vector<bdev::ReadTask*> &read_tasks = *task->bdev_reads_;
@@ -522,7 +531,6 @@ class Server : public TaskLib {
           }
           blob_off += buf.t_size_;
         }
-        blob_info.max_blob_size_ = blob_off;
         task->phase_ = GetBlobPhase::kWait;
       }
       case GetBlobPhase::kWait: {
@@ -536,6 +544,7 @@ class Server : public TaskLib {
           LABSTOR_CLIENT->DelTask(read_task);
         }
         HSHM_DESTROY_AR(task->bdev_reads_);
+        HILOG(kDebug, "GetBlobTask complete");
         task->SetComplete();
       }
     }

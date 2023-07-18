@@ -325,7 +325,7 @@ class PutBlobPhase {
 /** A task to put data in a blob */
 struct PutBlobTask : public Task {
   IN TagId tag_id_;
-  IN hshm::charbuf blob_name_;
+  IN hipc::ShmArchive<hipc::charbuf> blob_name_;
   IN size_t blob_off_;
   IN size_t data_size_;
   IN hipc::Pointer data_;
@@ -361,7 +361,7 @@ struct PutBlobTask : public Task {
 
     // Custom params
     tag_id_ = tag_id;
-    blob_name_ = blob_name;
+    HSHM_MAKE_AR(blob_name_, LABSTOR_CLIENT->main_alloc_, blob_name);
     blob_id_ = blob_id;
     blob_off_ = blob_off;
     data_size_ = data_size;
@@ -370,6 +370,10 @@ struct PutBlobTask : public Task {
     replace_ = replace;
     phase_ = PutBlobPhase::kCreate;
     plcmnt_idx_ = 0;
+  }
+
+  ~PutBlobTask() {
+    HSHM_DESTROY_AR(blob_name_);
   }
 };
 
@@ -404,6 +408,7 @@ struct GetBlobTask : public Task {
     domain_id_ = domain_id;
 
     // Custom params
+    phase_ = GetBlobPhase::kStart;
     blob_id_ = blob_id;
     blob_off_ = off;
     data_size_ = size;

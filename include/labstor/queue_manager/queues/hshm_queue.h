@@ -56,7 +56,6 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
       lanes_->emplace_back(depth);
     }
     hipc::vector<Lane> *lanes = lanes_.get();
-    flags_.Clear();
     SetNull();
   }
 
@@ -158,6 +157,17 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
   bool Pop(u32 lane_id, Task *&task, hipc::Pointer &p) {
     Lane &lane = GetLane(lane_id);
     hshm::qtok_t ret = lane.pop(p);
+    if (ret.IsNull()) {
+      return false;
+    }
+    task = HERMES_MEMORY_MANAGER->Convert<Task>(p);
+    return true;
+  }
+
+  /** Peek a pointer to a task */
+  bool Peek(u32 lane_id, Task *&task, hipc::Pointer &p, int off = 0) {
+    Lane &lane = GetLane(lane_id);
+    hshm::qtok_t ret = lane.peek(p, off);
     if (ret.IsNull()) {
       return false;
     }
