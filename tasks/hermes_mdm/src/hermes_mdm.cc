@@ -25,7 +25,6 @@ class Server : public TaskLib {
   /**====================================
    * Configuration
    * ===================================*/
-   ServerConfig server_config_;
    u32 node_id_;
 
   /**====================================
@@ -148,21 +147,14 @@ class Server : public TaskLib {
       case ConstructTaskPhase::kLoadConfig: {
         id_alloc_ = 0;
         std::string config_path = task->server_config_path_->str();
-
-        // Load hermes config
-        if (config_path.empty()) {
-          config_path = GetEnvSafe(Constant::kHermesServerConf);
-        }
-        HILOG(kInfo, "Loading server configuration: {}", config_path)
-        server_config_.LoadFromFile(config_path);
+        HERMES->LoadServerConfig(config_path);
         node_id_ = LABSTOR_QM_CLIENT->node_id_;
         task->phase_ = ConstructTaskPhase::kCreateTaskStates;
       }
 
       case ConstructTaskPhase::kCreateTaskStates: {
-        target_tasks_.reserve(server_config_.devices_.size());
-        for (DeviceInfo &dev : server_config_.devices_) {
-          bdev::Client client;
+        target_tasks_.reserve(HERMES->server_config_.devices_.size());
+        for (DeviceInfo &dev : HERMES->server_config_.devices_) {
           std::string dev_type;
           if (dev.mount_dir_.empty()) {
             dev_type = "ram_bdev";
@@ -171,13 +163,13 @@ class Server : public TaskLib {
             dev_type = "posix_bdev";
           }
           target_tasks_.emplace_back();
+          targets_.emplace_back();
+          bdev::Client &client = targets_.back();
           client.ACreateTaskState(DomainId::GetLocal(),
                                   "hermes_" + dev.dev_name_,
                                   dev_type,
                                   dev,
                                   target_tasks_.back());
-          targets_.emplace_back(std::move(client));
-          target_map_.emplace(targets_.back().id_, &targets_.back());
         }
         task->phase_ = ConstructTaskPhase::kWaitForTaskStates;
       }
@@ -188,6 +180,13 @@ class Server : public TaskLib {
           if (!tgt_task.state_task_->IsComplete()) {
             return;
           }
+        }
+        for (int i = 0; i < target_tasks_.size(); ++i) {
+          auto &tgt_task = target_tasks_[i];
+          auto &client = targets_[i];
+          client.id_ = tgt_task.state_task_->id_;
+          LABSTOR_CLIENT->DelTask(tgt_task.state_task_);
+          target_map_.emplace(client.id_, &client);
         }
         task->phase_ = ConstructTaskPhase::kCreateQueues;
       }
@@ -389,6 +388,7 @@ class Server : public TaskLib {
           blob_info.blob_id_ = task->blob_id_;
           blob_info.tag_id_ = task->tag_id_;
           blob_info.blob_size_ = task->data_size_;
+          blob_info.max_blob_size_ = 0;
           blob_info.score_ = task->score_;
           blob_info.mod_count_ = 0;
           blob_info.access_freq_ = 0;
@@ -401,18 +401,20 @@ class Server : public TaskLib {
 
         // TODO(llogan)
         // Use DPE to decide how much space from each target to allocate
-        BufferInfo &disk_buf = blob_info.buffers_.back();
-        size_t max_cur_space = disk_buf.blob_off_ + disk_buf.t_size_;
-        size_t needed_space = task->blob_off_ + task->data_size_;
+        Context ctx;
+        size_t size_diff;
         HSHM_MAKE_AR0(task->schema_, nullptr);
-        std::vector<PlacementSchema> *output = task->schema_.get();
-        if (max_cur_space < needed_space) {
-          Context ctx;
-          size_t size_diff = needed_space - max_cur_space;
-          disk_buf.blob_size_ = needed_space;
-          auto *dpe =  DpeFactory::Get(ctx.dpe_);
-          dpe->Placement({size_diff}, targets_, ctx, *output);
+        std::vector<PlacementSchema> *schema = task->schema_.get();
+        if (blob_info.max_blob_size_ > 0) {
+          size_t needed_space = task->blob_off_ + task->data_size_;
+          if (blob_info.max_blob_size_ < needed_space) {
+            size_diff = needed_space - blob_info.max_blob_size_;
+          }
+        } else {
+          size_diff = task->blob_off_ + task->data_size_;
         }
+        auto *dpe = DpeFactory::Get(ctx.dpe_);
+        dpe->Placement({size_diff}, targets_, ctx, *schema);
       }
 
       case PutBlobPhase::kAllocate: {
@@ -427,7 +429,6 @@ class Server : public TaskLib {
       }
 
       case PutBlobPhase::kWaitAllocate: {
-        HILOG(kDebug, "PutBlobPhase::kWaitAllocate");
         if (!task->cur_bdev_alloc_->IsComplete()){
           return;
         }
@@ -449,7 +450,8 @@ class Server : public TaskLib {
           return;
         } else {
           task->phase_ = PutBlobPhase::kModify;
-          HSHM_MAKE_AR(task->bdev_writes_, nullptr, blob_info.buffers_.size());
+          HSHM_MAKE_AR0(task->bdev_writes_, nullptr);
+          task->bdev_writes_->reserve(blob_info.buffers_.size());
         }
       }
 
@@ -459,22 +461,24 @@ class Server : public TaskLib {
         hipc::mptr<char> blob_data_mptr(task->data_);
         char *blob_data = blob_data_mptr.get();
         std::vector<bdev::WriteTask*> &write_tasks = *task->bdev_writes_;
+        size_t blob_off = 0;
         for (BufferInfo &buf : blob_info.buffers_) {
-          if (buf.blob_off_ <= task->blob_off_ &&
-              task->blob_off_ + task->data_size_ <= buf.blob_off_ + buf.blob_size_) {
-            size_t rel_off = task->blob_off_ - buf.blob_off_;
+          if (blob_off <= task->blob_off_ &&
+              task->blob_off_ + task->data_size_ <= blob_off + buf.t_size_) {
+            size_t rel_off = task->blob_off_ - blob_off;
             size_t tgt_off = buf.t_off_ + rel_off;
             size_t buf_size = buf.t_size_ - rel_off;
             TargetInfo &target = *target_map_[buf.tid_];
             auto write_task = target.AsyncWrite(blob_data, tgt_off, buf_size);
             write_tasks.emplace_back(write_task);
           }
+          blob_off += buf.t_size_;
         }
+        blob_info.max_blob_size_ = blob_off;
         task->phase_ = PutBlobPhase::kWaitModify;
       }
 
       case PutBlobPhase::kWaitModify: {
-        HILOG(kDebug, "PutBlobPhase::kWaitModify");
         std::vector<bdev::WriteTask*> &write_tasks = *task->bdev_writes_;
         for (auto &write_task : write_tasks) {
           if (!write_task->IsComplete()) {

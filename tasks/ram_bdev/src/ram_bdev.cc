@@ -33,6 +33,10 @@ class Server : public TaskLib {
         Read(queue, reinterpret_cast<ReadTask *>(task));
         break;
       }
+      case Method::kAlloc: {
+        Alloc(queue, reinterpret_cast<AllocTask *>(task));
+        break;
+      }
       case Method::kFree: {
         Free(queue, reinterpret_cast<FreeTask *>(task));
         break;
@@ -41,6 +45,7 @@ class Server : public TaskLib {
   }
 
   void Construct(MultiQueue *queue, ConstructTask *task) {
+    id_ = task->id_;
     DeviceInfo &dev_info = *task->info_;
     alloc_.Init(id_, dev_info.capacity_, dev_info.slab_sizes_);
     mem_ptr_ = (char*)malloc(dev_info.capacity_);
@@ -53,7 +58,7 @@ class Server : public TaskLib {
   }
 
   void Alloc(MultiQueue *queue, AllocTask *task) {
-    alloc_.Allocate(task->size_, task->buffers_, task->alloc_size_);
+    alloc_.Allocate(task->size_, *task->buffers_, task->alloc_size_);
     task->SetComplete();
   }
 

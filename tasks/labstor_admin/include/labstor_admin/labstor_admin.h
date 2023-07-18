@@ -258,6 +258,10 @@ class Client {
                                 const QueueId &id,
                                 u32 max_lanes, u32 num_lanes,
                                 u32 depth, bitfield32_t flags) {
+    if (id.IsNull()) {
+      HELOG(kWarning, "Cannot create a queue with a null ID");
+      return nullptr;
+    }
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
     auto *task = LABSTOR_CLIENT->NewTask<CreateQueueTask>(
@@ -273,6 +277,9 @@ class Client {
                    u32 max_lanes, u32 num_lanes,
                    u32 depth, bitfield32_t flags) {
     auto task = ACreateQueue(domain_id, id, max_lanes, num_lanes, depth, flags);
+    if (!task) {
+      return;
+    }
     task->Wait();
     LABSTOR_CLIENT->DelTask(task);
   }
@@ -334,6 +341,9 @@ class Client {
     task->Wait();
     TaskStateId new_id = task->id_;
     LABSTOR_CLIENT->DelTask(task);
+    if (new_id.IsNull()) {
+      HELOG(kWarning, "Failed to create task state");
+    }
     return new_id;
   }
 

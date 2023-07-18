@@ -65,14 +65,15 @@ struct DestructTask : public DestroyTaskStateTask {
  * */
 struct AllocTask : public LocalTask {
   IN size_t size_;  /**< Size in buf */
-  OUT std::vector<BufferInfo> buffers_;
+  OUT std::vector<BufferInfo> *buffers_;
   OUT size_t alloc_size_;
 
   HSHM_ALWAYS_INLINE
   AllocTask(hipc::Allocator *alloc,
             const TaskStateId &state_id,
             const DomainId &domain_id,
-            size_t size) : Task(alloc) {
+            size_t size,
+            std::vector<BufferInfo> *buffers) : Task(alloc) {
     // Initialize task
     key_ = 0;
     task_state_ = state_id;
@@ -82,6 +83,7 @@ struct AllocTask : public LocalTask {
 
     // Free params
     size_ = size;
+    buffers_ = buffers;
   }
 };
 
@@ -250,6 +252,7 @@ class Client {
         id_,
         dev_info);
     CopyDevInfo(dev_info);
+    Monitor(100);
   }
 
   /** Async create queue */
@@ -333,7 +336,7 @@ class Client {
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<AllocTask>(
         p,
-        id_, domain_id_, size);
+        id_, domain_id_, size, &buffers);
     queue->Emplace(0, p);
     return task;
   }

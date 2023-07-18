@@ -27,7 +27,7 @@ namespace hermes {
 class Dpe {
  public:
   /** Constructor. */
-  Dpe();
+  Dpe() = default;
 
   /** Destructor. */
   virtual ~Dpe() = default;

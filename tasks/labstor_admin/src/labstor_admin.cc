@@ -109,7 +109,7 @@ class Server : public TaskLib {
       // The state is being created
       // NOTE(llogan): this does NOT return since task creations can have phases
       task->method_ = Method::kConstruct;
-      task->id_ = LABSTOR_TASK_REGISTRY->CreateTaskState(
+      LABSTOR_TASK_REGISTRY->CreateTaskState(
           lib_name.c_str(),
           state_name.c_str(),
           task->id_,

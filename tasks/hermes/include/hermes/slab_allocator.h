@@ -57,13 +57,21 @@ class SlabAllocator {
    * @param[OUT] buffers the buffers allocated
    * @return the amount of space actually allocated. Maximum value is size.
    * */
-  void Allocate(size_t size, std::vector<BufferInfo> &buffers, size_t &total_size) {
+  void Allocate(size_t size,
+                std::vector<BufferInfo> &buffers,
+                size_t &total_size) {
     u32 buffer_count = 0;
     std::vector<SlabCount> coins = CoinSelect(size, buffer_count);
     buffers.reserve(buffer_count);
     total_size = 0;
+    int slab_idx = 0;
     for (auto &coin : coins) {
-      AllocateSlabs(coin.slab_size_, coin.count_, buffers, total_size);
+      AllocateSlabs(coin.slab_size_,
+                    slab_idx,
+                    coin.count_,
+                    buffers,
+                    total_size);
+      ++slab_idx;
     }
   }
 
@@ -83,6 +91,7 @@ class SlabAllocator {
         ++i;
       }
       if (i == slab_lists_.size()) { i -= 1; }
+      slab_size = slab_lists_[i].slab_size_;
 
       // Divide rem_size into slabs
       if (rem_size > slab_size) {
@@ -101,11 +110,11 @@ class SlabAllocator {
   }
 
   /** Allocate slabs of a certain size */
-  void AllocateSlabs(size_t slab_size, size_t count,
+  void AllocateSlabs(size_t slab_size, int slab_idx, size_t count,
                      std::vector<BufferInfo> &buffers,
                      size_t &total_size) {
+    auto &slab = slab_lists_[slab_idx];
     for (size_t i = 0; i < count; ++i) {
-      auto &slab = slab_lists_[slab_size];
       if (slab.buffers_.size() > 0) {
         buffers.push_back(slab.buffers_.front());
         slab.buffers_.pop_front();
@@ -115,7 +124,12 @@ class SlabAllocator {
           return;
         }
         // Allocate a new slab
-        heap_.fetch_add(slab_size);
+        buffers.emplace_back();
+        BufferInfo &buf = buffers.back();
+        buf.tid_ = target_id_;
+        buf.t_off_ = heap_.fetch_add(slab_size);
+        buf.t_size_ = slab_size;
+        buf.t_slab_ = slab_idx;
       }
       total_size += slab_size;
     }

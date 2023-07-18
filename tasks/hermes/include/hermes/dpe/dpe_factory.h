@@ -16,6 +16,8 @@
 #include "minimize_io_time.h"
 #include "random.h"
 #include "round_robin.h"
+#include "dpe.h"
+#include "hermes/hermes.h"
 
 namespace hermes {
 
@@ -32,7 +34,10 @@ class DpeFactory {
    *            data placement engine factory.
    * @return pointer to DataPlacementEngine given \a type PlacementPolicy.
    */
-  static Dpe* Get(const PlacementPolicy &type) {
+  static Dpe* Get(PlacementPolicy type) {
+    if (type == PlacementPolicy::kNone) {
+      type = HERMES->server_config_.dpe_.default_policy_;
+    }
     switch (type) {
       case PlacementPolicy::kRandom: {
         return hshm::EasySingleton<Random>::GetInstance();

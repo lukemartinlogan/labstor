@@ -102,7 +102,9 @@ struct Context {
   /** The blob's score */
   float blob_score_;
 
-  Context() {}
+  Context()
+  : dpe_(PlacementPolicy::kNone),
+    blob_score_(1) {}
 };
 
 /**
@@ -193,8 +195,6 @@ struct BufferInfo {
   size_t t_slab_;          /**< The index of the slab in the target */
   size_t t_off_;        /**< Offset in the target */
   size_t t_size_;       /**< Size in the target */
-  size_t blob_off_;     /**< Offset in the blob */
-  size_t blob_size_;    /**< The amount of the blob being placed */
 
   /** Default constructor */
   BufferInfo() = default;
@@ -202,8 +202,7 @@ struct BufferInfo {
   /** Primary constructor */
   BufferInfo(TaskStateId tid, size_t t_off, size_t t_size,
              size_t blob_off, size_t blob_size)
-      : tid_(tid), t_off_(t_off), t_size_(t_size),
-        blob_off_(blob_off), blob_size_(blob_size) {}
+      : tid_(tid), t_off_(t_off), t_size_(t_size) {}
 
   /** Copy constructor */
   BufferInfo(const BufferInfo &other) {
@@ -233,8 +232,6 @@ struct BufferInfo {
     t_slab_ = other.t_slab_;
     t_off_ = other.t_off_;
     t_size_ = other.t_size_;
-    blob_off_ = other.blob_off_;
-    blob_size_ = other.blob_size_;
   }
 };
 
@@ -246,6 +243,7 @@ struct BlobInfo {
   std::vector<BufferInfo> buffers_;  /**< Set of buffers */
   std::vector<TagId> tags_;  /**< Set of tags */
   size_t blob_size_;  /**< The overall size of the blob */
+  size_t max_blob_size_;  /**< The amount of space current buffers support */
   float score_;  /**< The priority of this blob */
   std::atomic<u32> access_freq_;  /**< Number of times blob accessed in epoch */
   u64 last_access_;  /**< Last time blob accessed */

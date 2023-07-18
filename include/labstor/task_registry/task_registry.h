@@ -12,6 +12,7 @@
 #include <filesystem>
 #include "task_lib.h"
 #include "labstor/config/config_server.h"
+#include "labstor_admin/labstor_admin.h"
 
 namespace stdfs = std::filesystem;
 
@@ -199,17 +200,23 @@ class TaskRegistry {
   TaskStateId CreateTaskState(const char *lib_name,
                               const char *state_name,
                               const TaskStateId &state_id,
-                              Task *task) {
+                              Admin::CreateTaskStateTask *task) {
     // Find the task library to instantiate
     auto it = libs_.find(lib_name);
     if (it == libs_.end()) {
       HELOG(kError, "Could not find the task lib: {}", lib_name);
+      if (task) {
+        task->SetComplete();
+      }
       return TaskStateId::GetNull();
     }
 
     // Check that the state doesn't already exist
     if (TaskStateExists(state_name) || TaskStateExists(state_id)) {
       HELOG(kError, "The task state already exists: {}", state_name);
+      if (task) {
+        task->SetComplete();
+      }
       return TaskStateId::GetNull();
     }
 
@@ -218,13 +225,18 @@ class TaskRegistry {
     if (new_id.IsNull()) {
       new_id = CreateTaskStateId();
     }
+    if (task) {
+      task->id_ = new_id;
+    }
 
     // Create the state instance
     TaskLibInfo &info = it->second;
     TaskState *task_state = info.create_state_(task);
     if (!task_state) {
       HELOG(kError, "Could not create the task state: {}", state_name);
-      task->SetComplete();
+      if (task) {
+        task->SetComplete();
+      }
       return TaskStateId::GetNull();
     }
 

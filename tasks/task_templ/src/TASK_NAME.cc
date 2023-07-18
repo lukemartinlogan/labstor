@@ -30,6 +30,7 @@ class Server : public TaskLib {
   }
 
   void Construct(MultiQueue *queue, ConstructTask *task) {
+    id_ = task->id_;
     task->SetComplete();
   }
 
