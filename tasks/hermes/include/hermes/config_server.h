@@ -225,6 +225,7 @@ class ServerConfig : public BaseConfig {
 
   /** parse device information from YAML config */
   void ParseDeviceInfo(YAML::Node yaml_conf) {
+    devices_.clear();
     for (auto device : yaml_conf) {
       devices_.emplace_back();
       DeviceInfo &dev = devices_.back();
