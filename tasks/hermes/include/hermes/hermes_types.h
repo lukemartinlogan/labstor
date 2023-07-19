@@ -6,6 +6,7 @@
 #define LABSTOR_TASKS_HERMES_INCLUDE_HERMES_HERMES_TYPES_H_
 
 #include "labstor/labstor_types.h"
+#include "labstor/task_registry/task_registry.h"
 #include "labstor/api/labstor_client.h"
 #include "status.h"
 #include "statuses.h"

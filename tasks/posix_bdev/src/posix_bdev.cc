@@ -63,6 +63,8 @@ class Server : public TaskLib {
     if (fd_ < 0) {
       HELOG(kError, "Failed to open file: {}", dev_info.mount_point_);
     }
+    HILOG(kInfo, "Created {} at {} of size {}",
+          dev_info.dev_name_, dev_info.mount_point_, dev_info.capacity_);
     task->SetComplete();
   }
 

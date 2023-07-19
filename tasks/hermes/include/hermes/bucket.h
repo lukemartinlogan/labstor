@@ -95,37 +95,36 @@ class Bucket {
    * Attach a trait to the bucket
    * */
   void AttachTrait(TraitId trait_id) {
+    // TODO(llogan)
   }
 
   /**
    * Get the current size of the bucket
    * */
   size_t GetSize() {
-  }
-
-  /**
-   * Update the size of the bucket
-   * Needed for the adapters for now.
-   * */
-  void SetSize(size_t new_size) {
+    // TODO(llogan)
+    return 0;
   }
 
   /**
    * Rename this bucket
    * */
   void Rename(const std::string &new_bkt_name) {
+    mdm_->RenameTag(id_, hshm::to_charbuf(new_bkt_name));
   }
 
   /**
    * Clears the buckets contents, but doesn't destroy its metadata
    * */
   void Clear() {
+    mdm_->TagClearBlobs(id_);
   }
 
   /**
    * Destroys this bucket along with all its contents.
    * */
   void Destroy() {
+    mdm_->DestroyTag(id_);
   }
 
   /**
@@ -148,6 +147,8 @@ class Bucket {
    * @return The Status of the operation
    * */
   Status GetBlobId(const std::string &blob_name, BlobId &blob_id) {
+    blob_id = mdm_->GetBlobId(id_, hshm::to_charbuf(blob_name));
+    return Status();
   }
 
   /**
@@ -158,6 +159,7 @@ class Bucket {
    * @return The Status of the operation
    * */
   std::string GetBlobName(const BlobId &blob_id) {
+    return mdm_->GetBlobName(blob_id);
   }
 
 
@@ -168,6 +170,7 @@ class Bucket {
    * @return The Status of the operation
    * */
   float GetBlobScore(const BlobId &blob_id) {
+    return mdm_->GetBlobScore(blob_id);
   }
 
   /**
@@ -175,6 +178,8 @@ class Bucket {
    * */
   Status TagBlob(BlobId &blob_id,
                  TagId &tag_id) {
+    mdm_->TagAddBlob(tag_id, blob_id);
+    return Status();
   }
 
   /**
@@ -222,6 +227,14 @@ class Bucket {
   }
 
   /**
+   * Append \a blob_name Blob into the bucket
+   * */
+  Status Append(const Blob &blob) {
+    // TODO(llogan)
+  }
+
+
+  /**
    * Get \a blob_id Blob from the bucket
    * */
   Status Get(BlobId blob_id,
@@ -239,34 +252,53 @@ class Bucket {
   }
 
   /**
-   * Determine if the bucket contains \a blob_id BLOB
+   * Put \a blob_name Blob into the bucket
    * */
-  bool ContainsBlob(const std::string &blob_name,
-                    BlobId &blob_id) {
+  Status PartialGet(const std::string &blob_name,
+                    Blob &blob,
+                    size_t blob_off_,
+                    ssize_t data_size,
+                    BlobId &blob_id,
+                    Context &ctx) {
+    // Get from shared memory
+    hipc::Pointer data_p = mdm_->GetBlob(blob_id, blob_off_, data_size);
+    char *data = LABSTOR_CLIENT->GetPrivatePointer(data_p);
+    blob.resize(data_size);
+    memcpy(blob.data(), data, data_size);
+    // Free shared memory
+    LABSTOR_CLIENT->FreeBuffer(data_p);
+    return Status();
   }
 
   /**
    * Determine if the bucket contains \a blob_id BLOB
    * */
-  bool ContainsBlob(BlobId blob_id) {
+  bool ContainsBlob(const std::string &blob_name,
+                    BlobId &blob_id) {
+    blob_id = mdm_->GetBlobId(id_, hshm::to_charbuf(blob_name));
+    return !blob_id.IsNull();
   }
 
   /**
    * Rename \a blob_id blob to \a new_blob_name new name
    * */
   void RenameBlob(BlobId blob_id, std::string new_blob_name, Context &ctx) {
+    mdm_->RenameBlob(blob_id, hshm::to_charbuf(new_blob_name));
   }
 
   /**
    * Delete \a blob_id blob
    * */
   void DestroyBlob(BlobId blob_id, Context &ctx) {
+    mdm_->DestroyBlob(blob_id);
   }
 
   /**
    * Get the set of blob IDs contained in the bucket
    * */
   std::vector<BlobId> GetContainedBlobIds() {
+    // TODO(llogan)
+    return {};
   }
 };
 

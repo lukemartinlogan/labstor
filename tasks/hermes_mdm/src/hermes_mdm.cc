@@ -145,6 +145,7 @@ class Server : public TaskLib {
   void Construct(MultiQueue *queue, ConstructTask *task) {
     switch (task->phase_) {
       case ConstructTaskPhase::kLoadConfig: {
+        HILOG(kInfo, "ConstructTaskPhase::kLoadConfig")
         id_alloc_ = 0;
         std::string config_path = task->server_config_path_->str();
         HERMES->LoadServerConfig(config_path);
@@ -175,7 +176,7 @@ class Server : public TaskLib {
       }
 
       case ConstructTaskPhase::kWaitForTaskStates: {
-        HILOG(kDebug, "Wait for states")
+        HILOG(kInfo, "Wait for states")
         for (auto &tgt_task : target_tasks_) {
           if (!tgt_task.state_task_->IsComplete()) {
             return;
@@ -185,6 +186,7 @@ class Server : public TaskLib {
           auto &tgt_task = target_tasks_[i];
           auto &client = targets_[i];
           client.id_ = tgt_task.state_task_->id_;
+          HILOG(kInfo, "Client ID: {}", client.id_)
           LABSTOR_CLIENT->DelTask(tgt_task.state_task_);
           target_map_.emplace(client.id_, &client);
         }
@@ -215,7 +217,7 @@ class Server : public TaskLib {
     }
 
     // Create targets
-    HILOG(kDebug, "Created MDM")
+    HILOG(kInfo, "Created MDM")
     task->SetComplete();
   }
 
@@ -353,17 +355,31 @@ class Server : public TaskLib {
    * Blob Operations
    * ===================================*/
 
+ private:
+  const hshm::charbuf GetBlobNameWithBucket(TagId tag_id, const hshm::charbuf &blob_name) {
+    hshm::charbuf new_name(blob_name.size());
+    size_t off = 0;
+    memcpy(new_name.data() + off, &tag_id, sizeof(TagId));
+    off += sizeof(TagId);
+    memcpy(new_name.data() + off, blob_name.data(), blob_name.size());
+    return new_name;
+  }
+
+ public:
+
   /**
    * Create a blob's metadata
    * */
   void PutBlob(MultiQueue *queue, PutBlobTask *task) {
     switch (task->phase_) {
       case PutBlobPhase::kCreate: {
-        HILOG(kDebug, "PutBlobPhase::kCreate");
+        HILOG(kInfo, "PutBlobPhase::kCreate");
         // Get the blob info data structure
         task->did_create_ = false;
         hshm::charbuf blob_name = hshm::to_charbuf(*task->blob_name_);
+        hshm::charbuf blob_name_unique;
         if (blob_name.size() > 0) {
+          blob_name_unique = GetBlobNameWithBucket(task->tag_id_, blob_name);
           auto it = blob_id_map_.find(blob_name);
           if (it == blob_id_map_.end()) {
             task->did_create_ = true;
@@ -380,7 +396,7 @@ class Server : public TaskLib {
         if (task->did_create_) {
           // Create new blob and emplace in map
           BlobId blob_id(node_id_, id_alloc_.fetch_add(1));
-          blob_id_map_.emplace(blob_name, blob_id);
+          blob_id_map_.emplace(blob_name_unique, blob_id);
           blob_map_.emplace(blob_id, BlobInfo());
           task->blob_id_ = blob_id;
         }
@@ -401,6 +417,9 @@ class Server : public TaskLib {
         } else {
           // Modify existing blob
           blob_info.UpdateWriteStats();
+        }
+        if (task->replace_) {
+          // TODO(llogan): destroy blob buffers
         }
 
         // Determine amount of additional buffering space needed
@@ -432,6 +451,7 @@ class Server : public TaskLib {
         PlacementSchema &schema = (*task->schema_)[task->plcmnt_idx_];
         SubPlacement &placement = schema.plcmnts_[task->sub_plcmnt_idx_];
         TargetInfo &bdev = *target_map_[placement.tid_];
+        HILOG(kInfo, "Allocating {} bytes of blob {}", placement.size_, task->blob_id_);
         task->cur_bdev_alloc_ = bdev.AsyncAllocate(placement.size_,
                                                    blob_info.buffers_);
         task->phase_ = PutBlobPhase::kWaitAllocate;
@@ -441,10 +461,6 @@ class Server : public TaskLib {
         if (!task->cur_bdev_alloc_->IsComplete()){
           return;
         }
-        if (task->cur_bdev_alloc_->alloc_size_ < task->cur_bdev_alloc_->size_) {
-          size_t diff = task->cur_bdev_alloc_->size_ - task->cur_bdev_alloc_->alloc_size_;
-          // TODO(llogan): Pass remaining capacity to next schema
-        }
         LABSTOR_CLIENT->DelTask(task->cur_bdev_alloc_);
         BlobInfo &blob_info = blob_map_[task->blob_id_];
         PlacementSchema &schema = (*task->schema_)[task->plcmnt_idx_];
@@ -452,6 +468,10 @@ class Server : public TaskLib {
         if (task->sub_plcmnt_idx_ >= schema.plcmnts_.size()) {
           ++task->plcmnt_idx_;
           task->sub_plcmnt_idx_ = 0;
+        }
+        if (task->cur_bdev_alloc_->alloc_size_ < task->cur_bdev_alloc_->size_) {
+          size_t diff = task->cur_bdev_alloc_->size_ - task->cur_bdev_alloc_->alloc_size_;
+          // TODO(llogan): Pass remaining capacity to next schema
         }
         if (task->plcmnt_idx_ < task->schema_->size()) {
           task->phase_ = PutBlobPhase::kAllocate;
@@ -484,6 +504,7 @@ class Server : public TaskLib {
         }
         blob_info.max_blob_size_ = blob_off;
         task->phase_ = PutBlobPhase::kWaitModify;
+        HILOG(kInfo, "Modified {} bytes of blob {}", blob_off, task->blob_id_);
       }
 
       case PutBlobPhase::kWaitModify: {
@@ -497,7 +518,7 @@ class Server : public TaskLib {
           LABSTOR_CLIENT->DelTask(write_task);
         }
         HSHM_DESTROY_AR(task->bdev_writes_);
-        HILOG(kDebug, "PutBlobTask complete");
+        HILOG(kInfo, "PutBlobTask complete");
         task->SetComplete();
       }
     }
@@ -584,7 +605,9 @@ class Server : public TaskLib {
    * Get \a blob_name BLOB from \a bkt_id bucket
    * */
   void GetBlobId(MultiQueue *queue, GetBlobIdTask *task) {
-    auto it = blob_id_map_.find(hshm::to_charbuf(*task->blob_name_));
+    hshm::charbuf blob_name = hshm::to_charbuf(*task->blob_name_);
+    hshm::charbuf blob_name_unique = GetBlobNameWithBucket(task->tag_id_, blob_name);
+    auto it = blob_id_map_.find(blob_name_unique);
     if (it == blob_id_map_.end()) {
       task->SetComplete();
       return;
@@ -661,7 +684,7 @@ class Server : public TaskLib {
       task->SetComplete();
       return;
     }
-    BlobInfo &blob = it->second;
+    BlobInfo &blob_info = it->second;
     // TODO(llogan): truncate blob
     return task->SetComplete();
   }
@@ -670,14 +693,34 @@ class Server : public TaskLib {
    * Destroy \a blob_id blob in \a bkt_id bucket
    * */
   void DestroyBlob(MultiQueue *queue, DestroyBlobTask *task) {
-    auto it = blob_map_.find(task->blob_id_);
-    if (it == blob_map_.end()) {
-      task->SetComplete();
-      return;
+    switch (task->phase_) {
+      case DestroyBlobPhase::kFreeBuffers: {
+        auto it = blob_map_.find(task->blob_id_);
+        if (it == blob_map_.end()) {
+          task->SetComplete();
+          return;
+        }
+        BlobInfo &blob_info = it->second;
+        blob_id_map_.erase(blob_info.name_);
+        task->blob_info_ = &blob_info;
+        HSHM_MAKE_AR0(task->free_tasks_, LABSTOR_CLIENT->main_alloc_);
+        task->free_tasks_->reserve(blob_info.buffers_.size());
+        for (BufferInfo &buf : blob_info.buffers_) {
+          TargetInfo &tgt_info = *target_map_[buf.tid_];
+          auto *free_task = tgt_info.AsyncFree({buf});
+          task->free_tasks_->emplace_back(free_task);
+        }
+      }
+      case DestroyBlobPhase::kWaitFreeBuffers: {
+        for (auto *free_task : *task->free_tasks_) {
+          if (!free_task->IsComplete()) {
+            return;
+          }
+        }
+        HSHM_DESTROY_AR(task->free_tasks_);
+        blob_map_.erase(task->blob_id_);
+      }
     }
-    BlobInfo &blob = it->second;
-    blob_id_map_.erase(blob.name_);
-    blob_map_.erase(it);
     return task->SetComplete();
   }
 };

@@ -630,9 +630,19 @@ struct TruncateBlobTask : public Task {
   }
 };
 
+/** Phases of the destroy blob task */
+struct DestroyBlobPhase {
+  TASK_METHOD_T kFreeBuffers = 0;
+  TASK_METHOD_T kWaitFreeBuffers = 1;
+};
+
 /** A task to destroy a blob */
 struct DestroyBlobTask : public Task {
-  BlobId blob_id_;
+  IN BlobId blob_id_;
+  TEMP int phase_;
+  TEMP hipc::ShmArchive<std::vector<bdev::FreeTask*>> free_tasks_;
+  TEMP BlobInfo *blob_info_;
+  TEMP
 
   HSHM_ALWAYS_INLINE
   DestroyBlobTask(hipc::Allocator *alloc,
@@ -648,6 +658,7 @@ struct DestroyBlobTask : public Task {
 
     // Custom params
     blob_id_ = blob_id;
+    phase_ = DestroyBlobPhase::kFreeBuffers;
   }
 };
 

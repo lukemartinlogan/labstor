@@ -19,7 +19,7 @@ typedef std::pair<u32, MultiQueue*> WorkEntry;
 class Worker {
  public:
   u32 id_;  /**< Unique identifier of this worker */
-  std::thread thread_;  /**< The worker thread handle */
+  std::unique_ptr<std::thread> thread_;  /**< The worker thread handle */
   int pthread_id_;      /**< The worker pthread handle */
   int pid_;             /**< The worker process id */
   u32 numa_node_;       // TODO(llogan): track NUMA affinity
@@ -34,15 +34,16 @@ class Worker {
 
  public:
   /** Constructor */
-  Worker(u32 id) : thread_(&Worker::Loop, this) {
-    poll_queues_.Resize(256);
-    relinquish_queues_.Resize(256);
+  Worker(u32 id) {
+    poll_queues_.Resize(1024);
+    relinquish_queues_.Resize(1024);
     id_ = id;
     sleep_us_ = 0;
     EnableContinuousPolling();
     retries_ = 1;
-    pthread_id_ = thread_.native_handle();
     pid_ = 0;
+    thread_ = std::make_unique<std::thread>(&Worker::Loop, this);
+    pthread_id_ = thread_->native_handle();
   }
 
   /**

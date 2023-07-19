@@ -71,7 +71,7 @@ class WorkOrchestrator {
   void Join() {
     kill_requested_.store(true);
     for (Worker &worker : workers_) {
-      worker.thread_.join();
+      worker.thread_->join();
     }
   }
 

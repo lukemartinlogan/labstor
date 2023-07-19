@@ -15,7 +15,12 @@ add_executable(test_performance_exec
 
 add_dependencies(test_performance_exec labstor_client)
 target_link_libraries(test_performance_exec
-        labstor_client Catch2::Catch2 ${ZMQ_LIBRARIES})
+        labstor_client Catch2::Catch2 MPI::MPI_CXX ${ZMQ_LIBRARIES})
+
+add_executable(test_hermes_api
+        hermes_api_bench.cc)
+target_link_libraries(test_hermes_api
+        labstor_client Catch2::Catch2 MPI::MPI_CXX)
 
 #------------------------------------------------------------------------------
 # Test Cases
@@ -30,6 +35,7 @@ add_test(NAME test_performance_exec COMMAND
 #------------------------------------------------------------------------------
 install(TARGETS
         test_performance_exec
+        test_hermes_api
         EXPORT
         ${LABSTOR_EXPORTED_TARGETS}
         LIBRARY DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
@@ -41,4 +47,5 @@ install(TARGETS
 #-----------------------------------------------------------------------------
 if(LABSTOR_ENABLE_COVERAGE)
     set_coverage_flags(test_performance_exec)
+    set_coverage_flags(test_hermes_api)
 endif()

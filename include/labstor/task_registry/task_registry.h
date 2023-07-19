@@ -201,6 +201,7 @@ class TaskRegistry {
                               const char *state_name,
                               const TaskStateId &state_id,
                               Admin::CreateTaskStateTask *task) {
+    HILOG(kInfo, "Creating an instance of {} with name {}", lib_name, state_name)
     // Find the task library to instantiate
     auto it = libs_.find(lib_name);
     if (it == libs_.end()) {
@@ -244,7 +245,7 @@ class TaskRegistry {
     task_state->id_ = new_id;
     task_state_ids_.emplace(state_name, new_id);
     task_states_.emplace(new_id, task_state);
-    HILOG(kDebug, "Created an instance of {} with name {} and ID {}", lib_name, state_name, new_id)
+    HILOG(kInfo, "Created an instance of {} with name {} and ID {}", lib_name, state_name, new_id)
     return new_id;
   }
 
