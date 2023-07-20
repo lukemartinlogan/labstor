@@ -231,8 +231,6 @@ class Server : public TaskLib {
 
   /** Get or create a tag */
   void GetOrCreateTag(MultiQueue *queue, GetOrCreateTagTask *task) {
-    task->SetComplete();
-    return;
     TagId tag_id;
 
     // Check if the tag exists
