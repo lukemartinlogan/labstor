@@ -10,6 +10,9 @@ namespace labstor::worch_queue_round_robin {
 
 class Server : public TaskLib {
  public:
+  u32 count_;
+
+ public:
   void Run(MultiQueue *queue, u32 method, Task *task) override {
     switch (method) {
       case Method::kConstruct: {
@@ -28,6 +31,7 @@ class Server : public TaskLib {
   }
 
   void Construct(MultiQueue *queue, ConstructTask *task) {
+    count_ = 0;
     if (task) {
       task->SetComplete();
     }
@@ -41,16 +45,24 @@ class Server : public TaskLib {
 
   void Schedule(MultiQueue *queue, Task *task) {
     // Check if any new queues need to be scheduled
-    u32 count = 0;
     for (MultiQueue &queue : *LABSTOR_QM_RUNTIME->queue_map_) {
       if (queue.id_.IsNull()) {
         continue;
       }
+      if (count_ == 0) {
+        // Admin queue is scheduled on the first worker
+        Worker &worker = LABSTOR_WORK_ORCHESTRATOR->workers_[0];
+        worker.PollQueues({WorkEntry(0, &queue)});
+        queue.num_scheduled_ = 1;
+        count_ += 1;
+        continue;
+      }
       for (u32 lane_id = queue.num_scheduled_; lane_id < queue.num_lanes_; ++lane_id) {
-        u32 worker_id = count % LABSTOR_WORK_ORCHESTRATOR->workers_.size();
+        // NOTE(llogan): Assumes a minimum of two workers
+        u32 worker_id = (count_ % (LABSTOR_WORK_ORCHESTRATOR->workers_.size() - 1)) + 1;
         Worker &worker = LABSTOR_WORK_ORCHESTRATOR->workers_[worker_id];
         worker.PollQueues({WorkEntry(lane_id, &queue)});
-        count += 1;
+        count_ += 1;
       }
       queue.num_scheduled_ = queue.num_lanes_;
     }

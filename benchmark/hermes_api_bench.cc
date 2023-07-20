@@ -15,6 +15,7 @@
 #include <mpi.h>
 #include "hermes/hermes.h"
 #include "hermes/bucket.h"
+#include "labstor/work_orchestrator/affinity.h"
 
 namespace hapi = hermes;
 using Timer = hshm::HighResMonotonicTimer;
@@ -93,9 +94,11 @@ void CreateBucketTest(int nprocs, int rank,
   Timer t;
   t.Resume();
   hapi::Context ctx;
+  std::unordered_map<std::string, std::string> mdm_;
   for (size_t i = 0; i < bkts_per_rank; ++i) {
-    int bkt_name = rank * bkts_per_rank + i;
-    hermes::Bucket bkt(std::to_string(bkt_name), ctx);
+    int bkt_name_int = rank * bkts_per_rank + i;
+    std::string bkt_name = std::to_string(bkt_name_int);
+    hermes::Bucket bkt(bkt_name, ctx);
   }
   t.Pause();
   GatherTimes("CreateBucket", bkts_per_rank * nprocs, t);
@@ -193,6 +196,10 @@ int main(int argc, char **argv) {
   // Get mode
   REQUIRE_ARGC_GE(2)
   std::string mode = argv[1];
+
+  // Set CPU affinity
+  // TODO(logan): remove
+  ProcessAffiner::SetCpuAffinity(getpid(), 8);
 
   MPI_Barrier(MPI_COMM_WORLD);
 

@@ -45,10 +45,10 @@ class QueueManagerRuntime : public QueueManager {
     queue_map_->resize(max_queues_);
     // Create the admin queue
     CreateQueue(admin_queue_,
-                qm_conf.max_lanes_,
-                qm_conf.max_lanes_,
+                1,
+                1,
                 qm_conf.queue_depth_,
-                bitfield32_t(QUEUE_UNORDERED | QUEUE_LOW_LATENCY));
+                bitfield32_t(QUEUE_UNORDERED));
   }
 
   /** Create a new queue (with pre-allocated ID) in the map */

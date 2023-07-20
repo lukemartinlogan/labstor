@@ -711,7 +711,8 @@ class Client {
   void GetOrCreateTag(const hshm::charbuf &tag_name,
                       bool blob_owner,
                       const std::vector<TraitId> &traits,
-                      size_t backend_size) {
+                      size_t backend_size,
+                      const hshm::qtok_t &graph = hshm::qtok_t::GetNull()) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     u32 hash = std::hash<hshm::charbuf>{}(tag_name);

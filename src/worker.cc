@@ -13,7 +13,12 @@ namespace labstor {
 void Worker::Loop() {
   pid_ = gettid();
   while (LABSTOR_WORK_ORCHESTRATOR->IsAlive()) {
-    Run();
+    try {
+      Run();
+    } catch (hshm::Error &e) {
+      e.print();
+      exit(1);
+    }
     // Yield();
   }
   Run();
