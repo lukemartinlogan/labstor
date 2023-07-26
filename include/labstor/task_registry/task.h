@@ -29,12 +29,14 @@ namespace labstor {
 #define TASK_INTERMEDIATE (1 << 8)
 /** This task is completed */
 #define TASK_COMPLETE (1 << 9)
+/** This task is complete enough for the user's wait to stop */
+#define TASK_USER_COMPLETE (1 << 10)
 /** This task was marked completed outside of the worker thread */
-#define TASK_EXTERNAL_COMPLETE (1 << 10)
+#define TASK_EXTERNAL_COMPLETE (1 << 11)
 /** This task is long-running */
-#define TASK_LONG_RUNNING (1 << 11)
+#define TASK_LONG_RUNNING (1 << 12)
 /** This task is fire and forget. Free when completed */
-#define TASK_FIRE_AND_FORGET (1 << 12)
+#define TASK_FIRE_AND_FORGET (1 << 13)
 
 /** Used to define task methods */
 #define TASK_METHOD_T static inline const u32
@@ -63,7 +65,7 @@ struct Task : public hipc::ShmContainer {
 
   /** Check if task is complete */
   HSHM_ALWAYS_INLINE bool IsComplete() {
-    return task_flags_.Any(TASK_COMPLETE);
+    return task_flags_.Any(TASK_COMPLETE | TASK_USER_COMPLETE);
   }
 
   /** Set task as externally complete */
@@ -86,10 +88,15 @@ struct Task : public hipc::ShmContainer {
     task_flags_.SetBits(TASK_COMPLETE);
   }
 
+  /** Set task as user complete */
+  HSHM_ALWAYS_INLINE void SetUserComplete() {
+    task_flags_.SetBits(TASK_USER_COMPLETE);
+  }
+
   /** Wait for task to complete */
   void Wait() {
     while (!IsComplete()) {
-      for (int i = 0; i < 1000; ++i) {
+      for (int i = 0; i < 100000; ++i) {
         if (IsComplete()) {
           return;
         }

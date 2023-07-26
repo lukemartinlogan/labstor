@@ -373,7 +373,7 @@ class Server : public TaskLib {
   void PutBlob(MultiQueue *queue, PutBlobTask *task) {
     switch (task->phase_) {
       case PutBlobPhase::kCreate: {
-        HILOG(kInfo, "PutBlobPhase::kCreate");
+        HILOG(kDebug, "PutBlobPhase::kCreate");
         // Get the blob info data structure
         task->did_create_ = false;
         hshm::charbuf blob_name = hshm::to_charbuf(*task->blob_name_);
@@ -400,6 +400,7 @@ class Server : public TaskLib {
           blob_map_.emplace(blob_id, BlobInfo());
           task->blob_id_ = blob_id;
         }
+        task->SetUserComplete();
 
         BlobInfo &blob_info = blob_map_[task->blob_id_];
         if (task->did_create_) {
@@ -451,7 +452,7 @@ class Server : public TaskLib {
         PlacementSchema &schema = (*task->schema_)[task->plcmnt_idx_];
         SubPlacement &placement = schema.plcmnts_[task->sub_plcmnt_idx_];
         TargetInfo &bdev = *target_map_[placement.tid_];
-        HILOG(kInfo, "Allocating {} bytes of blob {}", placement.size_, task->blob_id_);
+        HILOG(kDebug, "Allocating {} bytes of blob {}", placement.size_, task->blob_id_);
         task->cur_bdev_alloc_ = bdev.AsyncAllocate(placement.size_,
                                                    blob_info.buffers_);
         task->phase_ = PutBlobPhase::kWaitAllocate;
@@ -504,7 +505,7 @@ class Server : public TaskLib {
         }
         blob_info.max_blob_size_ = blob_off;
         task->phase_ = PutBlobPhase::kWaitModify;
-        HILOG(kInfo, "Modified {} bytes of blob {}", blob_off, task->blob_id_);
+        HILOG(kDebug, "Modified {} bytes of blob {}", blob_off, task->blob_id_);
       }
 
       case PutBlobPhase::kWaitModify: {
@@ -518,7 +519,7 @@ class Server : public TaskLib {
           LABSTOR_CLIENT->DelTask(write_task);
         }
         HSHM_DESTROY_AR(task->bdev_writes_);
-        HILOG(kInfo, "PutBlobTask complete");
+        HILOG(kDebug, "PutBlobTask complete");
         task->SetComplete();
       }
     }

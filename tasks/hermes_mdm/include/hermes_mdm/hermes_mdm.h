@@ -356,7 +356,7 @@ struct PutBlobTask : public Task {
     key_ = blob_id.unique_;
     task_state_ = state_id;
     method_ = Method::kPutBlob;
-    task_flags_.SetBits(TASK_LOW_LATENCY);
+    task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET);
     domain_id_ = domain_id;
 
     // Custom params
@@ -374,6 +374,7 @@ struct PutBlobTask : public Task {
 
   ~PutBlobTask() {
     HSHM_DESTROY_AR(blob_name_);
+    LABSTOR_CLIENT->FreeBuffer(data_);
   }
 };
 
@@ -857,11 +858,11 @@ class Client {
         tag_id, blob_name, blob_id,
         blob_off, blob_size,
         blob, score, replace);
-    queue->Emplace(hash, p);
+    /*queue->Emplace(hash, p);
     task->Wait();
     blob_id = task->blob_id_;
-    did_create = task->did_create_;
-    LABSTOR_CLIENT->DelTask(task);
+    did_create = task->did_create_;*/
+    // LABSTOR_CLIENT->DelTask(task);
   }
 
   /** Get a blob's data */

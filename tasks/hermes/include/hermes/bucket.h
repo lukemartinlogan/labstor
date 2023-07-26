@@ -199,7 +199,7 @@ class Bucket {
     mdm_->PutBlob(id_, hshm::to_charbuf(blob_name),
     blob_id, 0, blob.size(), p, ctx.blob_score_, true, did_create);
     // Free shared memory
-    LABSTOR_CLIENT->FreeBuffer(p);
+    // LABSTOR_CLIENT->FreeBuffer(p);
     return Status();
   }
 
