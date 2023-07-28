@@ -239,7 +239,7 @@ TEST_CASE("TestHermesFsLatency") {
   hermes::Bucket bkt = HERMES_FILESYSTEM_API->Open("/home/lukemartinlogan/hi.txt");
 
   t.Resume();
-  size_t ops = (1 << 10);
+  size_t ops = (1 << 20);
   hermes::Context ctx;
   ctx.page_size_ = 4096;
   std::string data(ctx.page_size_, 0);
@@ -248,5 +248,5 @@ TEST_CASE("TestHermesFsLatency") {
   }
   t.Pause();
 
-  HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
+  HILOG(kInfo, "Latency: {} MBps", ops * 4096 / t.GetUsec());
 }

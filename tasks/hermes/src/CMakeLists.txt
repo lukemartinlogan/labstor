@@ -1,17 +1,17 @@
 #------------------------------------------------------------------------------
 # Build Small Message Task Library
 #------------------------------------------------------------------------------
-add_library(hermes_mdm SHARED
-        hermes_mdm.cc)
-add_dependencies(hermes_mdm labstor_runtime hermes_config_manager)
-target_link_libraries(hermes_mdm labstor_runtime hermes_config_manager)
+add_library(hermes_config_manager SHARED
+        config_manager.cc)
+add_dependencies(hermes_config_manager labstor_runtime)
+target_link_libraries(hermes_config_manager labstor_runtime)
 
 #------------------------------------------------------------------------------
 # Install Small Message Task Library
 #------------------------------------------------------------------------------
 install(
         TARGETS
-        hermes_mdm
+        hermes_config_manager
         LIBRARY DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
         ARCHIVE DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
         RUNTIME DESTINATION ${LABSTOR_INSTALL_BIN_DIR}
@@ -21,5 +21,5 @@ install(
 # Coverage
 #------------------------------------------------------------------------------
 if(LABSTOR_ENABLE_COVERAGE)
-    set_coverage_flags(hermes_mdm)
+    set_coverage_flags(hermes_config_manager)
 endif()

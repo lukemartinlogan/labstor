@@ -56,6 +56,6 @@ class ConfigurationManager {
 
 }  // namespace hermes
 
-#define HERMES hshm::EasySingleton<hermes::ConfigurationManager>::GetInstance()
+#define HERMES hshm::Singleton<hermes::ConfigurationManager>::GetInstance()
 
 #endif  // LABSTOR_TASKS_HERMES_INCLUDE_HERMES_CONFIG_MANAGER_H_

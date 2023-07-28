@@ -400,6 +400,8 @@ class Server : public TaskLib {
           blob_map_.emplace(blob_id, BlobInfo());
           task->blob_id_ = blob_id;
         }
+
+        // Complete enough for the user
         task->SetUserComplete();
 
         BlobInfo &blob_info = blob_map_[task->blob_id_];

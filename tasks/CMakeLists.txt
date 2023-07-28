@@ -5,6 +5,7 @@ add_subdirectory(labstor_admin)
 add_subdirectory(worch_proc_round_robin)
 add_subdirectory(worch_queue_round_robin)
 
+add_subdirectory(hermes)
 add_subdirectory(bdev)
 add_subdirectory(ram_bdev)
 add_subdirectory(posix_bdev)

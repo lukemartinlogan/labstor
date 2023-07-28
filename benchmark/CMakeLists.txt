@@ -12,22 +12,26 @@ add_executable(test_performance_exec
         test_init.cc
         test_latency.cc
 )
-
-add_dependencies(test_performance_exec labstor_client)
+add_dependencies(test_performance_exec
+        labstor_client hermes_config_manager)
 target_link_libraries(test_performance_exec
-        labstor_client Catch2::Catch2 MPI::MPI_CXX ${ZMQ_LIBRARIES})
+        labstor_client hermes_config_manager Catch2::Catch2
+        MPI::MPI_CXX ${ZMQ_LIBRARIES})
 
 add_executable(test_hermes_api
         hermes_api_bench.cc)
+add_dependencies(test_hermes_api
+        labstor_client hermes_config_manager)
 target_link_libraries(test_hermes_api
-        labstor_client Catch2::Catch2 MPI::MPI_CXX)
+        labstor_client hermes_config_manager
+        Catch2::Catch2 MPI::MPI_CXX)
 
 #------------------------------------------------------------------------------
 # Test Cases
 #------------------------------------------------------------------------------
 
 # STRING TESTS
-add_test(NAME test_performance_exec COMMAND
+add_test(NAME test_performance COMMAND
         ${CMAKE_BINARY_DIR}/bin/test_performance_exec "TestIpc")
 
 #------------------------------------------------------------------------------

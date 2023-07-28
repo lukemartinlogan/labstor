@@ -36,6 +36,7 @@ class Filesystem {
     size_t backend_size = GetBackendSize(path);
     hermes::Bucket bkt(abs_path, ctx, backend_size);
     bkt.flags_.SetBits(HERMES_BUCKET_IS_FILE);
+    return bkt;
   }
 
   /** write */
@@ -60,6 +61,8 @@ class Filesystem {
       }
       data_offset += p.blob_size_;
     }
+
+    return data_offset;
   }
 
   /** read */
@@ -85,6 +88,8 @@ class Filesystem {
       bkt.PartialGet(blob_name, page, p.blob_off_, data_size, blob_id, ctx);
       data_offset += p.blob_size_;
     }
+
+    return data_offset;
   }
 
   /** file size */
