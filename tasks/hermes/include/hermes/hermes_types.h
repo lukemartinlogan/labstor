@@ -103,6 +103,9 @@ struct Context {
   /** The blob's score */
   float blob_score_;
 
+  /** Page size to use for FS reads / writes*/
+  size_t page_size_;
+
   Context()
   : dpe_(PlacementPolicy::kNone),
     blob_score_(1) {}

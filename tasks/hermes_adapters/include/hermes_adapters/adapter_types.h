@@ -13,6 +13,8 @@
 #ifndef HERMES_ADAPTER_ADAPTER_TYPES_H_
 #define HERMES_ADAPTER_ADAPTER_TYPES_H_
 
+#include "../../posix/posix_api.h"
+
 namespace hermes::adapter {
 
 /** Adapter types */
@@ -77,6 +79,22 @@ class AdapterModeConv {
       return AdapterMode::kWorkflow;
     }
     return AdapterMode::kDefault;
+  }
+};
+
+struct AdapterInfo {
+  int file_id_;
+  int fd_;
+  int open_flags_;
+  int mode_flags_;
+  int refcnt_;
+  std::string path_;
+  AdapterMode adapter_mode_;
+
+  ~AdapterInfo() {
+    if (fd_ >= 0) {
+      HERMES_POSIX_API->close(fd_);
+    }
   }
 };
 

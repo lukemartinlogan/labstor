@@ -858,10 +858,10 @@ class Client {
         tag_id, blob_name, blob_id,
         blob_off, blob_size,
         blob, score, replace);
-    /*queue->Emplace(hash, p);
+    queue->Emplace(hash, p);
     task->Wait();
     blob_id = task->blob_id_;
-    did_create = task->did_create_;*/
+    did_create = task->did_create_;
     // LABSTOR_CLIENT->DelTask(task);
   }
 

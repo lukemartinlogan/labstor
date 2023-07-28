@@ -225,3 +225,28 @@ TEST_CASE("TestRoundTripLatency") {
 
   HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
 }
+
+#include "hermes/hermes.h"
+#include "hermes_adapters/filesystem.h"
+
+/** Time to process a request */
+TEST_CASE("TestHermesFsLatency") {
+  HERMES->ClientInit();
+  hshm::Timer t;
+
+  int pid = getpid();
+  ProcessAffiner::SetCpuAffinity(pid, 8);
+  hermes::Bucket bkt = HERMES_FILESYSTEM_API->Open("/home/lukemartinlogan/hi.txt");
+
+  t.Resume();
+  size_t ops = (1 << 10);
+  hermes::Context ctx;
+  ctx.page_size_ = 4096;
+  std::string data(ctx.page_size_, 0);
+  for (size_t i = 0; i < ops; ++i) {
+    HERMES_FILESYSTEM_API->Write(bkt, data.data(), 0, data.size(), false, ctx);
+  }
+  t.Pause();
+
+  HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
+}

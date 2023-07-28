@@ -17,110 +17,120 @@
 #define O_TMPFILE 0x0
 #endif
 
-#include "filesystem_structs.h"
+#include "hermes_adapters/posix/posix_api.h"
+#include "hermes_adapters/mapper/mapper_factory.h"
+#include "hermes/hermes.h"
 
-namespace hermes::adapter::fs {
+namespace hermes::adapter {
 
 /** The maximum length of a posix path */
 static inline const int kMaxPathLen = 4096;
 
-/** The type of seek to perform */
-enum class SeekMode {
-  kNone = -1,
-  kSet = SEEK_SET,
-  kCurrent = SEEK_CUR,
-  kEnd = SEEK_END
-};
-
 /** A class to represent file system */
 class Filesystem {
  public:
-  FilesystemIoClient *io_client_;
-  AdapterType type_;
-
- public:
-  /** Constructor */
-  explicit Filesystem(FilesystemIoClient *io_client, AdapterType type)
-  : io_client_(io_client), type_(type) {}
-
-  /** open \a path */
-  File Open(AdapterStat &stat, const std::string &path);
-
   /** open \a f File in \a path*/
-  void Open(AdapterStat &stat, File &f, const std::string &path);
+  hermes::Bucket Open(const std::string &path) {
+    Context ctx;
+    std::string abs_path = stdfs::absolute(path).string();
+    size_t backend_size = GetBackendSize(path);
+    hermes::Bucket bkt(abs_path, ctx, backend_size);
+    bkt.flags_.SetBits(HERMES_BUCKET_IS_FILE);
+  }
 
   /** write */
-  size_t Write(File &f, AdapterStat &stat, const void *ptr, size_t off,
-               size_t total_size, IoStatus &io_status,
-               FsIoOptions opts = FsIoOptions());
+  size_t Write(hermes::Bucket &bkt, const void *ptr,
+               size_t off, size_t total_size,
+               bool append, Context &ctx) {
+    // Fragment I/O request into pages
+    BlobPlacements mapping;
+    auto mapper = MapperFactory::Get(MapperType::kBalancedMapper);
+    mapper->map(off, total_size, ctx.page_size_, mapping);
+    size_t data_offset = 0;
+
+    // Perform a PartialPut for each page
+    for (const auto &p : mapping) {
+      const Blob page((const char*)ptr + data_offset, p.blob_size_);
+      if (!append) {
+        BlobId blob_id;
+        std::string blob_name(p.CreateBlobName().str());
+        bkt.PartialPut(blob_name, page, p.blob_off_, blob_id, ctx);
+      } else {
+        bkt.Append(page, ctx);
+      }
+      data_offset += p.blob_size_;
+    }
+  }
 
   /** read */
-  size_t Read(File &f, AdapterStat &stat, void *ptr,
+  size_t Read(hermes::Bucket &bkt, void *ptr,
               size_t off, size_t total_size,
-              IoStatus &io_status, FsIoOptions opts = FsIoOptions());
+              bool append, Context &ctx) {
+    if (append) {
+      return 0;
+    }
 
-  /** seek */
-  off_t Seek(File &f, AdapterStat &stat, SeekMode whence, off64_t offset);
+    // Fragment I/O request into pages
+    BlobPlacements mapping;
+    auto mapper = MapperFactory::Get(MapperType::kBalancedMapper);
+    mapper->map(off, total_size, ctx.page_size_, mapping);
+    size_t data_offset = 0;
+
+    // Perform a PartialPut for each page
+    for (const auto &p : mapping) {
+      Blob page((const char*)ptr + data_offset, p.blob_size_);
+      ssize_t data_size;
+      BlobId blob_id;
+      std::string blob_name(p.CreateBlobName().str());
+      bkt.PartialGet(blob_name, page, p.blob_off_, data_size, blob_id, ctx);
+      data_offset += p.blob_size_;
+    }
+  }
+
   /** file size */
-  size_t GetSize(File &f, AdapterStat &stat);
-  /** tell */
-  off_t Tell(File &f, AdapterStat &stat);
+  size_t GetSize(hermes::Bucket &bkt) {
+    return bkt.GetSize();
+  }
+
   /** sync */
-  int Sync(File &f, AdapterStat &stat);
+  void Sync(hermes::Bucket &bkt) {
+    // Do nothing
+  }
+
   /** truncate */
-  int Truncate(File &f, AdapterStat &stat, size_t new_size);
+  void Truncate(hermes::Bucket &bkt, size_t new_size) {
+  }
+
   /** close */
-  int Close(File &f, AdapterStat &stat);
+  int Close(hermes::Bucket &bkt) {
+    // Do nothing
+  }
+
   /** remove */
-  int Remove(const std::string &pathname);
+  int Remove(const std::string &pathname) {
+    hermes::Context ctx;
+    hermes::Bucket bkt(pathname, ctx);
+    bkt.Destroy();
+  }
 
-  /*
-   * I/O APIs which seek based on the internal AdapterStat st_ptr,
-   * instead of taking an offset as input.
-   */
-
- public:
-  /** write */
-  size_t Write(File &f, AdapterStat &stat, const void *ptr, size_t total_size,
-               IoStatus &io_status, FsIoOptions opts);
-  /** read */
-  size_t Read(File &f, AdapterStat &stat, void *ptr, size_t total_size,
-              IoStatus &io_status, FsIoOptions opts);
-
- public:
-  /** write */
-  size_t Write(File &f, bool &stat_exists, const void *ptr, size_t total_size,
-               IoStatus &io_status, FsIoOptions opts = FsIoOptions());
-  /** read */
-  size_t Read(File &f, bool &stat_exists, void *ptr, size_t total_size,
-              IoStatus &io_status, FsIoOptions opts = FsIoOptions());
-  /** write \a off offset */
-  size_t Write(File &f, bool &stat_exists, const void *ptr, size_t off,
-               size_t total_size, IoStatus &io_status,
-               FsIoOptions opts = FsIoOptions());
-  /** read \a off offset */
-  size_t Read(File &f, bool &stat_exists, void *ptr, size_t off,
-              size_t total_size, IoStatus &io_status,
-              FsIoOptions opts = FsIoOptions());
-  /** seek */
-  off_t Seek(File &f, bool &stat_exists, SeekMode whence, off_t offset);
-  /** file sizes */
-  size_t GetSize(File &f, bool &stat_exists);
-  /** tell */
-  off_t Tell(File &f, bool &stat_exists);
-  /** sync */
-  int Sync(File &f, bool &stat_exists);
-  /** truncate */
-  int Truncate(File &f, bool &stat_exists, size_t new_size);
-  /** close */
-  int Close(File &f, bool &stat_exists);
+ private:
+  /** Get the size of a file on the backend filesystem */
+  size_t GetBackendSize(const std::string &path) {
+    size_t true_size = 0;
+    int fd = HERMES_POSIX_API->open(path.c_str(), O_RDONLY);
+    if (fd < 0) { return 0; }
+    struct stat buf;
+    HERMES_POSIX_API->fstat(fd, &buf);
+    true_size = buf.st_size;
+    HERMES_POSIX_API->close(fd);
+  }
 
  public:
   /** Whether or not \a path PATH is tracked by Hermes */
   static bool IsPathTracked(const std::string &path) {
-    if (!HERMES->IsInitialized()) {
+    /* if (!HERMES->IsInitialized()) {
       return false;
-    }
+    } */
     std::string abs_path = stdfs::absolute(path).string();
     auto &paths = HERMES->client_config_.path_list_;
     // Check if path is included or excluded
@@ -138,6 +148,9 @@ class Filesystem {
   }
 };
 
-}  // namespace hermes::adapter::fs
+}  // namespace hermes::adapter
+
+#define HERMES_FILESYSTEM_API \
+  hshm::EasySingleton<hermes::adapter::Filesystem>::GetInstance()
 
 #endif  // HERMES_ADAPTER_FILESYSTEM_FILESYSTEM_H_

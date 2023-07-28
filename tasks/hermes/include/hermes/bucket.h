@@ -11,18 +11,33 @@
 
 namespace hermes {
 
+#define HERMES_BUCKET_IS_FILE (1 << 1)
+
 class Bucket {
- private:
+ public:
   mdm::Client *mdm_;
   TagId id_;
   std::string name_;
   Context ctx_;
   bool did_create_;
+  bitfield32_t flags_;
 
  public:
   /**====================================
    * Bucket Operations
    * ===================================*/
+
+  /**
+   * Get or create \a bkt_name bucket.
+   *
+   * Called from hermes.h in GetBucket(). Should not
+   * be used directly.
+   * */
+  explicit Bucket(const std::string &bkt_name,
+                  size_t backend_size = 0) {
+    mdm_ = &HERMES->mdm_;
+    mdm_->GetOrCreateTag(hshm::charbuf(bkt_name), true, {}, backend_size);
+  }
 
   /**
    * Get or create \a bkt_name bucket.
@@ -229,7 +244,7 @@ class Bucket {
   /**
    * Append \a blob_name Blob into the bucket
    * */
-  Status Append(const Blob &blob) {
+  Status Append(const Blob &blob, Context &ctx) {
     // TODO(llogan)
   }
 
@@ -257,7 +272,7 @@ class Bucket {
   Status PartialGet(const std::string &blob_name,
                     Blob &blob,
                     size_t blob_off_,
-                    ssize_t data_size,
+                    ssize_t &data_size,
                     BlobId &blob_id,
                     Context &ctx) {
     // Get from shared memory

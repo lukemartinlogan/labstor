@@ -5,6 +5,7 @@
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/api/labstor_runtime.h"
 #include "hermes_adapters/hermes_adapters.h"
+#include "hermes_adapters/filesystem.h"
 
 namespace labstor::hermes_adapters {
 
