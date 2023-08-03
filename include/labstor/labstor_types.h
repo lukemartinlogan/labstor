@@ -267,6 +267,8 @@ struct UniqueId {
 using TaskStateId = UniqueId<1>;
 /** Uniquely identify a queue */
 using QueueId = UniqueId<2>;
+/** Uniquely identify a task */
+using TaskId = UniqueId<3>;
 
 /** Allow unique ids to be printed as strings */
 template<int num>

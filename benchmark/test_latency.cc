@@ -13,9 +13,9 @@
 /** The performance of getting a queue */
 TEST_CASE("TestGetQueue") {
   labstor::QueueId qid(0, 3);
-  LABSTOR_ADMIN->CreateQueue(labstor::DomainId::GetLocal(), qid,
-                             16, 16, 256,
-                             hshm::bitfield32_t(0));
+  LABSTOR_ADMIN->CreateQueueRoot(labstor::DomainId::GetLocal(), qid,
+                                 16, 16, 256,
+                                 hshm::bitfield32_t(0));
   LABSTOR_QM_CLIENT->GetQueue(qid);
 
   hshm::Timer t;
@@ -42,7 +42,7 @@ TEST_CASE("TestHshmAllocateFree") {
   size_t ops = (1 << 20);
   for (size_t i = 0; i < ops; ++i) {
     hipc::Pointer p;
-    labstor::Task *task = LABSTOR_CLIENT->NewTask<labstor::Task>(p);
+    labstor::Task *task = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>(p);
     LABSTOR_CLIENT->DelTask(task);
   }
   t.Pause();
@@ -92,7 +92,7 @@ TEST_CASE("TestHshmQueueEmplacePop") {
   auto queue = hipc::make_uptr<labstor::MultiQueue>(
       qid, 16, 16, 256, hshm::bitfield32_t(0));
   hipc::Pointer p;
-  auto *task = LABSTOR_CLIENT->NewTask<labstor::Task>(p);
+  auto *task = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>(p);
 
   hshm::Timer t;
   t.Resume();
@@ -135,7 +135,7 @@ TEST_CASE("TestHshmQueueAllocateEmplacePop") {
   t.Resume();
   for (size_t i = 0; i < ops; ++i) {
     hipc::Pointer p;
-    auto *task = LABSTOR_CLIENT->NewTask<labstor::Task>(p);
+    auto *task = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>(p);
     queue->Emplace(0, p);
     queue->Pop(0, task, p);
     LABSTOR_CLIENT->DelTask(task);
@@ -209,8 +209,8 @@ TEST_CASE("TestZeromqAllocateEmplacePop") {
 /** Time to process a request */
 TEST_CASE("TestRoundTripLatency") {
   labstor::small_message::Client client;
-  LABSTOR_ADMIN->RegisterTaskLibrary(labstor::DomainId::GetLocal(), "small_message");
-  client.Create(labstor::DomainId::GetLocal(), "ipc_test");
+  LABSTOR_ADMIN->RegisterTaskLibraryRoot(labstor::DomainId::GetLocal(), "small_message");
+  client.CreateRoot(labstor::DomainId::GetLocal(), "ipc_test");
   hshm::Timer t;
 
   int pid = getpid();
@@ -219,7 +219,7 @@ TEST_CASE("TestRoundTripLatency") {
   t.Resume();
   size_t ops = (1 << 20);
   for (size_t i = 0; i < ops; ++i) {
-    client.Custom(labstor::DomainId::GetLocal());
+    client.CustomRoot(labstor::DomainId::GetLocal());
   }
   t.Pause();
 

@@ -87,8 +87,8 @@ class Runtime : public ConfigurationManager {
         nullptr);
 
     // Set the work orchestrator queue scheduler
-    LABSTOR_ADMIN->SetWorkOrchestratorQueuePolicy(labstor::DomainId::GetLocal(), queue_sched_id);
-    LABSTOR_ADMIN->SetWorkOrchestratorProcessPolicy(labstor::DomainId::GetLocal(), proc_sched_id);
+    LABSTOR_ADMIN->SetWorkOrchestratorQueuePolicyRoot(labstor::DomainId::GetLocal(), queue_sched_id);
+    LABSTOR_ADMIN->SetWorkOrchestratorProcessPolicyRoot(labstor::DomainId::GetLocal(), proc_sched_id);
   }
 
  public:

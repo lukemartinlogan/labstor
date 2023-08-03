@@ -36,12 +36,15 @@ struct ConstructTask : public CreateTaskStateTask {
 
   HSHM_ALWAYS_INLINE
   ConstructTask(hipc::Allocator *alloc,
+                const TaskNode &task_node,
                 const DomainId &domain_id,
                 const std::string &state_name,
                 const std::string &lib_name,
                 const TaskStateId &state_id,
                 DeviceInfo &info)
-      : CreateTaskStateTask(alloc, domain_id,
+      : CreateTaskStateTask(alloc,
+                            task_node,
+                            domain_id,
                             state_name,
                             lib_name,
                             state_id) {
@@ -55,9 +58,10 @@ using labstor::Admin::DestroyTaskStateTask;
 struct DestructTask : public DestroyTaskStateTask {
   HSHM_ALWAYS_INLINE
   DestructTask(hipc::Allocator *alloc,
+               const TaskNode &task_node,
                TaskStateId &state_id,
                const DomainId &domain_id)
-      : DestroyTaskStateTask(alloc, domain_id, state_id) {}
+      : DestroyTaskStateTask(alloc, task_node, domain_id, state_id) {}
 };
 
 /**
@@ -70,12 +74,14 @@ struct AllocTask : public LocalTask {
 
   HSHM_ALWAYS_INLINE
   AllocTask(hipc::Allocator *alloc,
-            const TaskStateId &state_id,
+            const TaskNode &task_node,
             const DomainId &domain_id,
+            const TaskStateId &state_id,
             size_t size,
             std::vector<BufferInfo> *buffers) : Task(alloc) {
     // Initialize task
-    key_ = 0;
+    task_node_ = task_node;
+    lane_hash_ = 0;
     task_state_ = state_id;
     method_ = Method::kAlloc;
     task_flags_.SetBits(0);
@@ -95,11 +101,13 @@ struct FreeTask : public LocalTask {
 
   HSHM_ALWAYS_INLINE
   FreeTask(hipc::Allocator *alloc,
-           const TaskStateId &state_id,
+           const TaskNode &task_node,
            const DomainId &domain_id,
+           const TaskStateId &state_id,
            const std::vector<BufferInfo> &buffers) : Task(alloc) {
     // Initialize task
-    key_ = 0;
+    task_node_ = task_node;
+    lane_hash_ = 0;
     task_state_ = state_id;
     method_ = Method::kFree;
     task_flags_.SetBits(0);
@@ -120,13 +128,15 @@ struct WriteTask : public LocalTask {
 
   HSHM_ALWAYS_INLINE
   WriteTask(hipc::Allocator *alloc,
-            const TaskStateId &state_id,
+            const TaskNode &task_node,
             const DomainId &domain_id,
+            const TaskStateId &state_id,
             const char *buf,
             size_t disk_off,
             size_t size) : Task(alloc) {
     // Initialize task
-    key_ = 0;
+    task_node_ = task_node;
+    lane_hash_ = 0;
     task_state_ = state_id;
     method_ = Method::kWrite;
     task_flags_.SetBits(0);
@@ -149,13 +159,15 @@ struct ReadTask : public LocalTask {
 
   HSHM_ALWAYS_INLINE
   ReadTask(hipc::Allocator *alloc,
-           const TaskStateId &state_id,
+           const TaskNode &task_node,
            const DomainId &domain_id,
+           const TaskStateId &state_id,
            char *buf,
            size_t disk_off,
            size_t size) : Task(alloc) {
     // Initialize task
-    key_ = 0;
+    task_node_ = task_node;
+    lane_hash_ = 0;
     task_state_ = state_id;
     method_ = Method::kRead;
     task_flags_.SetBits(0);
@@ -175,12 +187,14 @@ struct MonitorTask : public LocalTask {
 
   HSHM_ALWAYS_INLINE
   MonitorTask(hipc::Allocator *alloc,
-              const TaskStateId &state_id,
+              const TaskNode &task_node,
               const DomainId &domain_id,
+              const TaskStateId &state_id,
               size_t freq_ms,
               size_t rem_cap) : Task(alloc) {
     // Initialize task
-    key_ = 0;
+    task_node_ = task_node;
+    lane_hash_ = 0;
     task_state_ = state_id;
     method_ = Method::kMonitor;
     task_flags_.SetBits(TASK_LONG_RUNNING);
@@ -198,11 +212,13 @@ struct UpdateCapacityTask : public LocalTask {
 
   HSHM_ALWAYS_INLINE
   UpdateCapacityTask(hipc::Allocator *alloc,
-                     const TaskStateId &state_id,
+                     const TaskNode &task_node,
                      const DomainId &domain_id,
+                     const TaskStateId &state_id,
                      ssize_t diff) : Task(alloc) {
     // Initialize task
-    key_ = 0;
+    task_node_ = task_node;
+    lane_hash_ = 0;
     task_state_ = state_id;
     method_ = Method::kUpdateCapacity;
     task_flags_.SetBits(TASK_FIRE_AND_FORGET);
@@ -238,7 +254,8 @@ class Client {
 
   /** Async create task state */
   HSHM_ALWAYS_INLINE
-  void ACreateTaskState(const DomainId &domain_id,
+  void ACreateTaskState(const TaskNode &task_node,
+                        const DomainId &domain_id,
                         const std::string &state_name,
                         const std::string &lib_name,
                         DeviceInfo &dev_info,
@@ -246,31 +263,36 @@ class Client {
     domain_id_ = domain_id;
     id_ = TaskStateId::GetNull();
     info.state_task_ = LABSTOR_ADMIN->ACreateTaskState<ConstructTask>(
+        task_node,
         domain_id,
         state_name,
         lib_name,
         id_,
         dev_info);
     CopyDevInfo(dev_info);
-    Monitor(100);
+    Monitor(task_node, 100);
   }
+  LABSTOR_TASK_NODE_ROOT(ACreateTaskState);
 
   /** Async create queue */
   HSHM_ALWAYS_INLINE
-  void ACreateQueue(const DomainId &domain_id,
+  void ACreateQueue(const TaskNode &task_node,
+                    const DomainId &domain_id,
                     CreateTaskStateInfo &info) {
     id_ = info.state_task_->id_;
     info.queue_task_ = LABSTOR_ADMIN->ACreateQueue(
-        domain_id, id_,
+        task_node, domain_id, id_,
         LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
         LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
         LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
         bitfield32_t(0));
   }
+  LABSTOR_TASK_NODE_ROOT(ACreateQueue);
 
   /** Create a bdev */
   HSHM_ALWAYS_INLINE
-  void Create(const DomainId &domain_id,
+  void Create(const TaskNode &task_node,
+              const DomainId &domain_id,
               const std::string &state_name,
               const std::string &lib_name,
               DeviceInfo &dev_info) {
@@ -278,104 +300,121 @@ class Client {
     id_ = TaskStateId::GetNull();
     CopyDevInfo(dev_info);
     id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
+        task_node,
         domain_id,
         state_name,
         lib_name,
         id_,
         dev_info);
     queue_id_ = QueueId(id_);
-    LABSTOR_ADMIN->CreateQueue(domain_id, queue_id_,
+    LABSTOR_ADMIN->CreateQueue(task_node, domain_id, queue_id_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
                                LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
                                bitfield32_t(0));
     // TODO(llogan): don't hardcode monitor frequency
-    Monitor(1000);
+    Monitor(task_node, 1000);
   }
+  LABSTOR_TASK_NODE_ROOT(Create);
 
   /** Destroy task state + queue */
   HSHM_ALWAYS_INLINE
-  void Destroy(const std::string &state_name) {
-    LABSTOR_ADMIN->DestroyTaskState(domain_id_, id_);
-    LABSTOR_ADMIN->DestroyQueue(domain_id_, queue_id_);
+  void Destroy(const TaskNode &task_node,
+               const std::string &state_name) {
+    LABSTOR_ADMIN->DestroyTaskState(task_node, domain_id_, id_);
+    LABSTOR_ADMIN->DestroyQueue(task_node, domain_id_, queue_id_);
     monitor_task_->SetComplete();
   }
+  LABSTOR_TASK_NODE_ROOT(Destroy);
 
   /** BDEV monitoring task */
   HSHM_ALWAYS_INLINE
-  void Monitor(size_t freq_ms) {
+  void Monitor(const TaskNode &task_node,
+               size_t freq_ms) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     monitor_task_ = LABSTOR_CLIENT->NewTask<MonitorTask>(
         p,
-        id_, domain_id_, freq_ms, max_cap_);
+        task_node, domain_id_, id_, freq_ms, max_cap_);
     queue->Emplace(0, p);
   }
+  LABSTOR_TASK_NODE_ROOT(Monitor);
 
   /** Update bdev capacity */
-  void UpdateCapacity(ssize_t size) {
+  void UpdateCapacity(const TaskNode &task_node,
+                      ssize_t size) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     LABSTOR_CLIENT->NewTask<UpdateCapacityTask>(
         p,
-        id_, domain_id_, size);
+        task_node, domain_id_, id_, size);
     queue->Emplace(0, p);
   }
+  LABSTOR_TASK_NODE_ROOT(UpdateCapacity);
 
   /** Get bdev remaining capacity */
   HSHM_ALWAYS_INLINE
   size_t GetRemCap() const {
     return monitor_task_->rem_cap_;
   }
+  LABSTOR_TASK_NODE_ROOT(GetRemCap);
 
   /** Allocate buffers from the bdev */
   HSHM_ALWAYS_INLINE
-  AllocTask* AsyncAllocate(size_t size,
+  AllocTask* AsyncAllocate(const TaskNode &task_node,
+                           size_t size,
                            std::vector<BufferInfo> &buffers) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<AllocTask>(
         p,
-        id_, domain_id_, size, &buffers);
+        task_node, domain_id_, id_, size, &buffers);
     queue->Emplace(0, p);
     return task;
   }
+  LABSTOR_TASK_NODE_ROOT(AsyncAllocate);
 
   /** Free data */
   HSHM_ALWAYS_INLINE
-  FreeTask* AsyncFree(const std::vector<BufferInfo> &buffers) {
+  FreeTask* AsyncFree(const TaskNode &task_node,
+                      const std::vector<BufferInfo> &buffers) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<FreeTask>(
         p,
-        id_, domain_id_, buffers);
+        task_node, domain_id_, id_, buffers);
     queue->Emplace(0, p);
     return task;
   }
+  LABSTOR_TASK_NODE_ROOT(AsyncFree);
 
   /** Allocate buffers from the bdev */
   HSHM_ALWAYS_INLINE
-  WriteTask* AsyncWrite(const char *data, size_t off, size_t size) {
+  WriteTask* AsyncWrite(const TaskNode &task_node,
+                        const char *data, size_t off, size_t size) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<WriteTask>(
         p,
-        id_, domain_id_, data, off, size);
+        task_node, domain_id_, id_, data, off, size);
     queue->Emplace(0, p);
     return task;
   }
+  LABSTOR_TASK_NODE_ROOT(AsyncWrite);
 
   /** Allocate buffers from the bdev */
   HSHM_ALWAYS_INLINE
-  ReadTask* AsyncRead(char *data, size_t off, size_t size) {
+  ReadTask* AsyncRead(const TaskNode &task_node,
+                      char *data, size_t off, size_t size) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<ReadTask>(
         p,
-        id_, domain_id_, data, off, size);
+        task_node, domain_id_, id_, data, off, size);
     queue->Emplace(0, p);
     return task;
   }
+  LABSTOR_TASK_NODE_ROOT(AsyncRead);
 };
 
 class Server {

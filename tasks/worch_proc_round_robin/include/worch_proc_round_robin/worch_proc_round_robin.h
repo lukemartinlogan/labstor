@@ -23,10 +23,11 @@ using labstor::Admin::CreateTaskStateTask;
 struct ConstructTask : public CreateTaskStateTask {
   HSHM_ALWAYS_INLINE
   ConstructTask(hipc::Allocator *alloc,
+                const TaskNode &task_node,
                 const DomainId &domain_id,
                 const std::string &state_name,
                 const TaskStateId &state_id)
-      : CreateTaskStateTask(alloc, domain_id,
+      : CreateTaskStateTask(alloc, task_node, domain_id,
                             state_name,
                             "worch_proc_round_robin",
                             state_id) {
@@ -39,9 +40,10 @@ using labstor::Admin::DestroyTaskStateTask;
 struct DestructTask : public DestroyTaskStateTask {
   HSHM_ALWAYS_INLINE
   DestructTask(hipc::Allocator *alloc,
-               TaskStateId &state_id,
-               const DomainId &domain_id)
-      : DestroyTaskStateTask(alloc, domain_id, state_id) {}
+               const TaskNode &task_node,
+               const DomainId &domain_id,
+               TaskStateId &state_id)
+      : DestroyTaskStateTask(alloc, task_node, domain_id, state_id) {}
 };
 
 /** Create admin requests */
@@ -59,19 +61,25 @@ class Client {
 
   /** Create a worch_proc_round_robin */
   HSHM_ALWAYS_INLINE
-  void Create(const DomainId &domain_id, const std::string &state_name) {
+  void Create(const TaskNode &task_node,
+              const DomainId &domain_id,
+              const std::string &state_name) {
     id_ = TaskStateId::GetNull();
     id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
+        task_node,
         domain_id,
         state_name,
         id_);
   }
+  LABSTOR_TASK_NODE_ROOT(Create);
 
   /** Destroy state */
   HSHM_ALWAYS_INLINE
-  void Destroy(const DomainId &domain_id) {
-    LABSTOR_ADMIN->DestroyTaskState(domain_id, id_);
+  void Destroy(const TaskNode &task_node,
+               const DomainId &domain_id) {
+    LABSTOR_ADMIN->DestroyTaskState(task_node, domain_id, id_);
   }
+  LABSTOR_TASK_NODE_ROOT(Destroy);
 };
 
 }  // namespace labstor

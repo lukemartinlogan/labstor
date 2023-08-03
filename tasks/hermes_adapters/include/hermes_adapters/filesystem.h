@@ -108,7 +108,7 @@ class Filesystem {
 
   /** close */
   int Close(hermes::Bucket &bkt) {
-    // Do nothing
+    return 0;
   }
 
   /** remove */
@@ -116,6 +116,7 @@ class Filesystem {
     hermes::Context ctx;
     hermes::Bucket bkt(pathname, ctx);
     bkt.Destroy();
+    return 0;  // TODO(llogan);
   }
 
  private:
@@ -128,6 +129,7 @@ class Filesystem {
     HERMES_POSIX_API->fstat(fd, &buf);
     true_size = buf.st_size;
     HERMES_POSIX_API->close(fd);
+    return true_size;
   }
 
  public:

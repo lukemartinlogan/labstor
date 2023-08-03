@@ -48,16 +48,94 @@ struct TaskMethod {
   TASK_METHOD_T kLast = 2;    /**< Where the next method should take place */
 };
 
+/**
+ * Let's say we have an I/O request to a device
+ * I/O requests + MD operations need to be controlled for correctness
+ * Is there a case where root tasks from different TaskStates need to be ordered? No.
+ * Tasks spawned from the same root task need to be keyed to the same worker stack
+ * Tasks apart of the same task group need to be ordered
+ * */
+
+/** An identifier used for representing a graph */
+struct TaskNode {
+  TaskId root_;         /**< The id of the root task */
+  u32 node_depth_;      /**< The depth of the task in the task graph */
+
+  /** Default constructor */
+  HSHM_ALWAYS_INLINE
+  TaskNode() = default;
+
+  /** Emplace constructor for root task */
+  HSHM_ALWAYS_INLINE
+  TaskNode(TaskId root) {
+    root_ = root;
+    node_depth_ = 0;
+  }
+
+  /** Copy constructor */
+  HSHM_ALWAYS_INLINE
+  TaskNode(const TaskNode &other) {
+    root_ = other.root_;
+    node_depth_ = other.node_depth_;
+  }
+
+  /** Copy assignment operator */
+  HSHM_ALWAYS_INLINE
+  TaskNode& operator=(const TaskNode &other) {
+    root_ = other.root_;
+    node_depth_ = other.node_depth_;
+    return *this;
+  }
+
+  /** Move constructor */
+  HSHM_ALWAYS_INLINE
+  TaskNode(TaskNode &&other) noexcept {
+    root_ = other.root_;
+    node_depth_ = other.node_depth_;
+  }
+
+  /** Move assignment operator */
+  HSHM_ALWAYS_INLINE
+  TaskNode& operator=(TaskNode &&other) noexcept {
+    root_ = other.root_;
+    node_depth_ = other.node_depth_;
+    return *this;
+  }
+
+  /** Addition operator*/
+  HSHM_ALWAYS_INLINE
+  TaskNode operator+(int i) const {
+    TaskNode ret;
+    ret.root_ = root_;
+    ret.node_depth_ = node_depth_ + i;
+    return ret;
+  }
+
+  /** Null task node */
+  HSHM_ALWAYS_INLINE
+  static TaskNode GetNull() {
+    TaskNode ret;
+    ret.root_ = TaskId::GetNull();
+    ret.node_depth_ = 0;
+    return ret;
+  }
+
+  /** Check if null */
+  HSHM_ALWAYS_INLINE
+  bool IsNull() const {
+    return root_.IsNull();
+  }
+};
+
 /** A generic task base class */
 struct Task : public hipc::ShmContainer {
  SHM_CONTAINER_TEMPLATE((Task), (Task))
-  hshm::qtok_t graph_;         /**< The task graph this task is apart of */
-  u32 node_depth_;             /**< Where in the graph this task is located */
-  u32 key_;                    /**< Determine the lane a task is keyed to */
-  TaskStateId task_state_;     /**< The unique name of a task state */
-  u32 method_;                 /**< The method to call in the state */
-  bitfield32_t task_flags_;    /**< Properties of the task  */
+  TaskNode task_node_;         /**< The unique ID of this task in the graph */
   DomainId domain_id_;         /**< The nodes that the task should run on */
+  TaskStateId task_state_;     /**< The unique name of a task state */
+  u32 lane_hash_;              /**< Determine the lane a task is keyed to */
+  u32 method_;                 /**< The method to call in the state */
+  bitfield32_t task_flags_;    /**< Properties of the task */
 
   /**====================================
    * Task Helpers
@@ -115,19 +193,26 @@ struct Task : public hipc::ShmContainer {
     shm_init_container(alloc);
   }
 
+  /** SHM constructor */
+  HSHM_ALWAYS_INLINE explicit
+  Task(hipc::Allocator *alloc,
+       const TaskNode &task_node) {
+    shm_init_container(alloc);
+    task_node_ = task_node;
+  }
+
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
-  Task(hipc::Allocator *alloc, u32 key,
-       TaskStateId task_state,
-       u32 method,
+  Task(hipc::Allocator *alloc,
+       const TaskNode &task_node,
        const DomainId &domain_id,
-       bitfield32_t task_flags,
-       const hshm::qtok_t &graph = hshm::qtok_t::GetNull(),
-       u32 node_depth = 0) {
+       const TaskStateId &task_state,
+       u32 lane_hash,
+       u32 method,
+       bitfield32_t task_flags) {
     shm_init_container(alloc);
-    graph_ = graph;
-    node_depth_ = 0;
-    key_ = key;
+    task_node_ = task_node;
+    lane_hash_ = lane_hash;
     task_state_ = task_state;
     method_ = method;
     domain_id_ = domain_id;

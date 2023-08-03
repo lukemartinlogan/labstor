@@ -27,12 +27,12 @@ class ConfigurationManager {
     std::string config_path = "";
     LoadClientConfig(config_path);
     LoadServerConfig(config_path);
-    mdm_.Create(DomainId::GetGlobal(), "hermes_mdm");
+    mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_mdm");
   }
 
   void ServerInit() {
     // Create connection to MDM
-    mdm_.Create(DomainId::GetGlobal(), "hermes_mdm");
+    mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_mdm");
   }
 
   void LoadClientConfig(std::string &config_path) {

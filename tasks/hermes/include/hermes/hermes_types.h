@@ -19,6 +19,8 @@ using labstor::UniqueId;
 using labstor::TaskStateId;
 using labstor::DomainId;
 using labstor::Task;
+using labstor::TaskId;
+using labstor::TaskNode;
 using labstor::LocalTask;
 using labstor::IpcTask;
 using hshm::bitfield32_t;
@@ -30,13 +32,13 @@ using labstor::QueueId;
 using labstor::MultiQueue;
 
 /** Unique blob id */
-typedef UniqueId<3> BlobId;
+typedef UniqueId<100> BlobId;
 
 /** Unique bucket id */
-typedef UniqueId<4> BucketId;
+typedef UniqueId<101> BucketId;
 
 /** Represents a tag */
-typedef UniqueId<5> TagId;
+typedef UniqueId<102> TagId;
 
 /** Represetnts a storage target */
 typedef TaskStateId TargetId;

@@ -19,10 +19,11 @@ class Client : public ConfigurationManager {
  public:
   int data_;
   QueueManagerClient queue_manager_;
+  std::atomic<u64> unique_;
 
  public:
   /** Default constructor */
-  Client() = default;
+  Client() : unique_(0) {}
 
   /** Initialize the client */
   Client* Create(std::string server_config_path = "",
@@ -74,11 +75,24 @@ class Client : public ConfigurationManager {
   /** Finalize Hermes explicitly */
   void Finalize() {}
 
+  /** Create task node id */
+  TaskNode MakeTaskNodeId() {
+    return TaskId(header_->node_id_, unique_.fetch_add(1));;
+  }
+
   /** Create a task */
   template<typename TaskT, typename ...Args>
   HSHM_ALWAYS_INLINE
-  TaskT* NewTask(hipc::Pointer &p, Args&& ...args) {
-    return main_alloc_->NewObj<TaskT>(p, main_alloc_, std::forward<Args>(args)...);
+  TaskT* NewTask(hipc::Pointer &p, const TaskNode &task_node, Args&& ...args) {
+    return main_alloc_->NewObj<TaskT>(p, main_alloc_, task_node, std::forward<Args>(args)...);
+  }
+
+  /** Create a root task */
+  template<typename TaskT, typename ...Args>
+  HSHM_ALWAYS_INLINE
+  TaskT* NewTaskRoot(hipc::Pointer &p, Args&& ...args) {
+    TaskNode task_node = MakeTaskNodeId();
+    return main_alloc_->NewObj<TaskT>(p, main_alloc_, task_node, std::forward<Args>(args)...);
   }
 
   /** Destroy a task */
@@ -106,6 +120,15 @@ class Client : public ConfigurationManager {
     main_alloc_->Free(p);
   }
 };
+
+/** Fill in common default parameters for task client wrapper function */
+#define LABSTOR_TASK_NODE_ROOT(FUN_NAME) \
+  template<typename ...Args> \
+  HSHM_ALWAYS_INLINE \
+  decltype(auto) FUN_NAME##Root(Args&& ...args) { \
+    TaskNode task_node = LABSTOR_CLIENT->MakeTaskNodeId(); \
+    return FUN_NAME(task_node, std::forward<Args>(args)...); \
+  }
 
 }  // namespace labstor
 
