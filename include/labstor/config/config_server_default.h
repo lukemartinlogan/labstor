@@ -50,6 +50,8 @@ const char* kLabstorServerDefaultConfigStr =
 "### Task Registry\n"
 "task_registry: [\n"
 "  \'hermes_mdm\',\n"
+"  \'hermes_blob_mdm\',\n"
+"  \'hermes_bucket_mdm\',\n"
 "  \'posix_bdev\',\n"
 "  \'ram_bdev\'\n"
 "]\n";

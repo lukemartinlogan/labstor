@@ -8,6 +8,8 @@
 #include "hermes_types.h"
 #include "labstor_admin/labstor_admin.h"
 #include "hermes_mdm/hermes_mdm.h"
+#include "hermes_bucket_mdm/hermes_bucket_mdm.h"
+#include "hermes_blob_mdm/hermes_blob_mdm.h"
 #include "hermes/config_client.h"
 #include "hermes/config_server.h"
 
@@ -16,6 +18,8 @@ namespace hermes {
 class ConfigurationManager {
  public:
   mdm::Client mdm_;
+  bucket_mdm::Client bkt_mdm_;
+  blob_mdm::Client blob_mdm_;
   ServerConfig server_config_;
   ClientConfig client_config_;
 
@@ -33,6 +37,8 @@ class ConfigurationManager {
   void ServerInit() {
     // Create connection to MDM
     mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_mdm");
+    bkt_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_bkt_mdm");
+    blob_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_blob_mdm");
   }
 
   void LoadClientConfig(std::string &config_path) {

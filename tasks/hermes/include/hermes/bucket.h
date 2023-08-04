@@ -16,10 +16,11 @@ namespace hermes {
 class Bucket {
  public:
   mdm::Client *mdm_;
+  blob_mdm::Client *blob_mdm_;
+  bucket_mdm::Client *bkt_mdm_;
   TagId id_;
   std::string name_;
   Context ctx_;
-  bool did_create_;
   bitfield32_t flags_;
 
  public:
@@ -36,8 +37,10 @@ class Bucket {
   explicit Bucket(const std::string &bkt_name,
                   size_t backend_size = 0) {
     mdm_ = &HERMES->mdm_;
-    mdm_->GetOrCreateTagRoot(hshm::charbuf(bkt_name), true,
-                             std::vector<TraitId>(), backend_size);
+    blob_mdm_ = &HERMES->blob_mdm_;
+    bkt_mdm_ = &HERMES->bkt_mdm_;
+    bkt_mdm_->GetOrCreateTagRoot(hshm::charbuf(bkt_name), true,
+                                 std::vector<TraitId>(), backend_size);
   }
 
   /**
@@ -50,8 +53,10 @@ class Bucket {
                   Context &ctx,
                   size_t backend_size = 0) {
     mdm_ = &HERMES->mdm_;
-    mdm_->GetOrCreateTagRoot(hshm::charbuf(bkt_name), true,
-                             std::vector<TraitId>(), backend_size);
+    blob_mdm_ = &HERMES->blob_mdm_;
+    bkt_mdm_ = &HERMES->bkt_mdm_;
+    bkt_mdm_->GetOrCreateTagRoot(hshm::charbuf(bkt_name), true,
+                                 std::vector<TraitId>(), backend_size);
   }
 
   /**
@@ -59,15 +64,9 @@ class Bucket {
    * */
   explicit Bucket(TagId tag_id) {
     id_ = tag_id;
-    did_create_ = false;
     mdm_ = &HERMES->mdm_;
-  }
-
-  /**
-   * Check if the bucket was created in the constructor
-   * */
-  bool DidCreate() {
-    return did_create_;
+    blob_mdm_ = &HERMES->blob_mdm_;
+    bkt_mdm_ = &HERMES->bkt_mdm_;
   }
 
   /** Default constructor */
@@ -127,21 +126,21 @@ class Bucket {
    * Rename this bucket
    * */
   void Rename(const std::string &new_bkt_name) {
-    mdm_->RenameTagRoot(id_, hshm::to_charbuf(new_bkt_name));
+    bkt_mdm_->RenameTagRoot(id_, hshm::to_charbuf(new_bkt_name));
   }
 
   /**
    * Clears the buckets contents, but doesn't destroy its metadata
    * */
   void Clear() {
-    mdm_->TagClearBlobsRoot(id_);
+    bkt_mdm_->TagClearBlobsRoot(id_);
   }
 
   /**
    * Destroys this bucket along with all its contents.
    * */
   void Destroy() {
-    mdm_->DestroyTagRoot(id_);
+    bkt_mdm_->DestroyTagRoot(id_);
   }
 
   /**
@@ -164,7 +163,7 @@ class Bucket {
    * @return The Status of the operation
    * */
   Status GetBlobId(const std::string &blob_name, BlobId &blob_id) {
-    blob_id = mdm_->GetBlobIdRoot(id_, hshm::to_charbuf(blob_name));
+    blob_id = blob_mdm_->GetBlobIdRoot(id_, hshm::to_charbuf(blob_name));
     return Status();
   }
 
@@ -176,7 +175,7 @@ class Bucket {
    * @return The Status of the operation
    * */
   std::string GetBlobName(const BlobId &blob_id) {
-    return mdm_->GetBlobNameRoot(blob_id);
+    return blob_mdm_->GetBlobNameRoot(blob_id);
   }
 
 
@@ -187,7 +186,7 @@ class Bucket {
    * @return The Status of the operation
    * */
   float GetBlobScore(const BlobId &blob_id) {
-    return mdm_->GetBlobScoreRoot(blob_id);
+    return blob_mdm_->GetBlobScoreRoot(blob_id);
   }
 
   /**
@@ -195,7 +194,7 @@ class Bucket {
    * */
   Status TagBlob(BlobId &blob_id,
                  TagId &tag_id) {
-    mdm_->TagAddBlobRoot(tag_id, blob_id);
+    bkt_mdm_->TagAddBlobRoot(tag_id, blob_id);
     return Status();
   }
 
@@ -210,12 +209,11 @@ class Bucket {
     hipc::Pointer p = LABSTOR_CLIENT->AllocateBuffer(blob.size());
     char *data = LABSTOR_CLIENT->GetPrivatePointer(p);
     memcpy(data, blob.data(), blob.size());
-    bool did_create;
     // Put to shared memory
     blob_id = BlobId::GetNull();
-    mdm_->PutBlobRoot(id_, hshm::to_charbuf(blob_name),
-                      blob_id, 0, blob.size(), p, ctx.blob_score_,
-                      true, did_create);
+    bkt_mdm_->PutBlobRoot(id_, hshm::to_charbuf(blob_name),
+                          blob_id, 0, blob.size(), p, ctx.blob_score_,
+                          bitfield32_t(HERMES_BLOB_REPLACE));
     // Free shared memory
     // LABSTOR_CLIENT->FreeBuffer(p);
     return Status();
@@ -233,12 +231,11 @@ class Bucket {
     hipc::Pointer p = LABSTOR_CLIENT->AllocateBuffer(blob.size());
     char *data = LABSTOR_CLIENT->GetPrivatePointer(p);
     memcpy(data, blob.data(), blob.size());
-    bool did_create;
     // Put to shared memory
     blob_id = BlobId::GetNull();
-    mdm_->PutBlobRoot(id_, hshm::to_charbuf(blob_name),
-                      blob_id, blob_off, blob.size(), p,
-                      ctx.blob_score_, true, did_create);
+    bkt_mdm_->PutBlobRoot(id_, hshm::to_charbuf(blob_name),
+                          blob_id, blob_off, blob.size(), p,
+                          ctx.blob_score_, bitfield32_t(HERMES_BLOB_REPLACE));
     // Free shared memory
     // LABSTOR_CLIENT->FreeBuffer(p);
     return Status();
@@ -260,7 +257,7 @@ class Bucket {
              Context &ctx) {
     // Get from shared memory
     ssize_t data_size = -1;
-    hipc::Pointer data_p = mdm_->GetBlobRoot(blob_id, 0, data_size);
+    hipc::Pointer data_p = blob_mdm_->GetBlobRoot(blob_id, 0, data_size);
     char *data = LABSTOR_CLIENT->GetPrivatePointer(data_p);
     blob.resize(data_size);
     memcpy(blob.data(), data, data_size);
@@ -279,7 +276,7 @@ class Bucket {
                     BlobId &blob_id,
                     Context &ctx) {
     // Get from shared memory
-    hipc::Pointer data_p = mdm_->GetBlobRoot(blob_id, blob_off_, data_size);
+    hipc::Pointer data_p = blob_mdm_->GetBlobRoot(blob_id, blob_off_, data_size);
     char *data = LABSTOR_CLIENT->GetPrivatePointer(data_p);
     blob.resize(data_size);
     memcpy(blob.data(), data, data_size);
@@ -293,7 +290,7 @@ class Bucket {
    * */
   bool ContainsBlob(const std::string &blob_name,
                     BlobId &blob_id) {
-    blob_id = mdm_->GetBlobIdRoot(id_, hshm::to_charbuf(blob_name));
+    blob_id = blob_mdm_->GetBlobIdRoot(id_, hshm::to_charbuf(blob_name));
     return !blob_id.IsNull();
   }
 
@@ -301,14 +298,15 @@ class Bucket {
    * Rename \a blob_id blob to \a new_blob_name new name
    * */
   void RenameBlob(BlobId blob_id, std::string new_blob_name, Context &ctx) {
-    mdm_->RenameBlobRoot(blob_id, hshm::to_charbuf(new_blob_name));
+    blob_mdm_->RenameBlobRoot(blob_id, hshm::to_charbuf(new_blob_name));
   }
 
   /**
    * Delete \a blob_id blob
    * */
   void DestroyBlob(BlobId blob_id, Context &ctx) {
-    mdm_->DestroyBlobRoot(blob_id);
+    // TODO(llogan): Make apart of bkt_mdm_ instead
+    blob_mdm_->DestroyBlobRoot(blob_id);
   }
 
   /**

@@ -47,6 +47,8 @@ rpc:
 ### Task Registry
 task_registry: [
   'hermes_mdm',
+  'hermes_blob_mdm',
+  'hermes_bucket_mdm',
   'posix_bdev',
   'ram_bdev'
 ]
