@@ -13,70 +13,14 @@ namespace labstor::Admin {
 
 /** The set of methods in the admin task */
 struct Method : public TaskMethod {
-  TASK_METHOD_T kCreateQueue = TaskMethod::kLast;
-  TASK_METHOD_T kDestroyQueue = TaskMethod::kLast + 1;
-  TASK_METHOD_T kRegisterTaskLib = TaskMethod::kLast + 2;
-  TASK_METHOD_T kDestroyTaskLib = TaskMethod::kLast + 3;
-  TASK_METHOD_T kCreateTaskState = TaskMethod::kLast + 4;
-  TASK_METHOD_T kGetTaskStateId = TaskMethod::kLast + 5;
-  TASK_METHOD_T kDestroyTaskState = TaskMethod::kLast + 6;
-  TASK_METHOD_T kStopRuntime = TaskMethod::kLast + 7;
-  TASK_METHOD_T kSetWorkOrchestratorQueuePolicy = TaskMethod::kLast + 8;
-  TASK_METHOD_T kSetWorkOrchestratorProcessPolicy = TaskMethod::kLast + 9;
-};
-
-/** A task to create a queue */
-struct CreateQueueTask : public Task {
-  IN QueueId id_;
-  IN u32 max_lanes_;
-  IN u32 num_lanes_;
-  IN u32 depth_;
-  IN bitfield32_t flags_;
-
-  HSHM_ALWAYS_INLINE
-  CreateQueueTask(hipc::Allocator *alloc,
-                  const TaskNode &task_node,
-                  const DomainId &domain_id,
-                  const QueueId &id,
-                  u32 max_lanes, u32 num_lanes,
-                  u32 depth, bitfield32_t flags) : Task(alloc) {
-    // Initialize task
-    task_node_ = task_node;
-    lane_hash_ = 0;
-    task_state_ = LABSTOR_QM_CLIENT->admin_task_state_;
-    method_ = Method::kCreateQueue;
-    task_flags_.SetBits(0);
-    domain_id_ = domain_id;
-
-    // Initialize QueueManager task
-    id_ = id;
-    max_lanes_ = max_lanes;
-    num_lanes_ = num_lanes;
-    depth_ = depth;
-    flags_ = flags;
-  }
-};
-
-/** A task to destroy a queue */
-struct DestroyQueueTask : public Task {
-  IN QueueId id_;
-
-  HSHM_ALWAYS_INLINE
-  DestroyQueueTask(hipc::Allocator *alloc,
-                   const TaskNode &task_node,
-                   const DomainId &domain_id,
-                   const QueueId &id): Task(alloc) {
-    // Initialize task
-    task_node_ = task_node;
-    lane_hash_ = 0;
-    task_state_ = LABSTOR_QM_CLIENT->admin_task_state_;
-    method_ = Method::kDestroyQueue;
-    task_flags_.SetBits(0);
-    domain_id_ = domain_id;
-
-    // Initialize QueueManager task
-    id_ = id;
-  }
+  TASK_METHOD_T kRegisterTaskLib = TaskMethod::kLast + 0;
+  TASK_METHOD_T kDestroyTaskLib = TaskMethod::kLast + 1;
+  TASK_METHOD_T kCreateTaskState = TaskMethod::kLast + 2;
+  TASK_METHOD_T kGetTaskStateId = TaskMethod::kLast + 3;
+  TASK_METHOD_T kDestroyTaskState = TaskMethod::kLast + 4;
+  TASK_METHOD_T kStopRuntime = TaskMethod::kLast + 5;
+  TASK_METHOD_T kSetWorkOrchestratorQueuePolicy = TaskMethod::kLast + 6;
+  TASK_METHOD_T kSetWorkOrchestratorProcessPolicy = TaskMethod::kLast + 7;
 };
 
 /** A template to register or destroy a task library */
@@ -124,20 +68,31 @@ class CreateTaskStatePhase {
   TASK_METHOD_T kLast = 0;
 };
 
-/** A task to register a Task state */
+/** A task to register a Task state + Create a queue */
+#define CREATE_TASK_STATE_ARGS \
+  hipc::Allocator *alloc, \
+  const TaskNode &task_node, \
+  const DomainId &domain_id, \
+  const std::string &state_name, \
+  const std::string &lib_name, \
+  const TaskStateId &id, \
+  u32 max_lanes, u32 num_lanes, \
+  u32 depth, bitfield32_t flags
+#define PASS_CREATE_TASK_STATE_ARGS(LIB_NAME) \
+  alloc, task_node, domain_id, state_name, \
+  LIB_NAME, id, max_lanes, num_lanes, depth, flags
 struct CreateTaskStateTask : public Task {
   IN hipc::ShmArchive<hipc::string> lib_name_;
   IN hipc::ShmArchive<hipc::string> state_name_;
+  IN u32 queue_max_lanes_;
+  IN u32 queue_num_lanes_;
+  IN u32 queue_depth_;
+  IN bitfield32_t queue_flags_;
   INOUT TaskStateId id_;
-  OUT int phase_;
+  TEMP int phase_;
 
   HSHM_ALWAYS_INLINE
-  CreateTaskStateTask(hipc::Allocator *alloc,
-                      const TaskNode &task_node,
-                      const DomainId &domain_id,
-                      const std::string &state_name,
-                      const std::string &lib_name,
-                      const TaskStateId &id = TaskStateId::GetNull()) : Task(alloc) {
+  CreateTaskStateTask(CREATE_TASK_STATE_ARGS) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
@@ -150,11 +105,10 @@ struct CreateTaskStateTask : public Task {
     HSHM_MAKE_AR(state_name_, alloc, state_name);
     HSHM_MAKE_AR(lib_name_, alloc, lib_name);
     id_ = id;
-  }
-
-  ~CreateTaskStateTask() {
-    HSHM_DESTROY_AR(state_name_);
-    HSHM_DESTROY_AR(lib_name_);
+    queue_max_lanes_ = max_lanes;
+    queue_num_lanes_ = num_lanes;
+    queue_depth_ = depth;
+    queue_flags_ = flags;
   }
 };
 
@@ -252,13 +206,6 @@ struct SetWorkOrchestratorPolicyTask : public Task {
 using SetWorkOrchestratorQueuePolicyTask = SetWorkOrchestratorPolicyTask<0>;
 using SetWorkOrchestratorProcessPolicyTask = SetWorkOrchestratorPolicyTask<1>;
 
-
-/** Stores a CreateQueue + CreateTaskState task */
-struct CreateTaskStateInfo {
-  CreateQueueTask *queue_task_;
-  CreateTaskStateTask *state_task_;
-};
-
 /** Create admin requests */
 class Client {
  public:
@@ -267,57 +214,6 @@ class Client {
 
   /** Destructor */
   ~Client() = default;
-
-  /** Async create a queue with an ID */
-  HSHM_ALWAYS_INLINE
-  CreateQueueTask* ACreateQueue(const TaskNode &task_node,
-                                const DomainId &domain_id,
-                                const QueueId &id,
-                                u32 max_lanes, u32 num_lanes,
-                                u32 depth, bitfield32_t flags) {
-    if (id.IsNull()) {
-      HELOG(kWarning, "Cannot create a queue with a null ID");
-      return nullptr;
-    }
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
-    auto *task = LABSTOR_CLIENT->NewTask<CreateQueueTask>(
-        p, task_node, domain_id, id,
-        max_lanes, num_lanes, depth, flags);
-    queue->Emplace(0, p);
-    return task;
-  }
-  LABSTOR_TASK_NODE_ROOT(ACreateQueue);
-
-  /** Create a queue with an ID */
-  HSHM_ALWAYS_INLINE
-  void CreateQueue(const TaskNode &task_node,
-                   const DomainId &domain_id,
-                   const QueueId &id,
-                   u32 max_lanes, u32 num_lanes,
-                   u32 depth, bitfield32_t flags) {
-    auto task = ACreateQueue(task_node, domain_id, id, max_lanes, num_lanes, depth, flags);
-    if (!task) {
-      return;
-    }
-    task->Wait();
-    LABSTOR_CLIENT->DelTask(task);
-  }
-  LABSTOR_TASK_NODE_ROOT(CreateQueue);
-
-  /** Remove a queue */
-  HSHM_ALWAYS_INLINE
-  void DestroyQueue(const TaskNode &task_node,
-                    const DomainId &domain_id,
-                    const QueueId &id) {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
-    auto *task = LABSTOR_CLIENT->NewTask<DestroyQueueTask>(p, task_node, domain_id, id);
-    queue->Emplace(0, p);
-    task->Wait();
-    LABSTOR_CLIENT->DelTask(task);
-  }
-  LABSTOR_TASK_NODE_ROOT(DestroyQueue);
 
   /** Register a task library */
   HSHM_ALWAYS_INLINE
@@ -352,15 +248,15 @@ class Client {
   /** Asynchronously spawn a task state */
   template<typename CreateTaskStateT, typename ...Args>
   HSHM_ALWAYS_INLINE
-  CreateTaskStateT* ACreateTaskState(const TaskNode &task_node,
-                                     Args&& ...args) {
+  CreateTaskStateT* AsyncCreateTaskState(const TaskNode &task_node,
+                                         Args&& ...args) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
     auto *task = LABSTOR_CLIENT->NewTask<CreateTaskStateT>(p, task_node, std::forward<Args>(args)...);
     queue->Emplace(0, p);
     return task;
   }
-  LABSTOR_TASK_NODE_ROOT(ACreateTaskState);
+  LABSTOR_TASK_NODE_ROOT(AsyncCreateTaskState);
 
   /** Spawn a task state */
   template<typename CreateTaskStateT, typename ...Args>

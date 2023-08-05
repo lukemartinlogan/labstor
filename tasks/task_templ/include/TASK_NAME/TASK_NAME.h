@@ -23,17 +23,8 @@ struct Method : public TaskMethod {
 using labstor::Admin::CreateTaskStateTask;
 struct ConstructTask : public CreateTaskStateTask {
   HSHM_ALWAYS_INLINE
-  ConstructTask(hipc::Allocator *alloc,
-                const TaskNode &task_node,
-                const DomainId &domain_id,
-                const std::string &state_name,
-                const TaskStateId &state_id)
-  : CreateTaskStateTask(alloc,
-                        task_node,
-                        domain_id,
-                        state_name,
-                        "TASK_NAME",
-                        state_id) {
+  ConstructTask(CREATE_TASK_STATE_ARGS)
+  : CreateTaskStateTask(PASS_CREATE_TASK_STATE_ARGS("TASK_NAME")) {
     // Custom params
   }
 
@@ -88,23 +79,39 @@ class Client {
   /** Destructor */
   ~Client() = default;
 
+  /** Async create a task state */
+  HSHM_ALWAYS_INLINE
+  ConstructTask* AsyncCreate(const TaskNode &task_node,
+                   const DomainId &domain_id,
+                   const std::string &state_name) {
+    id_ = TaskStateId::GetNull();
+    return LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
+        task_node, domain_id, state_name, id_,
+        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
+        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
+        LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
+        bitfield32_t(0));
+  }
+
+  /** Finish Async Create */
+  bool AsyncCreateIsComplete(ConstructTask *create_task) {
+    if (create_task->IsComplete()) {
+      id_ = create_task->id_;
+      queue_id_ = QueueId(id_);
+      LABSTOR_CLIENT->DelTask(create_task);
+      return true;
+    }
+    return false;
+  }
+
   /** Create a TASK_NAME */
   HSHM_ALWAYS_INLINE
   void Create(const TaskNode &task_node,
               const DomainId &domain_id,
               const std::string &state_name) {
-    id_ = TaskStateId::GetNull();
-    id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
-        task_node,
-        domain_id,
-        state_name,
-        id_);
-    queue_id_ = QueueId(id_);
-    LABSTOR_ADMIN->CreateQueue(task_node, domain_id, queue_id_,
-                               LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-                               LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-                               LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
-                               bitfield32_t(0));
+    auto *task = AsyncCreate(task_node, domain_id, state_name);
+    task->Wait();
+    AsyncCreateIsComplete(task);
   }
   LABSTOR_TASK_NODE_ROOT(Create);
 

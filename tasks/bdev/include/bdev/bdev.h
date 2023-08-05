@@ -254,15 +254,15 @@ class Client {
 
   /** Async create task state */
   HSHM_ALWAYS_INLINE
-  void ACreateTaskState(const TaskNode &task_node,
-                        const DomainId &domain_id,
-                        const std::string &state_name,
-                        const std::string &lib_name,
-                        DeviceInfo &dev_info,
-                        CreateTaskStateInfo &info) {
+  void AsyncCreateTaskState(const TaskNode &task_node,
+                            const DomainId &domain_id,
+                            const std::string &state_name,
+                            const std::string &lib_name,
+                            DeviceInfo &dev_info,
+                            CreateTaskStateInfo &info) {
     domain_id_ = domain_id;
     id_ = TaskStateId::GetNull();
-    info.state_task_ = LABSTOR_ADMIN->ACreateTaskState<ConstructTask>(
+    info.state_task_ = LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
         task_node,
         domain_id,
         state_name,
@@ -272,22 +272,22 @@ class Client {
     CopyDevInfo(dev_info);
     Monitor(task_node, 100);
   }
-  LABSTOR_TASK_NODE_ROOT(ACreateTaskState);
+  LABSTOR_TASK_NODE_ROOT(AsyncCreateTaskState);
 
   /** Async create queue */
   HSHM_ALWAYS_INLINE
-  void ACreateQueue(const TaskNode &task_node,
-                    const DomainId &domain_id,
-                    CreateTaskStateInfo &info) {
+  void AsyncCreateQueue(const TaskNode &task_node,
+                        const DomainId &domain_id,
+                        CreateTaskStateInfo &info) {
     id_ = info.state_task_->id_;
-    info.queue_task_ = LABSTOR_ADMIN->ACreateQueue(
+    info.queue_task_ = LABSTOR_ADMIN->AsyncCreateQueue(
         task_node, domain_id, id_,
         LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
         LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
         LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
         bitfield32_t(0));
   }
-  LABSTOR_TASK_NODE_ROOT(ACreateQueue);
+  LABSTOR_TASK_NODE_ROOT(AsyncCreateQueue);
 
   /** Create a bdev */
   HSHM_ALWAYS_INLINE
@@ -296,24 +296,17 @@ class Client {
               const std::string &state_name,
               const std::string &lib_name,
               DeviceInfo &dev_info) {
-    domain_id_ = domain_id;
-    id_ = TaskStateId::GetNull();
-    CopyDevInfo(dev_info);
-    id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
-        task_node,
-        domain_id,
-        state_name,
-        lib_name,
-        id_,
-        dev_info);
-    queue_id_ = QueueId(id_);
-    LABSTOR_ADMIN->CreateQueue(task_node, domain_id, queue_id_,
-                               LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-                               LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-                               LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
-                               bitfield32_t(0));
-    // TODO(llogan): don't hardcode monitor frequency
-    Monitor(task_node, 1000);
+    CreateTaskStateInfo info;
+    AsyncCreateTaskState(task_node,
+                         domain_id,
+                         state_name,
+                         lib_name,
+                         dev_info,
+                         info);
+    info.state_task_->Wait();
+    id_ = info.state_task_->id_;
+    AsyncCreateQueue(task_node, domain_id, info);
+    info.Free();
   }
   LABSTOR_TASK_NODE_ROOT(Create);
 

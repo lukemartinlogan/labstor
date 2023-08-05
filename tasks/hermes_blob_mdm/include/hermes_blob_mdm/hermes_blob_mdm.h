@@ -49,15 +49,8 @@ class ConstructTaskPhase : public CreateTaskStatePhase {
 using labstor::Admin::CreateTaskStateTask;
 struct ConstructTask : public CreateTaskStateTask {
   HSHM_ALWAYS_INLINE
-  ConstructTask(hipc::Allocator *alloc,
-                const TaskNode &task_node,
-                const DomainId &domain_id,
-                const std::string &state_name,
-                const TaskStateId &state_id)
-      : CreateTaskStateTask(alloc, task_node, domain_id,
-                            state_name,
-                            "hermes_blob_mdm",
-                            state_id) {
+  ConstructTask(CREATE_TASK_STATE_ARGS)
+  : CreateTaskStateTask(PASS_CREATE_TASK_STATE_ARGS("hermes_blob_mdm")) {
   }
 
   HSHM_ALWAYS_INLINE
@@ -480,12 +473,6 @@ class Client {
         domain_id,
         state_name,
         id_);
-    queue_id_ = QueueId(id_);
-    LABSTOR_ADMIN->CreateQueue(task_node, domain_id, queue_id_,
-                               LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-                               LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-                               LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
-                               bitfield32_t(0));
   }
   LABSTOR_TASK_NODE_ROOT(Create);
 
@@ -494,7 +481,6 @@ class Client {
   void Destroy(const TaskNode &task_node,
                const DomainId &domain_id) {
     LABSTOR_ADMIN->DestroyTaskState(task_node, domain_id, id_);
-    LABSTOR_ADMIN->DestroyQueue(task_node, domain_id, queue_id_);
   }
   LABSTOR_TASK_NODE_ROOT(Destroy);
 

@@ -293,6 +293,7 @@ struct TagInfo {
   std::list<BlobId> blobs_;
   std::list<Task*> traits_;
   size_t internal_size_;
+  size_t page_size_;
   bool owner_;
 };
 

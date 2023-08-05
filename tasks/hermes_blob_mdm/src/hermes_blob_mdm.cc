@@ -122,12 +122,12 @@ class Server : public TaskLib {
           target_tasks_.emplace_back();
           targets_.emplace_back();
           bdev::Client &client = targets_.back();
-          client.ACreateTaskState(task->task_node_,
-                                  DomainId::GetLocal(),
-                                  "hermes_" + dev.dev_name_,
-                                  dev_type,
-                                  dev,
-                                  target_tasks_.back());
+          client.AsyncCreateTaskState(task->task_node_,
+                                      DomainId::GetLocal(),
+                                      "hermes_" + dev.dev_name_,
+                                      dev_type,
+                                      dev,
+                                      target_tasks_.back());
         }
         task->phase_ = ConstructTaskPhase::kWaitForTaskStates;
       }
@@ -155,7 +155,7 @@ class Server : public TaskLib {
         int i = 0;
         for (auto &client : targets_) {
           auto &tgt_task = target_tasks_[i];
-          client.ACreateQueue(task->task_node_, DomainId::GetLocal(), tgt_task);
+          client.AsyncCreateQueue(task->task_node_, DomainId::GetLocal(), tgt_task);
           LABSTOR_CLIENT->DelTask(tgt_task.state_task_);
           ++i;
         }

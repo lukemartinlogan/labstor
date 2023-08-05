@@ -32,13 +32,15 @@ class ConfigurationManager {
     LoadClientConfig(config_path);
     LoadServerConfig(config_path);
     mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_mdm");
+    blob_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_blob_mdm");
+    bkt_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_bkt_mdm");
   }
 
   void ServerInit() {
     // Create connection to MDM
     mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_mdm");
-    bkt_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_bkt_mdm");
     blob_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_blob_mdm");
+    bkt_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_bkt_mdm");
   }
 
   void LoadClientConfig(std::string &config_path) {

@@ -37,18 +37,8 @@ struct Method : public TaskMethod {
 using labstor::Admin::CreateTaskStateTask;
 struct ConstructTask : public CreateTaskStateTask {
   HSHM_ALWAYS_INLINE
-  ConstructTask(hipc::Allocator *alloc,
-                const TaskNode &task_node,
-                const DomainId &domain_id,
-                const std::string &state_name,
-                const TaskStateId &state_id)
-  : CreateTaskStateTask(alloc,
-                        task_node,
-                        domain_id,
-                        state_name,
-                        "hermes_bucket_mdm",
-                        state_id) {
-    // Custom params
+  ConstructTask(CREATE_TASK_STATE_ARGS)
+  : CreateTaskStateTask(PASS_CREATE_TASK_STATE_ARGS("hermes_bucket_mdm")) {
   }
 
   HSHM_ALWAYS_INLINE
@@ -86,6 +76,7 @@ struct PutBlobTask : public Task {
   IN bitfield32_t flags_;
   INOUT BlobId blob_id_;
   TEMP int phase_;
+  TEMP Task* blob_put_task_;
 
   HSHM_ALWAYS_INLINE
   PutBlobTask(hipc::Allocator *alloc,

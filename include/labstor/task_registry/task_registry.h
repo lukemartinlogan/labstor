@@ -222,12 +222,8 @@ class TaskRegistry {
     }
 
     // Check if state_id needs to be allocated
-    TaskStateId new_id = state_id;
-    if (new_id.IsNull()) {
-      new_id = CreateTaskStateId();
-    }
     if (task) {
-      task->id_ = new_id;
+      task->id_ = state_id;
     }
 
     // Create the state instance

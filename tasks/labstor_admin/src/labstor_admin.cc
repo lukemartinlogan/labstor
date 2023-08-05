@@ -24,14 +24,6 @@ class Server : public TaskLib {
       case Method::kDestruct: {
         break;
       }
-      case Method::kCreateQueue: {
-        CreateQueue(queue, reinterpret_cast<CreateQueueTask *>(task));
-        break;
-      }
-      case Method::kDestroyQueue: {
-        DestroyQueue(queue, reinterpret_cast<DestroyQueueTask *>(task));
-        break;
-      }
       case Method::kRegisterTaskLib: {
         RegisterTaskLib(queue, reinterpret_cast<RegisterTaskLibTask *>(task));
         break;
@@ -69,22 +61,6 @@ class Server : public TaskLib {
     }
   }
 
-  void CreateQueue(MultiQueue *queue, CreateQueueTask *task) {
-    QueueId id = task->id_;
-    u32 max_lanes = task->max_lanes_;
-    u32 num_lanes = task->num_lanes_;
-    u32 depth = task->depth_;
-    bitfield32_t flags = task->flags_;
-    LABSTOR_QM_RUNTIME->CreateQueue(id, max_lanes, num_lanes, depth, flags);
-    task->SetComplete();
-  }
-
-  void DestroyQueue(MultiQueue *queue, DestroyQueueTask *task) {
-    QueueId id = task->id_;
-    LABSTOR_QM_RUNTIME->DestroyQueue(id);
-    task->SetComplete();
-  }
-
   void RegisterTaskLib(MultiQueue *queue, RegisterTaskLibTask *task) {
     std::string lib_name = task->lib_name_->str();
     LABSTOR_TASK_REGISTRY->RegisterTaskLib(lib_name);
@@ -109,10 +85,24 @@ class Server : public TaskLib {
       // The state is being created
       // NOTE(llogan): this does NOT return since task creations can have phases
       task->method_ = Method::kConstruct;
+
+      // Create the task queue for the state
+      TaskStateId new_id = task->id_;
+      if (new_id.IsNull()) {
+        new_id = LABSTOR_TASK_REGISTRY->CreateTaskStateId();
+      }
+      QueueId qid(new_id);
+      if (task->queue_max_lanes_ > 0) {
+        LABSTOR_QM_RUNTIME->CreateQueue(
+            qid, task->queue_max_lanes_, task->queue_num_lanes_,
+            task->queue_depth_, task->queue_flags_);
+      }
+
+      // Begin creating the task state
       LABSTOR_TASK_REGISTRY->CreateTaskState(
           lib_name.c_str(),
           state_name.c_str(),
-          task->id_,
+          new_id,
           task);
       task->task_state_ = task->id_;
     }

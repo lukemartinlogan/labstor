@@ -6,6 +6,7 @@
 #include "labstor/api/labstor_runtime.h"
 #include "hermes/config_server.h"
 #include "hermes_bucket_mdm/hermes_bucket_mdm.h"
+#include "hermes_adapters/mapper/abstract_mapper.h"
 #include "hermes/dpe/dpe_factory.h"
 #include "bdev/bdev.h"
 
@@ -74,7 +75,7 @@ class Server : public TaskLib {
     id_ = task->id_;
     id_alloc_ = 0;
     node_id_ = LABSTOR_QM_CLIENT->node_id_;
-    blob_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_blob_mdm");
+    blob_mdm_.AsyncCreateRoot(DomainId::GetGlobal(), "hermes_blob_mdm");
     task->SetComplete();
   }
 
@@ -87,12 +88,24 @@ class Server : public TaskLib {
     switch (task->phase_) {
       case PutBlobPhase::kUpdateMdm: {
         TagInfo &tag_info = tag_map_[task->tag_id_];
-        tag_info.internal_size_ += task->blob_off_ + task->data_size_;
+        tag_info.internal_size_ = std::max(task->blob_off_ + task->data_size_,
+                                           tag_info.internal_size_);
+        hshm::charbuf blob_name = hshm::to_charbuf(*task->blob_name_);
+        if (task->flags_.Any(HERMES_BLOB_APPEND)) {
+          adapter::BlobPlacement p;
+          p.page_ = tag_info.internal_size_ / tag_info.page_size_;
+          blob_name = p.CreateBlobName();
+        }
+        task->blob_put_task_ = blob_mdm_.AsyncPutBlob(
+            task->task_node_, task->tag_id_, blob_name,
+            task->blob_id_, task->blob_off_, task->data_size_,
+            task->data_, task->score_, task->flags_);
         task->phase_ = PutBlobPhase::kWait;
-        blob_mdm_.AsyncPutBlob();
-        break;
       }
       case PutBlobPhase::kWait: {
+        if (task->blob_put_task_->IsComplete()) {
+          task->SetComplete();
+        }
         break;
       }
     }
