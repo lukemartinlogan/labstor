@@ -10,8 +10,6 @@
 
 namespace hermes::blob_mdm {
 
-using labstor::Admin::CreateTaskStateInfo;
-
 /** Type name simplification for the various map types */
 typedef std::unordered_map<hshm::charbuf, BlobId> BLOB_ID_MAP_T;
 typedef std::unordered_map<BlobId, BlobInfo> BLOB_MAP_T;
@@ -41,7 +39,7 @@ class Server : public TaskLib {
   /**====================================
    * Targets + devices
    * ===================================*/
-  std::vector<CreateTaskStateInfo> target_tasks_;
+  std::vector<CreateTaskStateTask*> target_tasks_;
   std::vector<bdev::Client> targets_;
   std::unordered_map<TargetId, TargetInfo*> target_map_;
 
@@ -119,15 +117,15 @@ class Server : public TaskLib {
           } else {
             dev_type = "posix_bdev";
           }
-          target_tasks_.emplace_back();
           targets_.emplace_back();
           bdev::Client &client = targets_.back();
-          client.AsyncCreateTaskState(task->task_node_,
-                                      DomainId::GetLocal(),
-                                      "hermes_" + dev.dev_name_,
-                                      dev_type,
-                                      dev,
-                                      target_tasks_.back());
+          auto *create_task = client.AsyncCreate(
+              task->task_node_,
+              DomainId::GetLocal(),
+              "hermes_" + dev.dev_name_,
+              dev_type,
+              dev);
+          target_tasks_.emplace_back(create_task);
         }
         task->phase_ = ConstructTaskPhase::kWaitForTaskStates;
       }
@@ -135,40 +133,17 @@ class Server : public TaskLib {
       case ConstructTaskPhase::kWaitForTaskStates: {
         HILOG(kInfo, "Wait for states")
         for (auto &tgt_task : target_tasks_) {
-          if (!tgt_task.state_task_->IsComplete()) {
+          if (!tgt_task->IsComplete()) {
             return;
           }
         }
         for (int i = 0; i < target_tasks_.size(); ++i) {
           auto &tgt_task = target_tasks_[i];
           auto &client = targets_[i];
-          client.id_ = tgt_task.state_task_->id_;
+          client.id_ = tgt_task->id_;
           HILOG(kInfo, "Client ID: {}", client.id_)
-          LABSTOR_CLIENT->DelTask(tgt_task.state_task_);
+          LABSTOR_CLIENT->DelTask(tgt_task);
           target_map_.emplace(client.id_, &client);
-        }
-        task->phase_ = ConstructTaskPhase::kCreateQueues;
-      }
-
-      case ConstructTaskPhase::kCreateQueues: {
-        HILOG(kDebug, "Create queues")
-        int i = 0;
-        for (auto &client : targets_) {
-          auto &tgt_task = target_tasks_[i];
-          client.AsyncCreateQueue(task->task_node_, DomainId::GetLocal(), tgt_task);
-          LABSTOR_CLIENT->DelTask(tgt_task.state_task_);
-          ++i;
-        }
-        task->phase_ = ConstructTaskPhase::kWaitForQueues;
-      }
-
-      case ConstructTaskPhase::kWaitForQueues: {
-        HILOG(kDebug, "Wait for queues")
-        for (auto &tgt_task : target_tasks_) {
-          if (!tgt_task.queue_task_->IsComplete()) {
-            return;
-          }
-          LABSTOR_CLIENT->DelTask(tgt_task.queue_task_);
         }
       }
     }

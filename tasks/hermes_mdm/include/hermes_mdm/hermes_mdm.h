@@ -62,9 +62,17 @@ struct ConstructTask : public CreateTaskStateTask {
   IN hipc::ShmArchive<hipc::string> server_config_path_;
 
   HSHM_ALWAYS_INLINE
-  ConstructTask(CREATE_TASK_STATE_ARGS,
+  ConstructTask(hipc::Allocator *alloc,
+                const TaskNode &task_node,
+                const DomainId &domain_id,
+                const std::string &state_name,
+                const TaskStateId &id,
+                u32 max_lanes, u32 num_lanes,
+                u32 depth, bitfield32_t flags,
                 const std::string &server_config_path = "")
-  : CreateTaskStateTask(PASS_CREATE_TASK_STATE_ARGS("hermes_mdm")) {
+  : CreateTaskStateTask(alloc, task_node, domain_id, state_name,
+                        "hermes_mdm", id, max_lanes,
+                        num_lanes, depth, flags) {
     // Custom params
     HSHM_MAKE_AR(server_config_path_, alloc, server_config_path);
   }
@@ -720,10 +728,11 @@ class Client {
               const std::string &state_name) {
     id_ = TaskStateId::GetNull();
     id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
-        task_node,
-        domain_id,
-        state_name,
-        id_);
+        task_node, domain_id, state_name, id_,
+        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
+        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
+        LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
+        bitfield32_t(0));
     bkt_queue_ = QueueId(id_);
   }
   LABSTOR_TASK_NODE_ROOT(Create);

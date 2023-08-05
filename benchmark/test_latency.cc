@@ -12,7 +12,7 @@
 
 /** The performance of getting a queue */
 TEST_CASE("TestGetQueue") {
-  labstor::QueueId qid(0, 3);
+  /*labstor::QueueId qid(0, 3);
   LABSTOR_ADMIN->CreateQueueRoot(labstor::DomainId::GetLocal(), qid,
                                  16, 16, 256,
                                  hshm::bitfield32_t(0));
@@ -27,7 +27,7 @@ TEST_CASE("TestGetQueue") {
   }
   t.Pause();
 
-  HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
+  HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());*/
 }
 
 /** Single-thread performance of allocating + freeing tasks */

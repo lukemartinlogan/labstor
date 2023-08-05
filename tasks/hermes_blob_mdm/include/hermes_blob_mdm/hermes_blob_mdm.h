@@ -39,8 +39,6 @@ class ConstructTaskPhase : public CreateTaskStatePhase {
  public:
   TASK_METHOD_T kCreateTaskStates = kLast + 0;
   TASK_METHOD_T kWaitForTaskStates = kLast + 1;
-  TASK_METHOD_T kCreateQueues = kLast + 2;
-  TASK_METHOD_T kWaitForQueues = kLast + 3;
 };
 
 /**
@@ -49,8 +47,16 @@ class ConstructTaskPhase : public CreateTaskStatePhase {
 using labstor::Admin::CreateTaskStateTask;
 struct ConstructTask : public CreateTaskStateTask {
   HSHM_ALWAYS_INLINE
-  ConstructTask(CREATE_TASK_STATE_ARGS)
-  : CreateTaskStateTask(PASS_CREATE_TASK_STATE_ARGS("hermes_blob_mdm")) {
+  ConstructTask(hipc::Allocator *alloc,
+                const TaskNode &task_node,
+                const DomainId &domain_id,
+                const std::string &state_name,
+                const TaskStateId &id,
+                u32 max_lanes, u32 num_lanes,
+                u32 depth, bitfield32_t flags)
+  : CreateTaskStateTask(alloc, task_node, domain_id, state_name,
+                        "hermes_blob_mdm", id, max_lanes,
+                        num_lanes, depth, flags) {
   }
 
   HSHM_ALWAYS_INLINE
@@ -464,15 +470,26 @@ class Client {
 
   /** Create a hermes_blob_mdm */
   HSHM_ALWAYS_INLINE
-  void Create(const TaskNode &task_node,
-              const DomainId &domain_id,
-              const std::string &state_name) {
+  ConstructTask* AsyncCreate(const TaskNode &task_node,
+                             const DomainId &domain_id,
+                             const std::string &state_name) {
     id_ = TaskStateId::GetNull();
-    id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
-        task_node,
-        domain_id,
-        state_name,
-        id_);
+    return LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
+        task_node, domain_id, state_name, id_,
+        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
+        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
+        LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
+        bitfield32_t(0));
+  }
+  LABSTOR_TASK_NODE_ROOT(AsyncCreate);
+
+  template<typename ...Args>
+  HSHM_ALWAYS_INLINE
+  void Create(Args&& ...args) {
+    auto *task = AsyncCreate(std::forward<Args>(args)...);
+    task->Wait();
+    id_ = task->id_;
+    queue_id_ = QueueId(id_);
   }
   LABSTOR_TASK_NODE_ROOT(Create);
 

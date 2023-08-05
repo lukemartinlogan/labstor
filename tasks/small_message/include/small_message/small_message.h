@@ -23,8 +23,16 @@ struct Method : public TaskMethod {
 using labstor::Admin::CreateTaskStateTask;
 struct ConstructTask : public CreateTaskStateTask {
   HSHM_ALWAYS_INLINE
-  ConstructTask(CREATE_TASK_STATE_ARGS)
-  : CreateTaskStateTask(PASS_CREATE_TASK_STATE_ARGS("small_message")) {
+  ConstructTask(hipc::Allocator *alloc,
+                const TaskNode &task_node,
+                const DomainId &domain_id,
+                const std::string &state_name,
+                const TaskStateId &id,
+                u32 max_lanes, u32 num_lanes,
+                u32 depth, bitfield32_t flags)
+  : CreateTaskStateTask(alloc, task_node, domain_id, state_name,
+                        "small_message", id, max_lanes,
+                        num_lanes, depth, flags) {
   }
 };
 
@@ -98,7 +106,6 @@ class Client {
   void Destroy(const TaskNode &task_node,
                const DomainId &domain_id) {
     LABSTOR_ADMIN->DestroyTaskState(task_node, domain_id, id_);
-    LABSTOR_ADMIN->DestroyQueue(task_node, domain_id, queue_id_);
   }
   LABSTOR_TASK_NODE_ROOT(Destroy);
 

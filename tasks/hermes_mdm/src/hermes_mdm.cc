@@ -11,8 +11,6 @@
 
 namespace hermes::mdm {
 
-using labstor::Admin::CreateTaskStateInfo;
-
 /** Type name simplification for the various map types */
 typedef std::unordered_map<hshm::charbuf, BlobId> BLOB_ID_MAP_T;
 typedef std::unordered_map<hshm::charbuf, TagId> TAG_ID_MAP_T;

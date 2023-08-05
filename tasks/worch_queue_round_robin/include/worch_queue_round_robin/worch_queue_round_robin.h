@@ -22,8 +22,16 @@ typedef SchedulerMethod Method;
 using labstor::Admin::CreateTaskStateTask;
 struct ConstructTask : public CreateTaskStateTask {
   HSHM_ALWAYS_INLINE
-  ConstructTask(CREATE_TASK_STATE_ARGS)
-  : CreateTaskStateTask(PASS_CREATE_TASK_STATE_ARGS("worch_queue_round_robin")) {
+  ConstructTask(hipc::Allocator *alloc,
+                const TaskNode &task_node,
+                const DomainId &domain_id,
+                const std::string &state_name,
+                const TaskStateId &id,
+                u32 max_lanes, u32 num_lanes,
+                u32 depth, bitfield32_t flags)
+  : CreateTaskStateTask(alloc, task_node, domain_id, state_name,
+                        "worch_queue_round_robin", id, max_lanes,
+                        num_lanes, depth, flags) {
   }
 
   HSHM_ALWAYS_INLINE
@@ -62,7 +70,7 @@ class Client {
     id_ = TaskStateId::GetNull();
     id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
         task_node, domain_id, state_name, id_,
-        );
+        1, 1, 4, bitfield32_t(0));
   }
   LABSTOR_TASK_NODE_ROOT(Create);
 

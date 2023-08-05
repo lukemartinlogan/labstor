@@ -37,8 +37,16 @@ struct Method : public TaskMethod {
 using labstor::Admin::CreateTaskStateTask;
 struct ConstructTask : public CreateTaskStateTask {
   HSHM_ALWAYS_INLINE
-  ConstructTask(CREATE_TASK_STATE_ARGS)
-  : CreateTaskStateTask(PASS_CREATE_TASK_STATE_ARGS("hermes_bucket_mdm")) {
+  ConstructTask(hipc::Allocator *alloc,
+                const TaskNode &task_node,
+                const DomainId &domain_id,
+                const std::string &state_name,
+                const TaskStateId &id,
+                u32 max_lanes, u32 num_lanes,
+                u32 depth, bitfield32_t flags)
+  : CreateTaskStateTask(alloc, task_node, domain_id, state_name,
+                        "hermes_bucket_mdm", id, max_lanes,
+                        num_lanes, depth, flags) {
   }
 
   HSHM_ALWAYS_INLINE
@@ -366,16 +374,12 @@ class Client {
               const std::string &state_name) {
     id_ = TaskStateId::GetNull();
     id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
-        task_node,
-        domain_id,
-        state_name,
-        id_);
+        task_node, domain_id, state_name, id_,
+        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
+        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
+        LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
+        bitfield32_t(0));
     queue_id_ = QueueId(id_);
-    LABSTOR_ADMIN->CreateQueue(task_node, domain_id, queue_id_,
-                               LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-                               LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-                               LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
-                               bitfield32_t(0));
   }
   LABSTOR_TASK_NODE_ROOT(Create);
 
@@ -384,7 +388,6 @@ class Client {
   void Destroy(const TaskNode &task_node,
                const DomainId &domain_id) {
     LABSTOR_ADMIN->DestroyTaskState(task_node, domain_id, id_);
-    LABSTOR_ADMIN->DestroyQueue(task_node, domain_id, queue_id_);
   }
   LABSTOR_TASK_NODE_ROOT(Destroy);
 

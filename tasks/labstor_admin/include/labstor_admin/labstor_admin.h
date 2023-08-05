@@ -69,18 +69,6 @@ class CreateTaskStatePhase {
 };
 
 /** A task to register a Task state + Create a queue */
-#define CREATE_TASK_STATE_ARGS \
-  hipc::Allocator *alloc, \
-  const TaskNode &task_node, \
-  const DomainId &domain_id, \
-  const std::string &state_name, \
-  const std::string &lib_name, \
-  const TaskStateId &id, \
-  u32 max_lanes, u32 num_lanes, \
-  u32 depth, bitfield32_t flags
-#define PASS_CREATE_TASK_STATE_ARGS(LIB_NAME) \
-  alloc, task_node, domain_id, state_name, \
-  LIB_NAME, id, max_lanes, num_lanes, depth, flags
 struct CreateTaskStateTask : public Task {
   IN hipc::ShmArchive<hipc::string> lib_name_;
   IN hipc::ShmArchive<hipc::string> state_name_;
@@ -92,7 +80,14 @@ struct CreateTaskStateTask : public Task {
   TEMP int phase_;
 
   HSHM_ALWAYS_INLINE
-  CreateTaskStateTask(CREATE_TASK_STATE_ARGS) : Task(alloc) {
+  CreateTaskStateTask(hipc::Allocator *alloc,
+                      const TaskNode &task_node,
+                      const DomainId &domain_id,
+                      const std::string &state_name,
+                      const std::string &lib_name,
+                      const TaskStateId &id,
+                      u32 max_lanes, u32 num_lanes,
+                      u32 depth, bitfield32_t flags) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
@@ -263,11 +258,7 @@ class Client {
   HSHM_ALWAYS_INLINE
   TaskStateId CreateTaskState(const TaskNode &task_node,
                               Args&& ...args) {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
-    auto *task = LABSTOR_CLIENT->NewTask<CreateTaskStateT>(
-        p, task_node, std::forward<Args>(args)...);
-    queue->Emplace(0, p);
+    auto *task = AsyncCreateTaskState<CreateTaskStateT>(task_node, std::forward<Args>(args)...);
     task->Wait();
     TaskStateId new_id = task->id_;
     LABSTOR_CLIENT->DelTask(task);

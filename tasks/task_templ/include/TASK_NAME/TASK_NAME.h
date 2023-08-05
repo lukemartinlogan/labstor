@@ -23,8 +23,16 @@ struct Method : public TaskMethod {
 using labstor::Admin::CreateTaskStateTask;
 struct ConstructTask : public CreateTaskStateTask {
   HSHM_ALWAYS_INLINE
-  ConstructTask(CREATE_TASK_STATE_ARGS)
-  : CreateTaskStateTask(PASS_CREATE_TASK_STATE_ARGS("TASK_NAME")) {
+  ConstructTask(hipc::Allocator *alloc,
+                const TaskNode &task_node,
+                const DomainId &domain_id,
+                const std::string &state_name,
+                const TaskStateId &id,
+                u32 max_lanes, u32 num_lanes,
+                u32 depth, bitfield32_t flags)
+  : CreateTaskStateTask(alloc, task_node, domain_id, state_name,
+                        "TASK_NAME", id, max_lanes,
+                        num_lanes, depth, flags) {
     // Custom params
   }
 
@@ -93,25 +101,15 @@ class Client {
         bitfield32_t(0));
   }
 
-  /** Finish Async Create */
-  bool AsyncCreateIsComplete(ConstructTask *create_task) {
-    if (create_task->IsComplete()) {
-      id_ = create_task->id_;
-      queue_id_ = QueueId(id_);
-      LABSTOR_CLIENT->DelTask(create_task);
-      return true;
-    }
-    return false;
-  }
-
   /** Create a TASK_NAME */
+  template<typename ...Args>
   HSHM_ALWAYS_INLINE
-  void Create(const TaskNode &task_node,
-              const DomainId &domain_id,
-              const std::string &state_name) {
-    auto *task = AsyncCreate(task_node, domain_id, state_name);
+  void Create(Args&& ...args) {
+    auto *task = AsyncCreate(std::forward<Args>(args)...);
     task->Wait();
-    AsyncCreateIsComplete(task);
+    id_ = task->id_;
+    queue_id_ = QueueId(id_);
+    LABSTOR_CLIENT->DelTask(task);
   }
   LABSTOR_TASK_NODE_ROOT(Create);
 
@@ -120,7 +118,6 @@ class Client {
   void Destroy(const TaskNode &task_node,
                const DomainId &domain_id) {
     LABSTOR_ADMIN->DestroyTaskState(task_node, domain_id, id_);
-    LABSTOR_ADMIN->DestroyQueue(task_node, domain_id, queue_id_);
   }
   LABSTOR_TASK_NODE_ROOT(Destroy);
 

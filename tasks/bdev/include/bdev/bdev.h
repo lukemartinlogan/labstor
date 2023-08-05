@@ -14,8 +14,6 @@
 
 namespace hermes::bdev {
 
-using labstor::Admin::CreateTaskStateInfo;
-
 /** The set of methods in the admin task */
 struct Method : public TaskMethod {
   TASK_METHOD_T kWrite = TaskMethod::kLast;
@@ -40,14 +38,13 @@ struct ConstructTask : public CreateTaskStateTask {
                 const DomainId &domain_id,
                 const std::string &state_name,
                 const std::string &lib_name,
-                const TaskStateId &state_id,
+                const TaskStateId &id,
+                u32 max_lanes, u32 num_lanes,
+                u32 depth, bitfield32_t flags,
                 DeviceInfo &info)
-      : CreateTaskStateTask(alloc,
-                            task_node,
-                            domain_id,
-                            state_name,
-                            lib_name,
-                            state_id) {
+  : CreateTaskStateTask(alloc, task_node, domain_id, state_name,
+                        lib_name, id, max_lanes,
+                        num_lanes, depth, flags) {
     // Custom params
     info_ = &info;
   }
@@ -254,59 +251,33 @@ class Client {
 
   /** Async create task state */
   HSHM_ALWAYS_INLINE
-  void AsyncCreateTaskState(const TaskNode &task_node,
+  ConstructTask* AsyncCreate(const TaskNode &task_node,
                             const DomainId &domain_id,
                             const std::string &state_name,
                             const std::string &lib_name,
-                            DeviceInfo &dev_info,
-                            CreateTaskStateInfo &info) {
+                            DeviceInfo &dev_info) {
     domain_id_ = domain_id;
     id_ = TaskStateId::GetNull();
-    info.state_task_ = LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
-        task_node,
-        domain_id,
-        state_name,
-        lib_name,
-        id_,
-        dev_info);
     CopyDevInfo(dev_info);
-    Monitor(task_node, 100);
-  }
-  LABSTOR_TASK_NODE_ROOT(AsyncCreateTaskState);
-
-  /** Async create queue */
-  HSHM_ALWAYS_INLINE
-  void AsyncCreateQueue(const TaskNode &task_node,
-                        const DomainId &domain_id,
-                        CreateTaskStateInfo &info) {
-    id_ = info.state_task_->id_;
-    info.queue_task_ = LABSTOR_ADMIN->AsyncCreateQueue(
-        task_node, domain_id, id_,
+    return LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
+        task_node, domain_id, state_name, lib_name, id_,
         LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
         LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
         LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
-        bitfield32_t(0));
+        bitfield32_t(0),
+        dev_info);
   }
-  LABSTOR_TASK_NODE_ROOT(AsyncCreateQueue);
+  LABSTOR_TASK_NODE_ROOT(AsyncCreateTaskState);
 
   /** Create a bdev */
+  template<typename ...Args>
   HSHM_ALWAYS_INLINE
-  void Create(const TaskNode &task_node,
-              const DomainId &domain_id,
-              const std::string &state_name,
-              const std::string &lib_name,
-              DeviceInfo &dev_info) {
-    CreateTaskStateInfo info;
-    AsyncCreateTaskState(task_node,
-                         domain_id,
-                         state_name,
-                         lib_name,
-                         dev_info,
-                         info);
-    info.state_task_->Wait();
-    id_ = info.state_task_->id_;
-    AsyncCreateQueue(task_node, domain_id, info);
-    info.Free();
+  void Create(TaskNode task_node, Args&& ...args) {
+    auto *task = AsyncCreate(std::forward<Args>(args)...);
+    task->Wait();
+    id_ = task->id_;
+    queue_id_ = QueueId(id_);
+    Monitor(task_node, 100);
   }
   LABSTOR_TASK_NODE_ROOT(Create);
 
@@ -315,7 +286,6 @@ class Client {
   void Destroy(const TaskNode &task_node,
                const std::string &state_name) {
     LABSTOR_ADMIN->DestroyTaskState(task_node, domain_id_, id_);
-    LABSTOR_ADMIN->DestroyQueue(task_node, domain_id_, queue_id_);
     monitor_task_->SetComplete();
   }
   LABSTOR_TASK_NODE_ROOT(Destroy);
@@ -327,8 +297,7 @@ class Client {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     monitor_task_ = LABSTOR_CLIENT->NewTask<MonitorTask>(
-        p,
-        task_node, domain_id_, id_, freq_ms, max_cap_);
+        p, task_node, domain_id_, id_, freq_ms, max_cap_);
     queue->Emplace(0, p);
   }
   LABSTOR_TASK_NODE_ROOT(Monitor);
