@@ -222,8 +222,12 @@ class TaskRegistry {
     }
 
     // Check if state_id needs to be allocated
+    TaskStateId new_id = state_id;
+    if (state_id == TaskStateId::GetNull()) {
+      new_id = CreateTaskStateId();
+    }
     if (task) {
-      task->id_ = state_id;
+      task->id_ = new_id;
     }
 
     // Create the state instance
@@ -238,11 +242,11 @@ class TaskRegistry {
     }
 
     // Add the state to the registry
-    task_state->id_ = state_id;
-    task_state_ids_.emplace(state_name, state_id);
-    task_states_.emplace(state_id, task_state);
-    HILOG(kInfo, "Created an instance of {} with name {} and ID {}", lib_name, state_name, state_id)
-    return state_id;
+    task_state->id_ = new_id;
+    task_state_ids_.emplace(state_name, new_id);
+    task_states_.emplace(new_id, task_state);
+    HILOG(kInfo, "Created an instance of {} with name {} and ID {}", lib_name, state_name, new_id)
+    return new_id;
   }
 
   /** Get a task state's ID */

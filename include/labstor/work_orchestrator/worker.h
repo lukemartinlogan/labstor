@@ -8,13 +8,93 @@
 #include "labstor/labstor_types.h"
 #include "labstor/queue_manager/queue_manager_runtime.h"
 #include <thread>
+#include <queue>
 #include "affinity.h"
 
 namespace labstor {
 
 #define WORKER_CONTINUOUS_POLLING (1 << 0)
 
-typedef std::pair<u32, MultiQueue*> WorkEntry;
+/** Uniquely identify a queue lane */
+struct WorkEntry {
+  u32 lane_;
+  MultiQueue *queue_;
+
+  /** Default constructor */
+  HSHM_ALWAYS_INLINE
+  WorkEntry() = default;
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE
+  WorkEntry(u32 lane, MultiQueue *queue) : lane_(lane), queue_(queue) {}
+
+  /** Copy constructor */
+  HSHM_ALWAYS_INLINE
+  WorkEntry(const WorkEntry &other) {
+    queue_ = other.queue_;
+    lane_ = other.lane_;
+  }
+
+  /** Copy assignment */
+  HSHM_ALWAYS_INLINE
+      WorkEntry
+  &
+  operator=(const WorkEntry &other) {
+    if (this != &other) {
+      queue_ = other.queue_;
+      lane_ = other.lane_;
+    }
+    return *this;
+  }
+
+  /** Move constructor */
+  HSHM_ALWAYS_INLINE
+  WorkEntry(WorkEntry &&other) noexcept {
+    queue_ = other.queue_;
+    lane_ = other.lane_;
+  }
+
+  /** Move assignment */
+  HSHM_ALWAYS_INLINE
+      WorkEntry
+  &
+  operator=(WorkEntry &&other) noexcept {
+    if (this != &other) {
+      queue_ = other.queue_;
+      lane_ = other.lane_;
+    }
+    return *this;
+  }
+
+  /** Check if null */
+  [[nodiscard]]
+  HSHM_ALWAYS_INLINE bool IsNull() const {
+    return queue_->IsNull();
+  }
+
+  /** Equality operator */
+  HSHM_ALWAYS_INLINE
+  bool operator==(const WorkEntry &other) const {
+    return queue_ == other.queue_ && lane_ == other.lane_;
+  }
+};
+
+}  // namespace labstor
+
+namespace std {
+/** Hash function for WorkEntry */
+template<>
+struct hash<labstor::WorkEntry> {
+  HSHM_ALWAYS_INLINE
+      std::size_t
+  operator()(const labstor::WorkEntry &key) const {
+    return std::hash<labstor::MultiQueue*>{}(key.queue_) +
+        std::hash<u32>{}(key.lane_);
+  }
+};
+}  // namespace std
+
+namespace labstor {
 
 class Worker {
  public:
@@ -31,6 +111,7 @@ class Worker {
   size_t sleep_us_;  /** Time the worker should sleep after a run */
   u32 retries_;      /** The number of times to repeat the internal run loop before sleeping */
   bitfield32_t flags_;  /** Worker metadata flags */
+  std::unordered_map<WorkEntry, std::queue<Task*>> active_tasks_;  /**< The set of active tasks */
 
  public:
   /** Constructor */
@@ -131,10 +212,6 @@ class Worker {
    * @return true if work was found, false otherwise
    * */
   void Run();
-
-  void PollOrdered(u32 lane_id, MultiQueue *queue);
-
-  void PollUnordered(u32 lane_id, MultiQueue *queue);
 };
 
 }  // namespace labstor

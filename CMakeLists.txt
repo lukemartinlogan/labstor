@@ -25,6 +25,7 @@ else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O3")
     add_compile_definitions(HERMES_LOG_VERBOSITY=1)
 endif()
+add_compile_options(-march=native -fomit-frame-pointer)
 
 #-----------------------------------------------------------------------------
 # Find Packages

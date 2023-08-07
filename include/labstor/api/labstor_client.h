@@ -102,6 +102,18 @@ class Client : public ConfigurationManager {
     main_alloc_->DelObj<TaskT>(task);
   }
 
+  /** Detect if a task is local or remote */
+  HSHM_ALWAYS_INLINE
+  bool IsRemote(Task *task) {
+    if (task->domain_id_.IsNode()) {
+      return task->domain_id_.GetId() != header_->node_id_;
+    } else if (task->domain_id_.IsGlobal()) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   /** Allocate a buffer */
   HSHM_ALWAYS_INLINE
   hipc::Pointer AllocateBuffer(size_t size) {

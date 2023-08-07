@@ -11,7 +11,7 @@ devices:
     mount_point: ""
 
     # The maximum buffering capacity in MiB of each device.
-    capacity: 2GB
+    capacity: 4GB
 
     # The size of the smallest available buffer in KiB. In general this should be
     # the page size of your system for byte addressable storage, and the block size

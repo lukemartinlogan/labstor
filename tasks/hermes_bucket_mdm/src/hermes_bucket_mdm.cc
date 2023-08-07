@@ -22,6 +22,7 @@ class Server : public TaskLib {
   u32 node_id_;
   std::atomic<u64> id_alloc_;
   blob_mdm::Client blob_mdm_;
+  blob_mdm::ConstructTask *blob_mdm_task_;
 
  public:
   Server() = default;
@@ -36,6 +37,14 @@ class Server : public TaskLib {
         Destruct(queue, reinterpret_cast<DestructTask *>(task));
         break;
       }
+      case Method::kPutBlob: {
+        PutBlob(queue, reinterpret_cast<PutBlobTask *>(task));
+        break;
+      }
+//      case Method::DestroyBlob: {
+//        DestroyBlob(queue, reinterpret_cast<DestroyBlobTask *>(task));
+//        break;
+//      }
       case Method::kGetOrCreateTag: {
         GetOrCreateTag(queue, reinterpret_cast<GetOrCreateTagTask *>(task));
         break;
@@ -72,11 +81,23 @@ class Server : public TaskLib {
   }
 
   void Construct(MultiQueue *queue, ConstructTask *task) {
-    id_ = task->id_;
-    id_alloc_ = 0;
-    node_id_ = LABSTOR_QM_CLIENT->node_id_;
-    blob_mdm_.AsyncCreateRoot(DomainId::GetGlobal(), "hermes_blob_mdm");
-    task->SetComplete();
+    switch (task->phase_) {
+      case ConstructTaskPhase::kInit: {
+        id_ = task->id_;
+        id_alloc_ = 0;
+        node_id_ = LABSTOR_QM_CLIENT->node_id_;
+        blob_mdm_task_ = blob_mdm_.AsyncCreateRoot(
+            DomainId::GetGlobal(), "hermes_blob_mdm");
+        task->phase_ = ConstructTaskPhase::kWait;
+      }
+      case ConstructTaskPhase::kWait: {
+        if (blob_mdm_task_->IsComplete()) {
+          blob_mdm_.AsyncCreateComplete(blob_mdm_task_);
+          task->SetComplete();
+          return;
+        }
+      }
+    }
   }
 
   void Destruct(MultiQueue *queue, DestructTask *task) {

@@ -15,7 +15,6 @@ namespace labstor {
 /** Enable client programs to access queues */
 class QueueManagerClient : public QueueManager {
  public:
-  u32 node_id_;
   hipc::Allocator *alloc_;
 
  public:

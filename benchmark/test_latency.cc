@@ -40,10 +40,17 @@ TEST_CASE("TestHshmAllocateFree") {
   hshm::Timer t;
   t.Resume();
   size_t ops = (1 << 20);
-  for (size_t i = 0; i < ops; ++i) {
-    hipc::Pointer p;
-    labstor::Task *task = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>(p);
-    LABSTOR_CLIENT->DelTask(task);
+  size_t count = (1 << 8);
+  size_t reps = ops / count;
+  for (size_t i = 0; i < reps; ++i) {
+    std::vector<labstor::Task*> tasks(count);
+    for (size_t j = 0; j < count; ++j) {
+      hipc::Pointer p;
+      tasks[j] = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>(p);
+    }
+    for (size_t j = 0; j < count; ++j) {
+      LABSTOR_CLIENT->DelTask(tasks[j]);
+    }
   }
   t.Pause();
   HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
@@ -51,12 +58,12 @@ TEST_CASE("TestHshmAllocateFree") {
 
 /** Single-thread performance of emplacing, and popping a mpsc_ptr_queue */
 TEST_CASE("TestPointerQueueEmplacePop") {
-  auto queue_ptr = hipc::make_uptr<hipc::mpsc_ptr_queue<hipc::Pointer>>(256);
+  size_t ops = (1 << 20);
+  auto queue_ptr = hipc::make_uptr<hipc::mpsc_ptr_queue<hipc::Pointer>>(ops);
   auto queue = queue_ptr.get();
   hipc::Pointer p;
 
   hshm::Timer t;
-  size_t ops = (1 << 20);
   t.Resume();
   for (size_t i = 0; i < ops; ++i) {
     queue->emplace(p);
@@ -89,14 +96,14 @@ TEST_CASE("TestPointerQueueVecEmplacePop") {
 /** Single-thread performance of getting, emplacing, and popping a queue */
 TEST_CASE("TestHshmQueueEmplacePop") {
   labstor::QueueId qid(0, 3);
+  size_t ops = (1 << 20);
   auto queue = hipc::make_uptr<labstor::MultiQueue>(
-      qid, 16, 16, 256, hshm::bitfield32_t(0));
+      qid, 16, 16, ops, hshm::bitfield32_t(0));
   hipc::Pointer p;
   auto *task = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>(p);
 
   hshm::Timer t;
   t.Resume();
-  size_t ops = (1 << 20);
   for (size_t i = 0; i < ops; ++i) {
     queue->Emplace(0, p);
     queue->Pop(0, task, p);

@@ -29,7 +29,6 @@ class BalancedMapper : public AbstractMapper {
   /** Divides an I/O size evenly by into units of page_size */
   void map(size_t off, size_t size, size_t page_size,
            BlobPlacements &ps) override {
-    HILOG(kDebug, "Mapping File with offset {} and size {}", off, size);
     size_t kPageSize = page_size;
     size_t size_mapped = 0;
     while (size > size_mapped) {

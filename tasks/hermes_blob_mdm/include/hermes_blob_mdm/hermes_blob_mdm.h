@@ -483,13 +483,21 @@ class Client {
   }
   LABSTOR_TASK_NODE_ROOT(AsyncCreate);
 
+  /** Complete async create task */
+  void AsyncCreateComplete(ConstructTask *task) {
+    if (task->IsComplete()) {
+      id_ = task->id_;
+      queue_id_ = QueueId(id_);
+      LABSTOR_CLIENT->DelTask(task);
+    }
+  }
+
   template<typename ...Args>
   HSHM_ALWAYS_INLINE
   void Create(Args&& ...args) {
     auto *task = AsyncCreate(std::forward<Args>(args)...);
     task->Wait();
-    id_ = task->id_;
-    queue_id_ = QueueId(id_);
+    AsyncCreateComplete(task);
   }
   LABSTOR_TASK_NODE_ROOT(Create);
 

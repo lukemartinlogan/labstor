@@ -31,6 +31,14 @@ struct Method : public TaskMethod {
   TASK_METHOD_T kPutBlob = TaskMethod::kLast + 11;
 };
 
+/** Phases of the construct task */
+using labstor::Admin::CreateTaskStatePhase;
+class ConstructTaskPhase : public CreateTaskStatePhase {
+ public:
+  TASK_METHOD_T kInit = kLast + 0;
+  TASK_METHOD_T kWait = kLast + 1;
+};
+
 /**
  * A task to create hermes_bucket_mdm
  * */
@@ -410,8 +418,9 @@ class Client {
         tag_id, blob_name, blob_id,
         blob_off, blob_size,
         blob, score, flags);
+    queue->Emplace(hash, p);
     task->Wait();
-    LABSTOR_CLIENT->DelTask(task);
+    // LABSTOR_CLIENT->DelTask(task);
   }
   LABSTOR_TASK_NODE_ROOT(PutBlob);
 

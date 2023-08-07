@@ -39,7 +39,7 @@ class Server : public TaskLib {
   /**====================================
    * Targets + devices
    * ===================================*/
-  std::vector<CreateTaskStateTask*> target_tasks_;
+  std::vector<bdev::ConstructTask*> target_tasks_;
   std::vector<bdev::Client> targets_;
   std::unordered_map<TargetId, TargetInfo*> target_map_;
 
@@ -140,7 +140,7 @@ class Server : public TaskLib {
         for (int i = 0; i < target_tasks_.size(); ++i) {
           auto &tgt_task = target_tasks_[i];
           auto &client = targets_[i];
-          client.id_ = tgt_task->id_;
+          client.AsyncCreateComplete(tgt_task);
           HILOG(kInfo, "Client ID: {}", client.id_)
           LABSTOR_CLIENT->DelTask(tgt_task);
           target_map_.emplace(client.id_, &client);

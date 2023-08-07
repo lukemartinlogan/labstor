@@ -259,6 +259,7 @@ class Client {
     domain_id_ = domain_id;
     id_ = TaskStateId::GetNull();
     CopyDevInfo(dev_info);
+    Monitor(task_node, 100);
     return LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
         task_node, domain_id, state_name, lib_name, id_,
         LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
@@ -269,15 +270,21 @@ class Client {
   }
   LABSTOR_TASK_NODE_ROOT(AsyncCreateTaskState);
 
-  /** Create a bdev */
+  /** Complete async create task */
+  void AsyncCreateComplete(ConstructTask *task) {
+    if (task->IsComplete()) {
+      id_ = task->id_;
+      queue_id_ = QueueId(id_);
+      LABSTOR_CLIENT->DelTask(task);
+    }
+  }
+
   template<typename ...Args>
   HSHM_ALWAYS_INLINE
   void Create(TaskNode task_node, Args&& ...args) {
-    auto *task = AsyncCreate(std::forward<Args>(args)...);
+    auto *task = AsyncCreate(task_node, std::forward<Args>(args)...);
     task->Wait();
-    id_ = task->id_;
-    queue_id_ = QueueId(id_);
-    Monitor(task_node, 100);
+    AsyncCreateComplete(task);
   }
   LABSTOR_TASK_NODE_ROOT(Create);
 

@@ -75,6 +75,12 @@ struct DomainId {
   HSHM_ALWAYS_INLINE
   DomainId() : id_(0) {}
 
+  /** Domain has the local node */
+  HSHM_ALWAYS_INLINE
+  bool IsRemote() {
+    return flags_.Any(kGlobal | kSet);
+  }
+
   /** DomainId representing the local node */
   HSHM_ALWAYS_INLINE
   static DomainId GetLocal() {
@@ -82,6 +88,18 @@ struct DomainId {
       id.id_ = 0;
       id.flags_.SetBits(kLocal);
       return id;
+  }
+
+  /** Domain is a specific node */
+  HSHM_ALWAYS_INLINE
+  bool IsNode() {
+    return !flags_.Any(kSet);
+  }
+
+  /** Get the ID */
+  HSHM_ALWAYS_INLINE
+  u32 GetId() {
+    return id_;
   }
 
   /** DomainId representing a specific node */
@@ -101,6 +119,12 @@ struct DomainId {
     return id;
   }
 
+  /** Domain represents all nodes */
+  HSHM_ALWAYS_INLINE
+  bool IsGlobal() {
+    return flags_.Any(kGlobal);
+  }
+
   /** DomainId representing all nodes */
   HSHM_ALWAYS_INLINE
   static DomainId GetGlobal() {
@@ -110,7 +134,13 @@ struct DomainId {
       return id;
   }
 
-  /** DomainId representing a node set */
+  /** DomainId represents a named node set */
+  HSHM_ALWAYS_INLINE
+  bool IsSet() {
+    return flags_.Any(kSet);
+  }
+
+  /** DomainId representing a named node set */
   HSHM_ALWAYS_INLINE
   static DomainId GetSet(u32 domain_id) {
     DomainId id;
@@ -280,15 +310,18 @@ std::ostream &operator<<(std::ostream &os, UniqueId<num> const &obj) {
 }  // namespace labstor
 
 namespace std {
+
+/** Hash function for UniqueId */
 template <int TYPE>
 struct hash<labstor::UniqueId<TYPE>> {
   HSHM_ALWAYS_INLINE
   std::size_t operator()(const labstor::UniqueId<TYPE> &key) const {
     return
       std::hash<u64>{}(key.unique_) +
-        std::hash<u32>{}(key.node_id_);
+      std::hash<u32>{}(key.node_id_);
   }
 };
+
 }  // namespace std
 
 #endif  // LABSTOR_INCLUDE_LABSTOR_LABSTOR_TYPES_H_
