@@ -8,6 +8,7 @@
 #include <dlfcn.h>
 #include "labstor/labstor_types.h"
 #include "labstor/queue_manager/queue_factory.h"
+#include "labstor/network/serialize.h"
 #include "task.h"
 
 namespace labstor {
@@ -35,6 +36,16 @@ class TaskLib {
 
   /** Run a method of the task */
   virtual void Run(MultiQueue *queue, u32 method, Task *task) = 0;
+
+  /** Serialize a task */
+  virtual std::vector<DataTransfer> Serialize(u32 method, Task *task) {
+    return {};
+  }
+
+  /** Deserialize a task */
+  virtual Task* Deserialize(const std::vector<DataTransfer> &xfer) {
+    return nullptr;
+  }
 };
 
 /** Represents a TaskLib in action */

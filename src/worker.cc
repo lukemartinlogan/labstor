@@ -55,7 +55,11 @@ void Worker::PollUnordered(u32 lane_id, MultiQueue *queue) {
       task->SetComplete();
     }
     if (!task->IsComplete()) {
-      exec->Run(queue, task->method_, task);
+      if (task->domain_id_.IsRemote(LABSTOR_QM_CLIENT->node_id_)) {
+        exec->Serialize(task->method_, task);
+      } else {
+        exec->Run(queue, task->method_, task);
+      }
     }
     // Cleanup on task completion
     if (task->IsExternalComplete()) {

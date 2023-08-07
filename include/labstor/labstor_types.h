@@ -67,9 +67,16 @@ enum class LabstorMode {
 struct DomainId {
   bitfield32_t flags_;  /**< Flags indicating how to interpret id */
   u32 id_;              /**< The domain id, 0 is NULL */
-  DOMAIN_FLAG_T kLocal = (1 << 0);   /**< Include local node in scheduling decision */
-  DOMAIN_FLAG_T kGlobal = (1 << 1);  /**< Use all nodes in scheduling decision */
-  DOMAIN_FLAG_T kSet = (1 << 2);     /**< ID represents a set of nodes, not a single node */
+  DOMAIN_FLAG_T kLocal = BIT_OPT(u32, 0);   /**< Include local node in scheduling decision */
+  DOMAIN_FLAG_T kGlobal = BIT_OPT(u32, 1);  /**< Use all nodes in scheduling decision */
+  DOMAIN_FLAG_T kSet = BIT_OPT(u32, 2);     /**< ID represents node set ID, not a single node */
+  DOMAIN_FLAG_T kNode = BIT_OPT(u32, 3);    /**< ID represents a specific node */
+
+  /** Serialize domain id */
+  template<typename Ar>
+  void serialize(Ar &ar) {
+    ar(flags_, id_);
+  }
 
   /** Default constructor. */
   HSHM_ALWAYS_INLINE
@@ -77,8 +84,8 @@ struct DomainId {
 
   /** Domain has the local node */
   HSHM_ALWAYS_INLINE
-  bool IsRemote() {
-    return flags_.Any(kGlobal | kSet);
+  bool IsRemote(u32 this_node) {
+    return flags_.Any(kGlobal | kSet) || (flags_.Any(kNode) && id_ != this_node);
   }
 
   /** DomainId representing the local node */
@@ -90,16 +97,16 @@ struct DomainId {
       return id;
   }
 
-  /** Domain is a specific node */
-  HSHM_ALWAYS_INLINE
-  bool IsNode() {
-    return !flags_.Any(kSet);
-  }
-
   /** Get the ID */
   HSHM_ALWAYS_INLINE
   u32 GetId() {
     return id_;
+  }
+
+  /** Domain is a specific node */
+  HSHM_ALWAYS_INLINE
+  bool IsNode() {
+    return flags_.Any(kNode);
   }
 
   /** DomainId representing a specific node */
@@ -107,6 +114,7 @@ struct DomainId {
   static DomainId GetNode(u32 node_id) {
     DomainId id;
     id.id_ = node_id;
+    id.flags_.SetBits(kNode);
     return id;
   }
 
@@ -190,6 +198,12 @@ struct DomainId {
       flags_ = other.flags_;
     }
     return *this;
+  }
+
+  /** Equality operator */
+  HSHM_ALWAYS_INLINE
+  bool operator==(const DomainId &other) const {
+    return id_ == other.id_ && flags_.bits_ == other.flags_.bits_;
   }
 };
 
@@ -319,6 +333,17 @@ struct hash<labstor::UniqueId<TYPE>> {
     return
       std::hash<u64>{}(key.unique_) +
       std::hash<u32>{}(key.node_id_);
+  }
+};
+
+/** Hash function for DomainId */
+template<>
+struct hash<labstor::DomainId> {
+  HSHM_ALWAYS_INLINE
+  std::size_t operator()(const labstor::DomainId &key) const {
+    return
+        std::hash<u32>{}(key.id_) +
+        std::hash<u32>{}(key.flags_.bits_);
   }
 };
 
