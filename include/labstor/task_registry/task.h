@@ -11,33 +11,35 @@
 namespace labstor {
 
 /** This task reads a state */
-#define TASK_READ (1 << 0)
+#define TASK_READ BIT_OPT(u32, 0)
 /** This task writes to a state */
-#define TASK_WRITE (1 << 1)
+#define TASK_WRITE BIT_OPT(u32, 1)
 /** This task fundamentally updates a state */
-#define TASK_UPDATE (1 << 2)
+#define TASK_UPDATE BIT_OPT(u32, 2)
 /** This task is paused until a set of tasks complete */
-#define TASK_BLOCKED (1 << 3)
+#define TASK_BLOCKED BIT_OPT(u32, 3)
 /** This task is latency-sensitive */
-#define TASK_LOW_LATENCY (1 << 4)
+#define TASK_LOW_LATENCY BIT_OPT(u32, 4)
 /** This task makes system calls and may hurt caching */
-#define TASK_SYSCALL (1 << 5)
+#define TASK_SYSCALL BIT_OPT(u32, 5)
 /** This task does not depend on state */
-#define TASK_STATELESS (1 << 6)
+#define TASK_STATELESS BIT_OPT(u32, 6)
 /** This task does not depend on its position in the queue */
-#define TASK_UNORDERED (1 << 7)
+#define TASK_UNORDERED BIT_OPT(u32, 7)
 /** This task was spawned as consequence of another task */
-#define TASK_INTERMEDIATE (1 << 8)
+#define TASK_INTERMEDIATE BIT_OPT(u32, 8)
 /** This task is completed */
-#define TASK_COMPLETE (1 << 9)
+#define TASK_COMPLETE BIT_OPT(u32, 9)
 /** This task is complete enough for the user's wait to stop */
-#define TASK_USER_COMPLETE (1 << 10)
+#define TASK_USER_COMPLETE BIT_OPT(u32, 10)
 /** This task was marked completed outside of the worker thread */
-#define TASK_EXTERNAL_COMPLETE (1 << 11)
+#define TASK_EXTERNAL_COMPLETE BIT_OPT(u32, 11)
 /** This task is long-running */
-#define TASK_LONG_RUNNING (1 << 12)
+#define TASK_LONG_RUNNING BIT_OPT(u32, 12)
 /** This task is fire and forget. Free when completed */
-#define TASK_FIRE_AND_FORGET (1 << 13)
+#define TASK_FIRE_AND_FORGET BIT_OPT(u32, 13)
+/** This task should not be run at this time */
+#define TASK_DISABLE_RUN BIT_OPT(u32, 14)
 
 /** Used to define task methods */
 #define TASK_METHOD_T static inline const u32
@@ -170,6 +172,11 @@ struct TaskNode {
   /** Set task as user complete */
   HSHM_ALWAYS_INLINE void SetUserComplete() {
     task_flags_.SetBits(TASK_USER_COMPLETE);
+  }
+
+  /** Disable the running of a task */
+  HSHM_ALWAYS_INLINE void DisableRun() {
+    task_flags_.SetBits(TASK_DISABLE_RUN);
   }
 
   /** Wait for task to complete */

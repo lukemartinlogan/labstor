@@ -54,6 +54,12 @@ void Worker::PollUnordered(u32 lane_id, MultiQueue *queue) {
       HELOG(kError, "Could not find the task state: {}", task->task_state_);
       task->SetComplete();
     }
+    if (task->domain_id_.IsRemote(LABSTOR_QM_CLIENT->node_id_)) {
+      auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
+      LABSTOR_REMOTE_QUEUE->Disperse(task, exec, ids);
+      task->DisableRun();
+      continue;
+    }
     if (!task->IsComplete()) {
       if (task->domain_id_.IsRemote(LABSTOR_QM_CLIENT->node_id_)) {
         exec->Serialize(task->method_, task);
@@ -90,8 +96,10 @@ void Worker::PollOrdered(u32 lane_id, MultiQueue *queue) {
       task->SetComplete();
     }
     if (task->domain_id_.IsRemote(LABSTOR_QM_CLIENT->node_id_)) {
-      // TODO(llogan): Add API to get domain id vector from LABSTOR_RUNTIME
-      LABSTOR_REMOTE_QUEUE->Disperse(task, exec, {});
+      auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
+      LABSTOR_REMOTE_QUEUE->Disperse(task, exec, ids);
+      task->DisableRun();
+      continue;
     }
     if (!task->IsComplete()) {
       exec->Run(queue, task->method_, task);

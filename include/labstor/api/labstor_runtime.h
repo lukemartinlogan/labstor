@@ -136,6 +136,21 @@ class Runtime : public ConfigurationManager {
   void StopDaemon() {
     LABSTOR_WORK_ORCHESTRATOR->FinalizeRuntime();
   }
+
+  /** Get the set of DomainIds */
+  std::vector<DomainId> ResolveDomainId(const DomainId &domain_id) {
+    std::vector<DomainId> ids;
+    if (domain_id.IsGlobal()) {
+      ids.reserve(rpc_.hosts_.size());
+      for (HostInfo &host_info : rpc_.hosts_) {
+        ids.push_back(DomainId::GetNode(host_info.node_id_));
+      }
+    } else if (domain_id.IsNode()) {
+      ids.reserve(1);
+      ids.push_back(domain_id);
+    }
+    return ids;
+  }
 };
 
 }  // namespace labstor
