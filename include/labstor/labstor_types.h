@@ -74,8 +74,17 @@ struct DomainId {
 
   /** Serialize domain id */
   template<typename Ar>
-  void serialize(Ar &ar) {
-    ar(flags_, id_);
+  void save(Ar &ar) const {
+    u32 flags = flags_.bits_;
+    ar(flags, id_);
+  }
+
+  /** Deserialize domain id */
+  template<typename Ar>
+  void load(Ar &ar) {
+    u32 flags;
+    ar(flags, id_);
+    flags_.bits_ = flags;
   }
 
   /** Default constructor. */
@@ -84,7 +93,7 @@ struct DomainId {
 
   /** Domain has the local node */
   HSHM_ALWAYS_INLINE
-  bool IsRemote(u32 this_node) {
+  bool IsRemote(u32 this_node) const {
     return flags_.Any(kGlobal | kSet) || (flags_.Any(kNode) && id_ != this_node);
   }
 
@@ -99,13 +108,13 @@ struct DomainId {
 
   /** Get the ID */
   HSHM_ALWAYS_INLINE
-  u32 GetId() {
+  u32 GetId() const {
     return id_;
   }
 
   /** Domain is a specific node */
   HSHM_ALWAYS_INLINE
-  bool IsNode() {
+  bool IsNode() const {
     return flags_.Any(kNode);
   }
 
@@ -129,7 +138,7 @@ struct DomainId {
 
   /** Domain represents all nodes */
   HSHM_ALWAYS_INLINE
-  bool IsGlobal() {
+  bool IsGlobal() const {
     return flags_.Any(kGlobal);
   }
 
@@ -144,7 +153,7 @@ struct DomainId {
 
   /** DomainId represents a named node set */
   HSHM_ALWAYS_INLINE
-  bool IsSet() {
+  bool IsSet() const {
     return flags_.Any(kSet);
   }
 

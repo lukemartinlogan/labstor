@@ -6,6 +6,7 @@
 #define LABSTOR_INCLUDE_LABSTOR_QUEUE_MANAGER_REQUEST_H_
 
 #include "labstor/labstor_types.h"
+#include "labstor/network/serialize.h"
 
 namespace labstor {
 
@@ -128,7 +129,7 @@ struct TaskNode {
 };
 
 /** A generic task base class */
-struct Task : public hipc::ShmContainer {
+ struct Task : public hipc::ShmContainer, public labstor::BulkSerializeable {
  SHM_CONTAINER_TEMPLATE((Task), (Task))
   TaskNode task_node_;         /**< The unique ID of this task in the graph */
   DomainId domain_id_;         /**< The nodes that the task should run on */

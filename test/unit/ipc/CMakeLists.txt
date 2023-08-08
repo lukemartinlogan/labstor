@@ -12,6 +12,7 @@ add_executable(test_messages_exec
         test_init.cc
         test_finalize.cc
         test_ipc.cc
+        test_serialize.cc
 )
 
 add_dependencies(test_messages_exec labstor_client)

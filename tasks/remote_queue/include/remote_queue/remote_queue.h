@@ -14,7 +14,8 @@ namespace labstor::remote_queue {
 
 /** The set of methods in the remote_queue task */
 struct Method : public TaskMethod {
-  TASK_METHOD_T kCustom = TaskMethod::kLast;
+  TASK_METHOD_T kDisperse = TaskMethod::kLast;
+  TASK_METHOD_T kPush = TaskMethod::kLast + 1;
 };
 
 /**
@@ -54,27 +55,70 @@ struct DestructTask : public DestroyTaskStateTask {
 };
 
 /**
- * A custom task in remote_queue
+ * A task to push a serialized task onto the remote queue
  * */
-struct CustomTask : public Task {
-  HSHM_ALWAYS_INLINE
-  CustomTask(hipc::Allocator *alloc,
+struct PushTask : public Task {
+    IN std::vector<DataTransfer> *xfer_;
+    IN DomainId to_domain_;
+
+    HSHM_ALWAYS_INLINE
+    PushTask(hipc::Allocator *alloc,
              const TaskNode &task_node,
              const DomainId &domain_id,
-             const TaskStateId &state_id) : Task(alloc) {
+             const TaskStateId &state_id,
+             std::vector<DataTransfer> &xfer,
+             const DomainId &to_domain) : Task(alloc) {
+        // Initialize task
+        task_node_ = task_node;
+        lane_hash_ = 0;
+        task_state_ = state_id;
+        method_ = Method::kPush;
+        task_flags_.SetBits(0);
+        domain_id_ = domain_id;
+
+        // Custom params
+        xfer_ = &xfer;
+        to_domain_ = to_domain;
+    }
+};
+
+/**
+ * A custom task in remote_queue
+ * */
+struct DisperseTask : public Task {
+  IN Task *orig_task_;
+  IN std::vector<DataTransfer> xfer_;
+  TEMP std::vector<Task*> subtasks_;
+
+  HSHM_ALWAYS_INLINE
+  DisperseTask(hipc::Allocator *alloc,
+             const TaskNode &task_node,
+             const DomainId &domain_id,
+             const TaskStateId &state_id,
+             Task *orig_task,
+             std::vector<DataTransfer> &xfer,
+             size_t num_subtasks) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
     task_state_ = state_id;
-    method_ = Method::kCustom;
+    method_ = Method::kDisperse;
     task_flags_.SetBits(0);
     domain_id_ = domain_id;
 
     // Custom params
+    orig_task_ = orig_task;
+    xfer_ = std::move(xfer);
+    subtasks_.reserve(num_subtasks);
   }
 };
 
-/** Create remote_queue requests */
+/**
+ * Create remote_queue requests
+ *
+ * This is ONLY used in the Hermes runtime, and
+ * should never be called in client programs!!!
+ * */
 class Client {
  public:
   TaskStateId id_;
@@ -123,14 +167,27 @@ class Client {
 
   /** Call a custom method */
   HSHM_ALWAYS_INLINE
-  void Custom(const TaskNode &task_node,
-              const DomainId &domain_id) {
+  void Disperse(Task *orig_task,
+                TaskState *exec,
+                const std::vector<DomainId> &domain_ids) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<CustomTask>(
-        p, task_node, domain_id, id_);
-    queue->Emplace(0, p);
-    task->Wait();
+
+    // Serialize task + create the wait task
+    auto xfer = exec->Serialize(orig_task->method_, orig_task);
+    auto *wait_task = LABSTOR_CLIENT->NewTask<DisperseTask>(
+        p, orig_task->task_node_, DomainId::GetLocal(), id_, orig_task, xfer, domain_ids.size());
+
+    // Create subtasks
+    for (auto &node_id : domain_ids) {
+      auto *sub_task = LABSTOR_CLIENT->NewTask<PushTask>(
+          p, orig_task->task_node_, DomainId::GetLocal(), id_, wait_task->xfer_, node_id);
+      wait_task->subtasks_.push_back(sub_task);
+      queue->Emplace(orig_task->lane_hash_, p);
+    }
+
+    // Enqueue wait task
+    queue->Emplace(orig_task->lane_hash_, p);
   }
   LABSTOR_TASK_NODE_ROOT(Custom);
 };

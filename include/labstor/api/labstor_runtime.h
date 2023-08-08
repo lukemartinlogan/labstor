@@ -8,14 +8,16 @@
 #include "labstor/task_registry/task_registry.h"
 #include "labstor/work_orchestrator/work_orchestrator.h"
 #include "labstor/queue_manager/queue_manager_runtime.h"
+#include "labstor_admin/labstor_admin.h"
+#include "remote_queue/remote_queue.h"
 #include "labstor_client.h"
 #include "manager.h"
 #include "labstor/network/rpc.h"
-#include "labstor_admin/labstor_admin.h"
 
 // Singleton macros
 #define LABSTOR_RUNTIME hshm::Singleton<labstor::Runtime>::GetInstance()
 #define LABSTOR_RUNTIME_T labstor::Runtime*
+#define LABSTOR_REMOTE_QUEUE (&LABSTOR_RUNTIME->remote_queue_)
 
 namespace labstor {
 
@@ -25,6 +27,7 @@ class Runtime : public ConfigurationManager {
   TaskRegistry task_registry_;
   WorkOrchestrator work_orchestrator_;
   QueueManagerRuntime queue_manager_;
+  remote_queue::Client remote_queue_;
   RpcContext rpc_;
 
  public:
@@ -85,6 +88,9 @@ class Runtime : public ConfigurationManager {
         "worch_proc_round_robin",
         TaskStateId::GetNull(),
         nullptr);
+
+    // Create the remote queue library
+    task_registry_.RegisterTaskLib("remote_queue");
 
     // Set the work orchestrator queue scheduler
     LABSTOR_ADMIN->SetWorkOrchestratorQueuePolicyRoot(labstor::DomainId::GetLocal(), queue_sched_id);
