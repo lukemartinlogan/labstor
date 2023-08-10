@@ -24,7 +24,7 @@ add_library(labstor_runtime
         worker.cc
         labstor_runtime.cc)
 add_dependencies(labstor_runtime labstor_client)
-target_link_libraries(labstor_runtime labstor_client -ldl -lrt -lc)
+target_link_libraries(labstor_runtime labstor_client thallium -ldl -lrt -lc)
 
 #------------------------------------------------------------------------------
 # Build Labstor Runtime Start Function

@@ -222,6 +222,13 @@ struct UniqueId {
   u32 node_id_;  /**< The node the content is on */
   u64 unique_;   /**< A unique id for the blob */
 
+  /** Serialization */
+  template<typename Ar>
+  void serialize(Ar &ar) {
+    ar & node_id_;
+    ar & unique_;
+  }
+
   /** Default constructor */
   HSHM_ALWAYS_INLINE
   UniqueId() = default;
@@ -329,6 +336,13 @@ std::ostream &operator<<(std::ostream &os, UniqueId<num> const &obj) {
   return os << (std::to_string(obj.node_id_) + "."
       + std::to_string(obj.unique_));
 }
+
+/** The types of I/O that can be performed (for IoCall RPC) */
+enum class IoType {
+  kRead,
+  kWrite,
+  kNone
+};
 
 }  // namespace labstor
 

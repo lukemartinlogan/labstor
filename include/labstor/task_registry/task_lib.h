@@ -43,7 +43,7 @@ class TaskLib {
   }
 
   /** Deserialize a task */
-  virtual Task* Deserialize(const std::vector<DataTransfer> &xfer) {
+  virtual Task* Deserialize(BinaryInputArchive &ar, hipc::Pointer &p) {
     return nullptr;
   }
 };

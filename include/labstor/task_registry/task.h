@@ -133,9 +133,9 @@ struct TaskNode {
 /** A generic task base class */
  struct Task : public hipc::ShmContainer, public labstor::BulkSerializeable {
  SHM_CONTAINER_TEMPLATE((Task), (Task))
+  TaskStateId task_state_;     /**< The unique name of a task state */
   TaskNode task_node_;         /**< The unique ID of this task in the graph */
   DomainId domain_id_;         /**< The nodes that the task should run on */
-  TaskStateId task_state_;     /**< The unique name of a task state */
   u32 lane_hash_;              /**< Determine the lane a task is keyed to */
   u32 method_;                 /**< The method to call in the state */
   bitfield32_t task_flags_;    /**< Properties of the task */
@@ -177,6 +177,11 @@ struct TaskNode {
   /** Disable the running of a task */
   HSHM_ALWAYS_INLINE void DisableRun() {
     task_flags_.SetBits(TASK_DISABLE_RUN);
+  }
+
+  /** Check if running task is disable */
+  HSHM_ALWAYS_INLINE bool IsRunDisabled() {
+    return task_flags_.Any(TASK_DISABLE_RUN);
   }
 
   /** Wait for task to complete */

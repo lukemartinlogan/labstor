@@ -1,10 +1,13 @@
 #------------------------------------------------------------------------------
 # Build Small Message Task Library
 #------------------------------------------------------------------------------
+include_directories(myapp PRIVATE ${libfabric_INCLUDE_DIRS})
+link_directories(${libfabric_LIBRARY_DIRS})
 add_library(remote_queue SHARED
         remote_queue.cc)
 add_dependencies(remote_queue labstor_runtime)
-target_link_libraries(remote_queue labstor_runtime)
+target_link_libraries(remote_queue
+        labstor_runtime ${libfabric_LIBRARIES})
 
 #------------------------------------------------------------------------------
 # Install Small Message Task Library

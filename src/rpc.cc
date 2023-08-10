@@ -43,6 +43,9 @@ std::vector<std::string> RpcContext::ParseHostfile(const std::string &path) {
 void RpcContext::ServerInit(ServerConfig *config) {
   config_ = config;
   port_ = config_->rpc_.port_;
+  protocol_ = config_->rpc_.protocol_;
+  domain_ = config_->rpc_.domain_;
+  num_threads_ = 4;  // TODO(llogan): Add to configuration
   if (hosts_.size()) { return; }
   // Uses hosts produced by host_names
   auto &hosts = config_->rpc_.host_names_;
@@ -53,8 +56,9 @@ void RpcContext::ServerInit(ServerConfig *config) {
 
   // Get all host info
   hosts_.reserve(hosts.size());
+  u32 node_id = 1;
   for (const auto& name : hosts) {
-    hosts_.emplace_back(name, _GetIpAddress(name));
+    hosts_.emplace_back(name, _GetIpAddress(name), node_id++);
   }
 
   // Get id of current host

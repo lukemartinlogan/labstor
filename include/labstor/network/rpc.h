@@ -37,16 +37,24 @@ struct HostInfo {
   std::string ip_addr_;   /**< Host IP address */
 
   HostInfo() = default;
-  explicit HostInfo(const std::string &hostname, const std::string &ip_addr)
-      : hostname_(hostname), ip_addr_(ip_addr) {}
+  explicit HostInfo(const std::string &hostname,
+                    const std::string &ip_addr,
+                    u32 node_id)
+      : hostname_(hostname), ip_addr_(ip_addr), node_id_(node_id) {}
 };
+
+/** Fabric protocols */
+
 
 /** A structure to represent RPC context. */
 class RpcContext {
  public:
   ServerConfig *config_;
   int port_;  /**< port number */
-  u32 node_id_; /**< the ID of this node */
+  std::string protocol_;  /**< Libfabric provider */
+  std::string domain_;    /**< Libfabric domain */
+  u32 node_id_;           /**< the ID of this node */
+  int num_threads_;       /**< Number of RPC threads */
   std::vector<HostInfo> hosts_; /**< Hostname and ip addr per-node */
 
  public:

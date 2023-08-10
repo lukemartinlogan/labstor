@@ -13,11 +13,13 @@
 #include "labstor_client.h"
 #include "manager.h"
 #include "labstor/network/rpc.h"
+#include "labstor/network/rpc_thallium.h"
 
 // Singleton macros
 #define LABSTOR_RUNTIME hshm::Singleton<labstor::Runtime>::GetInstance()
 #define LABSTOR_RUNTIME_T labstor::Runtime*
 #define LABSTOR_REMOTE_QUEUE (&LABSTOR_RUNTIME->remote_queue_)
+#define LABSTOR_THALLIUM (&LABSTOR_RUNTIME->thallium_)
 
 namespace labstor {
 
@@ -29,6 +31,7 @@ class Runtime : public ConfigurationManager {
   QueueManagerRuntime queue_manager_;
   remote_queue::Client remote_queue_;
   RpcContext rpc_;
+  ThalliumRpc thallium_;
 
  public:
   /** Default constructor */
@@ -54,6 +57,7 @@ class Runtime : public ConfigurationManager {
     LoadServerConfig(server_config_path);
     InitSharedMemory();
     rpc_.ServerInit(&server_config_);
+    thallium_.ServerInit(&rpc_);
     header_->node_id_ = rpc_.node_id_;
     task_registry_.ServerInit(&server_config_, rpc_.node_id_);
     // Queue manager + client must be initialized before Work Orchestrator
@@ -91,6 +95,7 @@ class Runtime : public ConfigurationManager {
 
     // Create the remote queue library
     task_registry_.RegisterTaskLib("remote_queue");
+    remote_queue_.Create(TaskNode::GetNull(), DomainId::GetLocal(), "remote_queue");
 
     // Set the work orchestrator queue scheduler
     LABSTOR_ADMIN->SetWorkOrchestratorQueuePolicyRoot(labstor::DomainId::GetLocal(), queue_sched_id);
@@ -122,11 +127,12 @@ class Runtime : public ConfigurationManager {
 
   /** Run the Hermes core Daemon */
   void RunDaemon() {
+    thallium_.RunDaemon();
     HILOG(kInfo, "Daemon is running")
-    while (LABSTOR_WORK_ORCHESTRATOR->IsRuntimeAlive()) {
-      // Scheduler callbacks?
-      HERMES_THREAD_MODEL->SleepForUs(1000);
-    }
+//    while (LABSTOR_WORK_ORCHESTRATOR->IsRuntimeAlive()) {
+//      // Scheduler callbacks?
+//      HERMES_THREAD_MODEL->SleepForUs(1000);
+//    }
     HILOG(kInfo, "Finishing up last requests")
     LABSTOR_WORK_ORCHESTRATOR->Join();
     HILOG(kInfo, "Daemon is exiting")

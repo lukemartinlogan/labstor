@@ -70,6 +70,12 @@ endif()
 pkg_check_modules(ZMQ REQUIRED libzmq)
 include_directories(${ZeroMQ_INCLUDE_DIRS})
 
+# Thallium
+find_package(thallium CONFIG REQUIRED)
+if(thallium_FOUND)
+    message(STATUS "found thallium at ${thallium_DIR}")
+endif()
+
 #------------------------------------------------------------------------------
 # Setup CMake Environment
 #------------------------------------------------------------------------------
