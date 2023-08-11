@@ -68,6 +68,12 @@ struct CustomTask : public Task {
 
     // Custom params
   }
+
+  template<typename Ar>
+  void serialize(Ar &ar) {
+    task_serialize(ar);
+    ar(ret_);
+  }
 };
 
 /** Create admin requests */

@@ -23,7 +23,7 @@ struct TestObj : public BulkSerializeable {
     xfer2_(DT_RECEIVER_WRITE, data_.data(), data_.size()) {}
 
   template<typename Ar>
-  void bulk_serialize(Ar &ar) {
+  void serialize(Ar &ar) {
     ar(a_, b_, xfer1_, c_, xfer2_);
   }
 

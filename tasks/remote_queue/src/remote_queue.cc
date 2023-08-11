@@ -81,9 +81,13 @@ class Server : public TaskLib {
           HSHM_MAKE_AR(task->tl_future_, nullptr, std::move(future));
         } else {
           std::string params((char *) xfer[1].data_, xfer[1].data_size_);
+          IoType io_type = IoType::kRead;
+          if (xfer[0].flags_.Any(DT_RECEIVER_READ)) {
+            io_type = IoType::kWrite;
+          }
           auto future = LABSTOR_THALLIUM->AsyncIoCall(task->domain_id_.id_,
                                                       "RpcPushBulk",
-                                                      IoType::kRead,
+                                                      io_type,
                                                       (char *) xfer[0].data_,
                                                       xfer[0].data_size_,
                                                       task->task_state_,
@@ -97,10 +101,10 @@ class Server : public TaskLib {
           std::string ret = LABSTOR_THALLIUM->Wait<std::string>(*task->tl_future_);
           std::vector<DataTransfer> xfer(1);
           xfer[0].data_ = ret.data();
-          xfer[1].data_size_ = ret.size();
+          xfer[0].data_size_ = ret.size();
           BinaryInputArchive ar(xfer);
-          hipc::Pointer p;
-          task->exec_->Deserialize(ar, p);
+          TaskPointer task_ptr(task);
+          task->exec_->Deserialize(ar, task_ptr);
           task->SetComplete();
         }
         break;
@@ -109,6 +113,12 @@ class Server : public TaskLib {
     task->SetComplete();
   }
 
+  /** Disperse operation called on client */
+  void Disperse(MultiQueue *queue, DisperseTask *task) {
+    task->SetComplete();
+  }
+
+ private:
   /** The RPC for processing a small message */
   void RpcPushSmall(const tl::request &req,
                     TaskStateId state_id,
@@ -157,27 +167,24 @@ class Server : public TaskLib {
       req.respond(std::string());
       return;
     }
-    hipc::Pointer p;
-    auto *task = exec->Deserialize(ar, p);
+    TaskPointer task_ptr;
+    exec->Deserialize(ar, task_ptr);
+    auto &task = task_ptr.task_;
+    auto &p = task_ptr.p_;
 
     // Execute task
     auto *queue = LABSTOR_QM_CLIENT->GetQueue(QueueId(state_id));
     queue->Emplace(task->lane_hash_, p);
     bool is_fire_forget = task->IsFireAndForget();
-    task->Wait();
 
     // Get return value (should not contain data)
     if (!is_fire_forget) {
+      task->Wait();
       auto out_xfer = exec->Serialize(task->method_, task);
       req.respond(std::string((char *) out_xfer[0].data_, out_xfer[0].data_size_));
     } else {
       req.respond(std::string());
     }
-  }
-
-  /** Disperse operation called on client */
-  void Disperse(MultiQueue *queue, DisperseTask *task) {
-    task->SetComplete();
   }
 };
 

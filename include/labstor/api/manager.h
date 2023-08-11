@@ -34,6 +34,7 @@ class ConfigurationManager {
   bool is_terminated_;
   bool is_transparent_;
   hshm::Mutex lock_;
+  hshm::ThreadType thread_type_;
 
   /** Default constructor */
   ConfigurationManager() : is_being_initialized_(false),

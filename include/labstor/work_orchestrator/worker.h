@@ -10,10 +10,11 @@
 #include <thread>
 #include <queue>
 #include "affinity.h"
+#include "labstor/network/rpc_thallium.h"
 
 namespace labstor {
 
-#define WORKER_CONTINUOUS_POLLING (1 << 0)
+#define WORKER_CONTINUOUS_POLLING BIT_OPT(u32, 0)
 
 /** Uniquely identify a queue lane */
 struct WorkEntry {
@@ -99,8 +100,9 @@ namespace labstor {
 class Worker {
  public:
   u32 id_;  /**< Unique identifier of this worker */
-  std::unique_ptr<std::thread> thread_;  /**< The worker thread handle */
-  int pthread_id_;      /**< The worker pthread handle */
+  // std::unique_ptr<std::thread> thread_;  /**< The worker thread handle */
+  // int pthread_id_;      /**< The worker pthread handle */
+  ABT_thread tl_thread_;
   int pid_;             /**< The worker process id */
   u32 numa_node_;       // TODO(llogan): track NUMA affinity
   std::vector<WorkEntry> work_queue_;  /**< The set of queues to poll */
@@ -115,7 +117,7 @@ class Worker {
 
  public:
   /** Constructor */
-  Worker(u32 id) {
+  Worker(u32 id, ABT_xstream &xstream) {
     poll_queues_.Resize(1024);
     relinquish_queues_.Resize(1024);
     id_ = id;
@@ -123,8 +125,14 @@ class Worker {
     EnableContinuousPolling();
     retries_ = 1;
     pid_ = 0;
-    thread_ = std::make_unique<std::thread>(&Worker::Loop, this);
-    pthread_id_ = thread_->native_handle();
+    /* thread_ = std::make_unique<std::thread>(&Worker::Loop, this);
+    pthread_id_ = thread_->native_handle(); */
+    int ret = ABT_thread_create_on_xstream(xstream,
+                                           [](void *args) { ((Worker*)args)->Loop(); }, this,
+                                           ABT_THREAD_ATTR_NULL, &tl_thread_);
+    if (ret != ABT_SUCCESS) {
+      HELOG(kFatal, "Couldn't spawn worker");
+    }
   }
 
   /**
@@ -166,6 +174,9 @@ class Worker {
 
   /** Set the CPU affinity of this worker */
   void SetCpuAffinity(int cpu_id) {
+    // NOTE(llogan): Argobots doesn't seem to have a way of setting CPU affinity of threads.
+    //
+    pid_ = getpid();
     ProcessAffiner::SetCpuAffinity(pid_, cpu_id);
   }
 

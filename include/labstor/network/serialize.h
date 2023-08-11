@@ -132,10 +132,10 @@ class BinaryOutputArchive {
   template<typename T, typename ...Args>
   BinaryOutputArchive& Serialize(T &var, Args&& ...args) {
     if constexpr (std::is_base_of<BulkSerializeable, T>::value) {
-      if constexpr (std::is_same_v<decltype(var.bulk_serialize(*this)), void>) {
-        var.bulk_serialize(*this);
-      } else if constexpr (std::is_same_v<decltype(var.bulk_save(*this)), void>) {
-        var.bulk_save(*this);
+      if constexpr (std::is_same_v<decltype(var.serialize(*this)), void>) {
+        var.serialize(*this);
+      } else if constexpr (std::is_same_v<decltype(var.save(*this)), void>) {
+        var.save(*this);
       }
     } else if constexpr (std::is_same_v<T, DataTransfer>){
       var.node_id_ = node_id_;
@@ -208,10 +208,10 @@ class BinaryInputArchive {
     if constexpr (std::is_same_v<T, DataTransfer>) {
       var = xfer_[xfer_off_++];
     } else if constexpr (std::is_base_of<BulkSerializeable, T>::value) {
-      if constexpr (std::is_same_v<decltype(var.bulk_serialize(*this)), void>) {
-        var.bulk_serialize(*this);
-      } else if constexpr (std::is_same_v<decltype(var.bulk_load(*this)), void>) {
-        var.bulk_load(*this);
+      if constexpr (std::is_same_v<decltype(var.serialize(*this)), void>) {
+        var.serialize(*this);
+      } else if constexpr (std::is_same_v<decltype(var.load(*this)), void>) {
+        var.load(*this);
       }
     } else {
       ar_ >> var;

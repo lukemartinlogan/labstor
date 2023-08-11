@@ -9,6 +9,7 @@
 #include "labstor/api/labstor_runtime.h"
 #include "labstor/queue_manager/queue_manager_runtime.h"
 #include "worker.h"
+#include "labstor/network/rpc_thallium.h"
 #include <thread>
 
 namespace labstor {
@@ -19,6 +20,7 @@ class WorkOrchestrator {
   std::vector<Worker> workers_;  /**< Workers execute tasks */
   std::atomic<bool> stop_runtime_;  /**< Begin killing the runtime */
   std::atomic<bool> kill_requested_;  /**< Kill flushing threads eventually */
+  ABT_xstream xstream_;
 
  public:
   /** Default constructor */
@@ -30,10 +32,18 @@ class WorkOrchestrator {
   /** Create thread pool */
   void ServerInit(ServerConfig *config, QueueManager &qm) {
     config_ = config;
+
+    // Create argobots xstream
+    int ret = ABT_xstream_create(ABT_SCHED_NULL, &xstream_);
+    if (ret != ABT_SUCCESS) {
+      HELOG(kFatal, "Could not create argobots xstream");
+    }
+
+    // Spawn workers on the stream
     size_t num_workers = config_->wo_.max_workers_;
     workers_.reserve(num_workers);
     for (u32 worker_id = 0; worker_id < num_workers; ++worker_id) {
-      workers_.emplace_back(worker_id);
+      workers_.emplace_back(worker_id, xstream_);
     }
     stop_runtime_ = false;
     kill_requested_ = false;
@@ -71,7 +81,9 @@ class WorkOrchestrator {
   void Join() {
     kill_requested_.store(true);
     for (Worker &worker : workers_) {
-      worker.thread_->join();
+      // worker.thread_->join();
+      ABT_xstream_join(xstream_);
+      ABT_xstream_free(&xstream_);
     }
   }
 

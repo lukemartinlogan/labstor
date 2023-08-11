@@ -13,6 +13,46 @@
 
 namespace labstor {
 
+struct TaskPointer {
+  Task *task_;
+  hipc::Pointer p_;
+
+  /** Default constructor */
+  TaskPointer() : task_(nullptr) {}
+
+  /** Task-only constructor */
+  TaskPointer(Task *task) : task_(task) {}
+
+  /** Emplace constructor */
+  TaskPointer(Task *task, hipc::Pointer p) : task_(task), p_(p) {}
+
+  /** Copy constructor */
+  TaskPointer(const TaskPointer &other) : task_(other.task_), p_(other.p_) {}
+
+  /** Copy operator */
+  TaskPointer &operator=(const TaskPointer &other) {
+    task_ = other.task_;
+    p_ = other.p_;
+    return *this;
+  }
+
+  /** Move constructor */
+  TaskPointer(TaskPointer &&other) noexcept
+      : task_(other.task_), p_(other.p_) {
+    other.task_ = nullptr;
+    other.p_ = hipc::Pointer();
+  }
+
+  /** Move operator */
+  TaskPointer &operator=(TaskPointer &&other) noexcept {
+    task_ = other.task_;
+    p_ = other.p_;
+    other.task_ = nullptr;
+    other.p_ = hipc::Pointer();
+    return *this;
+  }
+};
+
 /**
  * Represents a custom operation to perform.
  * Tasks are independent of Hermes.
@@ -43,9 +83,7 @@ class TaskLib {
   }
 
   /** Deserialize a task */
-  virtual Task* Deserialize(BinaryInputArchive &ar, hipc::Pointer &p) {
-    return nullptr;
-  }
+  virtual void Deserialize(BinaryInputArchive &ar, TaskPointer &task_ptr) {}
 };
 
 /** Represents a TaskLib in action */

@@ -315,12 +315,6 @@ struct UniqueId {
   bool operator!=(const UniqueId &other) const {
     return unique_ != other.unique_ || node_id_ != other.node_id_;
   }
-
-  /** Serialize a UniqueId
-  template<class Archive>
-  void serialize(Archive &ar) {
-    ar(unique_, domain_id_);
-  }*/
 };
 
 /** Uniquely identify a task state */

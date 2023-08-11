@@ -128,6 +128,12 @@ struct TaskNode {
   bool IsNull() const {
     return root_.IsNull();
   }
+
+  /** Serialization*/
+  template<typename Ar>
+  void serialize(Ar &ar) {
+    ar(root_, node_depth_);
+  }
 };
 
 /** A generic task base class */
@@ -268,6 +274,14 @@ struct TaskNode {
 
   /** Sets this Task as empty */
   HSHM_ALWAYS_INLINE void SetNull() {}
+
+ /**====================================
+  * Serialization
+  * ===================================*/
+ template<typename Ar>
+ void task_serialize(Ar &ar) {
+   ar(task_state_, task_node_, domain_id_, lane_hash_, method_, task_flags_);
+ }
 };
 
 /** A task is NOT compatible with shared memory */
