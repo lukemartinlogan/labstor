@@ -137,7 +137,7 @@ struct TaskNode {
 };
 
 /** A generic task base class */
- struct Task : public hipc::ShmContainer, public labstor::BulkSerializeable {
+ struct Task : public hipc::ShmContainer {
  SHM_CONTAINER_TEMPLATE((Task), (Task))
   TaskStateId task_state_;     /**< The unique name of a task state */
   TaskNode task_node_;         /**< The unique ID of this task in the graph */

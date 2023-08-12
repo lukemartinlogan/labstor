@@ -11,6 +11,8 @@
 
 namespace labstor {
 
+class Task;
+
 /** Receiver will read from data_ */
 #define DT_RECEIVER_READ BIT_OPT(u32, 0)
 
@@ -82,10 +84,8 @@ struct DataTransferBase {
 using DataTransfer = DataTransferBase<true>;
 using PassDataTransfer = DataTransferBase<false>;
 
-/** Label a class as supporting bulk serialization methods */
-struct BulkSerializeable {};
-
 /** Serialize a data structure */
+template<bool is_start>
 class BinaryOutputArchive {
  public:
   std::vector<DataTransfer> xfer_;
@@ -131,11 +131,19 @@ class BinaryOutputArchive {
   /** Serialize a parameter */
   template<typename T, typename ...Args>
   BinaryOutputArchive& Serialize(T &var, Args&& ...args) {
-    if constexpr (std::is_base_of<BulkSerializeable, T>::value) {
-      if constexpr (std::is_same_v<decltype(var.serialize(*this)), void>) {
-        var.serialize(*this);
-      } else if constexpr (std::is_same_v<decltype(var.save(*this)), void>) {
-        var.save(*this);
+    if constexpr (std::is_base_of<Task, T>::value) {
+      if constexpr (is_start) {
+        if constexpr (std::is_same_v<decltype(var.SerializeStart(*this)), void>) {
+          var.SerializeStart(*this);
+        } else if constexpr (std::is_same_v<decltype(var.SaveStart(*this)), void>) {
+          var.SaveStart(*this);
+        }
+      } else {
+        if constexpr (std::is_same_v<decltype(var.SerializeEnd(*this)), void>) {
+          var.SerializeEnd(*this);
+        } else if constexpr (std::is_same_v<decltype(var.SaveEnd(*this)), void>) {
+          var.SaveEnd(*this);
+        }
       }
     } else if constexpr (std::is_same_v<T, DataTransfer>){
       var.node_id_ = node_id_;
@@ -169,6 +177,7 @@ class BinaryOutputArchive {
 };
 
 /** Desrialize a data structure */
+template<bool is_start>
 class BinaryInputArchive {
  public:
   std::vector<DataTransfer> xfer_;
@@ -207,11 +216,19 @@ class BinaryInputArchive {
   BinaryInputArchive& Deserialize(T &var, Args&& ...args) {
     if constexpr (std::is_same_v<T, DataTransfer>) {
       var = xfer_[xfer_off_++];
-    } else if constexpr (std::is_base_of<BulkSerializeable, T>::value) {
-      if constexpr (std::is_same_v<decltype(var.serialize(*this)), void>) {
-        var.serialize(*this);
-      } else if constexpr (std::is_same_v<decltype(var.load(*this)), void>) {
-        var.load(*this);
+    } else if constexpr (std::is_base_of<Task, T>::value) {
+      if constexpr (is_start) {
+        if constexpr (std::is_same_v<decltype(var.SerializeStart(*this)), void>) {
+          var.SerializeStart(*this);
+        } else if constexpr (std::is_same_v<decltype(var.LoadStart(*this)), void>) {
+          var.LoadStart(*this);
+        }
+      } else {
+        if constexpr (std::is_same_v<decltype(var.SerializeEnd(*this)), void>) {
+          var.SerializeEnd(*this);
+        } else if constexpr (std::is_same_v<decltype(var.LoadEnd(*this)), void>) {
+          var.LoadEnd(*this);
+        }
       }
     } else {
       ar_ >> var;

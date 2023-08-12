@@ -13,6 +13,21 @@ class Server : public TaskLib {
   int count_ = 0;
 
  public:
+  void Construct(MultiQueue *queue, ConstructTask *task) {
+    task->SetComplete();
+  }
+
+  void Destruct(MultiQueue *queue, DestructTask *task) {
+    task->SetComplete();
+  }
+
+  void Custom(MultiQueue *queue, CustomTask *task) {
+    task->ret_ = count_++;
+    task->SetComplete();
+  }
+
+ public:
+  /** Run a method of the queue */
   void Run(MultiQueue *queue, u32 method, Task *task) override {
     switch (method) {
       case Method::kConstruct: {
@@ -30,18 +45,21 @@ class Server : public TaskLib {
     }
   }
 
-  void Construct(MultiQueue *queue, ConstructTask *task) {
-    task->SetComplete();
+  /** Serialize a task when initially pushing into remote */
+  virtual std::vector<DataTransfer> SaveStart(u32 method, Task *task) {
+    return {};
   }
 
-  void Destruct(MultiQueue *queue, DestructTask *task) {
-    task->SetComplete();
+  /** Deserialize a task when popping from remote queue */
+  virtual void LoadStart(BinaryInputArchive<true> &ar, TaskPointer &task_ptr) {}
+
+  /** Serialize a task when returning from remote queue */
+  virtual std::vector<DataTransfer> SaveEnd(u32 method, Task *task) {
+    return {};
   }
 
-  void Custom(MultiQueue *queue, CustomTask *task) {
-    task->ret_ = count_++;
-    task->SetComplete();
-  }
+  /** Deserialize a task when returning from remote queue */
+  virtual void LoadEnd(BinaryInputArchive<false> &ar, TaskPointer &task_ptr) {}
 };
 
 }  // namespace labstor

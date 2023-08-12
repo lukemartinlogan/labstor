@@ -53,6 +53,19 @@ struct RegisterTaskLibTaskTempl : public Task {
   ~RegisterTaskLibTaskTempl() {
     HSHM_DESTROY_AR(lib_name_);
   }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(lib_name_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(id_);
+  }
 };
 
 /** A task to register a Task Library */
@@ -95,6 +108,7 @@ struct CreateTaskStateTask : public Task {
     method_ = Method::kCreateTaskState;
     task_flags_.SetBits(0);
     domain_id_ = domain_id;
+    phase_ = 0;
 
     // Initialize
     HSHM_MAKE_AR(state_name_, alloc, state_name);
@@ -104,6 +118,20 @@ struct CreateTaskStateTask : public Task {
     queue_num_lanes_ = num_lanes;
     queue_depth_ = depth;
     queue_flags_ = flags;
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(lib_name_, state_name_, queue_max_lanes_, queue_num_lanes_,
+       queue_depth_, queue_flags_, phase_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(id_);
   }
 };
 
@@ -132,6 +160,19 @@ struct GetTaskStateIdTask : public Task {
   ~GetTaskStateIdTask() {
     HSHM_DESTROY_AR(state_name_);
   }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(state_name_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(id_);
+  }
 };
 
 /** A task to destroy a Task state */
@@ -154,6 +195,18 @@ struct DestroyTaskStateTask : public Task {
     // Initialize
     id_ = id;
   }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar << id_;
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+  }
 };
 
 /** A task to destroy a Task state */
@@ -169,6 +222,17 @@ struct StopRuntimeTask : public Task {
     method_ = Method::kStopRuntime;
     task_flags_.SetBits(0);
     domain_id_ = domain_id;
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
   }
 };
 
@@ -196,6 +260,18 @@ struct SetWorkOrchestratorPolicyTask : public Task {
 
     // Initialize
     policy_id_ = policy_id;
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(policy_id_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
   }
 };
 using SetWorkOrchestratorQueuePolicyTask = SetWorkOrchestratorPolicyTask<0>;

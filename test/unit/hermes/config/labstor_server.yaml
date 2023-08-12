@@ -33,7 +33,7 @@ rpc:
 
   # The RPC protocol. This must come from the documentation of the specific RPC
   # library in use.
-  protocol: "tcp"
+  protocol: "sockets"
 
   # RPC domain name for verbs transport. Blank for tcp.
   domain: ""
