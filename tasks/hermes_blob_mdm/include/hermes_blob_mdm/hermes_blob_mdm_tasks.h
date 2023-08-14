@@ -50,7 +50,12 @@ class ConstructTaskPhase : public CreateTaskStatePhase {
  * */
 using labstor::Admin::CreateTaskStateTask;
 struct ConstructTask : public CreateTaskStateTask {
-  HSHM_ALWAYS_INLINE
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  ConstructTask(hipc::Allocator *alloc) : CreateTaskStateTask(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
   ConstructTask(hipc::Allocator *alloc,
                 const TaskNode &task_node,
                 const DomainId &domain_id,
@@ -67,7 +72,12 @@ struct ConstructTask : public CreateTaskStateTask {
 /** A task to destroy hermes_mdm */
 using labstor::Admin::DestroyTaskStateTask;
 struct DestructTask : public DestroyTaskStateTask {
-  HSHM_ALWAYS_INLINE
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  DestructTask(hipc::Allocator *alloc) : DestroyTaskStateTask(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
   DestructTask(hipc::Allocator *alloc,
                const TaskNode &task_node,
                const DomainId &domain_id,
@@ -109,6 +119,10 @@ struct PutBlobTask : public Task, SrlFlags<false, true> {
   TEMP hermes::bdev::AllocTask *cur_bdev_alloc_;
   TEMP hipc::ShmArchive<std::vector<PlacementSchema>> schema_;
   TEMP hipc::ShmArchive<std::vector<hermes::bdev::WriteTask *>> bdev_writes_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  PutBlobTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -195,6 +209,10 @@ struct GetBlobTask : public Task, SrlFlags<false, true> {
   TEMP int phase_;
   TEMP hipc::ShmArchive<std::vector<bdev::ReadTask *>> bdev_reads_;
 
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  GetBlobTask(hipc::Allocator *alloc) : Task(alloc) {}
+
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
   GetBlobTask(hipc::Allocator *alloc,
@@ -253,6 +271,10 @@ struct TagBlobTask : public Task, SrlFlags<true, true> {
   IN BlobId blob_id_;
   IN TagId tag_;
 
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  TagBlobTask(hipc::Allocator *alloc) : Task(alloc) {}
+
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
   TagBlobTask(hipc::Allocator *alloc,
@@ -293,6 +315,10 @@ struct BlobHasTagTask : public Task, SrlFlags<true, true> {
   IN BlobId blob_id_;
   IN TagId tag_;
   OUT bool has_tag_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  BlobHasTagTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -336,6 +362,10 @@ struct GetBlobIdTask : public Task, SrlFlags<true, true> {
   IN TagId tag_id_;
   IN hipc::ShmArchive<hipc::charbuf> blob_name_;
   OUT BlobId blob_id_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  GetBlobIdTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -383,6 +413,10 @@ struct GetBlobNameTask : public Task, SrlFlags<true, true> {
   IN BlobId blob_id_;
   OUT hipc::ShmArchive<hipc::string> blob_name_;
 
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  GetBlobNameTask(hipc::Allocator *alloc) : Task(alloc) {}
+
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
   GetBlobNameTask(hipc::Allocator *alloc,
@@ -426,6 +460,10 @@ struct GetBlobScoreTask : public Task, SrlFlags<true, true> {
   IN BlobId blob_id_;
   OUT float score_;
 
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  GetBlobScoreTask(hipc::Allocator *alloc) : Task(alloc) {}
+
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
   GetBlobScoreTask(hipc::Allocator *alloc,
@@ -462,6 +500,10 @@ struct GetBlobScoreTask : public Task, SrlFlags<true, true> {
 struct GetBlobBuffersTask : public Task, SrlFlags<true, true> {
   IN BlobId blob_id_;
   OUT hipc::ShmArchive<hipc::vector<BufferInfo>> buffers_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  GetBlobBuffersTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -509,6 +551,10 @@ struct RenameBlobTask : public Task, SrlFlags<true, true> {
   IN BlobId blob_id_;
   IN hipc::ShmArchive<hipc::charbuf> new_blob_name_;
 
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  RenameBlobTask(hipc::Allocator *alloc) : Task(alloc) {}
+
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
   RenameBlobTask(hipc::Allocator *alloc,
@@ -552,6 +598,10 @@ struct RenameBlobTask : public Task, SrlFlags<true, true> {
 struct TruncateBlobTask : public Task, SrlFlags<true, true> {
   IN BlobId blob_id_;
   IN u64 size_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  TruncateBlobTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -598,6 +648,10 @@ struct DestroyBlobTask : public Task, SrlFlags<true, true> {
   TEMP int phase_;
   TEMP hipc::ShmArchive<std::vector<bdev::FreeTask *>> free_tasks_;
   TEMP BlobInfo *blob_info_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  DestroyBlobTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
