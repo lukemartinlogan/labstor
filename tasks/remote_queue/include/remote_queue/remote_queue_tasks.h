@@ -20,6 +20,7 @@ namespace tl = thallium;
 
 namespace labstor::remote_queue {
 
+#include "labstor/labstor_namespace.h"
 #include "remote_queue_methods.h"
 
 /**
@@ -105,22 +106,22 @@ struct PushTask : public Task {
 /**
  * A task to push a serialized task onto the remote queue
  * */
-struct AcceptTask : public Task {
-  /** Emplace constructor */
-  HSHM_ALWAYS_INLINE explicit
-  AcceptTask(hipc::Allocator *alloc,
-             const TaskNode &task_node,
-             const DomainId &domain_id,
-             const TaskStateId &state_id) : Task(alloc) {
-    // Initialize task
-    task_node_ = task_node;
-    lane_hash_ = 0;
-    task_state_ = state_id;
-    method_ = Method::kAccept;
-    task_flags_.SetBits(0);
-    domain_id_ = domain_id;
-  }
-};
+//struct AcceptTask : public Task {
+//  /** Emplace constructor */
+//  HSHM_ALWAYS_INLINE explicit
+//  AcceptTask(hipc::Allocator *alloc,
+//             const TaskNode &task_node,
+//             const DomainId &domain_id,
+//             const TaskStateId &state_id) : Task(alloc) {
+//    // Initialize task
+//    task_node_ = task_node;
+//    lane_hash_ = 0;
+//    task_state_ = state_id;
+//    method_ = Method::kAccept;
+//    task_flags_.SetBits(0);
+//    domain_id_ = domain_id;
+//  }
+//};
 
 /**
  * A custom task in remote_queue

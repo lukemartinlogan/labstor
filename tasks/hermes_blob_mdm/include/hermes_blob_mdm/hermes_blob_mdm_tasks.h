@@ -12,6 +12,7 @@
 #include "hermes/hermes_types.h"
 #include "bdev/bdev.h"
 #include "labstor/api/labstor_client.h"
+#include "labstor/labstor_namespace.h"
 
 namespace hermes::blob_mdm {
 

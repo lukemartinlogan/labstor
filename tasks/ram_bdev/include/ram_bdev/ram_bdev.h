@@ -11,21 +11,11 @@
 #include "labstor/queue_manager/queue_manager_client.h"
 #include "hermes/hermes_types.h"
 #include "bdev/bdev.h"
+#include "labstor/labstor_namespace.h"
 
 namespace hermes::ram_bdev {
-
-/** The set of methods in the admin task */
-using bdev::Method;
-using bdev::ConstructTask;
-using bdev::DestructTask;
-using bdev::AllocTask;
-using bdev::FreeTask;
-using bdev::ReadTask;
-using bdev::WriteTask;
-
-/** Create admin requests */
-using bdev::Client;
-
+#include "bdev/bdev_namespace.h"
 }  // namespace labstor
+
 
 #endif  // LABSTOR_ram_bdev_H_

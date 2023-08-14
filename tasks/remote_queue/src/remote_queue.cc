@@ -192,27 +192,7 @@ class Server : public TaskLib {
   }
 
  public:
-  /** Execute a task */
-  void Run(MultiQueue *queue, u32 method, Task *task) override {
-    switch (method) {
-      case Method::kConstruct: {
-        Construct(queue, reinterpret_cast<ConstructTask *>(task));
-        break;
-      }
-      case Method::kDestruct: {
-        Destruct(queue, reinterpret_cast<DestructTask *>(task));
-        break;
-      }
-      case Method::kPush: {
-        Push(queue, reinterpret_cast<PushTask *>(task));
-        break;
-      }
-      case Method::kDisperse: {
-        Disperse(queue, reinterpret_cast<DisperseTask *>(task));
-        break;
-      }
-    }
-  }
+#include "remote_queue/remote_queue_lib_exec.h"
 };
 
 }  // namespace labstor

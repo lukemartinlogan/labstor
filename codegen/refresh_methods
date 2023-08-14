@@ -19,23 +19,27 @@ LIB_EXEC_MACRO = f'LABSTOR_{TASK_NAME.upper()}_LIB_EXEC_H_'
 
 with open(METHODS_YAML) as fp:
     methods = yaml.load(fp, Loader=yaml.FullLoader)
+if methods is None:
+    methods = {}
+if 'kLast' in methods:
+    del methods['kLast']
 methods = sorted(methods.items(), key=lambda x: x[1])
-methods.insert(0, ('kConstruct', -2))
-methods.insert(1, ('kDestruct', -1))
+if TASK_NAME != 'labstor_admin':
+    methods.insert(0, ('kConstruct', -2))
+    methods.insert(1, ('kDestruct', -1))
 
 # Produce the TASK_NAME_methods.h file
 lines = []
 lines += [f'#ifndef {METHOD_MACRO}',
           f'#define {METHOD_MACRO}',
           '',
-          'using labstor::TaskMethod;',
-          'using labstor::BinaryOutputArchive;',
-          'using labstor::BinaryInputArchive;',
-          'using labstor::Task;',
-          '',
           '/** The set of methods in the admin task */',
           'struct Method : public TaskMethod {']
 for method_enum_name, method_off in methods:
+    if method_enum_name == 'kConstruct':
+        continue
+    if method_enum_name == 'kDestruct':
+        continue
     lines += f'  TASK_METHOD_T {method_enum_name} = kLast + {method_off};',
 lines += ['};', '', f'#endif  // {METHOD_MACRO}']
 with open(METHODS_H, 'w') as fp:
@@ -52,7 +56,7 @@ lines += ['/** Execute a task */',
           'void Run(MultiQueue *queue, u32 method, Task *task) override {',
           '  switch (method) {']
 for method_enum_name, method_off in methods:
-    method_name = method_enum_name.replace('k', '')
+    method_name = method_enum_name.replace('k', '', 1)
     task_name = method_name + "Task"
     lines += [f'    case Method::{method_enum_name}: {{',
               f'      {method_name}(queue, reinterpret_cast<{task_name} *>(task));',
@@ -66,7 +70,7 @@ lines += ['/** Serialize a task when initially pushing into remote */',
           'std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, Task *task) override {',
           '  switch (method) {']
 for method_enum_name, method_off in methods:
-    method_name = method_enum_name.replace('k', '')
+    method_name = method_enum_name.replace('k', '', 1)
     task_name = method_name + "Task"
     lines += [f'    case Method::{method_enum_name}: {{',
               f'      ar << *reinterpret_cast<{task_name}*>(task);',
@@ -82,7 +86,7 @@ lines += ['/** Deserialize a task when popping from remote queue */',
           '  TaskPointer task_ptr;',
           '  switch (method) {']
 for method_enum_name, method_off in methods:
-    method_name = method_enum_name.replace('k', '')
+    method_name = method_enum_name.replace('k', '', 1)
     task_name = method_name + "Task"
     lines += [f'    case Method::{method_enum_name}: {{',
               f'      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<{task_name}>(task_ptr.p_);',
@@ -98,7 +102,7 @@ lines += ['/** Serialize a task when returning from remote queue */',
           'std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Task *task) override {',
           '  switch (method) {']
 for method_enum_name, method_off in methods:
-    method_name = method_enum_name.replace('k', '')
+    method_name = method_enum_name.replace('k', '', 1)
     task_name = method_name + "Task"
     lines += [f'    case Method::{method_enum_name}: {{',
               f'      ar << *reinterpret_cast<{task_name}*>(task);',
@@ -113,7 +117,7 @@ lines += ['/** Deserialize a task when returning from remote queue */',
           'void LoadEnd(u32 method, BinaryInputArchive<false> &ar, Task *task) override {',
           '  switch (method) {']
 for method_enum_name, method_off in methods:
-    method_name = method_enum_name.replace('k', '')
+    method_name = method_enum_name.replace('k', '', 1)
     task_name = method_name + "Task"
     lines += [f'    case Method::{method_enum_name}: {{',
               f'      ar >> *reinterpret_cast<{task_name}*>(task);',

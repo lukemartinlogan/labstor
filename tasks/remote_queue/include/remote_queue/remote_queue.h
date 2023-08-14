@@ -96,15 +96,15 @@ class Client {
   LABSTOR_TASK_NODE_ROOT(Custom);
 
   /** Spawn task to accept new connections */
-  HSHM_ALWAYS_INLINE
-  AcceptTask* AsyncAcceptThread() {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<AcceptTask>(
-        p, TaskNode::GetNull(), DomainId::GetLocal(), id_);
-    queue->Emplace(0, p);
-    return task;
-  }
+//  HSHM_ALWAYS_INLINE
+//  AcceptTask* AsyncAcceptThread() {
+//    hipc::Pointer p;
+//    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+//    auto *task = LABSTOR_CLIENT->NewTask<AcceptTask>(
+//        p, TaskNode::GetNull(), DomainId::GetLocal(), id_);
+//    queue->Emplace(0, p);
+//    return task;
+//  }
 };
 
 }  // namespace labstor

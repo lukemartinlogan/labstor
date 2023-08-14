@@ -3,12 +3,12 @@ kGetBlob: 1
 kTruncateBlob: 2
 kDestroyBlob: 3
 kTagBlob: 4
-kUntagBlob: 5
+#kUntagBlob: 5
 kBlobHasTag: 6
-kGetBlobTags: 7
+#kGetBlobTags: 7
 kGetBlobId: 8
 kGetBlobName: 9
-kGetBlobSize: 10
+#kGetBlobSize: 10
 kGetBlobScore: 11
 kGetBlobBuffers: 12
 kRenameBlob: 13

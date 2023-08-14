@@ -11,6 +11,7 @@
 #include "labstor/queue_manager/queue_manager_client.h"
 #include "hermes/hermes_types.h"
 #include "hermes/config_server.h"
+#include "labstor/labstor_namespace.h"
 
 namespace hermes::bdev {
 

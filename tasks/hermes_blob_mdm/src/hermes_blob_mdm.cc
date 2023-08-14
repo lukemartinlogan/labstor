@@ -46,63 +46,6 @@ class Server : public TaskLib {
  public:
   Server() = default;
 
-  void Run(MultiQueue *queue, u32 method, Task *task) override {
-    switch (method) {
-      case Method::kConstruct: {
-        Construct(queue, reinterpret_cast<ConstructTask *>(task));
-        break;
-      }
-      case Method::kDestruct: {
-        Destruct(queue, reinterpret_cast<DestructTask *>(task));
-        break;
-      }
-      case Method::kPutBlob: {
-        PutBlob(queue, reinterpret_cast<PutBlobTask *>(task));
-        break;
-      }
-      case Method::kGetBlob: {
-        GetBlob(queue, reinterpret_cast<GetBlobTask *>(task));
-        break;
-      }
-      case Method::kTagBlob: {
-        TagBlob(queue, reinterpret_cast<TagBlobTask *>(task));
-        break;
-      }
-      case Method::kBlobHasTag: {
-        BlobHasTag(queue, reinterpret_cast<BlobHasTagTask *>(task));
-        break;
-      }
-      case Method::kGetBlobId: {
-        GetBlobId(queue, reinterpret_cast<GetBlobIdTask *>(task));
-        break;
-      }
-      case Method::kGetBlobName: {
-        GetBlobName(queue, reinterpret_cast<GetBlobNameTask *>(task));
-        break;
-      }
-      case Method::kGetBlobScore: {
-        GetBlobScore(queue, reinterpret_cast<GetBlobScoreTask *>(task));
-        break;
-      }
-      case Method::kGetBlobBuffers: {
-        GetBlobBuffers(queue, reinterpret_cast<GetBlobBuffersTask *>(task));
-        break;
-      }
-      case Method::kRenameBlob: {
-        RenameBlob(queue, reinterpret_cast<RenameBlobTask *>(task));
-        break;
-      }
-      case Method::kTruncateBlob: {
-        TruncateBlob(queue, reinterpret_cast<TruncateBlobTask *>(task));
-        break;
-      }
-      case Method::kDestroyBlob: {
-        DestroyBlob(queue, reinterpret_cast<DestroyBlobTask *>(task));
-        break;
-      }
-    }
-  }
-
   void Construct(MultiQueue *queue, ConstructTask *task) {
     id_alloc_ = 0;
     node_id_ = LABSTOR_QM_CLIENT->node_id_;
@@ -531,6 +474,9 @@ class Server : public TaskLib {
     }
     return task->SetComplete();
   }
+
+ public:
+#include "hermes_blob_mdm/hermes_blob_mdm_lib_exec.h"
 };
 
 }  // namespace labstor

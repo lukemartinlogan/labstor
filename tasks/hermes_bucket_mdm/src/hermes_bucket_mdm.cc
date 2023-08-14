@@ -27,59 +27,6 @@ class Server : public TaskLib {
  public:
   Server() = default;
 
-  void Run(MultiQueue *queue, u32 method, Task *task) override {
-    switch (method) {
-      case Method::kConstruct: {
-        Construct(queue, reinterpret_cast<ConstructTask *>(task));
-        break;
-      }
-      case Method::kDestruct: {
-        Destruct(queue, reinterpret_cast<DestructTask *>(task));
-        break;
-      }
-      case Method::kPutBlob: {
-        PutBlob(queue, reinterpret_cast<PutBlobTask *>(task));
-        break;
-      }
-//      case Method::DestroyBlob: {
-//        DestroyBlob(queue, reinterpret_cast<DestroyBlobTask *>(task));
-//        break;
-//      }
-      case Method::kGetOrCreateTag: {
-        GetOrCreateTag(queue, reinterpret_cast<GetOrCreateTagTask *>(task));
-        break;
-      }
-      case Method::kGetTagId: {
-        GetTagId(queue, reinterpret_cast<GetTagIdTask *>(task));
-        break;
-      }
-      case Method::kGetTagName: {
-        GetTagName(queue, reinterpret_cast<GetTagNameTask *>(task));
-        break;
-      }
-      case Method::kRenameTag: {
-        RenameTag(queue, reinterpret_cast<RenameTagTask *>(task));
-        break;
-      }
-      case Method::kDestroyTag: {
-        DestroyTag(queue, reinterpret_cast<DestroyTagTask *>(task));
-        break;
-      }
-      case Method::kTagAddBlob: {
-        TagAddBlob(queue, reinterpret_cast<TagAddBlobTask *>(task));
-        break;
-      }
-      case Method::kTagRemoveBlob: {
-        TagRemoveBlob(queue, reinterpret_cast<TagRemoveBlobTask *>(task));
-        break;
-      }
-      case Method::kTagClearBlobs: {
-        TagClearBlobs(queue, reinterpret_cast<TagClearBlobsTask *>(task));
-        break;
-      }
-    }
-  }
-
   void Construct(MultiQueue *queue, ConstructTask *task) {
     switch (task->phase_) {
       case ConstructTaskPhase::kInit: {
@@ -256,6 +203,9 @@ class Server : public TaskLib {
     tag.blobs_.clear();
     return task->SetComplete();
   }
+
+ public:
+#include "hermes_bucket_mdm/hermes_bucket_mdm_lib_exec.h"
 };
 
 }  // namespace labstor

@@ -8,6 +8,7 @@
 #include "labstor/work_orchestrator/scheduler.h"
 #include "labstor/api/labstor_client.h"
 #include "labstor/queue_manager/queue_manager_client.h"
+#include "labstor/labstor_namespace.h"
 
 namespace labstor::Admin {
 

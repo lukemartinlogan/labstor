@@ -10,8 +10,11 @@
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/queue_manager/queue_manager_client.h"
 #include "TASK_NAME_methods.h"
+#include "labstor/labstor_namespace.h"
 
 namespace labstor::TASK_NAME {
+
+#include "TASK_NAME_tasks.h"
 
 /**
  * A task to create TASK_NAME

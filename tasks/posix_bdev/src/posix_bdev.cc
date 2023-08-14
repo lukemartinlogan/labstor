@@ -21,35 +21,6 @@ class Server : public TaskLib {
   int fd_;
 
  public:
-  void Run(MultiQueue *queue, u32 method, Task *task) override {
-    switch (method) {
-      case Method::kConstruct: {
-        Construct(queue, reinterpret_cast<ConstructTask *>(task));
-        break;
-      }
-      case Method::kDestruct: {
-        Destruct(queue, reinterpret_cast<DestructTask *>(task));
-        break;
-      }
-      case Method::kWrite: {
-        Write(queue, reinterpret_cast<WriteTask *>(task));
-        break;
-      }
-      case Method::kRead: {
-        Read(queue, reinterpret_cast<ReadTask *>(task));
-        break;
-      }
-      case Method::kAlloc: {
-        Alloc(queue, reinterpret_cast<AllocTask *>(task));
-        break;
-      }
-      case Method::kFree: {
-        Free(queue, reinterpret_cast<FreeTask *>(task));
-        break;
-      }
-    }
-  }
-
   void Construct(MultiQueue *queue, ConstructTask *task) {
     id_ = task->id_;
     DeviceInfo &dev_info = task->info_;
@@ -101,6 +72,16 @@ class Server : public TaskLib {
     }
     task->SetComplete();
   }
+
+  void Monitor(MultiQueue *queue, MonitorTask *task) {
+  }
+
+  void UpdateCapacity(MultiQueue *queue, UpdateCapacityTask *task) {
+    task->SetComplete();
+  }
+
+ public:
+#include "bdev/bdev_lib_exec.h"
 };
 
 }  // namespace labstor

@@ -28,19 +28,6 @@ class Server : public TaskLib {
  public:
   Server() = default;
 
-  void Run(MultiQueue *queue, u32 method, Task *task) override {
-    switch (method) {
-      case Method::kConstruct: {
-        Construct(queue, reinterpret_cast<ConstructTask *>(task));
-        break;
-      }
-      case Method::kDestruct: {
-        Destruct(queue, reinterpret_cast<DestructTask *>(task));
-        break;
-      }
-    }
-  }
-
   void Construct(MultiQueue *queue, ConstructTask *task) {
     HILOG(kInfo, "ConstructTaskPhase::kLoadConfig")
     std::string config_path = task->server_config_path_->str();
@@ -53,6 +40,9 @@ class Server : public TaskLib {
   void Destruct(MultiQueue *queue, DestructTask *task) {
     task->SetComplete();
   }
+
+ public:
+#include "hermes_mdm/hermes_mdm_lib_exec.h"
 };
 
 }  // namespace labstor

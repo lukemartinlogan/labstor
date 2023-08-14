@@ -16,51 +16,6 @@ class Server : public TaskLib {
  public:
   Server() : queue_sched_(nullptr), proc_sched_(nullptr) {}
 
-  void Run(MultiQueue *queue, u32 method, Task *task) override {
-    switch (method) {
-      case Method::kConstruct: {
-        break;
-      }
-      case Method::kDestruct: {
-        break;
-      }
-      case Method::kRegisterTaskLib: {
-        RegisterTaskLib(queue, reinterpret_cast<RegisterTaskLibTask *>(task));
-        break;
-      }
-      case Method::kDestroyTaskLib: {
-        DestroyTaskLib(queue, reinterpret_cast<DestroyTaskLibTask *>(task));
-        break;
-      }
-      case Method::kCreateTaskState: {
-        CreateTaskState(queue, reinterpret_cast<CreateTaskStateTask *>(task));
-        break;
-      }
-      case Method::kGetTaskStateId: {
-        GetTaskStateId(queue, reinterpret_cast<GetTaskStateIdTask *>(task));
-        break;
-      }
-      case Method::kDestroyTaskState: {
-        DestroyTaskState(queue, reinterpret_cast<DestroyTaskStateTask *>(task));
-        break;
-      }
-      case Method::kStopRuntime: {
-        StopRuntime(queue, reinterpret_cast<StopRuntimeTask *>(task));
-        break;
-      }
-      case Method::kSetWorkOrchestratorQueuePolicy: {
-        SetWorkOrchestratorQueuePolicy(queue,
-                                       reinterpret_cast<SetWorkOrchestratorQueuePolicyTask *>(task));
-        break;
-      }
-      case Method::kSetWorkOrchestratorProcessPolicy: {
-        SetWorkOrchestratorProcessPolicy(
-            queue, reinterpret_cast<SetWorkOrchestratorProcessPolicyTask *>(task));
-        break;
-      }
-    }
-  }
-
   void RegisterTaskLib(MultiQueue *queue, RegisterTaskLibTask *task) {
     std::string lib_name = task->lib_name_->str();
     LABSTOR_TASK_REGISTRY->RegisterTaskLib(lib_name);
@@ -160,6 +115,9 @@ class Server : public TaskLib {
     queue->Emplace(0, p);
     task->SetComplete();
   }
+
+ public:
+#include "labstor_admin/labstor_admin_lib_exec.h"
 };
 
 }  // namespace labstor

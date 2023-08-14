@@ -5,8 +5,8 @@ kRenameTag: 3
 kDestroyTag: 4
 kTagAddBlob: 5
 kTagRemoveBlob: 6
-kTagGroupBy: 7
-kTagAddTrait: 8
-kTagRemoveTrait: 9
+# kTagGroupBy: 7
+# kTagAddTrait: 8
+# kTagRemoveTrait: 9
 kTagClearBlobs: 10
 kPutBlob: 11

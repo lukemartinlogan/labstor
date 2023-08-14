@@ -1,15 +1,17 @@
-//
-// Created by lukemartinlogan on 8/14/23.
-//
+#ifndef LABSTOR_REMOTE_QUEUE_METHODS_H_
+#define LABSTOR_REMOTE_QUEUE_METHODS_H_
 
-#ifndef LABSTOR_TASKS_REMOTE_QUEUE_INCLUDE_REMOTE_QUEUE_REMOTE_QUEUE_METHODS_H_
-#define LABSTOR_TASKS_REMOTE_QUEUE_INCLUDE_REMOTE_QUEUE_REMOTE_QUEUE_METHODS_H_
+using labstor::TaskMethod;
+using labstor::BinaryOutputArchive;
+using labstor::BinaryInputArchive;
+using labstor::Task;
 
-/** The set of methods in the remote_queue task */
+/** The set of methods in the admin task */
 struct Method : public TaskMethod {
-  TASK_METHOD_T kDisperse = TaskMethod::kLast;
-  TASK_METHOD_T kPush = TaskMethod::kLast + 1;
-  TASK_METHOD_T kAccept = TaskMethod::kLast + 2;
+  TASK_METHOD_T kConstruct = kLast + -2;
+  TASK_METHOD_T kDestruct = kLast + -1;
+  TASK_METHOD_T kDisperse = kLast + 0;
+  TASK_METHOD_T kPush = kLast + 1;
 };
 
-#endif  // LABSTOR_TASKS_REMOTE_QUEUE_INCLUDE_REMOTE_QUEUE_REMOTE_QUEUE_METHODS_H_
+#endif  // LABSTOR_REMOTE_QUEUE_METHODS_H_

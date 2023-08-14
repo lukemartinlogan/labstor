@@ -4,4 +4,4 @@ kAlloc: 2
 kFree: 3
 kMonitor: 4
 kUpdateCapacity: 5
-kBdevLast: 6
+kLast: 6

@@ -10,8 +10,11 @@
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/queue_manager/queue_manager_client.h"
 #include "small_message_methods.h"
+#include "labstor/labstor_namespace.h"
 
 namespace labstor::small_message {
+
+#include "small_message_tasks.h"
 
 /**
  * A task to create small_message

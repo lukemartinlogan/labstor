@@ -13,12 +13,9 @@
 #include "bdev/bdev.h"
 #include "hermes_blob_mdm/hermes_blob_mdm.h"
 #include "labstor/api/labstor_client.h"
+#include "labstor/labstor_namespace.h"
 
 namespace hermes::bucket_mdm {
-
-using labstor::Task;
-using labstor::SrlFlags;
-using labstor::DataTransfer;
 
 #include "hermes_bucket_mdm_methods.h"
 
