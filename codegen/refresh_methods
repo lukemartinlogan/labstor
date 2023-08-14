@@ -1,0 +1,5 @@
+#!/usr/bin/env python3
+
+"""
+USAGE: ./make_task [TASK_NAME (snake case)]
+"""

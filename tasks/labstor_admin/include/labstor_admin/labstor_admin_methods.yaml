@@ -1,0 +1,8 @@
+kRegisterTaskLib: 0
+kDestroyTaskLib: 1
+kCreateTaskState: 2
+kGetTaskStateId: 3
+kDestroyTaskState: 4
+kStopRuntime: 5
+kSetWorkOrchestratorQueuePolicy: 6
+kSetWorkOrchestratorProcessPolicy: 7

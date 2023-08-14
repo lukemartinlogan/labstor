@@ -9,13 +9,9 @@
 #include "labstor/task_registry/task_lib.h"
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/queue_manager/queue_manager_client.h"
+#include "TASK_NAME_methods.h"
 
 namespace labstor::TASK_NAME {
-
-/** The set of methods in the TASK_NAME task */
-struct Method : public TaskMethod {
-  TASK_METHOD_T kCustom = TaskMethod::kLast;
-};
 
 /**
  * A task to create TASK_NAME

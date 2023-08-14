@@ -52,7 +52,7 @@ class Server : public TaskLib {
 
   void Construct(MultiQueue *queue, ConstructTask *task) {
     id_ = task->id_;
-    DeviceInfo &dev_info = *task->info_;
+    DeviceInfo &dev_info = task->info_;
     alloc_.Init(id_, dev_info.capacity_, dev_info.slab_sizes_);
     std::string text = dev_info.mount_dir_ +
         "/" + "slab_" + dev_info.dev_name_;

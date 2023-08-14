@@ -12,6 +12,7 @@
 #include "hermes/hermes_types.h"
 #include "bdev/bdev.h"
 #include "hermes_blob_mdm/hermes_blob_mdm.h"
+#include "labstor/api/labstor_client.h"
 
 namespace hermes::bucket_mdm {
 
@@ -19,21 +20,7 @@ using labstor::Task;
 using labstor::SrlFlags;
 using labstor::DataTransfer;
 
-/** The set of methods in the hermes_bucket_mdm task */
-struct Method : public TaskMethod {
-  TASK_METHOD_T kGetOrCreateTag = TaskMethod::kLast + 0;
-  TASK_METHOD_T kGetTagId = TaskMethod::kLast + 1;
-  TASK_METHOD_T kGetTagName = TaskMethod::kLast + 2;
-  TASK_METHOD_T kRenameTag = TaskMethod::kLast + 3;
-  TASK_METHOD_T kDestroyTag = TaskMethod::kLast + 4;
-  TASK_METHOD_T kTagAddBlob = TaskMethod::kLast + 5;
-  TASK_METHOD_T kTagRemoveBlob = TaskMethod::kLast + 6;
-  TASK_METHOD_T kTagGroupBy = TaskMethod::kLast + 7;
-  TASK_METHOD_T kTagAddTrait = TaskMethod::kLast + 8;
-  TASK_METHOD_T kTagRemoveTrait = TaskMethod::kLast + 9;
-  TASK_METHOD_T kTagClearBlobs = TaskMethod::kLast + 10;
-  TASK_METHOD_T kPutBlob = TaskMethod::kLast + 11;
-};
+#include "hermes_bucket_mdm_methods.h"
 
 /** Phases of the construct task */
 using labstor::Admin::CreateTaskStatePhase;

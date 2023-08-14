@@ -11,17 +11,7 @@
 
 namespace labstor::Admin {
 
-/** The set of methods in the admin task */
-struct Method : public TaskMethod {
-  TASK_METHOD_T kRegisterTaskLib = TaskMethod::kLast + 0;
-  TASK_METHOD_T kDestroyTaskLib = TaskMethod::kLast + 1;
-  TASK_METHOD_T kCreateTaskState = TaskMethod::kLast + 2;
-  TASK_METHOD_T kGetTaskStateId = TaskMethod::kLast + 3;
-  TASK_METHOD_T kDestroyTaskState = TaskMethod::kLast + 4;
-  TASK_METHOD_T kStopRuntime = TaskMethod::kLast + 5;
-  TASK_METHOD_T kSetWorkOrchestratorQueuePolicy = TaskMethod::kLast + 6;
-  TASK_METHOD_T kSetWorkOrchestratorProcessPolicy = TaskMethod::kLast + 7;
-};
+#include "labstor_admin_methods.h"
 
 /** A template to register or destroy a task library */
 template<int method>

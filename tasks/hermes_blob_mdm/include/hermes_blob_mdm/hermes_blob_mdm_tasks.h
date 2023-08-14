@@ -11,31 +11,15 @@
 #include "labstor/queue_manager/queue_manager_client.h"
 #include "hermes/hermes_types.h"
 #include "bdev/bdev.h"
+#include "labstor/api/labstor_client.h"
 
 namespace hermes::blob_mdm {
+
+#include "hermes_blob_mdm_methods.h"
 
 using labstor::Task;
 using labstor::SrlFlags;
 using labstor::DataTransfer;
-
-/** The set of methods in the hermes_blob_mdm task */
-struct Method : public TaskMethod {
-  TASK_METHOD_T kPutBlob = TaskMethod::kLast + 0;
-  TASK_METHOD_T kGetBlob = TaskMethod::kLast + 1;
-  TASK_METHOD_T kTruncateBlob = TaskMethod::kLast + 2;
-  TASK_METHOD_T kDestroyBlob = TaskMethod::kLast + 3;
-  TASK_METHOD_T kTagBlob = TaskMethod::kLast + 4;
-  TASK_METHOD_T kUntagBlob = TaskMethod::kLast + 5;
-  TASK_METHOD_T kBlobHasTag = TaskMethod::kLast + 6;
-  TASK_METHOD_T kGetBlobTags = TaskMethod::kLast + 7;
-  TASK_METHOD_T kGetBlobId = TaskMethod::kLast + 8;
-  TASK_METHOD_T kGetBlobName = TaskMethod::kLast + 9;
-  TASK_METHOD_T kGetBlobSize = TaskMethod::kLast + 10;
-  TASK_METHOD_T kGetBlobScore = TaskMethod::kLast + 11;
-  TASK_METHOD_T kGetBlobBuffers = TaskMethod::kLast + 12;
-  TASK_METHOD_T kRenameBlob = TaskMethod::kLast + 13;
-};
-
 
 /** Phases of the construct task */
 using labstor::Admin::CreateTaskStatePhase;
