@@ -14,6 +14,10 @@
 
 namespace hermes::mdm {
 
+using labstor::Task;
+using labstor::SrlFlags;
+using labstor::DataTransfer;
+
 /** The set of methods in the admin task */
 struct Method : public TaskMethod {
   TASK_METHOD_T kGetOrCreateTag = TaskMethod::kLast + 0;
@@ -78,10 +82,22 @@ struct ConstructTask : public CreateTaskStateTask {
     HSHM_MAKE_AR(server_config_path_, alloc, server_config_path);
   }
 
+  /** Destructor */
   HSHM_ALWAYS_INLINE
   ~ConstructTask() {
     HSHM_DESTROY_AR(server_config_path_);
   }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    CreateTaskStateTask::SerializeStart(ar);
+    ar(server_config_path_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {}
 };
 
 /** A task to destroy hermes_mdm */
@@ -101,7 +117,7 @@ struct DestructTask : public DestroyTaskStateTask {
  * ===================================*/
 
 /** A task to get or create a tag */
-struct GetOrCreateTagTask : public Task {
+struct GetOrCreateTagTask : public Task, SrlFlags<true, true> {
   IN hipc::ShmArchive<hipc::string> tag_name_;
   IN bool blob_owner_;
   IN hipc::ShmArchive<hipc::vector<TraitId>> traits_;
@@ -131,14 +147,26 @@ struct GetOrCreateTagTask : public Task {
     HSHM_MAKE_AR(traits_, LABSTOR_CLIENT->main_alloc_, traits)
   }
 
+  /** Destructor */
   ~GetOrCreateTagTask() {
     HSHM_DESTROY_AR(tag_name_)
     HSHM_DESTROY_AR(traits_)
   }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(tag_name_, blob_owner_, traits_, backend_size_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {}
 };
 
 /** A task to get a tag id */
-struct GetTagIdTask : public Task {
+struct GetTagIdTask : public Task, SrlFlags<true, true> {
   IN hipc::ShmArchive<hipc::string> tag_name_;
   OUT TagId tag_id_;
 
@@ -161,13 +189,27 @@ struct GetTagIdTask : public Task {
     HSHM_MAKE_AR(tag_name_, LABSTOR_CLIENT->main_alloc_, tag_name)
   }
 
+  /** Destructor */
   ~GetTagIdTask() {
     HSHM_DESTROY_AR(tag_name_)
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(tag_name_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(tag_id_);
   }
 };
 
 /** A task to get a tag name */
-struct GetTagNameTask : public Task {
+struct GetTagNameTask : public Task, SrlFlags<true, true> {
   IN TagId tag_id_;
   OUT hipc::ShmArchive<hipc::string> tag_name_;
 
@@ -190,13 +232,27 @@ struct GetTagNameTask : public Task {
     tag_id_ = tag_id;
   }
 
+  /** Destructor */
   ~GetTagNameTask() {
     HSHM_DESTROY_AR(tag_name_)
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(tag_id_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(tag_name_);
   }
 };
 
 /** A task to rename a tag */
-struct RenameTagTask : public Task {
+struct RenameTagTask : public Task, SrlFlags<true, true> {
   IN TagId tag_id_;
   IN hipc::ShmArchive<hipc::string> tag_name_;
 
@@ -221,13 +277,26 @@ struct RenameTagTask : public Task {
     HSHM_MAKE_AR(tag_name_, LABSTOR_CLIENT->main_alloc_, tag_name)
   }
 
+  /** Destructor */
   ~RenameTagTask() {
     HSHM_DESTROY_AR(tag_name_)
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(tag_id_, tag_name_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
   }
 };
 
 /** A task to destroy a tag */
-struct DestroyTagTask : public Task {
+struct DestroyTagTask : public Task, SrlFlags<true, true> {
   IN TagId tag_id_;
 
   /** Emplace constructor */
@@ -248,12 +317,24 @@ struct DestroyTagTask : public Task {
     // Custom params
     tag_id_ = tag_id;
   }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(tag_id_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+  }
 };
 
 /** A task to add a blob to the tag */
-struct TagAddBlobTask : public Task {
+struct TagAddBlobTask : public Task, SrlFlags<true, true> {
   IN TagId tag_id_;
-  BlobId blob_id_;
+  IN BlobId blob_id_;
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -275,12 +356,24 @@ struct TagAddBlobTask : public Task {
     tag_id_ = tag_id;
     blob_id_ = blob_id;
   }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(tag_id_, blob_id_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+  }
 };
 
 /** A task to remove a blob from a tag */
-struct TagRemoveBlobTask : public Task {
+struct TagRemoveBlobTask : public Task, SrlFlags<true, true> {
   IN TagId tag_id_;
-  BlobId blob_id_;
+  IN BlobId blob_id_;
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -302,19 +395,31 @@ struct TagRemoveBlobTask : public Task {
     tag_id_ = tag_id;
     blob_id_ = blob_id;
   }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(tag_id_, blob_id_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+  }
 };
 
 /** A task to get the group of blobs associated with a tag */
-struct TagGroupByTask : public Task {};
+struct TagGroupByTask : public Task, SrlFlags<true, true> {};
 
 /** A task to associate a tag with a trait */
-struct TagAddTraitTask : public Task {};
+struct TagAddTraitTask : public Task, SrlFlags<true, true> {};
 
 /** A task to remove a trait from a tag */
-struct TagRemoveTraitTask : public Task {};
+struct TagRemoveTraitTask : public Task, SrlFlags<true, true> {};
 
 /** A task to destroy all blobs in the tag */
-struct TagClearBlobsTask : public Task {
+struct TagClearBlobsTask : public Task, SrlFlags<true, true> {
   IN TagId tag_id_;
 
   /** Emplace constructor */
@@ -335,6 +440,18 @@ struct TagClearBlobsTask : public Task {
     // Custom params
     tag_id_ = tag_id;
   }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(tag_id_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+  }
 };
 
 /**====================================
@@ -352,7 +469,7 @@ class PutBlobPhase {
 };
 
 /** A task to put data in a blob */
-struct PutBlobTask : public Task {
+struct PutBlobTask : public Task, SrlFlags<true, true> {
   IN TagId tag_id_;
   IN hipc::ShmArchive<hipc::charbuf> blob_name_;
   IN size_t blob_off_;
@@ -404,9 +521,23 @@ struct PutBlobTask : public Task {
     plcmnt_idx_ = 0;
   }
 
+  /** Destructor */
   ~PutBlobTask() {
     HSHM_DESTROY_AR(blob_name_);
     LABSTOR_CLIENT->FreeBuffer(data_);
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(tag_id_, blob_name_, blob_id_, blob_off_, data_size_, data_, score_, replace_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(blob_id_, did_create_);
   }
 };
 
@@ -418,13 +549,13 @@ class GetBlobPhase {
 };
 
 /** A task to get data from a blob */
-struct GetBlobTask : public Task {
+struct GetBlobTask : public Task, SrlFlags<true, true> {
   IN BlobId blob_id_;
   IN size_t blob_off_;
   INOUT ssize_t data_size_;
-  OUT int phase_;
-  OUT hipc::ShmArchive<std::vector<bdev::ReadTask *>> bdev_reads_;
   OUT hipc::Pointer data_;
+  TEMP int phase_;
+  TEMP hipc::ShmArchive<std::vector<bdev::ReadTask *>> bdev_reads_;
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -449,10 +580,24 @@ struct GetBlobTask : public Task {
     blob_off_ = off;
     data_size_ = size;
   }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    // TODO(llogan): make it so that blob gets take as input a buffer
+    task_serialize<Ar>(ar);
+    ar(blob_id_, blob_off_, data_size_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(data_);
+  }
 };
 
 /** A task to tag a blob */
-struct TagBlobTask : public Task {
+struct TagBlobTask : public Task, SrlFlags<true, true> {
   IN BlobId blob_id_;
   IN TagId tag_;
 
@@ -476,12 +621,24 @@ struct TagBlobTask : public Task {
     blob_id_ = blob_id;
     tag_ = tag;
   }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(blob_id_, tag_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+  }
 };
 
 /**
  * Check if blob has a tag
  * */
-struct BlobHasTagTask : public Task {
+struct BlobHasTagTask : public Task, SrlFlags<true, true> {
   IN BlobId blob_id_;
   IN TagId tag_;
   OUT bool has_tag_;
@@ -507,12 +664,25 @@ struct BlobHasTagTask : public Task {
     blob_id_ = blob_id;
     tag_ = tag;
   }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(blob_id_, tag_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(has_tag_);
+  }
 };
 
 /**
  * Get \a blob_name BLOB from \a bkt_id bucket
  * */
-struct GetBlobIdTask : public Task {
+struct GetBlobIdTask : public Task, SrlFlags<true, true> {
   IN TagId tag_id_;
   IN hipc::ShmArchive<hipc::charbuf> blob_name_;
   OUT BlobId blob_id_;
@@ -538,15 +708,29 @@ struct GetBlobIdTask : public Task {
     HSHM_MAKE_AR(blob_name_, LABSTOR_CLIENT->main_alloc_, blob_name)
   }
 
+  /** Destructor */
   ~GetBlobIdTask() {
     HSHM_DESTROY_AR(blob_name_)
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(tag_id_, blob_name_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(blob_id_);
   }
 };
 
 /**
  * Get \a blob_name BLOB name from \a blob_id BLOB id
  * */
-struct GetBlobNameTask : public Task {
+struct GetBlobNameTask : public Task, SrlFlags<true, true> {
   IN BlobId blob_id_;
   OUT hipc::ShmArchive<hipc::string> blob_name_;
 
@@ -570,13 +754,27 @@ struct GetBlobNameTask : public Task {
     HSHM_MAKE_AR0(blob_name_, LABSTOR_CLIENT->main_alloc_)
   }
 
+  /** Destructor */
   ~GetBlobNameTask() {
     HSHM_DESTROY_AR(blob_name_)
   };
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(blob_id_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(blob_name_);
+  }
 };
 
 /** Get \a score from \a blob_id BLOB id */
-struct GetBlobScoreTask : public Task {
+struct GetBlobScoreTask : public Task, SrlFlags<true, true> {
   IN BlobId blob_id_;
   OUT float score_;
 
@@ -598,10 +796,23 @@ struct GetBlobScoreTask : public Task {
     // Custom
     blob_id_ = blob_id;
   }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(blob_id_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(score_);
+  }
 };
 
 /** Get \a blob_id blob's buffers */
-struct GetBlobBuffersTask : public Task {
+struct GetBlobBuffersTask : public Task, SrlFlags<true, true> {
   IN BlobId blob_id_;
   OUT hipc::ShmArchive<hipc::vector<BufferInfo>> buffers_;
 
@@ -625,8 +836,22 @@ struct GetBlobBuffersTask : public Task {
     HSHM_MAKE_AR0(buffers_, LABSTOR_CLIENT->main_alloc_)
   }
 
+  /** Destructor */
   ~GetBlobBuffersTask() {
     HSHM_DESTROY_AR(buffers_)
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(blob_id_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(buffers_);
   }
 };
 
@@ -634,7 +859,7 @@ struct GetBlobBuffersTask : public Task {
  * Rename \a blob_id blob to \a new_blob_name new blob name
  * in \a bkt_id bucket.
  * */
-struct RenameBlobTask : public Task {
+struct RenameBlobTask : public Task, SrlFlags<true, true> {
   IN BlobId blob_id_;
   IN hipc::ShmArchive<hipc::charbuf> new_blob_name_;
 
@@ -659,13 +884,27 @@ struct RenameBlobTask : public Task {
     HSHM_MAKE_AR(new_blob_name_, LABSTOR_CLIENT->main_alloc_, new_blob_name)
   }
 
+  /** Destructor */
   ~RenameBlobTask() {
     HSHM_DESTROY_AR(new_blob_name_)
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(blob_id_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(new_blob_name_);
   }
 };
 
 /** A task to truncate a blob */
-struct TruncateBlobTask : public Task {
+struct TruncateBlobTask : public Task, SrlFlags<true, true> {
   BlobId blob_id_;
   IN u64 size_;
 
@@ -689,6 +928,19 @@ struct TruncateBlobTask : public Task {
     blob_id_ = blob_id;
     size_ = size;
   }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(blob_id_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(size_);
+  }
 };
 
 /** Phases of the destroy blob task */
@@ -698,7 +950,7 @@ struct DestroyBlobPhase {
 };
 
 /** A task to destroy a blob */
-struct DestroyBlobTask : public Task {
+struct DestroyBlobTask : public Task, SrlFlags<true, true> {
   IN BlobId blob_id_;
   TEMP int phase_;
   TEMP hipc::ShmArchive<std::vector<bdev::FreeTask *>> free_tasks_;
@@ -722,6 +974,18 @@ struct DestroyBlobTask : public Task {
     // Custom params
     blob_id_ = blob_id;
     phase_ = DestroyBlobPhase::kFreeBuffers;
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(blob_id_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
   }
 };
 
