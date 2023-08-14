@@ -48,20 +48,37 @@ class Client {
   }
   LABSTOR_TASK_NODE_ROOT(Destroy);
 
-  /** Custom task */
-  int Custom(const TaskNode &task_node,
-             const DomainId &domain_id) {
+  /** Metadata task */
+  int Md(const TaskNode &task_node,
+         const DomainId &domain_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<CustomTask>(
+    auto *task = LABSTOR_CLIENT->NewTask<MdTask>(
         p,
         task_node, domain_id, id_);
     queue->Emplace(3, p);
     task->Wait();
     int ret = task->ret_;
+    LABSTOR_CLIENT->DelTask(task);
     return ret;
   }
-  LABSTOR_TASK_NODE_ROOT(Custom);
+  LABSTOR_TASK_NODE_ROOT(Md);
+
+  /** Io task */
+  int Io(const TaskNode &task_node,
+         const DomainId &domain_id) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    auto *task = LABSTOR_CLIENT->NewTask<IoTask>(
+        p,
+        task_node, domain_id, id_);
+    queue->Emplace(3, p);
+    task->Wait();
+    int ret = task->ret_;
+    LABSTOR_CLIENT->DelTask(task);
+    return ret;
+  }
+  LABSTOR_TASK_NODE_ROOT(Io);
 };
 
 }  // namespace labstor

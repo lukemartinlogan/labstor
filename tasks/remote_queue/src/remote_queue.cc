@@ -32,10 +32,10 @@ class Server : public TaskLib {
       this->RpcPushSmall(req, state_id, method, params);
     });
     LABSTOR_THALLIUM->RegisterRpc("RpcPushBulk", [this](const tl::request &req,
+                                                        tl::bulk &bulk,
                                                         TaskStateId state_id,
                                                         u32 method,
                                                         std::string &params,
-                                                        tl::bulk &bulk,
                                                         size_t data_size,
                                                         IoType io_type) {
       this->RpcPushBulk(req, state_id, method, params, bulk, data_size, io_type);
@@ -77,7 +77,9 @@ class Server : public TaskLib {
                                                         xfer[0].data_size_,
                                                         task->exec_->id_,
                                                         task->exec_method_,
-                                                        params);
+                                                        params,
+                                                        xfer[0].data_size_,
+                                                        io_type);
             HSHM_MAKE_AR(task->tl_future_, nullptr, std::move(future));
             break;
           }
@@ -96,11 +98,11 @@ class Server : public TaskLib {
           BinaryInputArchive<false> ar(xfer);
           task->exec_->LoadEnd(task->method_, ar, task);
           task->SetComplete();
+        } else {
+          return;
         }
-        break;
       }
     }
-    task->SetComplete();
   }
 
   /** Disperse operation called on client */
@@ -182,6 +184,7 @@ class Server : public TaskLib {
       task->Wait<1>();
       BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
       auto out_xfer = exec->SaveEnd(task->method_, ar, task);
+      LABSTOR_CLIENT->DelTask(task);
       req.respond(std::string((char *) out_xfer[0].data_, out_xfer[0].data_size_));
     } else {
       req.respond(std::string());

@@ -21,8 +21,19 @@ class Server : public TaskLib {
     task->SetComplete();
   }
 
-  void Custom(MultiQueue *queue, CustomTask *task) {
+  void Md(MultiQueue *queue, MdTask *task) {
     task->ret_ = count_++;
+    task->SetComplete();
+  }
+
+  void Io(MultiQueue *queue, IoTask *task) {
+    task->ret_ = 1;
+    for (int i = 0; i < 256; ++i) {
+      if (task->data_[i] != 10) {
+        task->ret_ = 0;
+        break;
+      }
+    }
     task->SetComplete();
   }
 
@@ -38,8 +49,12 @@ class Server : public TaskLib {
         Destruct(queue, reinterpret_cast<DestructTask *>(task));
         break;
       }
-      case Method::kCustom: {
-        Custom(queue, reinterpret_cast<CustomTask *>(task));
+      case Method::kMd: {
+        Md(queue, reinterpret_cast<MdTask *>(task));
+        break;
+      }
+      case Method::kIo: {
+        Io(queue, reinterpret_cast<IoTask *>(task));
         break;
       }
     }
@@ -56,8 +71,12 @@ class Server : public TaskLib {
         ar << *reinterpret_cast<DestructTask*>(task);
         break;
       }
-      case Method::kCustom: {
-        ar << *reinterpret_cast<CustomTask*>(task);
+      case Method::kMd: {
+        ar << *reinterpret_cast<MdTask*>(task);
+        break;
+      }
+      case Method::kIo: {
+        ar << *reinterpret_cast<IoTask*>(task);
         break;
       }
     }
@@ -78,9 +97,14 @@ class Server : public TaskLib {
         ar >> *reinterpret_cast<DestructTask*>(task_ptr.task_);
         break;
       }
-      case Method::kCustom: {
-        task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<CustomTask>(task_ptr.p_);
-        ar >> *reinterpret_cast<CustomTask*>(task_ptr.task_);
+      case Method::kMd: {
+        task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<MdTask>(task_ptr.p_);
+        ar >> *reinterpret_cast<MdTask*>(task_ptr.task_);
+        break;
+      }
+      case Method::kIo: {
+        task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<IoTask>(task_ptr.p_);
+        ar >> *reinterpret_cast<IoTask*>(task_ptr.task_);
         break;
       }
     }
@@ -88,7 +112,7 @@ class Server : public TaskLib {
   }
 
   /** Serialize a task when returning from remote queue */
-  virtual std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Task *task) override {
+  std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Task *task) override {
     switch (method) {
       case Method::kConstruct: {
         ar << *reinterpret_cast<ConstructTask*>(task);
@@ -98,8 +122,12 @@ class Server : public TaskLib {
         ar << *reinterpret_cast<DestructTask*>(task);
         break;
       }
-      case Method::kCustom: {
-        ar << *reinterpret_cast<CustomTask*>(task);
+      case Method::kMd: {
+        ar << *reinterpret_cast<MdTask*>(task);
+        break;
+      }
+      case Method::kIo: {
+        ar << *reinterpret_cast<IoTask*>(task);
         break;
       }
     }
@@ -117,8 +145,12 @@ class Server : public TaskLib {
         ar >> *reinterpret_cast<DestructTask*>(task);
         break;
       }
-      case Method::kCustom: {
-        ar >> *reinterpret_cast<CustomTask*>(task);
+      case Method::kMd: {
+        ar >> *reinterpret_cast<MdTask*>(task);
+        break;
+      }
+      case Method::kIo: {
+        ar >> *reinterpret_cast<IoTask*>(task);
         break;
       }
     }

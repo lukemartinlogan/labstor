@@ -64,12 +64,13 @@ class ThalliumRpc {
     client_engine_ = std::make_unique<tl::engine>(protocol,
                                                   THALLIUM_CLIENT_MODE,
                                                   true, 1);
-    HILOG(kInfo, "This client is on node {} (i.e., {})",
-          rpc->node_id_, rpc->GetHostNameFromNodeId(DomainId::GetNode(rpc->node_id_)));
+    HILOG(kInfo, "This client is on node {} (i.e., {}, proto: {})",
+          rpc->node_id_, rpc->GetHostNameFromNodeId(DomainId::GetNode(rpc->node_id_)), protocol);
   }
 
   /** Run the daemon */
   void RunDaemon() {
+    HILOG(kInfo, "Starting the daemon on node: {}", rpc_->node_id_);
     server_engine_->enable_remote_shutdown();
     auto prefinalize_callback = [this]() {
       HILOG(kInfo, "Finalizing RPCs on node: {}", rpc_->node_id_);

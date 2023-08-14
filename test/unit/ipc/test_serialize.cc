@@ -11,8 +11,9 @@ using labstor::BinaryOutputArchive;
 using labstor::BinaryInputArchive;
 using labstor::DataTransfer;
 using labstor::Task;
+using labstor::SrlFlags;
 
-struct TestObj : public Task {
+struct TestObj : public Task, SrlFlags<true, true> {
   std::vector <char> data_;
   DataTransfer xfer1_;
   DataTransfer xfer2_;

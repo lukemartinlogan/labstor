@@ -68,7 +68,7 @@ struct DestructTask : public DestroyTaskStateTask {
 /**
  * A custom task in TASK_NAME
  * */
-struct CustomTask : public Task {
+struct CustomTask : public Task, SrlFlags<true, true> {
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
   CustomTask(hipc::Allocator *alloc) : Task(alloc) {}

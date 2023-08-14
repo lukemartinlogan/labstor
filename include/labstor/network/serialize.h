@@ -13,6 +13,20 @@ namespace labstor {
 
 class Task;
 
+/**
+ * Used for SFINAE to identify serialization parameters
+ * WITH_SRL_START: true -> has SerializeStart function
+ * WITH_SRL_END: true -> has SerializeEnd function
+ * */
+template<bool WITH_SRL_START, bool WITH_SRL_END>
+class SrlFlags {};
+#define USES_SRL_START(T) \
+  std::is_base_of_v<SrlFlags<true, true>, T> || \
+  std::is_base_of_v<SrlFlags<true, false>, T>
+#define USES_SRL_END(T) \
+  std::is_base_of_v<SrlFlags<true, true>, T> || \
+  std::is_base_of_v<SrlFlags<false, true>, T>
+
 /** Receiver will read from data_ */
 #define DT_RECEIVER_READ BIT_OPT(u32, 0)
 
@@ -139,16 +153,16 @@ class BinaryOutputArchive {
   template<typename T, typename ...Args>
   BinaryOutputArchive& Serialize(T &var, Args&& ...args) {
     if constexpr (std::is_base_of<Task, T>::value) {
-      if constexpr (is_start) {
-        if constexpr (std::is_same_v<decltype(var.SerializeStart(*this)), void>) {
+      if constexpr(is_start) {
+        if constexpr (USES_SRL_START(T)) {
           var.SerializeStart(*this);
-        } else if constexpr (std::is_same_v<decltype(var.SaveStart(*this)), void>) {
+        } else {
           var.SaveStart(*this);
         }
       } else {
-        if constexpr (std::is_same_v<decltype(var.SerializeEnd(*this)), void>) {
+        if constexpr (USES_SRL_END(T)) {
           var.SerializeEnd(*this);
-        } else if constexpr (std::is_same_v<decltype(var.SaveEnd(*this)), void>) {
+        } else {
           var.SaveEnd(*this);
         }
       }
@@ -228,23 +242,23 @@ class BinaryInputArchive {
   /** Serialize a parameter */
   template<typename T, typename ...Args>
   BinaryInputArchive& Deserialize(T &var, Args&& ...args) {
-    if constexpr (std::is_same_v<T, DataTransfer>) {
-      var = xfer_[xfer_off_++];
-    } else if constexpr (std::is_base_of<Task, T>::value) {
-      if constexpr (is_start) {
-        if constexpr (std::is_same_v<decltype(var.SerializeStart(*this)), void>) {
+    if constexpr (std::is_base_of<Task, T>::value) {
+      if constexpr(is_start) {
+        if constexpr (USES_SRL_START(T)) {
           var.SerializeStart(*this);
-        } else if constexpr (std::is_same_v<decltype(var.LoadStart(*this)), void>) {
+        } else {
           var.LoadStart(*this);
         }
       } else {
-        if constexpr (std::is_same_v<decltype(var.SerializeEnd(*this)), void>) {
+        if constexpr (USES_SRL_END(T)) {
           var.SerializeEnd(*this);
-        } else if constexpr (std::is_same_v<decltype(var.LoadEnd(*this)), void>) {
+        } else {
           var.LoadEnd(*this);
         }
       }
-    } else {
+    } else if constexpr (std::is_same_v<T, DataTransfer>) {
+      var = xfer_[xfer_off_++];
+    }  else {
       ar_ >> var;
     }
     return Deserialize(std::forward<Args>(args)...);

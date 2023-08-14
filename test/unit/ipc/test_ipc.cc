@@ -22,8 +22,11 @@ TEST_CASE("TestIpc") {
   t.Resume();
   size_t ops = 1;
   for (size_t i = 0; i < ops; ++i) {
+    int ret;
     HILOG(kInfo, "Sending message {}", i);
-    client.CustomRoot(labstor::DomainId::GetNode(1));
+    // client.MdRoot(labstor::DomainId::GetNode(1));
+    ret = client.IoRoot(labstor::DomainId::GetNode(1));
+    // REQUIRE(ret == 1);
   }
   t.Pause();
 

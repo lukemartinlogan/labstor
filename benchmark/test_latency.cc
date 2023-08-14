@@ -226,7 +226,7 @@ TEST_CASE("TestRoundTripLatency") {
   t.Resume();
   size_t ops = (1 << 20);
   for (size_t i = 0; i < ops; ++i) {
-    client.CustomRoot(labstor::DomainId::GetLocal());
+    client.MdRoot(labstor::DomainId::GetLocal());
   }
   t.Pause();
 

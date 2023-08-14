@@ -14,7 +14,8 @@ namespace labstor::small_message {
 
 /** The set of methods in the admin task */
 struct Method : public TaskMethod {
-  TASK_METHOD_T kCustom = TaskMethod::kLast;
+  TASK_METHOD_T kMd = TaskMethod::kLast;
+  TASK_METHOD_T kIo = TaskMethod::kLast + 1;
 };
 
 /**
@@ -60,24 +61,24 @@ struct DestructTask : public DestroyTaskStateTask {
 /**
  * A custom task in small_message
  * */
-struct CustomTask : public Task {
+struct MdTask : public Task, SrlFlags<true, true> {
   OUT int ret_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
-  CustomTask(hipc::Allocator *alloc) : Task(alloc) {}
+  MdTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE
-  CustomTask(hipc::Allocator *alloc,
-             const TaskNode &task_node,
-             const DomainId &domain_id,
-             TaskStateId &state_id) : Task(alloc) {
+  MdTask(hipc::Allocator *alloc,
+         const TaskNode &task_node,
+         const DomainId &domain_id,
+         TaskStateId &state_id) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
     task_state_ = state_id;
-    method_ = Method::kCustom;
+    method_ = Method::kMd;
     task_flags_.SetBits(0);
     domain_id_ = domain_id;
 
@@ -88,6 +89,59 @@ struct CustomTask : public Task {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(Ar &ar) {
+    ar(ret_);
+  }
+};
+
+/**
+ * A custom task in small_message
+ * */
+struct IoTask : public Task, SrlFlags<false, true> {
+  IN char data_[256];
+  OUT int ret_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  IoTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE
+  IoTask(hipc::Allocator *alloc,
+         const TaskNode &task_node,
+         const DomainId &domain_id,
+         TaskStateId &state_id) : Task(alloc) {
+    // Initialize task
+    task_node_ = task_node;
+    lane_hash_ = 0;
+    task_state_ = state_id;
+    method_ = Method::kIo;
+    task_flags_.SetBits(0);
+    domain_id_ = domain_id;
+
+    // Custom params
+    memset(data_, 10, 256);
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SaveStart(Ar &ar) {
+    DataTransfer xfer(DT_RECEIVER_READ, data_, 256, domain_id_);
+    task_serialize<Ar>(ar);
+    ar & xfer;
+  }
+
+  /** Deserialize message call */
+  template<typename Ar>
+  void LoadStart(Ar &ar) {
+    DataTransfer xfer;
+    task_serialize<Ar>(ar);
+    ar & xfer;
+    memcpy(data_, xfer.data_, xfer.data_size_);
   }
 
   /** (De)serialize message return */
