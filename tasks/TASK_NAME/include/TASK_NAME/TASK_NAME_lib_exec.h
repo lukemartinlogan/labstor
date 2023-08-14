@@ -1,6 +1,5 @@
-//
-// Created by lukemartinlogan on 8/14/23.
-//
+#ifndef LABSTOR_TASK_NAME_LIB_EXEC_H_
+#define LABSTOR_TASK_NAME_LIB_EXEC_H_
 
 /** Execute a task */
 void Run(MultiQueue *queue, u32 method, Task *task) override {
@@ -19,7 +18,6 @@ void Run(MultiQueue *queue, u32 method, Task *task) override {
     }
   }
 }
-
 /** Serialize a task when initially pushing into remote */
 std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, Task *task) override {
   switch (method) {
@@ -38,7 +36,6 @@ std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, T
   }
   return ar.Get();
 }
-
 /** Deserialize a task when popping from remote queue */
 TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) override {
   TaskPointer task_ptr;
@@ -61,7 +58,6 @@ TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) override {
   }
   return task_ptr;
 }
-
 /** Serialize a task when returning from remote queue */
 std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Task *task) override {
   switch (method) {
@@ -80,7 +76,6 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
   }
   return ar.Get();
 }
-
 /** Deserialize a task when returning from remote queue */
 void LoadEnd(u32 method, BinaryInputArchive<false> &ar, Task *task) override {
   switch (method) {
@@ -98,3 +93,5 @@ void LoadEnd(u32 method, BinaryInputArchive<false> &ar, Task *task) override {
     }
   }
 }
+
+#endif  // LABSTOR_TASK_NAME_METHODS_H_
