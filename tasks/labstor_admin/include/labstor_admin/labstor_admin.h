@@ -29,6 +29,10 @@ struct RegisterTaskLibTaskTempl : public Task {
   IN hipc::ShmArchive<hipc::string> lib_name_;
   OUT TaskStateId id_;
 
+  /** SHM default constructor */
+  RegisterTaskLibTaskTempl(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
   HSHM_ALWAYS_INLINE
   RegisterTaskLibTaskTempl(hipc::Allocator *alloc,
                            const TaskNode &task_node,
@@ -50,6 +54,7 @@ struct RegisterTaskLibTaskTempl : public Task {
     HSHM_MAKE_AR(lib_name_, alloc, lib_name);
   }
 
+  /** Destructor */
   ~RegisterTaskLibTaskTempl() {
     HSHM_DESTROY_AR(lib_name_);
   }
@@ -66,6 +71,8 @@ struct RegisterTaskLibTaskTempl : public Task {
   void SerializeEnd(Ar &ar) {
     ar(id_);
   }
+
+  TASK_SERIALIZE
 };
 
 /** A task to register a Task Library */
@@ -92,6 +99,10 @@ struct CreateTaskStateTask : public Task {
   INOUT TaskStateId id_;
   TEMP int phase_;
 
+  /** SHM default constructor */
+  CreateTaskStateTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
   HSHM_ALWAYS_INLINE
   CreateTaskStateTask(hipc::Allocator *alloc,
                       const TaskNode &task_node,
@@ -133,6 +144,8 @@ struct CreateTaskStateTask : public Task {
   void SerializeEnd(Ar &ar) {
     ar(id_);
   }
+
+  TASK_SERIALIZE
 };
 
 /** A task to retrieve the ID of a task */
@@ -140,6 +153,10 @@ struct GetTaskStateIdTask : public Task {
   IN hipc::ShmArchive<hipc::string> state_name_;
   OUT TaskStateId id_;
 
+  /** SHM default constructor */
+  GetTaskStateIdTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
   HSHM_ALWAYS_INLINE
   GetTaskStateIdTask(hipc::Allocator *alloc,
                      const TaskNode &task_node,
@@ -173,12 +190,18 @@ struct GetTaskStateIdTask : public Task {
   void SerializeEnd(Ar &ar) {
     ar(id_);
   }
+
+  TASK_SERIALIZE
 };
 
 /** A task to destroy a Task state */
 struct DestroyTaskStateTask : public Task {
   IN TaskStateId id_;
 
+  /** SHM default constructor */
+  DestroyTaskStateTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
   HSHM_ALWAYS_INLINE
   DestroyTaskStateTask(hipc::Allocator *alloc,
                        const TaskNode &task_node,
@@ -200,17 +223,23 @@ struct DestroyTaskStateTask : public Task {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar << id_;
+    ar & id_;
   }
 
   /** (De)serialize message return */
   template<typename Ar>
   void SerializeEnd(Ar &ar) {
   }
+
+  TASK_SERIALIZE
 };
 
 /** A task to destroy a Task state */
 struct StopRuntimeTask : public Task {
+  /** SHM default constructor */
+  StopRuntimeTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
   HSHM_ALWAYS_INLINE
   StopRuntimeTask(hipc::Allocator *alloc,
                   const TaskNode &task_node,
@@ -234,6 +263,8 @@ struct StopRuntimeTask : public Task {
   template<typename Ar>
   void SerializeEnd(Ar &ar) {
   }
+
+  TASK_SERIALIZE
 };
 
 /** A task to destroy a Task state */
@@ -241,6 +272,10 @@ template<int method>
 struct SetWorkOrchestratorPolicyTask : public Task {
   IN TaskStateId policy_id_;
 
+  /** SHM default constructor */
+  SetWorkOrchestratorPolicyTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
   HSHM_ALWAYS_INLINE
   SetWorkOrchestratorPolicyTask(hipc::Allocator *alloc,
                                 const TaskNode &task_node,
@@ -273,6 +308,8 @@ struct SetWorkOrchestratorPolicyTask : public Task {
   template<typename Ar>
   void SerializeEnd(Ar &ar) {
   }
+
+  TASK_SERIALIZE
 };
 using SetWorkOrchestratorQueuePolicyTask = SetWorkOrchestratorPolicyTask<0>;
 using SetWorkOrchestratorProcessPolicyTask = SetWorkOrchestratorPolicyTask<1>;

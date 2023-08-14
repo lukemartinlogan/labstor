@@ -22,7 +22,12 @@ struct Method : public TaskMethod {
  * */
 using labstor::Admin::CreateTaskStateTask;
 struct ConstructTask : public CreateTaskStateTask {
-  HSHM_ALWAYS_INLINE
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  ConstructTask(hipc::Allocator *alloc) : CreateTaskStateTask(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
   ConstructTask(hipc::Allocator *alloc,
                 const TaskNode &task_node,
                 const DomainId &domain_id,
@@ -39,6 +44,11 @@ struct ConstructTask : public CreateTaskStateTask {
 /** A task to destroy small_message */
 using labstor::Admin::DestroyTaskStateTask;
 struct DestructTask : public DestroyTaskStateTask {
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  DestructTask(hipc::Allocator *alloc) : DestroyTaskStateTask(alloc) {}
+
+  /** Emplace constructor */
   HSHM_ALWAYS_INLINE
   DestructTask(hipc::Allocator *alloc,
                const TaskNode &task_node,
@@ -53,6 +63,11 @@ struct DestructTask : public DestroyTaskStateTask {
 struct CustomTask : public Task {
   OUT int ret_;
 
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  CustomTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
   HSHM_ALWAYS_INLINE
   CustomTask(hipc::Allocator *alloc,
              const TaskNode &task_node,

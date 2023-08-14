@@ -22,7 +22,13 @@ struct Method : public TaskMethod {
  * */
 using labstor::Admin::CreateTaskStateTask;
 struct ConstructTask : public CreateTaskStateTask {
-  HSHM_ALWAYS_INLINE
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  ConstructTask(hipc::Allocator *alloc)
+  : CreateTaskStateTask(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
   ConstructTask(hipc::Allocator *alloc,
                 const TaskNode &task_node,
                 const DomainId &domain_id,
@@ -45,7 +51,13 @@ struct ConstructTask : public CreateTaskStateTask {
 /** A task to destroy TASK_NAME */
 using labstor::Admin::DestroyTaskStateTask;
 struct DestructTask : public DestroyTaskStateTask {
-  HSHM_ALWAYS_INLINE
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  DestructTask(hipc::Allocator *alloc)
+  : DestroyTaskStateTask(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
   DestructTask(hipc::Allocator *alloc,
                const TaskNode &task_node,
                const DomainId &domain_id,
@@ -57,7 +69,12 @@ struct DestructTask : public DestroyTaskStateTask {
  * A custom task in TASK_NAME
  * */
 struct CustomTask : public Task {
-  HSHM_ALWAYS_INLINE
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  CustomTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
   CustomTask(hipc::Allocator *alloc,
              const TaskNode &task_node,
              const DomainId &domain_id,
@@ -83,6 +100,8 @@ struct CustomTask : public Task {
   template<typename Ar>
   void SerializeEnd(Ar &ar) {
   }
+
+  TASK_SERIALIZE
 };
 
 }  // namespace labstor::TASK_NAME

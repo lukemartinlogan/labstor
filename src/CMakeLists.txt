@@ -14,6 +14,7 @@ target_link_libraries(labstor_client
   ${HermesShm_LIBRARIES}
   yaml-cpp
   cereal::cereal
+  thallium
   -ldl -lrt -lc -pthread)
 
 #------------------------------------------------------------------------------

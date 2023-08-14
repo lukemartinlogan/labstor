@@ -78,20 +78,23 @@ class TaskLib {
   virtual void Run(MultiQueue *queue, u32 method, Task *task) = 0;
 
   /** Serialize a task when initially pushing into remote */
-  virtual std::vector<DataTransfer> SaveStart(u32 method, Task *task) {
+  virtual std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, Task *task) {
     return {};
   }
 
   /** Deserialize a task when popping from remote queue */
-  virtual void LoadStart(BinaryInputArchive<true> &ar, TaskPointer &task_ptr) {}
+  virtual TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) {
+    return {};
+  }
 
   /** Serialize a task when returning from remote queue */
-  virtual std::vector<DataTransfer> SaveEnd(u32 method, Task *task) {
-      return {};
+  virtual std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Task *task) {
+    return {};
   }
 
   /** Deserialize a task when returning from remote queue */
-  virtual void LoadEnd(BinaryInputArchive<false> &ar, TaskPointer &task_ptr) {}
+  virtual void LoadEnd(u32 method, BinaryInputArchive<false> &ar, Task *task) {
+  }
 };
 
 /** Represents a TaskLib in action */

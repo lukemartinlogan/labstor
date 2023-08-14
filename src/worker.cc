@@ -49,6 +49,9 @@ void Worker::PollUnordered(u32 lane_id, MultiQueue *queue) {
     if (!queue->Pop(lane_id, task, p)) {
       break;
     }
+    if (!task->task_flags_.Any(TASK_LONG_RUNNING)) {
+      HILOG(kInfo, "Popping task: {}", task->task_state_);
+    }
     TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
     if (!exec) {
       HELOG(kError, "Could not find the task state: {}", task->task_state_);
@@ -88,6 +91,9 @@ void Worker::PollOrdered(u32 lane_id, MultiQueue *queue) {
   for (int i = 0; i < 1; ++i) {
     if (!queue->Peek(lane_id, task, p, i)) {
       break;
+    }
+    if (!task->task_flags_.Any(TASK_LONG_RUNNING)) {
+      HILOG(kInfo, "Popping task: {}", task->task_state_);
     }
     TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
     if (!exec) {

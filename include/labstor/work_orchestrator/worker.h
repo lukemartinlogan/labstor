@@ -100,9 +100,9 @@ namespace labstor {
 class Worker {
  public:
   u32 id_;  /**< Unique identifier of this worker */
-  // std::unique_ptr<std::thread> thread_;  /**< The worker thread handle */
-  // int pthread_id_;      /**< The worker pthread handle */
-  ABT_thread tl_thread_;
+  std::unique_ptr<std::thread> thread_;  /**< The worker thread handle */
+  int pthread_id_;      /**< The worker pthread handle */
+  // ABT_thread tl_thread_;
   int pid_;             /**< The worker process id */
   u32 numa_node_;       // TODO(llogan): track NUMA affinity
   std::vector<WorkEntry> work_queue_;  /**< The set of queues to poll */
@@ -125,14 +125,14 @@ class Worker {
     EnableContinuousPolling();
     retries_ = 1;
     pid_ = 0;
-    /* thread_ = std::make_unique<std::thread>(&Worker::Loop, this);
-    pthread_id_ = thread_->native_handle(); */
-    int ret = ABT_thread_create_on_xstream(xstream,
+    thread_ = std::make_unique<std::thread>(&Worker::Loop, this);
+    pthread_id_ = thread_->native_handle();
+    /* int ret = ABT_thread_create_on_xstream(xstream,
                                            [](void *args) { ((Worker*)args)->Loop(); }, this,
                                            ABT_THREAD_ATTR_NULL, &tl_thread_);
     if (ret != ABT_SUCCESS) {
       HELOG(kFatal, "Couldn't spawn worker");
-    }
+    }*/
   }
 
   /**
@@ -174,9 +174,6 @@ class Worker {
 
   /** Set the CPU affinity of this worker */
   void SetCpuAffinity(int cpu_id) {
-    // NOTE(llogan): Argobots doesn't seem to have a way of setting CPU affinity of threads.
-    //
-    pid_ = getpid();
     ProcessAffiner::SetCpuAffinity(pid_, cpu_id);
   }
 
@@ -201,6 +198,7 @@ class Worker {
     std::vector<WorkEntry> work_queue;
     while (!poll_queues_.pop(work_queue).IsNull()) {
       for (auto &entry : work_queue) {
+        HILOG(kDebug, "Scheduled queue {} (lane {})", entry.queue_->id_, entry.lane_);
         work_queue_.emplace_back(entry);
       }
     }

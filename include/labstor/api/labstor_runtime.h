@@ -66,7 +66,7 @@ class Runtime : public ConfigurationManager {
                               &server_config_,
                               header_->queue_manager_);
     LABSTOR_CLIENT->Create(server_config_path, "", true);
-    HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kArgobots);
+    HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kPthread);
     work_orchestrator_.ServerInit(&server_config_, queue_manager_);
 
     // Create the admin library

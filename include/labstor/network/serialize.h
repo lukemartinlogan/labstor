@@ -128,6 +128,13 @@ class BinaryOutputArchive {
     return Serialize(var);
   }
 
+  /** Serialize an array */
+  template<typename T>
+  BinaryOutputArchive& write(T *data, size_t count) {
+    size_t size = count * sizeof(T);
+    return Serialize(cereal::binary_data(data, size));
+  }
+
   /** Serialize a parameter */
   template<typename T, typename ...Args>
   BinaryOutputArchive& Serialize(T &var, Args&& ...args) {
@@ -209,6 +216,13 @@ class BinaryInputArchive {
   template<typename T>
   BinaryInputArchive& operator&(T &var) {
     return Deserialize(var);
+  }
+
+  /** Deserialize an array */
+  template<typename T>
+  BinaryInputArchive& read(T *data, size_t count) {
+    size_t size = count * sizeof(T);
+    Deserialize(cereal::binary_data(data, size));
   }
 
   /** Serialize a parameter */

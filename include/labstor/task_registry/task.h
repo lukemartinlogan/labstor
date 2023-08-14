@@ -7,6 +7,7 @@
 
 #include "labstor/labstor_types.h"
 #include "labstor/network/serialize.h"
+#include <thallium.hpp>
 
 namespace labstor {
 
@@ -191,6 +192,7 @@ struct TaskNode {
   }
 
   /** Wait for task to complete */
+  template<int THREAD_MODEL = 0>
   void Wait() {
     while (!IsComplete()) {
       for (int i = 0; i < 100000; ++i) {
@@ -198,7 +200,11 @@ struct TaskNode {
           return;
         }
       }
-      HERMES_THREAD_MODEL->Yield();
+      if constexpr(THREAD_MODEL == 0) {
+        HERMES_THREAD_MODEL->Yield();
+      } else {
+        ABT_thread_yield();
+      }
     }
   }
 
@@ -283,6 +289,16 @@ struct TaskNode {
    ar(task_state_, task_node_, domain_id_, lane_hash_, method_, task_flags_);
  }
 };
+
+#define TASK_SERIALIZE \
+ template<typename Ar> \
+ void serialize(Ar &ar) { \
+   if (task_flags_.Any(TASK_COMPLETE)) { \
+     SerializeEnd(ar); \
+   } else { \
+     SerializeStart(ar); \
+   } \
+ }
 
 /** A task is NOT compatible with shared memory */
 typedef Task LocalTask;

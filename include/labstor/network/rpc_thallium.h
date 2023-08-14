@@ -14,7 +14,6 @@
 #define HERMES_RPC_THALLIUM_H_
 
 #include <thallium.hpp>
-#include "hermes_shm/data_structures/serialization/thallium.h"
 #include <string>
 #include "hermes_shm/util/singleton.h"
 

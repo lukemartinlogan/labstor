@@ -74,17 +74,8 @@ struct DomainId {
 
   /** Serialize domain id */
   template<typename Ar>
-  void save(Ar &ar) const {
-    u32 flags = flags_.bits_;
-    ar(flags, id_);
-  }
-
-  /** Deserialize domain id */
-  template<typename Ar>
-  void load(Ar &ar) {
-    u32 flags;
-    ar(flags, id_);
-    flags_.bits_ = flags;
+  void serialize(Ar &ar) {
+    ar(flags_, id_);
   }
 
   /** Default constructor. */

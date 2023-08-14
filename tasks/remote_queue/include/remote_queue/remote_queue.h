@@ -77,6 +77,7 @@ class PushPhase {
  * */
 struct PushTask : public Task {
   IN TaskState *exec_;
+  IN u32 exec_method_;
   IN std::vector<DataTransfer> *xfer_;
   IN DomainId to_domain_;
   TEMP hipc::ShmArchive<thallium::async_response> tl_future_;
@@ -88,6 +89,7 @@ struct PushTask : public Task {
            const DomainId &domain_id,
            const TaskStateId &state_id,
            TaskState *exec,
+           u32 exec_method,
            std::vector<DataTransfer> &xfer,
            const DomainId &to_domain) : Task(alloc) {
     // Initialize task
@@ -100,6 +102,7 @@ struct PushTask : public Task {
 
     // Custom params
     exec_ = exec;
+    exec_method_ = exec_method;
     xfer_ = &xfer;
     to_domain_ = to_domain;
     phase_ = PushPhase::kStart;
@@ -220,24 +223,26 @@ class Client {
   void Disperse(Task *orig_task,
                 TaskState *exec,
                 const std::vector<DomainId> &domain_ids) {
-    hipc::Pointer p;
+    hipc::Pointer p, disperse_p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
 
     // Serialize task + create the wait task
-    auto xfer = exec->Serialize(orig_task->method_, orig_task);
+    BinaryOutputArchive<true> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
+    auto xfer = exec->SaveStart(orig_task->method_, ar, orig_task);
     auto *wait_task = LABSTOR_CLIENT->NewTask<DisperseTask>(
-        p, orig_task->task_node_, DomainId::GetLocal(), id_, orig_task, xfer, domain_ids.size());
+        disperse_p, orig_task->task_node_, DomainId::GetLocal(), id_, orig_task, xfer, domain_ids.size());
 
     // Create subtasks
     for (auto &node_id : domain_ids) {
       auto *sub_task = LABSTOR_CLIENT->NewTask<PushTask>(
-          p, orig_task->task_node_, DomainId::GetLocal(), id_, exec, wait_task->xfer_, node_id);
+          p, orig_task->task_node_, DomainId::GetLocal(), id_,
+          exec, orig_task->method_, wait_task->xfer_, node_id);
       wait_task->subtasks_.push_back(sub_task);
       queue->Emplace(orig_task->lane_hash_, p);
     }
 
     // Enqueue wait task
-    queue->Emplace(orig_task->lane_hash_, p);
+    queue->Emplace(orig_task->lane_hash_, disperse_p);
   }
   LABSTOR_TASK_NODE_ROOT(Custom);
 

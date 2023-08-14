@@ -83,6 +83,13 @@ class Client : public ConfigurationManager {
   /** Create a task */
   template<typename TaskT, typename ...Args>
   HSHM_ALWAYS_INLINE
+  TaskT* NewEmptyTask(hipc::Pointer &p) {
+    return main_alloc_->NewObj<TaskT>(p, main_alloc_);
+  }
+
+  /** Create a task */
+  template<typename TaskT, typename ...Args>
+  HSHM_ALWAYS_INLINE
   TaskT* NewTask(hipc::Pointer &p, const TaskNode &task_node, Args&& ...args) {
     return main_alloc_->NewObj<TaskT>(p, main_alloc_, task_node, std::forward<Args>(args)...);
   }
