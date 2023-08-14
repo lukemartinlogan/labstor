@@ -20,6 +20,7 @@
 #define LABSTOR_RUNTIME_T labstor::Runtime*
 #define LABSTOR_REMOTE_QUEUE (&LABSTOR_RUNTIME->remote_queue_)
 #define LABSTOR_THALLIUM (&LABSTOR_RUNTIME->thallium_)
+#define LABSTOR_RPC (&LABSTOR_RUNTIME->rpc_)
 
 namespace labstor {
 

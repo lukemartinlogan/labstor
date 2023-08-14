@@ -64,6 +64,12 @@ class RpcContext {
   /** Parse a hostfile */
   static std::vector<std::string> ParseHostfile(const std::string &path);
 
+  /** Get the nubmer of hosts */
+  HSHM_ALWAYS_INLINE
+  size_t GetNumHosts() {
+    return hosts_.size();
+  }
+
   /** initialize host info list */
   void ServerInit(ServerConfig *config);
 

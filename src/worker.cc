@@ -58,7 +58,7 @@ void Worker::PollUnordered(u32 lane_id, MultiQueue *queue) {
       task->SetComplete();
     }
     // Disperse or execute task
-    bool is_remote = task->domain_id_.IsRemote(LABSTOR_QM_CLIENT->node_id_);
+    bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_QM_CLIENT->node_id_);
     if (!task->IsRunDisabled()) {
       if (is_remote) {
         HILOG(kInfo, "Dispersing task");
@@ -101,7 +101,7 @@ void Worker::PollOrdered(u32 lane_id, MultiQueue *queue) {
       task->SetComplete();
     }
     // Disperse or execute task
-    bool is_remote = task->domain_id_.IsRemote(LABSTOR_QM_CLIENT->node_id_);
+    bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_QM_CLIENT->node_id_);
     if (!task->IsRunDisabled()) {
       if (is_remote) {
         auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
