@@ -18,7 +18,7 @@ def copy_replace(TASK_ROOT, TASK_TEMPL_ROOT, rel_path, TASK_NAME):
 
 TASK_NAME = sys.argv[1]
 TASK_ROOT = f'{LABSTOR_ROOT}/tasks/{TASK_NAME}'
-TASK_TEMPL_ROOT = f'{LABSTOR_ROOT}/tasks/task_templ'
+TASK_TEMPL_ROOT = f'{LABSTOR_ROOT}/tasks/TASK_NAME'
 
 os.makedirs(f'{TASK_ROOT}/src', exist_ok=True)
 os.makedirs(f'{TASK_ROOT}/include/{TASK_NAME}', exist_ok=True)

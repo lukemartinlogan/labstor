@@ -1,5 +1,5 @@
 set(TASK_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-add_subdirectory(task_templ)
+add_subdirectory(TASK_NAME)
 add_subdirectory(small_message)
 add_subdirectory(labstor_admin)
 add_subdirectory(remote_queue)
