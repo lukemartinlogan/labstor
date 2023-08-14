@@ -69,7 +69,7 @@ struct MdTask : public Task, SrlFlags<true, true> {
   MdTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
-  HSHM_ALWAYS_INLINE
+  HSHM_ALWAYS_INLINE explicit
   MdTask(hipc::Allocator *alloc,
          const TaskNode &task_node,
          const DomainId &domain_id,
@@ -110,7 +110,7 @@ struct IoTask : public Task, SrlFlags<false, true> {
   IoTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
-  HSHM_ALWAYS_INLINE
+  HSHM_ALWAYS_INLINE explicit
   IoTask(hipc::Allocator *alloc,
          const TaskNode &task_node,
          const DomainId &domain_id,

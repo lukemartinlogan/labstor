@@ -32,10 +32,11 @@ struct RegisterTaskLibTaskTempl : public Task, SrlFlags<true, true> {
   id_;
 
   /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
   RegisterTaskLibTaskTempl(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
-  HSHM_ALWAYS_INLINE
+  HSHM_ALWAYS_INLINE explicit
   RegisterTaskLibTaskTempl(hipc::Allocator *alloc,
                            const TaskNode &task_node,
                            const DomainId &domain_id,
@@ -103,10 +104,11 @@ struct CreateTaskStateTask : public Task, SrlFlags<true, true> {
   TEMP int phase_;
 
   /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
   CreateTaskStateTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
-  HSHM_ALWAYS_INLINE
+  HSHM_ALWAYS_INLINE explicit
   CreateTaskStateTask(hipc::Allocator *alloc,
                       const TaskNode &task_node,
                       const DomainId &domain_id,
@@ -159,10 +161,11 @@ struct GetTaskStateIdTask : public Task, SrlFlags<true, true> {
   id_;
 
   /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
   GetTaskStateIdTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
-  HSHM_ALWAYS_INLINE
+  HSHM_ALWAYS_INLINE explicit
   GetTaskStateIdTask(hipc::Allocator *alloc,
                      const TaskNode &task_node,
                      const DomainId &domain_id,
@@ -205,10 +208,11 @@ struct DestroyTaskStateTask : public Task, SrlFlags<true, true> {
   id_;
 
   /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
   DestroyTaskStateTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
-  HSHM_ALWAYS_INLINE
+  HSHM_ALWAYS_INLINE explicit
   DestroyTaskStateTask(hipc::Allocator *alloc,
                        const TaskNode &task_node,
                        const DomainId &domain_id,
@@ -246,7 +250,7 @@ struct StopRuntimeTask : public Task, SrlFlags<true, true> {
   StopRuntimeTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
-  HSHM_ALWAYS_INLINE
+  HSHM_ALWAYS_INLINE explicit
   StopRuntimeTask(hipc::Allocator *alloc,
                   const TaskNode &task_node,
                   const DomainId &domain_id) : Task(alloc) {
@@ -280,10 +284,11 @@ struct SetWorkOrchestratorPolicyTask : public Task, SrlFlags<true, true> {
   policy_id_;
 
   /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
   SetWorkOrchestratorPolicyTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
-  HSHM_ALWAYS_INLINE
+  HSHM_ALWAYS_INLINE explicit
   SetWorkOrchestratorPolicyTask(hipc::Allocator *alloc,
                                 const TaskNode &task_node,
                                 const DomainId &domain_id,

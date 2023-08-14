@@ -32,7 +32,8 @@ struct Method : public TaskMethod {
  * */
 using labstor::Admin::CreateTaskStateTask;
 struct ConstructTask : public CreateTaskStateTask {
-  HSHM_ALWAYS_INLINE
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
   ConstructTask(hipc::Allocator *alloc,
                 const TaskNode &task_node,
                 const DomainId &domain_id,
@@ -45,17 +46,13 @@ struct ConstructTask : public CreateTaskStateTask {
                             num_lanes, depth, flags) {
     // Custom params
   }
-
-  HSHM_ALWAYS_INLINE
-  ~ConstructTask() {
-    // Custom params
-  }
 };
 
 /** A task to destroy remote_queue */
 using labstor::Admin::DestroyTaskStateTask;
 struct DestructTask : public DestroyTaskStateTask {
-  HSHM_ALWAYS_INLINE
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
   DestructTask(hipc::Allocator *alloc,
                const TaskNode &task_node,
                const DomainId &domain_id,
@@ -83,7 +80,8 @@ struct PushTask : public Task {
   TEMP hipc::ShmArchive<thallium::async_response> tl_future_;
   TEMP int phase_;
 
-  HSHM_ALWAYS_INLINE
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
   PushTask(hipc::Allocator *alloc,
            const TaskNode &task_node,
            const DomainId &domain_id,
@@ -113,7 +111,8 @@ struct PushTask : public Task {
  * A task to push a serialized task onto the remote queue
  * */
 struct AcceptTask : public Task {
-  HSHM_ALWAYS_INLINE
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
   AcceptTask(hipc::Allocator *alloc,
              const TaskNode &task_node,
              const DomainId &domain_id,
@@ -136,7 +135,8 @@ struct DisperseTask : public Task {
   IN std::vector<DataTransfer> xfer_;
   TEMP std::vector<Task*> subtasks_;
 
-  HSHM_ALWAYS_INLINE
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
   DisperseTask(hipc::Allocator *alloc,
                const TaskNode &task_node,
                const DomainId &domain_id,
