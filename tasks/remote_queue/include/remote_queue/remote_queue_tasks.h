@@ -28,6 +28,10 @@ namespace labstor::remote_queue {
  * */
 using labstor::Admin::CreateTaskStateTask;
 struct ConstructTask : public CreateTaskStateTask {
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  ConstructTask(hipc::Allocator *alloc) : CreateTaskStateTask(alloc) {}
+
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
   ConstructTask(hipc::Allocator *alloc,
@@ -47,6 +51,10 @@ struct ConstructTask : public CreateTaskStateTask {
 /** A task to destroy remote_queue */
 using labstor::Admin::DestroyTaskStateTask;
 struct DestructTask : public DestroyTaskStateTask {
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  DestructTask(hipc::Allocator *alloc) : DestroyTaskStateTask(alloc) {}
+
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
   DestructTask(hipc::Allocator *alloc,
@@ -68,13 +76,17 @@ class PushPhase {
 /**
  * A task to push a serialized task onto the remote queue
  * */
-struct PushTask : public Task {
+struct PushTask : public LocalTask {
   IN TaskState *exec_;
   IN u32 exec_method_;
   IN std::vector<DataTransfer> *xfer_;
   IN DomainId to_domain_;
   TEMP hipc::ShmArchive<thallium::async_response> tl_future_;
   TEMP int phase_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  PushTask(hipc::Allocator *alloc) : LocalTask(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -126,10 +138,14 @@ struct PushTask : public Task {
 /**
  * A custom task in remote_queue
  * */
-struct DisperseTask : public Task {
+struct DisperseTask : public LocalTask {
   IN Task *orig_task_;
   IN std::vector<DataTransfer> xfer_;
   TEMP std::vector<Task*> subtasks_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  DisperseTask(hipc::Allocator *alloc) : LocalTask(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit

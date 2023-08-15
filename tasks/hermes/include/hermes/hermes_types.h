@@ -202,6 +202,12 @@ struct BufferInfo {
   size_t t_off_;        /**< Offset in the target */
   size_t t_size_;       /**< Size in the target */
 
+  /** Serialization */
+  template<typename Ar>
+  void serialize(Ar &ar) {
+    ar(tid_, t_slab_, t_off_, t_size_);
+  }
+
   /** Default constructor */
   BufferInfo() = default;
 

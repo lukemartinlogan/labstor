@@ -159,6 +159,7 @@ struct PutBlobTask : public Task, SrlFlags<false, true> {
                       data_size_, domain_id_);
     task_serialize<Ar>(ar);
     ar & xfer;
+    ar(tag_id_, blob_name_, blob_off_, data_size_, score_, flags_);
   }
 
   /** Deserialize message call */
@@ -168,7 +169,7 @@ struct PutBlobTask : public Task, SrlFlags<false, true> {
     task_serialize<Ar>(ar);
     ar & xfer;
     data_ = HERMES_MEMORY_MANAGER->Convert<void, hipc::Pointer>(xfer.data_);
-    ar(tag_id_, blob_name_, blob_off_, data_size_, data_, score_, flags_);
+    ar(tag_id_, blob_name_, blob_off_, data_size_, score_, flags_);
   }
 
   /** (De)serialize message return */

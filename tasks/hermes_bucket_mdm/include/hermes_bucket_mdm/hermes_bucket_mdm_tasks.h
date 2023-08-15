@@ -75,7 +75,7 @@ class PutBlobPhase {
 };
 
 /** Put a blob in the bucket */
-struct PutBlobTask : public Task, SrlFlags<false, true> {
+struct PutBlobTask : public Task, SrlFlags<true, true> {
   IN TagId tag_id_;
   IN hipc::ShmArchive<hipc::charbuf> blob_name_;
   IN size_t blob_off_;

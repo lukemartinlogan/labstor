@@ -20,6 +20,11 @@ class Task;
  * */
 template<bool WITH_SRL_START, bool WITH_SRL_END>
 class SrlFlags {};
+#define IS_SRL(T) \
+  std::is_base_of_v<SrlFlags<true, true>, T> || \
+  std::is_base_of_v<SrlFlags<true, false>, T> || \
+  std::is_base_of_v<SrlFlags<false, false>, T> || \
+  std::is_base_of_v<SrlFlags<false, true>, T>
 #define USES_SRL_START(T) \
   std::is_base_of_v<SrlFlags<true, true>, T> || \
   std::is_base_of_v<SrlFlags<true, false>, T>
@@ -153,17 +158,19 @@ class BinaryOutputArchive {
   template<typename T, typename ...Args>
   BinaryOutputArchive& Serialize(T &var, Args&& ...args) {
     if constexpr (std::is_base_of<Task, T>::value) {
-      if constexpr(is_start) {
-        if constexpr (USES_SRL_START(T)) {
-          var.SerializeStart(*this);
+      if constexpr (IS_SRL(T)) {
+        if constexpr (is_start) {
+          if constexpr (USES_SRL_START(T)) {
+            var.SerializeStart(*this);
+          } else {
+            var.SaveStart(*this);
+          }
         } else {
-          var.SaveStart(*this);
-        }
-      } else {
-        if constexpr (USES_SRL_END(T)) {
-          var.SerializeEnd(*this);
-        } else {
-          var.SaveEnd(*this);
+          if constexpr (USES_SRL_END(T)) {
+            var.SerializeEnd(*this);
+          } else {
+            var.SaveEnd(*this);
+          }
         }
       }
     } else if constexpr (std::is_same_v<T, DataTransfer>){
@@ -243,17 +250,19 @@ class BinaryInputArchive {
   template<typename T, typename ...Args>
   BinaryInputArchive& Deserialize(T &var, Args&& ...args) {
     if constexpr (std::is_base_of<Task, T>::value) {
-      if constexpr(is_start) {
-        if constexpr (USES_SRL_START(T)) {
-          var.SerializeStart(*this);
+      if constexpr (IS_SRL(T)) {
+        if constexpr (is_start) {
+          if constexpr (USES_SRL_START(T)) {
+            var.SerializeStart(*this);
+          } else {
+            var.LoadStart(*this);
+          }
         } else {
-          var.LoadStart(*this);
-        }
-      } else {
-        if constexpr (USES_SRL_END(T)) {
-          var.SerializeEnd(*this);
-        } else {
-          var.LoadEnd(*this);
+          if constexpr (USES_SRL_END(T)) {
+            var.SerializeEnd(*this);
+          } else {
+            var.LoadEnd(*this);
+          }
         }
       }
     } else if constexpr (std::is_same_v<T, DataTransfer>) {
