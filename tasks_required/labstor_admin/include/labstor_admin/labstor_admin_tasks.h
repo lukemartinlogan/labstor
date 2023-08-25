@@ -250,7 +250,7 @@ struct StopRuntimeTask : public Task, SrlFlags<true, true> {
     lane_hash_ = 0;
     task_state_ = LABSTOR_QM_CLIENT->admin_task_state_;
     method_ = Method::kStopRuntime;
-    task_flags_.SetBits(0);
+    task_flags_.SetBits(TASK_FIRE_AND_FORGET);
     domain_id_ = domain_id;
   }
 

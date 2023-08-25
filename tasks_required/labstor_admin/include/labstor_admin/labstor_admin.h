@@ -113,11 +113,9 @@ class Client {
                    const DomainId &domain_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
-    auto *task = LABSTOR_CLIENT->NewTask<StopRuntimeTask>(
+    LABSTOR_CLIENT->NewTask<StopRuntimeTask>(
         p, task_node, domain_id);
     queue->Emplace(0, p);
-    task->Wait();
-    LABSTOR_CLIENT->DelTask(task);
   }
   LABSTOR_TASK_NODE_ROOT(StopRuntime);
 
