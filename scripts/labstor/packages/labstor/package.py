@@ -26,7 +26,6 @@ class Labstor(CMakePackage):
         env.append_flags('CXXFLAGS', '-I{}'.format(path))
         env.prepend_path('INCLUDE', '{}'.format(path))
         env.prepend_path('CPATH', '{}'.format(path))
-        env.prepend_path('CMAKE_PREFIX_PATH', '{}'.format(path))
 
     def set_lib(self, env, path):
         env.prepend_path('LIBRARY_PATH', path)
@@ -38,6 +37,7 @@ class Labstor(CMakePackage):
         self.set_include(env, '{}/include'.format(self.prefix))
         self.set_lib(env, '{}/lib'.format(self.prefix))
         self.set_lib(env, '{}/lib64'.format(self.prefix))
+        env.prepend_path('CMAKE_PREFIX_PATH', '{}/cmake'.format(self.prefix))
 
     def setup_dependent_environment(self, spack_env, run_env, dependent_spec):
         self.set_flags(spack_env)
