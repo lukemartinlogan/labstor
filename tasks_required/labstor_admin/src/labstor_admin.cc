@@ -75,8 +75,8 @@ class Server : public TaskLib {
   }
 
   void StopRuntime(MultiQueue *queue, StopRuntimeTask *task) {
-    LABSTOR_WORK_ORCHESTRATOR->FinalizeRuntime();
     task->SetComplete();
+    LABSTOR_WORK_ORCHESTRATOR->FinalizeRuntime();
   }
 
   void SetWorkOrchestratorQueuePolicy(MultiQueue *queue, SetWorkOrchestratorQueuePolicyTask *task) {
