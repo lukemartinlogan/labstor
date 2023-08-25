@@ -13,6 +13,8 @@ class Labstor(CMakePackage):
     depends_on('hermes_shm')
     depends_on('libzmq')
 
+    variant('debug', default=False, description='Build shared libraries')
+
     def cmake_args(self):
         args = ['-DCMAKE_INSTALL_PREFIX={}'.format(self.prefix)]
         if '+debug' in self.spec:
