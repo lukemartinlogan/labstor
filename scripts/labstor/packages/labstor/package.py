@@ -11,9 +11,10 @@ class Labstor(CMakePackage):
     depends_on('yaml-cpp')
     depends_on('boost@1.7:')
     depends_on('hermes_shm')
-    depends_on('libzmq')
+    depends_on('libzmq', '+zmq')
 
     variant('debug', default=False, description='Build shared libraries')
+    variant('zmq', default=False, description='Build ZeroMQ tests')
 
     def cmake_args(self):
         args = ['-DCMAKE_INSTALL_PREFIX={}'.format(self.prefix)]

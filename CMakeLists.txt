@@ -67,9 +67,9 @@ if(PkgConfig)
 endif()
 
 # Zeromq
-pkg_check_modules(ZMQ REQUIRED libzmq)
-include_directories(${ZMQ_INCLUDE_DIRS})
-message("Found libzmq at: ${ZMQ_INCLUDE_DIRS}")
+#pkg_check_modules(ZMQ REQUIRED libzmq)
+#include_directories(${ZMQ_INCLUDE_DIRS})
+#message("Found libzmq at: ${ZMQ_INCLUDE_DIRS}")
 
 # Thallium
 find_package(thallium CONFIG REQUIRED)

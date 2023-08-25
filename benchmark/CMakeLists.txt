@@ -10,13 +10,24 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(test_performance_exec
         ${TEST_MAIN}/main.cc
         test_init.cc
-        test_latency.cc
-)
+        test_latency.cc)
 add_dependencies(test_performance_exec
         labstor_client hermes_config_manager)
 target_link_libraries(test_performance_exec
         labstor_client hermes_config_manager Catch2::Catch2
-        MPI::MPI_CXX ${ZMQ_LIBRARIES})
+        MPI::MPI_CXX)
+
+#add_executable(test_performance_exec
+#        ${TEST_MAIN}/main.cc
+#        test_init.cc
+#        test_latency.cc
+#        test_zmq.cc
+#)
+#add_dependencies(test_performance_exec
+#        labstor_client hermes_config_manager)
+#target_link_libraries(test_performance_exec
+#        labstor_client hermes_config_manager Catch2::Catch2
+#        MPI::MPI_CXX ${ZMQ_LIBRARIES})
 
 add_executable(test_hermes_api
         hermes_api_bench.cc)
