@@ -12,11 +12,10 @@ add_executable(test_hermes_exec
         test_init.cc
         test_bucket.cc
 )
-
 add_dependencies(test_hermes_exec
-        labstor_client hermes_config_manager)
+        ${Labstor_CLIENT_DEPS} hermes_config_manager)
 target_link_libraries(test_hermes_exec
-        labstor_client hermes_config_manager Catch2::Catch2)
+        ${Labstor_CLIENT_LIBRARIES} hermes_config_manager Catch2::Catch2)
 
 #------------------------------------------------------------------------------
 # Test Cases
