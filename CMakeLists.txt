@@ -68,7 +68,7 @@ endif()
 
 # Zeromq
 pkg_check_modules(ZMQ REQUIRED libzmq)
-include_directories(${ZeroMQ_INCLUDE_DIRS})
+include_directories(${ZMQ_INCLUDE_DIRS})
 
 # Thallium
 find_package(thallium CONFIG REQUIRED)
