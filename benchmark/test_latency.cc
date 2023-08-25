@@ -8,7 +8,7 @@
 #include "small_message/small_message.h"
 #include "hermes_shm/util/timer.h"
 #include "labstor/work_orchestrator/affinity.h"
-#include <zmq.hpp>
+#include <zmq.h>
 
 /** The performance of getting a queue */
 TEST_CASE("TestGetQueue") {
