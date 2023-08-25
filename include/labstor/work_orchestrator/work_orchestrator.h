@@ -81,7 +81,7 @@ class WorkOrchestrator {
   void Join() {
     kill_requested_.store(true);
     for (Worker &worker : workers_) {
-      // worker.thread_->join();
+      worker.thread_->join();
       ABT_xstream_join(xstream_);
       ABT_xstream_free(&xstream_);
     }

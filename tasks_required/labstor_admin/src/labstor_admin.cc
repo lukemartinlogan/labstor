@@ -75,8 +75,10 @@ class Server : public TaskLib {
   }
 
   void StopRuntime(MultiQueue *queue, StopRuntimeTask *task) {
-    task->SetComplete();
+    HILOG(kInfo, "Stopping (server mode)");
     LABSTOR_WORK_ORCHESTRATOR->FinalizeRuntime();
+    LABSTOR_THALLIUM->StopThisDaemon();
+    task->SetComplete();
   }
 
   void SetWorkOrchestratorQueuePolicy(MultiQueue *queue, SetWorkOrchestratorQueuePolicyTask *task) {
