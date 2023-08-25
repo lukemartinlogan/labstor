@@ -7,17 +7,17 @@ set(CMAKE_CXX_STANDARD 17)
 # Build Tests
 #------------------------------------------------------------------------------
 
-add_executable(test_messages_exec
-        ${TEST_MAIN}/main.cc
+add_executable(test_ipc_exec
+        ${TEST_MAIN}/main_mpi.cc
         test_init.cc
         test_finalize.cc
         test_ipc.cc
         test_serialize.cc
 )
 
-add_dependencies(test_messages_exec labstor_client)
-target_link_libraries(test_messages_exec
-        labstor_client Catch2::Catch2)
+add_dependencies(test_ipc_exec labstor_client)
+target_link_libraries(test_ipc_exec
+        labstor_client Catch2::Catch2 MPI::MPI_CXX)
 
 #------------------------------------------------------------------------------
 # Test Cases
@@ -31,7 +31,7 @@ add_test(NAME test_ipc COMMAND
 # Install Targets
 #------------------------------------------------------------------------------
 install(TARGETS
-        test_messages_exec
+        test_ipc_exec
         EXPORT
         ${LABSTOR_EXPORTED_TARGETS}
         LIBRARY DESTINATION ${LABSTOR_INSTALL_LIB_DIR}

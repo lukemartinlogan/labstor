@@ -1,17 +1,23 @@
 from spack import *
 
-class HermesShm(CMakePackage):
-    homepage = "https://github.com/lukemartinlogan/hermes_shm/wiki"
-    git = "https://github.com/lukemartinlogan/hermes_shm.git"
-    version('master', branch='master')
-    depends_on('mochi-thallium~cereal@0.8.3')
+class Labstor(CMakePackage):
+    homepage = "https://github.com/lukemartinlogan/labstor/wiki"
+    git = "https://github.com/lukemartinlogan/labstor.git"
+    version('master', branch='dev')
+    depends_on('mochi-thallium~cereal@0.10.1')
+    depends_on('cereal')
     depends_on('catch2@3.0.1')
     depends_on('mpich@3.3.2:')
+    depends_on('yaml-cpp')
     depends_on('boost@1.7:')
-    depends_on('doxygen@1.9.3')
+    depends_on('hermes_shm')
+    depends_on('libzmq')
 
     def cmake_args(self):
-        return []
+        args = ['-DCMAKE_INSTALL_PREFIX={}'.format(self.prefix)]
+        if '+debug' in self.spec:
+            args.append('-DCMAKE_BUILD_TYPE=Debug')
+        return args
 
     def set_include(self, env, path):
         env.append_flags('CFLAGS', '-I{}'.format(path))
