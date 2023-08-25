@@ -19,7 +19,7 @@ class ProcessAffiner {
     // Set the CPU affinity of the process
     int result = sched_setaffinity(pid, sizeof(cpuset), &cpuset);
     if (result == -1) {
-      HELOG(kError, "Failed to set CPU affinity for process {}", pid);
+      // HELOG(kError, "Failed to set CPU affinity for process {}", pid);
     }
   }
 };
