@@ -24,23 +24,23 @@ add_library(labstor_runtime
         rpc.cc
         worker.cc
         labstor_runtime.cc)
-add_dependencies(labstor_runtime labstor_client)
-target_link_libraries(labstor_runtime labstor_client thallium -ldl -lrt -lc)
+add_dependencies(labstor_runtime ${Labstor_CLIENT_DEPS})
+target_link_libraries(labstor_runtime thallium ${Labstor_CLIENT_LIBRARIES})
 
 #------------------------------------------------------------------------------
 # Build Labstor Runtime Start Function
 #------------------------------------------------------------------------------
 add_executable(labstor_start_runtime
         labstor_start_runtime.cc)
-add_dependencies(labstor_start_runtime labstor_runtime)
-target_link_libraries(labstor_start_runtime labstor_runtime)
+add_dependencies(labstor_start_runtime ${Labstor_RUNTIME_DEPS})
+target_link_libraries(labstor_start_runtime ${Labstor_RUNTIME_LIBRARIES})
 
 #------------------------------------------------------------------------------
 # Build LabStor Runtime Stop Function
 #------------------------------------------------------------------------------
 add_executable(labstor_stop_runtime labstor_stop_runtime.cc)
-add_dependencies(labstor_stop_runtime labstor_client)
-target_link_libraries(labstor_stop_runtime labstor_client)
+add_dependencies(labstor_stop_runtime ${Labstor_CLIENT_DEPS})
+target_link_libraries(labstor_stop_runtime ${Labstor_CLIENT_LIBRARIES})
 
 #-----------------------------------------------------------------------------
 # Add file(s) to CMake Install

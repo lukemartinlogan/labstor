@@ -1,17 +1,17 @@
 #------------------------------------------------------------------------------
-# Build Labstor Admin Task Library
+# Build Small Message Task Library
 #------------------------------------------------------------------------------
-add_library(labstor_admin SHARED
-        ${CMAKE_CURRENT_SOURCE_DIR}/labstor_admin.cc)
-add_dependencies(labstor_admin labstor_runtime)
-target_link_libraries(labstor_admin labstor_runtime)
+add_library(worch_proc_round_robin SHARED
+        worch_proc_round_robin.cc)
+add_dependencies(worch_proc_round_robin ${Labstor_RUNTIME_DEPS})
+target_link_libraries(worch_proc_round_robin ${Labstor_RUNTIME_LIBRARIES})
 
 #------------------------------------------------------------------------------
-# Install Labstor Admin Task Library
+# Install Small Message Task Library
 #------------------------------------------------------------------------------
 install(
         TARGETS
-        labstor_admin
+        worch_proc_round_robin
         LIBRARY DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
         ARCHIVE DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
         RUNTIME DESTINATION ${LABSTOR_INSTALL_BIN_DIR}
@@ -21,5 +21,5 @@ install(
 # Coverage
 #------------------------------------------------------------------------------
 if(LABSTOR_ENABLE_COVERAGE)
-    set_coverage_flags(labstor_admin)
+    set_coverage_flags(worch_proc_round_robin)
 endif()

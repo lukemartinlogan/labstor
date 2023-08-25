@@ -111,10 +111,14 @@ include_directories(${HermesShm_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/include)
 # Task includes
+include_directories(${CMAKE_SOURCE_DIR}/tasks_required)
+include_directories(${CMAKE_SOURCE_DIR}/tasks_required/labstor_admin/include)
+include_directories(${CMAKE_SOURCE_DIR}/tasks_required/small_message/include)
+include_directories(${CMAKE_SOURCE_DIR}/tasks_required/remote_queue/include)
+include_directories(${CMAKE_SOURCE_DIR}/tasks_required/worch_proc_round_robin/include)
+include_directories(${CMAKE_SOURCE_DIR}/tasks_required/worch_queue_round_robin/include)
+
 include_directories(${CMAKE_SOURCE_DIR}/tasks)
-include_directories(${CMAKE_SOURCE_DIR}/tasks/labstor_admin/include)
-include_directories(${CMAKE_SOURCE_DIR}/tasks/small_message/include)
-include_directories(${CMAKE_SOURCE_DIR}/tasks/remote_queue/include)
 include_directories(${CMAKE_SOURCE_DIR}/tasks/hermes/include)
 include_directories(${CMAKE_SOURCE_DIR}/tasks/bdev/include)
 include_directories(${CMAKE_SOURCE_DIR}/tasks/ram_bdev/include)
@@ -123,11 +127,27 @@ include_directories(${CMAKE_SOURCE_DIR}/tasks/hermes_mdm/include)
 include_directories(${CMAKE_SOURCE_DIR}/tasks/hermes_blob_mdm/include)
 include_directories(${CMAKE_SOURCE_DIR}/tasks/hermes_bucket_mdm/include)
 include_directories(${CMAKE_SOURCE_DIR}/tasks/hermes_adapters/include)
+
 # Test includes
 include_directories(${CMAKE_SOURCE_DIR}/test/unit)
 
+set(Labstor_CLIENT_LIBRARIES
+        ${HermesShm_LIBRARIES}
+        hermes_shm_data_structures
+        yaml-cpp
+        cereal::cereal
+        -ldl -lrt -lc -pthread labstor_client)
+set(Labstor_CLIENT_DEPS
+        labstor_client)
+set(Labstor_RUNTIME_LIBRARIES
+        ${Labstor_CLIENT_LIBRARIES}
+        labstor_runtime)
+set(Labstor_RUNTIME_DEPS
+        labstor_client labstor_runtime)
+
 set(TEST_MAIN ${CMAKE_SOURCE_DIR}/test/unit)
 add_subdirectory(src)
+add_subdirectory(tasks_required)
 add_subdirectory(tasks)
 add_subdirectory(benchmark)
 add_custom_target(lint COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/lint.sh ${CMAKE_SOURCE_DIR})

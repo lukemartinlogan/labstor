@@ -3,8 +3,8 @@
 #------------------------------------------------------------------------------
 add_library(posix_bdev SHARED
         posix_bdev.cc)
-add_dependencies(posix_bdev labstor_runtime)
-target_link_libraries(posix_bdev labstor_runtime)
+add_dependencies(posix_bdev ${Labstor_RUNTIME_DEPS})
+target_link_libraries(posix_bdev ${Labstor_RUNTIME_LIBRARIES})
 
 #------------------------------------------------------------------------------
 # Install Small Message Task Library

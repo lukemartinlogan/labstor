@@ -3,8 +3,8 @@
 #------------------------------------------------------------------------------
 add_library(hermes_bucket_mdm SHARED
         hermes_bucket_mdm.cc)
-add_dependencies(hermes_bucket_mdm labstor_runtime)
-target_link_libraries(hermes_bucket_mdm labstor_runtime)
+add_dependencies(hermes_bucket_mdm ${Labstor_RUNTIME_DEPS})
+target_link_libraries(hermes_bucket_mdm ${Labstor_RUNTIME_LIBRARIES})
 
 #------------------------------------------------------------------------------
 # Install Small Message Task Library

@@ -3,8 +3,8 @@
 #------------------------------------------------------------------------------
 add_library(TASK_NAME SHARED
         TASK_NAME.cc)
-add_dependencies(TASK_NAME labstor_runtime)
-target_link_libraries(TASK_NAME labstor_runtime)
+add_dependencies(TASK_NAME ${Labstor_RUNTIME_DEPS})
+target_link_libraries(TASK_NAME ${Labstor_RUNTIME_LIBRARIES})
 
 #------------------------------------------------------------------------------
 # Install Small Message Task Library

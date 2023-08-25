@@ -1,17 +1,20 @@
 #------------------------------------------------------------------------------
 # Build Small Message Task Library
 #------------------------------------------------------------------------------
-add_library(worch_queue_round_robin SHARED
-        worch_queue_round_robin.cc)
-add_dependencies(worch_queue_round_robin labstor_runtime)
-target_link_libraries(worch_queue_round_robin labstor_runtime)
+include_directories(myapp PRIVATE ${libfabric_INCLUDE_DIRS})
+link_directories(${libfabric_LIBRARY_DIRS})
+add_library(remote_queue SHARED
+        remote_queue.cc)
+add_dependencies(remote_queue ${Labstor_RUNTIME_DEPS})
+target_link_libraries(remote_queue
+        labstor_runtime ${libfabric_LIBRARIES})
 
 #------------------------------------------------------------------------------
 # Install Small Message Task Library
 #------------------------------------------------------------------------------
 install(
         TARGETS
-        worch_queue_round_robin
+        remote_queue
         LIBRARY DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
         ARCHIVE DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
         RUNTIME DESTINATION ${LABSTOR_INSTALL_BIN_DIR}
@@ -21,5 +24,5 @@ install(
 # Coverage
 #------------------------------------------------------------------------------
 if(LABSTOR_ENABLE_COVERAGE)
-    set_coverage_flags(worch_queue_round_robin)
+    set_coverage_flags(remote_queue)
 endif()

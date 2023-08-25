@@ -3,8 +3,8 @@
 #------------------------------------------------------------------------------
 add_library(hermes_adapters SHARED
         hermes_adapters.cc)
-add_dependencies(hermes_adapters labstor_runtime)
-target_link_libraries(hermes_adapters labstor_runtime)
+add_dependencies(hermes_adapters ${Labstor_RUNTIME_DEPS})
+target_link_libraries(hermes_adapters ${Labstor_RUNTIME_LIBRARIES})
 
 #------------------------------------------------------------------------------
 # Install Small Message Task Library

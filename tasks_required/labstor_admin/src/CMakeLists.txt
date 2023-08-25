@@ -1,20 +1,17 @@
 #------------------------------------------------------------------------------
-# Build Small Message Task Library
+# Build Labstor Admin Task Library
 #------------------------------------------------------------------------------
-include_directories(myapp PRIVATE ${libfabric_INCLUDE_DIRS})
-link_directories(${libfabric_LIBRARY_DIRS})
-add_library(remote_queue SHARED
-        remote_queue.cc)
-add_dependencies(remote_queue labstor_runtime)
-target_link_libraries(remote_queue
-        labstor_runtime ${libfabric_LIBRARIES})
+add_library(labstor_admin SHARED
+        ${CMAKE_CURRENT_SOURCE_DIR}/labstor_admin.cc)
+add_dependencies(labstor_admin ${Labstor_RUNTIME_DEPS})
+target_link_libraries(labstor_admin ${Labstor_RUNTIME_LIBRARIES})
 
 #------------------------------------------------------------------------------
-# Install Small Message Task Library
+# Install Labstor Admin Task Library
 #------------------------------------------------------------------------------
 install(
         TARGETS
-        remote_queue
+        labstor_admin
         LIBRARY DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
         ARCHIVE DESTINATION ${LABSTOR_INSTALL_LIB_DIR}
         RUNTIME DESTINATION ${LABSTOR_INSTALL_BIN_DIR}
@@ -24,5 +21,5 @@ install(
 # Coverage
 #------------------------------------------------------------------------------
 if(LABSTOR_ENABLE_COVERAGE)
-    set_coverage_flags(remote_queue)
+    set_coverage_flags(labstor_admin)
 endif()

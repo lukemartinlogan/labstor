@@ -3,8 +3,8 @@
 #------------------------------------------------------------------------------
 add_library(hermes_config_manager SHARED
         config_manager.cc)
-add_dependencies(hermes_config_manager labstor_runtime)
-target_link_libraries(hermes_config_manager labstor_runtime)
+add_dependencies(hermes_config_manager ${Labstor_RUNTIME_DEPS})
+target_link_libraries(hermes_config_manager ${Labstor_RUNTIME_LIBRARIES})
 
 #------------------------------------------------------------------------------
 # Install Small Message Task Library

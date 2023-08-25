@@ -3,8 +3,8 @@
 #------------------------------------------------------------------------------
 add_library(ram_bdev SHARED
         ram_bdev.cc)
-add_dependencies(ram_bdev labstor_runtime)
-target_link_libraries(ram_bdev labstor_runtime)
+add_dependencies(ram_bdev ${Labstor_RUNTIME_DEPS})
+target_link_libraries(ram_bdev ${Labstor_RUNTIME_LIBRARIES})
 
 #------------------------------------------------------------------------------
 # Install Small Message Task Library
