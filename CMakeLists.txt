@@ -150,7 +150,7 @@ configure_file(
 
 install(
         FILES
-        ${PROJECT_BINARY_DIR}/CMakeFiles/HermesShmConfig.cmake
+        ${PROJECT_BINARY_DIR}/CMakeFiles/LabstorConfig.cmake
         DESTINATION
         ${CMAKE_INSTALL_PREFIX}/cmake
 )
