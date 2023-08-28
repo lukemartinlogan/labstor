@@ -97,6 +97,7 @@ class Server : public TaskLib {
           std::vector<DataTransfer> xfer(1);
           xfer[0].data_ = ret.data();
           xfer[0].data_size_ = ret.size();
+          HILOG(kInfo, "Recv return of {} bytes of data", xfer[0].data_size_);
           BinaryInputArchive<false> ar(xfer);
           task->exec_->LoadEnd(task->method_, ar, task);
           task->SetComplete();
@@ -186,6 +187,7 @@ class Server : public TaskLib {
       BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
       auto out_xfer = exec->SaveEnd(task->method_, ar, task);
       LABSTOR_CLIENT->DelTask(task);
+      HILOG(kInfo, "Returning {} bytes of data", out_xfer[0].data_size_);
       req.respond(std::string((char *) out_xfer[0].data_, out_xfer[0].data_size_));
     } else {
       req.respond(std::string());
