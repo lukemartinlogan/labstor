@@ -191,7 +191,7 @@ class Server : public TaskLib {
         try {
           task->Wait<1>();
           BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
-          auto out_xfer = exec->SaveEnd(task->method_, ar, task);
+          auto out_xfer = exec->SaveEnd(method, ar, task);
           LABSTOR_CLIENT->DelTask(task);
           HILOG(kInfo, "SaveEnd ({}): Returning {} bytes of data", task->task_node_, out_xfer[0].data_size_);
           req.respond(std::string((char *) out_xfer[0].data_, out_xfer[0].data_size_));
