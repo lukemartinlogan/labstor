@@ -55,7 +55,7 @@ class Server : public TaskLib {
         auto &xfer = *task->xfer_;
         switch (task->xfer_->size()) {
           case 1: {
-            HILOG(kInfo, "Transferring small message of {} bytes", xfer[0].data_size_);
+            HILOG(kInfo, "Transferring {} of {} bytes", task->task_node_, xfer[0].data_size_);
             std::string params((char *) xfer[0].data_, xfer[0].data_size_);
             auto future = LABSTOR_THALLIUM->AsyncCall(task->to_domain_.id_,
                                                       "RpcPushSmall",
@@ -66,7 +66,7 @@ class Server : public TaskLib {
             break;
           }
           case 2: {
-            HILOG(kInfo, "Transferring large message of {} bytes", xfer[0].data_size_);
+            HILOG(kInfo, "Transferring {} of {} bytes", task->task_node_, xfer[0].data_size_);
             std::string params((char *) xfer[1].data_, xfer[1].data_size_);
             IoType io_type = IoType::kRead;
             if (xfer[0].flags_.Any(DT_RECEIVER_READ)) {
@@ -93,14 +93,18 @@ class Server : public TaskLib {
       }
       case PushPhase::kWait: {
         if (LABSTOR_THALLIUM->IsDone(*task->tl_future_)) {
-          std::string ret = LABSTOR_THALLIUM->Wait<std::string>(*task->tl_future_);
-          std::vector<DataTransfer> xfer(1);
-          xfer[0].data_ = ret.data();
-          xfer[0].data_size_ = ret.size();
-          HILOG(kInfo, "Recv return of {} bytes of data", xfer[0].data_size_);
-          BinaryInputArchive<false> ar(xfer);
-          task->exec_->LoadEnd(task->method_, ar, task);
-          task->SetComplete();
+          try {
+            std::string ret = LABSTOR_THALLIUM->Wait<std::string>(*task->tl_future_);
+            std::vector<DataTransfer> xfer(1);
+            xfer[0].data_ = ret.data();
+            xfer[0].data_size_ = ret.size();
+            HILOG(kInfo, "Recv return of {} bytes of data", task->task_node_, xfer[0].data_size_);
+            BinaryInputArchive<false> ar(xfer);
+            task->exec_->LoadEnd(task->method_, ar, task);
+            task->SetComplete();
+          } catch (std::exception &e) {
+            HELOG(kFatal, "LoadEnd ({}): {}", task->task_node_, e.what());
+          }
         } else {
           return;
         }
@@ -162,35 +166,43 @@ class Server : public TaskLib {
                TaskStateId state_id,
                u32 method,
                std::vector<DataTransfer> &xfer) {
-    BinaryInputArchive<true> ar(xfer);
+    try {
+      BinaryInputArchive<true> ar(xfer);
 
-    // Deserialize task
-    TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(state_id);
-    if (exec == nullptr) {
-      HELOG(kError, "Could not find the task state {}", state_id);
-      req.respond(std::string());
-      return;
-    }
-    TaskPointer task_ptr = exec->LoadStart(method, ar);
-    auto &task = task_ptr.task_;
-    auto &p = task_ptr.p_;
-    task->domain_id_ = DomainId::GetLocal();
+      // Deserialize task
+      TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(state_id);
+      if (exec == nullptr) {
+        HELOG(kError, "Could not find the task state {}", state_id);
+        req.respond(std::string());
+        return;
+      }
+      TaskPointer task_ptr = exec->LoadStart(method, ar);
+      auto &task = task_ptr.task_;
+      auto &p = task_ptr.p_;
+      task->domain_id_ = DomainId::GetLocal();
 
-    // Execute task
-    auto *queue = LABSTOR_QM_CLIENT->GetQueue(QueueId(state_id));
-    queue->Emplace(task->lane_hash_, p);
-    bool is_fire_forget = task->IsFireAndForget();
+      // Execute task
+      auto *queue = LABSTOR_QM_CLIENT->GetQueue(QueueId(state_id));
+      queue->Emplace(task->lane_hash_, p);
+      bool is_fire_forget = task->IsFireAndForget();
 
-    // Get return value (should not contain data)
-    if (!is_fire_forget) {
-      task->Wait<1>();
-      BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
-      auto out_xfer = exec->SaveEnd(task->method_, ar, task);
-      LABSTOR_CLIENT->DelTask(task);
-      HILOG(kInfo, "Returning {} bytes of data", out_xfer[0].data_size_);
-      req.respond(std::string((char *) out_xfer[0].data_, out_xfer[0].data_size_));
-    } else {
-      req.respond(std::string());
+      // Get return value (should not contain data)
+      if (!is_fire_forget) {
+        try {
+          task->Wait<1>();
+          BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
+          auto out_xfer = exec->SaveEnd(task->method_, ar, task);
+          LABSTOR_CLIENT->DelTask(task);
+          HILOG(kInfo, "Returning {} bytes of data from {}", out_xfer[0].data_size_, task->task_node_);
+          req.respond(std::string((char *) out_xfer[0].data_, out_xfer[0].data_size_));
+        } catch (std::exception &e) {
+          HELOG(kFatal, "SaveEnd: {}", task->task_node_, e.what());
+        }
+      } else {
+        req.respond(std::string());
+      }
+    } catch (std::exception &e) {
+      HELOG(kFatal, "LoadStart {}/{}: {}", state_id, method, e.what());
     }
   }
 

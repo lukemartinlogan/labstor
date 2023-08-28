@@ -137,6 +137,11 @@ struct TaskNode {
   }
 };
 
+/** Allow TaskNode to be printed as strings */
+static inline std::ostream &operator<<(std::ostream &os, const TaskNode &obj) {
+  return os << obj.root_ << "/" << std::to_string(obj.node_depth_);
+}
+
 /** A generic task base class */
  struct Task : public hipc::ShmContainer {
  SHM_CONTAINER_TEMPLATE((Task), (Task))
