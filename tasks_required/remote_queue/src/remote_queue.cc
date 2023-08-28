@@ -55,6 +55,7 @@ class Server : public TaskLib {
         auto &xfer = *task->xfer_;
         switch (task->xfer_->size()) {
           case 1: {
+            HILOG(kDebug, "Transferring small message of {} bytes", xfer[0].data_size_);
             std::string params((char *) xfer[0].data_, xfer[0].data_size_);
             auto future = LABSTOR_THALLIUM->AsyncCall(task->to_domain_.id_,
                                                       "RpcPushSmall",
@@ -65,6 +66,7 @@ class Server : public TaskLib {
             break;
           }
           case 2: {
+            HILOG(kDebug, "Transferring large message of {} bytes", xfer[0].data_size_);
             std::string params((char *) xfer[1].data_, xfer[1].data_size_);
             IoType io_type = IoType::kRead;
             if (xfer[0].flags_.Any(DT_RECEIVER_READ)) {
@@ -127,6 +129,7 @@ class Server : public TaskLib {
     std::vector<DataTransfer> xfer(1);
     xfer[0].data_ = params.data();
     xfer[0].data_size_ = params.size();
+    HILOG(kDebug, "Received small message of {} bytes", xfer[0].data_size_);
 
     // Process the message
     RpcPush(req, state_id, method, xfer);

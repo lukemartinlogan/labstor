@@ -38,7 +38,7 @@ class Client {
         LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
         LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
         LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
-        bitfield32_t(0));
+        bitfield32_t(QUEUE_UNORDERED));
   }
 
   /** Create a remote_queue */
