@@ -100,7 +100,7 @@ class Server : public TaskLib {
             xfer[0].data_size_ = ret.size();
             HILOG(kInfo, "Wait ({}) got {} bytes of data", task->task_node_, xfer[0].data_size_);
             BinaryInputArchive<false> ar(xfer);
-            task->exec_->LoadEnd(task->method_, ar, task);
+            task->exec_->LoadEnd(task->exec_method_, ar, task);
             task->SetComplete();
           } catch (std::exception &e) {
             HELOG(kFatal, "LoadEnd ({}): {}", task->task_node_, e.what());
