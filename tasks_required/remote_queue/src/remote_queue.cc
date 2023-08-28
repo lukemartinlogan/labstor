@@ -50,7 +50,6 @@ class Server : public TaskLib {
 
   /** Push operation called on client */
   void Push(MultiQueue *queue, PushTask *task) {
-    HILOG(kInfo, "Pushing task {}/{}", task->task_state_, task->method_);
     switch (task->phase_) {
       case PushPhase::kStart: {
         auto &xfer = *task->xfer_;
