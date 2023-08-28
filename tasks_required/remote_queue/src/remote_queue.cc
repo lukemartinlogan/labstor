@@ -50,12 +50,13 @@ class Server : public TaskLib {
 
   /** Push operation called on client */
   void Push(MultiQueue *queue, PushTask *task) {
+    HILOG(kInfo, "Pushing task {}/{}", task->task_state_, task->method_);
     switch (task->phase_) {
       case PushPhase::kStart: {
         auto &xfer = *task->xfer_;
         switch (task->xfer_->size()) {
           case 1: {
-            HILOG(kDebug, "Transferring small message of {} bytes", xfer[0].data_size_);
+            HILOG(kInfo, "Transferring small message of {} bytes", xfer[0].data_size_);
             std::string params((char *) xfer[0].data_, xfer[0].data_size_);
             auto future = LABSTOR_THALLIUM->AsyncCall(task->to_domain_.id_,
                                                       "RpcPushSmall",
@@ -66,7 +67,7 @@ class Server : public TaskLib {
             break;
           }
           case 2: {
-            HILOG(kDebug, "Transferring large message of {} bytes", xfer[0].data_size_);
+            HILOG(kInfo, "Transferring large message of {} bytes", xfer[0].data_size_);
             std::string params((char *) xfer[1].data_, xfer[1].data_size_);
             IoType io_type = IoType::kRead;
             if (xfer[0].flags_.Any(DT_RECEIVER_READ)) {
@@ -125,11 +126,10 @@ class Server : public TaskLib {
                     u32 method,
                     std::string &params) {
     // Create the input data transfer object
-    int ret = 0;
     std::vector<DataTransfer> xfer(1);
     xfer[0].data_ = params.data();
     xfer[0].data_size_ = params.size();
-    HILOG(kDebug, "Received small message of {} bytes", xfer[0].data_size_);
+    HILOG(kInfo, "Received small message of {} bytes", xfer[0].data_size_);
 
     // Process the message
     RpcPush(req, state_id, method, xfer);
@@ -143,7 +143,6 @@ class Server : public TaskLib {
                    tl::bulk &bulk,
                    size_t data_size,
                    IoType io_type) {
-    int ret = 0;
     hshm::charbuf data(data_size);
     LABSTOR_THALLIUM->IoCallServer(req, bulk, io_type, data.data(), data_size);
 
