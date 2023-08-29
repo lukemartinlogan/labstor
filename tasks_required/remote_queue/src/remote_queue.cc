@@ -208,7 +208,6 @@ class Server : public TaskLib {
  public:
 #include "remote_queue/remote_queue_lib_exec.h"
 };
-
 }  // namespace labstor
 
 LABSTOR_TASK_CC(labstor::remote_queue::Server, "remote_queue");

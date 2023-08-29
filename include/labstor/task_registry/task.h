@@ -154,7 +154,7 @@ static inline std::ostream &operator<<(std::ostream &os, const TaskNode &obj) {
 /** This task uses asymmetric serialization */
 #define TF_SRL_ASYM (TF_SRL_ASYM_START | TF_SRL_ASYM_END)
 /** This task uses replication */
-#define TF_REPLICA BIT_OPT(u32, 4)
+#define TF_REPLICA BIT_OPT(u32, 31)
 /** This task is intended to be used only locally */
 #define TF_LOCAL BIT_OPT(u32, 5)
 
@@ -174,9 +174,20 @@ class IsTask {};
 /** Determine this task uses SerializeEnd */
 #define USES_SRL_END(T) \
   T::SRL_SYM_END
-/** Determine this task uses ReplicateStart + ReplicateEnd */
-#define USES_REPLICA(T) \
-  T::REPLICA
+/** Call replica start if applicable */
+template<typename T>
+constexpr inline void CALL_REPLICA_START(u32 count, T *task) {
+  if constexpr(T::REPLICA) {
+    task->ReplicateStart(count);
+  }
+}
+/** Call replica end if applicable */
+template<typename T>
+constexpr inline void CALL_REPLICA_END(T *task) {
+  if constexpr(T::REPLICA) {
+    task->ReplicateEnd();
+  }
+}
 
 /** A generic task base class */
 template<u32 FLAGS>

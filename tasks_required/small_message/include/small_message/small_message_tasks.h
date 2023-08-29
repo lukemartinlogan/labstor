@@ -59,7 +59,7 @@ struct DestructTask : public DestroyTaskStateTask {
 /**
  * A custom task in small_message
  * */
-struct MdTask : public Task, TaskFlags<TF_SRL_SYM> {
+struct MdTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
   OUT hipc::pod_array<int, 1> ret_;
 
   /** SHM default constructor */
@@ -81,8 +81,16 @@ struct MdTask : public Task, TaskFlags<TF_SRL_SYM> {
     domain_id_ = domain_id;
 
     // Custom params
-    ret_.resize(alloc, 1);
+    ret_.construct(alloc, 1);
   }
+
+  /** Begin replication */
+  void ReplicateStart(u32 count) {
+    ret_.resize(count);
+  }
+
+  /** Finalize replication */
+  void ReplicateEnd() {}
 
   /** (De)serialize message call */
   template<typename Ar>
@@ -93,7 +101,7 @@ struct MdTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message return */
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {
-    ar(ret_);
+    ar(ret_[replica]);
   }
 };
 

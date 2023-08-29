@@ -22,49 +22,35 @@ void Run(MultiQueue *queue, u32 method, Task *task) override {
 void ReplicateStart(u32 method, u32 count, Task *task) override {
   switch (method) {
     case Method::kConstruct: {
-      if constexpr(USES_REPLICA(ConstructTask)) {
-        reinterpret_cast<ConstructTask*>(task)->ReplicateStart(count);
-      }
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<ConstructTask*>(task));
       break;
     }
     case Method::kDestruct: {
-      if constexpr(USES_REPLICA(DestructTask)) {
-        reinterpret_cast<DestructTask*>(task)->ReplicateStart(count);
-      }
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<DestructTask*>(task));
       break;
     }
     case Method::kPush: {
-      if constexpr(USES_REPLICA(PushTask)) {
-        reinterpret_cast<PushTask*>(task)->ReplicateStart(count);
-      }
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<PushTask*>(task));
       break;
     }
   }
-  return ar.Get();
 }
 /** Determine success and handle failures */
 void ReplicateEnd(u32 method, Task *task) override {
   switch (method) {
     case Method::kConstruct: {
-      if constexpr(USES_REPLICA(ConstructTask)) {
-        reinterpret_cast<ConstructTask*>(task)->ReplicateEnd();
-      }
+      labstor::CALL_REPLICA_END(reinterpret_cast<ConstructTask*>(task));
       break;
     }
     case Method::kDestruct: {
-      if constexpr(USES_REPLICA(DestructTask)) {
-        reinterpret_cast<DestructTask*>(task)->ReplicateEnd();
-      }
+      labstor::CALL_REPLICA_END(reinterpret_cast<DestructTask*>(task));
       break;
     }
     case Method::kPush: {
-      if constexpr(USES_REPLICA(PushTask)) {
-        reinterpret_cast<PushTask*>(task)->ReplicateEnd();
-      }
+      labstor::CALL_REPLICA_END(reinterpret_cast<PushTask*>(task));
       break;
     }
   }
-  return ar.Get();
 }
 /** Serialize a task when initially pushing into remote */
 std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, Task *task) override {
