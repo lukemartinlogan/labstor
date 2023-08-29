@@ -63,7 +63,7 @@ struct RegisterTaskLibTaskTempl : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(id_);
   }
 
@@ -137,7 +137,7 @@ struct CreateTaskStateTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(id_);
   }
 
@@ -186,7 +186,7 @@ struct GetTaskStateIdTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(id_);
   }
 
@@ -229,7 +229,7 @@ struct DestroyTaskStateTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
   }
 
   TASK_SERIALIZE
@@ -262,7 +262,7 @@ struct StopRuntimeTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
   }
 
   TASK_SERIALIZE
@@ -310,7 +310,7 @@ struct SetWorkOrchestratorPolicyTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
   }
 
   TASK_SERIALIZE

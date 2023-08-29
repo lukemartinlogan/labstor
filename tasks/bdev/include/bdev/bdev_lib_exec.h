@@ -162,7 +162,7 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
   return ar.Get();
 }
 /** Deserialize a task when returning from remote queue */
-void LoadEnd(u32 method, BinaryInputArchive<false> &ar, Task *task) override {
+void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task) override {
   switch (method) {
     case Method::kConstruct: {
       ar >> *reinterpret_cast<ConstructTask*>(task);

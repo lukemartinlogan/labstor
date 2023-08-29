@@ -71,29 +71,22 @@ class Client {
   HSHM_ALWAYS_INLINE
   void Disperse(Task *orig_task,
                 TaskState *exec,
-                const std::vector<DomainId> &domain_ids) {
-    hipc::Pointer p, disperse_p;
+                std::vector<DomainId> &domain_ids) {
+    hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
 
     // Serialize task + create the wait task
     HILOG(kInfo, "Beginning dispersion")
     BinaryOutputArchive<true> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
     auto xfer = exec->SaveStart(orig_task->method_, ar, orig_task);
-    auto *wait_task = LABSTOR_CLIENT->NewTask<DisperseTask>(
-        disperse_p, orig_task->task_node_, DomainId::GetLocal(), id_, orig_task, xfer, domain_ids.size());
     HILOG(kInfo, "Serialized dispersion")
 
     // Create subtasks
-    for (auto &node_id : domain_ids) {
-      auto *sub_task = LABSTOR_CLIENT->NewTask<PushTask>(
-          p, orig_task->task_node_, DomainId::GetLocal(), id_,
-          exec, orig_task->method_, wait_task->xfer_, node_id);
-      wait_task->subtasks_.push_back(sub_task);
-      queue->Emplace(orig_task->lane_hash_, p);
-    }
-
-    // Enqueue wait task
-    queue->Emplace(orig_task->lane_hash_, disperse_p);
+    exec->ReplicateStart(orig_task->method_, domain_ids.size(), orig_task);
+    LABSTOR_CLIENT->NewTask<PushTask>(
+        p, orig_task->task_node_, DomainId::GetLocal(), id_,
+        domain_ids, orig_task, exec, orig_task->method_, xfer);
+    queue->Emplace(orig_task->lane_hash_, p);
   }
   LABSTOR_TASK_NODE_ROOT(Custom);
 

@@ -13,12 +13,16 @@ namespace labstor {
 
 class Task;
 
+//#define WITH_SRL_START BIT_OPT(u32, 0)
+//#define WITH_SRL_END BIT_OPT(u32, 1)
+//#define WITH_REPLICA BIT_OPT(u32, 2)
+
 /**
  * Used for SFINAE to identify serialization parameters
  * WITH_SRL_START: true -> has SerializeStart function
  * WITH_SRL_END: true -> has SerializeEnd function
  * */
-template<bool WITH_SRL_START, bool WITH_SRL_END>
+template<bool WITH_SRL_START, bool WITH_SRL_END, bool WITH_REPLICA>
 class SrlFlags {};
 #define IS_SRL(T) \
   std::is_base_of_v<SrlFlags<true, true>, T> || \
@@ -224,31 +228,31 @@ class BinaryInputArchive {
   /** Deserialize using call */
   template<typename T, typename ...Args>
   BinaryInputArchive& operator()(T &var, Args &&...args) {
-    return Deserialize(var, std::forward<Args>(args)...);
+    return Deserialize(0, var, std::forward<Args>(args)...);
   }
 
   /** Deserialize using right shift */
   template<typename T>
   BinaryInputArchive& operator>>(T &var) {
-    return Deserialize(var);
+    return Deserialize(0, var);
   }
 
   /** Deserialize using ampersand */
   template<typename T>
   BinaryInputArchive& operator&(T &var) {
-    return Deserialize(var);
+    return Deserialize(0, var);
   }
 
   /** Deserialize an array */
   template<typename T>
   BinaryInputArchive& read(T *data, size_t count) {
     size_t size = count * sizeof(T);
-    Deserialize(cereal::binary_data(data, size));
+    Deserialize(0, cereal::binary_data(data, size));
   }
 
-  /** Serialize a parameter */
+  /** Deserialize a parameter */
   template<typename T, typename ...Args>
-  BinaryInputArchive& Deserialize(T &var, Args&& ...args) {
+  BinaryInputArchive& Deserialize(u32 replica, T &var, Args&& ...args) {
     if constexpr (std::is_base_of<Task, T>::value) {
       if constexpr (IS_SRL(T)) {
         if constexpr (is_start) {
@@ -261,7 +265,7 @@ class BinaryInputArchive {
           if constexpr (USES_SRL_END(T)) {
             var.SerializeEnd(*this);
           } else {
-            var.LoadEnd(*this);
+            var.LoadEnd(replica, *this);
           }
         }
       }
@@ -270,11 +274,12 @@ class BinaryInputArchive {
     }  else {
       ar_ >> var;
     }
-    return Deserialize(std::forward<Args>(args)...);
+    return Deserialize(replica, std::forward<Args>(args)...);
   }
 
   /** End deserialize recursion */
-  BinaryInputArchive& Deserialize() {
+  HSHM_ALWAYS_INLINE
+  BinaryInputArchive& Deserialize(u32 replica) {
     return *this;
   }
 };

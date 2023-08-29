@@ -77,11 +77,12 @@ class PushPhase {
  * A task to push a serialized task onto the remote queue
  * */
 struct PushTask : public LocalTask {
+  IN std::vector<DomainId> domain_ids_;
+  IN Task *orig_task_;
   IN TaskState *exec_;
   IN u32 exec_method_;
-  IN std::vector<DataTransfer> *xfer_;
-  IN DomainId to_domain_;
-  TEMP hipc::ShmArchive<thallium::async_response> tl_future_;
+  IN std::vector<DataTransfer> xfer_;
+  TEMP std::vector<tl::async_response> tl_future_;
   TEMP int phase_;
 
   /** SHM default constructor */
@@ -94,10 +95,11 @@ struct PushTask : public LocalTask {
            const TaskNode &task_node,
            const DomainId &domain_id,
            const TaskStateId &state_id,
+           std::vector<DomainId> &domain_ids,
+           Task *orig_task,
            TaskState *exec,
            u32 exec_method,
-           std::vector<DataTransfer> &xfer,
-           const DomainId &to_domain) : Task(alloc) {
+           std::vector<DataTransfer> &xfer) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
@@ -107,10 +109,11 @@ struct PushTask : public LocalTask {
     domain_id_ = domain_id;
 
     // Custom params
+    domain_ids_ = std::move(domain_ids);
+    orig_task_ = orig_task;
     exec_ = exec;
     exec_method_ = exec_method;
-    xfer_ = &xfer;
-    to_domain_ = to_domain;
+    xfer_ = std::move(xfer);
     phase_ = PushPhase::kStart;
   }
 };
@@ -134,42 +137,6 @@ struct PushTask : public LocalTask {
 //    domain_id_ = domain_id;
 //  }
 //};
-
-/**
- * A custom task in remote_queue
- * */
-struct DisperseTask : public LocalTask {
-  IN Task *orig_task_;
-  IN std::vector<DataTransfer> xfer_;
-  TEMP std::vector<Task*> subtasks_;
-
-  /** SHM default constructor */
-  HSHM_ALWAYS_INLINE explicit
-  DisperseTask(hipc::Allocator *alloc) : LocalTask(alloc) {}
-
-  /** Emplace constructor */
-  HSHM_ALWAYS_INLINE explicit
-  DisperseTask(hipc::Allocator *alloc,
-               const TaskNode &task_node,
-               const DomainId &domain_id,
-               const TaskStateId &state_id,
-               Task *orig_task,
-               std::vector<DataTransfer> &xfer,
-               size_t num_subtasks) : Task(alloc) {
-    // Initialize task
-    task_node_ = task_node;
-    lane_hash_ = 0;
-    task_state_ = state_id;
-    method_ = Method::kDisperse;
-    task_flags_.SetBits(TASK_FIRE_AND_FORGET);
-    domain_id_ = domain_id;
-
-    // Custom params
-    orig_task_ = orig_task;
-    xfer_ = std::move(xfer);
-    subtasks_.reserve(num_subtasks);
-  }
-};
 
 } // namespace labstor::remote_queue
 

@@ -22,7 +22,7 @@ class Server : public TaskLib {
   }
 
   void Md(MultiQueue *queue, MdTask *task) {
-    task->ret_ = 1;
+    task->ret_[0] = 1;
     task->SetComplete();
   }
 

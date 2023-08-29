@@ -174,7 +174,7 @@ struct PutBlobTask : public Task, SrlFlags<false, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(blob_id_);
   }
 };
@@ -247,7 +247,7 @@ struct GetBlobTask : public Task, SrlFlags<false, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(blob_id_);
   }
 };
@@ -290,7 +290,7 @@ struct TagBlobTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
   }
 };
 
@@ -336,7 +336,7 @@ struct BlobHasTagTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(has_tag_);
   }
 };
@@ -387,7 +387,7 @@ struct GetBlobIdTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(blob_id_);
   }
 };
@@ -436,7 +436,7 @@ struct GetBlobNameTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(blob_name_);
   }
 };
@@ -477,7 +477,7 @@ struct GetBlobScoreTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(score_);
   }
 };
@@ -524,7 +524,7 @@ struct GetBlobBuffersTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(buffers_);
   }
 };
@@ -575,7 +575,7 @@ struct RenameBlobTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(new_blob_name_);
   }
 };
@@ -618,7 +618,7 @@ struct TruncateBlobTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
   }
 };
 
@@ -667,7 +667,7 @@ struct DestroyBlobTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
   }
 };
 

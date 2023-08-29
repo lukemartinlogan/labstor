@@ -60,7 +60,7 @@ struct DestructTask : public DestroyTaskStateTask {
  * A custom task in small_message
  * */
 struct MdTask : public Task, SrlFlags<true, true> {
-  OUT int ret_;
+  OUT hipc::pod_array<int, 1> ret_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -81,6 +81,7 @@ struct MdTask : public Task, SrlFlags<true, true> {
     domain_id_ = domain_id;
 
     // Custom params
+    ret_.resize(alloc, 1);
   }
 
   /** (De)serialize message call */
@@ -91,7 +92,7 @@ struct MdTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(ret_);
   }
 };
@@ -144,7 +145,7 @@ struct IoTask : public Task, SrlFlags<false, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(ret_);
   }
 };

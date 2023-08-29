@@ -77,6 +77,12 @@ class TaskLib {
   /** Run a method of the task */
   virtual void Run(MultiQueue *queue, u32 method, Task *task) = 0;
 
+  /** Allow task to store replicas of completion */
+  virtual void ReplicateStart(u32 method, u32 count, Task *task) {}
+
+  /** Can be used to summarize the completions */
+  virtual void ReplicateEnd(u32 method, Task *task) {}
+
   /** Serialize a task when initially pushing into remote */
   virtual std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, Task *task) {
     return {};
@@ -93,7 +99,7 @@ class TaskLib {
   }
 
   /** Deserialize a task when returning from remote queue */
-  virtual void LoadEnd(u32 method, BinaryInputArchive<false> &ar, Task *task) {
+  virtual void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task) {
   }
 };
 

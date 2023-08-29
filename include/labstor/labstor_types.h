@@ -6,6 +6,7 @@
 #define LABSTOR_INCLUDE_LABSTOR_LABSTOR_TYPES_H_
 
 #include <hermes_shm/data_structures/ipc/unordered_map.h>
+#include <hermes_shm/data_structures/ipc/pod_array.h>
 #include <hermes_shm/data_structures/ipc/vector.h>
 #include <hermes_shm/data_structures/ipc/list.h>
 #include <hermes_shm/data_structures/ipc/slist.h>

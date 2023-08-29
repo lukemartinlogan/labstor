@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-USAGE: ./referesh_methods [TASK_NAME (snake case)]
+USAGE: ./referesh_methods [TASK_ROOT]
 """
 
 import yaml
@@ -9,8 +9,8 @@ import os
 import sys
 from codegen.util.paths import LABSTOR_ROOT
 
-TASK_NAME = sys.argv[1]
-TASK_ROOT = f'{LABSTOR_ROOT}/tasks/{TASK_NAME}'
+TASK_ROOT = sys.argv[1]
+TASK_NAME = os.path.basename(TASK_ROOT)
 METHODS_H = f'{TASK_ROOT}/include/{TASK_NAME}/{TASK_NAME}_methods.h'
 METHODS_YAML = f'{TASK_ROOT}/include/{TASK_NAME}/{TASK_NAME}_methods.yaml'
 LIB_EXEC_H = f'{TASK_ROOT}/include/{TASK_NAME}/{TASK_NAME}_lib_exec.h'
@@ -47,11 +47,11 @@ with open(METHODS_H, 'w') as fp:
 
 
 # Produce the TASK_NAME_lib_exec.h file
-## Create the Run method
 lines = []
 lines += [f'#ifndef {LIB_EXEC_MACRO}',
           f'#define {LIB_EXEC_MACRO}',
           '']
+## Create the Run method
 lines += ['/** Execute a task */',
           'void Run(MultiQueue *queue, u32 method, Task *task) override {',
           '  switch (method) {']
@@ -63,6 +63,40 @@ for method_enum_name, method_off in methods:
               f'      break;',
               f'    }}']
 lines += ['  }']
+lines += ['}']
+
+## Create the ReplicateStart method
+lines += ['/** Ensure there is space to store replicated outputs */',
+          'void ReplicateStart(u32 method, u32 count, Task *task) override {',
+          '  switch (method) {']
+for method_enum_name, method_off in methods:
+    method_name = method_enum_name.replace('k', '', 1)
+    task_name = method_name + "Task"
+    lines += [f'    case Method::{method_enum_name}: {{',
+              f'      if constexpr(std::is_base_of_v<ReplicatedTask, {task_name}>) {{',
+              f'        reinterpret_cast<{task_name}*>(task)->ReplicateStart(count);',
+              f'      }}',
+              f'      break;',
+              f'    }}']
+lines += ['  }']
+lines += ['  return ar.Get();']
+lines += ['}']
+
+## Create the ReplicateEnd method
+lines += ['/** Determine success and handle failures */',
+          'void ReplicateEnd(u32 method, Task *task) override {',
+          '  switch (method) {']
+for method_enum_name, method_off in methods:
+    method_name = method_enum_name.replace('k', '', 1)
+    task_name = method_name + "Task"
+    lines += [f'    case Method::{method_enum_name}: {{',
+              f'      if constexpr(std::is_base_of_v<ReplicatedTask, {task_name}>) {{',
+              f'        reinterpret_cast<{task_name}*>(task)->ReplicateEnd();',
+              f'      }}',
+              f'      break;',
+              f'    }}']
+lines += ['  }']
+lines += ['  return ar.Get();']
 lines += ['}']
 
 ## Create the SaveStart Method
@@ -114,13 +148,13 @@ lines += ['}']
 
 ## Create the LoadEnd Method
 lines += ['/** Deserialize a task when returning from remote queue */',
-          'void LoadEnd(u32 method, BinaryInputArchive<false> &ar, Task *task) override {',
+          'void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task) override {',
           '  switch (method) {']
 for method_enum_name, method_off in methods:
     method_name = method_enum_name.replace('k', '', 1)
     task_name = method_name + "Task"
     lines += [f'    case Method::{method_enum_name}: {{',
-              f'      ar >> *reinterpret_cast<{task_name}*>(task);',
+              f'      ar.Deserialize(replica, *reinterpret_cast<{task_name}*>(task);)',
               f'      break;',
               f'    }}']
 lines += ['  }']

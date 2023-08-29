@@ -58,7 +58,7 @@ class Client {
         task_node, domain_id, id_);
     queue->Emplace(3, p);
     task->Wait();
-    int ret = task->ret_;
+    int ret = task->ret_[0];
     LABSTOR_CLIENT->DelTask(task);
     return ret;
   }

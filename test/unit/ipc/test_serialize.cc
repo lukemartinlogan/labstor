@@ -39,7 +39,7 @@ struct TestObj : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
   }
 
   bool operator==(const TestObj &other) const {

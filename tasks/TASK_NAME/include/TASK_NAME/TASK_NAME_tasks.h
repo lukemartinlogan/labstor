@@ -97,7 +97,7 @@ struct CustomTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
   }
 
   TASK_SERIALIZE

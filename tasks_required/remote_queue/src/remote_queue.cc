@@ -52,17 +52,21 @@ class Server : public TaskLib {
   void Push(MultiQueue *queue, PushTask *task) {
     switch (task->phase_) {
       case PushPhase::kStart: {
-        auto &xfer = *task->xfer_;
-        switch (task->xfer_->size()) {
+        auto &xfer = task->xfer_;
+        task->tl_future_.reserve(task->domain_ids_.size());
+        switch (task->xfer_.size()) {
           case 1: {
             HILOG(kInfo, "Transferring {} of {} bytes", task->task_node_, xfer[0].data_size_);
             std::string params((char *) xfer[0].data_, xfer[0].data_size_);
-            auto future = LABSTOR_THALLIUM->AsyncCall(task->to_domain_.id_,
-                                                      "RpcPushSmall",
-                                                      task->exec_->id_,
-                                                      task->exec_method_,
-                                                      params);
-            HSHM_MAKE_AR(task->tl_future_, nullptr, std::move(future));
+            task->tl_future_.reserve(task->domain_ids_.size());
+            for (DomainId domain_id : task->domain_ids_) {
+              auto future = LABSTOR_THALLIUM->AsyncCall(domain_id.id_,
+                                                        "RpcPushSmall",
+                                                        task->exec_->id_,
+                                                        task->exec_method_,
+                                                        params);
+              task->tl_future_.emplace_back(std::move(future));
+            }
             break;
           }
           case 2: {
@@ -72,17 +76,20 @@ class Server : public TaskLib {
             if (xfer[0].flags_.Any(DT_RECEIVER_READ)) {
               io_type = IoType::kWrite;
             }
-            auto future = LABSTOR_THALLIUM->AsyncIoCall(task->to_domain_.id_,
-                                                        "RpcPushBulk",
-                                                        io_type,
-                                                        (char *) xfer[0].data_,
-                                                        xfer[0].data_size_,
-                                                        task->exec_->id_,
-                                                        task->exec_method_,
-                                                        params,
-                                                        xfer[0].data_size_,
-                                                        io_type);
-            HSHM_MAKE_AR(task->tl_future_, nullptr, std::move(future));
+            for (int replica = 0; replica < task->domain_ids_.size(); ++replica) {
+              DomainId domain_id = task->domain_ids_[replica];
+              auto future = LABSTOR_THALLIUM->AsyncIoCall(domain_id.id_,
+                                                          "RpcPushBulk",
+                                                          io_type,
+                                                          (char *) xfer[0].data_,
+                                                          xfer[0].data_size_,
+                                                          task->exec_->id_,
+                                                          task->exec_method_,
+                                                          params,
+                                                          xfer[0].data_size_,
+                                                          io_type);
+              task->tl_future_.emplace_back(std::move(future));
+            }
             break;
           }
           default: {
@@ -92,35 +99,27 @@ class Server : public TaskLib {
         task->phase_ = PushPhase::kWait;
       }
       case PushPhase::kWait: {
-        if (LABSTOR_THALLIUM->IsDone(*task->tl_future_)) {
+        for (int replica = 0; replica < task->domain_ids_.size(); ++replica) {
+          tl::async_response &future = task->tl_future_[replica];
+          if (!LABSTOR_THALLIUM->IsDone(future)) {
+            return;
+          }
           try {
-            std::string ret = LABSTOR_THALLIUM->Wait<std::string>(*task->tl_future_);
+            std::string ret = LABSTOR_THALLIUM->Wait<std::string>(future);
             std::vector<DataTransfer> xfer(1);
             xfer[0].data_ = ret.data();
             xfer[0].data_size_ = ret.size();
             HILOG(kInfo, "Wait ({}) got {} bytes of data", task->task_node_, xfer[0].data_size_);
             BinaryInputArchive<false> ar(xfer);
-            task->exec_->LoadEnd(task->exec_method_, ar, task);
+            task->exec_->LoadEnd(replica, task->exec_method_, ar, task);
             task->SetComplete();
           } catch (std::exception &e) {
             HELOG(kFatal, "LoadEnd ({}): {}", task->task_node_, e.what());
           }
-        } else {
-          return;
         }
+        task->exec_->ReplicateEnd(task->orig_task_->method_, task->orig_task_);
       }
     }
-  }
-
-  /** Disperse operation called on client */
-  void Disperse(MultiQueue *queue, DisperseTask *task) {
-    for (auto &task : task->subtasks_) {
-      if (!task->IsComplete()) {
-        return;
-      }
-    }
-    task->orig_task_->SetComplete();
-    task->SetComplete();
   }
 
  private:

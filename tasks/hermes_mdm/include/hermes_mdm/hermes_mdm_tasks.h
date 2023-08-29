@@ -71,7 +71,7 @@ struct ConstructTask : public CreateTaskStateTask {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {}
+  void SerializeEnd(u32 replica, Ar &ar) {}
 };
 
 /** A task to destroy hermes_mdm */

@@ -12,15 +12,59 @@ void Run(MultiQueue *queue, u32 method, Task *task) override {
       Destruct(queue, reinterpret_cast<DestructTask *>(task));
       break;
     }
-    case Method::kDisperse: {
-      Disperse(queue, reinterpret_cast<DisperseTask *>(task));
-      break;
-    }
     case Method::kPush: {
       Push(queue, reinterpret_cast<PushTask *>(task));
       break;
     }
   }
+}
+/** Ensure there is space to store replicated outputs */
+void ReplicateStart(u32 method, u32 count, Task *task) override {
+  switch (method) {
+    case Method::kConstruct: {
+      if constexpr(std::is_base_of_v<ReplicatedTask, ConstructTask>) {
+        reinterpret_cast<ConstructTask*>(task)->ReplicateStart(count);
+      }
+      break;
+    }
+    case Method::kDestruct: {
+      if constexpr(std::is_base_of_v<ReplicatedTask, DestructTask>) {
+        reinterpret_cast<DestructTask*>(task)->ReplicateStart(count);
+      }
+      break;
+    }
+    case Method::kPush: {
+      if constexpr(std::is_base_of_v<ReplicatedTask, PushTask>) {
+        reinterpret_cast<PushTask*>(task)->ReplicateStart(count);
+      }
+      break;
+    }
+  }
+  return ar.Get();
+}
+/** Determine success and handle failures */
+void ReplicateEnd(u32 method, Task *task) override {
+  switch (method) {
+    case Method::kConstruct: {
+      if constexpr(std::is_base_of_v<ReplicatedTask, ConstructTask>) {
+        reinterpret_cast<ConstructTask*>(task)->ReplicateEnd();
+      }
+      break;
+    }
+    case Method::kDestruct: {
+      if constexpr(std::is_base_of_v<ReplicatedTask, DestructTask>) {
+        reinterpret_cast<DestructTask*>(task)->ReplicateEnd();
+      }
+      break;
+    }
+    case Method::kPush: {
+      if constexpr(std::is_base_of_v<ReplicatedTask, PushTask>) {
+        reinterpret_cast<PushTask*>(task)->ReplicateEnd();
+      }
+      break;
+    }
+  }
+  return ar.Get();
 }
 /** Serialize a task when initially pushing into remote */
 std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, Task *task) override {
@@ -31,10 +75,6 @@ std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, T
     }
     case Method::kDestruct: {
       ar << *reinterpret_cast<DestructTask*>(task);
-      break;
-    }
-    case Method::kDisperse: {
-      ar << *reinterpret_cast<DisperseTask*>(task);
       break;
     }
     case Method::kPush: {
@@ -58,11 +98,6 @@ TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) override {
       ar >> *reinterpret_cast<DestructTask*>(task_ptr.task_);
       break;
     }
-    case Method::kDisperse: {
-      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<DisperseTask>(task_ptr.p_);
-      ar >> *reinterpret_cast<DisperseTask*>(task_ptr.task_);
-      break;
-    }
     case Method::kPush: {
       task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<PushTask>(task_ptr.p_);
       ar >> *reinterpret_cast<PushTask*>(task_ptr.task_);
@@ -82,10 +117,6 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
       ar << *reinterpret_cast<DestructTask*>(task);
       break;
     }
-    case Method::kDisperse: {
-      ar << *reinterpret_cast<DisperseTask*>(task);
-      break;
-    }
     case Method::kPush: {
       ar << *reinterpret_cast<PushTask*>(task);
       break;
@@ -94,22 +125,18 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
   return ar.Get();
 }
 /** Deserialize a task when returning from remote queue */
-void LoadEnd(u32 method, BinaryInputArchive<false> &ar, Task *task) override {
+void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task) override {
   switch (method) {
     case Method::kConstruct: {
-      ar >> *reinterpret_cast<ConstructTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<ConstructTask*>(task);)
       break;
     }
     case Method::kDestruct: {
-      ar >> *reinterpret_cast<DestructTask*>(task);
-      break;
-    }
-    case Method::kDisperse: {
-      ar >> *reinterpret_cast<DisperseTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<DestructTask*>(task);)
       break;
     }
     case Method::kPush: {
-      ar >> *reinterpret_cast<PushTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<PushTask*>(task);)
       break;
     }
   }

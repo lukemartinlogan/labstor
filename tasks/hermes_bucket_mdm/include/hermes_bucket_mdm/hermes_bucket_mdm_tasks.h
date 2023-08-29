@@ -141,7 +141,7 @@ struct PutBlobTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(blob_id_);
   }
 };
@@ -196,7 +196,7 @@ struct GetOrCreateTagTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(tag_id_);
   }
 };
@@ -243,7 +243,7 @@ struct GetTagIdTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(tag_id_);
   }
 };
@@ -290,7 +290,7 @@ struct GetTagNameTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(tag_name_);
   }
 };
@@ -339,7 +339,7 @@ struct RenameTagTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {
+  void SerializeEnd(u32 replica, Ar &ar) {
     ar(tag_name_);
   }
 };
@@ -380,7 +380,7 @@ struct DestroyTagTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {}
+  void SerializeEnd(u32 replica, Ar &ar) {}
 };
 
 /** A task to add a blob to the tag */
@@ -422,7 +422,7 @@ struct TagAddBlobTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {}
+  void SerializeEnd(u32 replica, Ar &ar) {}
 };
 
 /** A task to remove a blob from a tag */
@@ -464,7 +464,7 @@ struct TagRemoveBlobTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {}
+  void SerializeEnd(u32 replica, Ar &ar) {}
 };
 
 /** A task to get the group of blobs associated with a tag */
@@ -512,7 +512,7 @@ struct TagClearBlobsTask : public Task, SrlFlags<true, true> {
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(Ar &ar) {}
+  void SerializeEnd(u32 replica, Ar &ar) {}
 };
 
 }  // namespace hermes::bucket_mdm
