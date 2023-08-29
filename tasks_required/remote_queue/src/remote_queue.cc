@@ -112,12 +112,13 @@ class Server : public TaskLib {
             HILOG(kInfo, "Wait ({}) got {} bytes of data", task->task_node_, xfer[0].data_size_);
             BinaryInputArchive<false> ar(xfer);
             task->exec_->LoadEnd(replica, task->exec_method_, ar, task);
-            task->SetComplete();
           } catch (std::exception &e) {
             HELOG(kFatal, "LoadEnd ({}): {}", task->task_node_, e.what());
           }
         }
         task->exec_->ReplicateEnd(task->orig_task_->method_, task->orig_task_);
+        task->SetComplete();
+        task->orig_task_->SetComplete();
       }
     }
   }
