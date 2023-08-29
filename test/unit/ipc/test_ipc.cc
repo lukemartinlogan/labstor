@@ -63,7 +63,7 @@ TEST_CASE("TestIO") {
     int ret;
     HILOG(kInfo, "Sending message {}", i);
     int node_id = 1 + ((rank + 1) % nprocs);
-    ret = client.MdRoot(labstor::DomainId::GetNode(node_id));
+    ret = client.IoRoot(labstor::DomainId::GetNode(node_id));
     REQUIRE(ret == 1);
   }
   t.Pause();
