@@ -75,7 +75,7 @@ class PutBlobPhase {
 };
 
 /** Put a blob in the bucket */
-struct PutBlobTask : public Task, SrlFlags<true, true> {
+struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN TagId tag_id_;
   IN hipc::ShmArchive<hipc::charbuf> blob_name_;
   IN size_t blob_off_;
@@ -147,7 +147,7 @@ struct PutBlobTask : public Task, SrlFlags<true, true> {
 };
 
 /** A task to get or create a tag */
-struct GetOrCreateTagTask : public Task, SrlFlags<true, true> {
+struct GetOrCreateTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN hipc::ShmArchive<hipc::string> tag_name_;
   IN bool blob_owner_;
   IN hipc::ShmArchive<hipc::vector<TraitId>> traits_;
@@ -202,7 +202,7 @@ struct GetOrCreateTagTask : public Task, SrlFlags<true, true> {
 };
 
 /** A task to get a tag id */
-struct GetTagIdTask : public Task, SrlFlags<true, true> {
+struct GetTagIdTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN hipc::ShmArchive<hipc::string> tag_name_;
   OUT TagId tag_id_;
 
@@ -249,7 +249,7 @@ struct GetTagIdTask : public Task, SrlFlags<true, true> {
 };
 
 /** A task to get a tag name */
-struct GetTagNameTask : public Task, SrlFlags<true, true> {
+struct GetTagNameTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN TagId tag_id_;
   OUT hipc::ShmArchive<hipc::string> tag_name_;
 
@@ -296,7 +296,7 @@ struct GetTagNameTask : public Task, SrlFlags<true, true> {
 };
 
 /** A task to rename a tag */
-struct RenameTagTask : public Task, SrlFlags<true, true> {
+struct RenameTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN TagId tag_id_;
   IN hipc::ShmArchive<hipc::string> tag_name_;
 
@@ -345,7 +345,7 @@ struct RenameTagTask : public Task, SrlFlags<true, true> {
 };
 
 /** A task to destroy a tag */
-struct DestroyTagTask : public Task, SrlFlags<true, true> {
+struct DestroyTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN TagId tag_id_;
 
   /** SHM default constructor */
@@ -384,7 +384,7 @@ struct DestroyTagTask : public Task, SrlFlags<true, true> {
 };
 
 /** A task to add a blob to the tag */
-struct TagAddBlobTask : public Task, SrlFlags<true, true> {
+struct TagAddBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN TagId tag_id_;
   IN BlobId blob_id_;
 
@@ -426,7 +426,7 @@ struct TagAddBlobTask : public Task, SrlFlags<true, true> {
 };
 
 /** A task to remove a blob from a tag */
-struct TagRemoveBlobTask : public Task, SrlFlags<true, true> {
+struct TagRemoveBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN TagId tag_id_;
   IN BlobId blob_id_;
 
@@ -468,16 +468,16 @@ struct TagRemoveBlobTask : public Task, SrlFlags<true, true> {
 };
 
 /** A task to get the group of blobs associated with a tag */
-struct TagGroupByTask : public Task, SrlFlags<true, true> {};
+struct TagGroupByTask : public Task, TaskFlags<TF_SRL_SYM> {};
 
 /** A task to associate a tag with a trait */
-struct TagAddTraitTask : public Task, SrlFlags<true, true> {};
+struct TagAddTraitTask : public Task, TaskFlags<TF_SRL_SYM> {};
 
 /** A task to remove a trait from a tag */
-struct TagRemoveTraitTask : public Task, SrlFlags<true, true> {};
+struct TagRemoveTraitTask : public Task, TaskFlags<TF_SRL_SYM> {};
 
 /** A task to destroy all blobs in the tag */
-struct TagClearBlobsTask : public Task, SrlFlags<true, true> {
+struct TagClearBlobsTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN TagId tag_id_;
 
   /** SHM default constructor */

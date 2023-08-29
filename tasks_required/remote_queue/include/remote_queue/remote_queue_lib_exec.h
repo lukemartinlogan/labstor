@@ -22,19 +22,19 @@ void Run(MultiQueue *queue, u32 method, Task *task) override {
 void ReplicateStart(u32 method, u32 count, Task *task) override {
   switch (method) {
     case Method::kConstruct: {
-      if constexpr(std::is_base_of_v<ReplicatedTask, ConstructTask>) {
+      if constexpr(USES_REPLICA(ConstructTask)) {
         reinterpret_cast<ConstructTask*>(task)->ReplicateStart(count);
       }
       break;
     }
     case Method::kDestruct: {
-      if constexpr(std::is_base_of_v<ReplicatedTask, DestructTask>) {
+      if constexpr(USES_REPLICA(DestructTask)) {
         reinterpret_cast<DestructTask*>(task)->ReplicateStart(count);
       }
       break;
     }
     case Method::kPush: {
-      if constexpr(std::is_base_of_v<ReplicatedTask, PushTask>) {
+      if constexpr(USES_REPLICA(PushTask)) {
         reinterpret_cast<PushTask*>(task)->ReplicateStart(count);
       }
       break;
@@ -46,19 +46,19 @@ void ReplicateStart(u32 method, u32 count, Task *task) override {
 void ReplicateEnd(u32 method, Task *task) override {
   switch (method) {
     case Method::kConstruct: {
-      if constexpr(std::is_base_of_v<ReplicatedTask, ConstructTask>) {
+      if constexpr(USES_REPLICA(ConstructTask)) {
         reinterpret_cast<ConstructTask*>(task)->ReplicateEnd();
       }
       break;
     }
     case Method::kDestruct: {
-      if constexpr(std::is_base_of_v<ReplicatedTask, DestructTask>) {
+      if constexpr(USES_REPLICA(DestructTask)) {
         reinterpret_cast<DestructTask*>(task)->ReplicateEnd();
       }
       break;
     }
     case Method::kPush: {
-      if constexpr(std::is_base_of_v<ReplicatedTask, PushTask>) {
+      if constexpr(USES_REPLICA(PushTask)) {
         reinterpret_cast<PushTask*>(task)->ReplicateEnd();
       }
       break;
@@ -128,15 +128,15 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
 void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task) override {
   switch (method) {
     case Method::kConstruct: {
-      ar.Deserialize(replica, *reinterpret_cast<ConstructTask*>(task);)
+      ar.Deserialize(replica, *reinterpret_cast<ConstructTask*>(task));
       break;
     }
     case Method::kDestruct: {
-      ar.Deserialize(replica, *reinterpret_cast<DestructTask*>(task);)
+      ar.Deserialize(replica, *reinterpret_cast<DestructTask*>(task));
       break;
     }
     case Method::kPush: {
-      ar.Deserialize(replica, *reinterpret_cast<PushTask*>(task);)
+      ar.Deserialize(replica, *reinterpret_cast<PushTask*>(task));
       break;
     }
   }

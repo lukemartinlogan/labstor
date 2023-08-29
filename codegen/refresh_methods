@@ -73,7 +73,7 @@ for method_enum_name, method_off in methods:
     method_name = method_enum_name.replace('k', '', 1)
     task_name = method_name + "Task"
     lines += [f'    case Method::{method_enum_name}: {{',
-              f'      if constexpr(std::is_base_of_v<ReplicatedTask, {task_name}>) {{',
+              f'      if constexpr(USES_REPLICA({task_name})) {{',
               f'        reinterpret_cast<{task_name}*>(task)->ReplicateStart(count);',
               f'      }}',
               f'      break;',
@@ -90,7 +90,7 @@ for method_enum_name, method_off in methods:
     method_name = method_enum_name.replace('k', '', 1)
     task_name = method_name + "Task"
     lines += [f'    case Method::{method_enum_name}: {{',
-              f'      if constexpr(std::is_base_of_v<ReplicatedTask, {task_name}>) {{',
+              f'      if constexpr(USES_REPLICA({task_name})) {{',
               f'        reinterpret_cast<{task_name}*>(task)->ReplicateEnd();',
               f'      }}',
               f'      break;',
@@ -154,7 +154,7 @@ for method_enum_name, method_off in methods:
     method_name = method_enum_name.replace('k', '', 1)
     task_name = method_name + "Task"
     lines += [f'    case Method::{method_enum_name}: {{',
-              f'      ar.Deserialize(replica, *reinterpret_cast<{task_name}*>(task);)',
+              f'      ar.Deserialize(replica, *reinterpret_cast<{task_name}*>(task));',
               f'      break;',
               f'    }}']
 lines += ['  }']

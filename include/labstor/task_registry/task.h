@@ -6,7 +6,6 @@
 #define LABSTOR_INCLUDE_LABSTOR_QUEUE_MANAGER_REQUEST_H_
 
 #include "labstor/labstor_types.h"
-#include "labstor/network/serialize.h"
 #include <thallium.hpp>
 
 namespace labstor {
@@ -142,9 +141,57 @@ static inline std::ostream &operator<<(std::ostream &os, const TaskNode &obj) {
   return os << obj.root_ << "/" << std::to_string(obj.node_depth_);
 }
 
+/** This task uses SerializeStart */
+#define TF_SRL_SYM_START BIT_OPT(u32, 0)
+/** This task uses SaveStart + LoadStart */
+#define TF_SRL_ASYM_START BIT_OPT(u32, 1)
+/** This task uses SerializeEnd */
+#define TF_SRL_SYM_END BIT_OPT(u32, 2)
+/** This task uses SaveEnd + LoadEnd */
+#define TF_SRL_ASYM_END BIT_OPT(u32, 3)
+/** This task uses symmetric serialization */
+#define TF_SRL_SYM (TF_SRL_SYM_START | TF_SRL_SYM_END)
+/** This task uses asymmetric serialization */
+#define TF_SRL_ASYM (TF_SRL_ASYM_START | TF_SRL_ASYM_END)
+/** This task uses replication */
+#define TF_REPLICA BIT_OPT(u32, 4)
+/** This task is intended to be used only locally */
+#define TF_LOCAL BIT_OPT(u32, 5)
+
+/** All tasks inherit this to easily check if a class is a task using SFINAE */
+class IsTask {};
+/** The type of a compile-time task flag */
+#define TASK_FLAG_T constexpr inline static bool
+/** Determine this is a task */
+#define IS_TASK(T) \
+  std::is_base_of_v<labstor::IsTask, T>
+/** Determine this task supports serialization */
+#define IS_SRL(T) \
+  T::SUPPORTS_SRL
+/** Determine this task uses SerializeStart */
+#define USES_SRL_START(T) \
+  T::SRL_SYM_START
+/** Determine this task uses SerializeEnd */
+#define USES_SRL_END(T) \
+  T::SRL_SYM_END
+/** Determine this task uses ReplicateStart + ReplicateEnd */
+#define USES_REPLICA(T) \
+  T::REPLICA
+
 /** A generic task base class */
- struct Task : public hipc::ShmContainer {
+template<u32 FLAGS>
+struct TaskFlags : public IsTask {
+ public:
+  TASK_FLAG_T SUPPORTS_SRL = FLAGS & (TF_SRL_SYM | TF_SRL_ASYM);
+  TASK_FLAG_T SRL_SYM_START = FLAGS & TF_SRL_SYM_START;
+  TASK_FLAG_T SRL_SYM_END = FLAGS & TF_SRL_SYM_END;
+  TASK_FLAG_T REPLICA = FLAGS & TF_REPLICA;
+};
+
+/** A generic task base class */
+struct Task : public hipc::ShmContainer {
  SHM_CONTAINER_TEMPLATE((Task), (Task))
+ public:
   TaskStateId task_state_;     /**< The unique name of a task state */
   TaskNode task_node_;         /**< The unique ID of this task in the graph */
   DomainId domain_id_;         /**< The nodes that the task should run on */
@@ -304,12 +351,6 @@ static inline std::ostream &operator<<(std::ostream &os, const TaskNode &obj) {
      SerializeStart(ar); \
    } \
  }
-
-/** A task is NOT compatible with shared memory */
-typedef Task LocalTask;
-
-/** A task IS compatible with shared memory */
-typedef Task IpcTask;
 
 /** Decorator macros */
 #define IN

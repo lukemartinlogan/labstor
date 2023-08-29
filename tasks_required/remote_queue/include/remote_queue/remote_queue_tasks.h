@@ -76,7 +76,7 @@ class PushPhase {
 /**
  * A task to push a serialized task onto the remote queue
  * */
-struct PushTask : public LocalTask {
+struct PushTask : public Task, TaskFlags<TF_LOCAL> {
   IN std::vector<DomainId> domain_ids_;
   IN Task *orig_task_;
   IN TaskState *exec_;
@@ -87,7 +87,7 @@ struct PushTask : public LocalTask {
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
-  PushTask(hipc::Allocator *alloc) : LocalTask(alloc) {}
+  PushTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit

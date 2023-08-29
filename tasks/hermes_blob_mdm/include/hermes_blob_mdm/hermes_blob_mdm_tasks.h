@@ -19,7 +19,7 @@ namespace hermes::blob_mdm {
 #include "hermes_blob_mdm_methods.h"
 
 using labstor::Task;
-using labstor::SrlFlags;
+using labstor::TaskFlags;
 using labstor::DataTransfer;
 
 /** Phases of the construct task */
@@ -88,7 +88,7 @@ class PutBlobPhase {
 #define HERMES_BLOB_APPEND BIT_OPT(u32, 1)
 
 /** A task to put data in a blob */
-struct PutBlobTask : public Task, SrlFlags<false, true> {
+struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
   IN TagId tag_id_;
   IN hipc::ShmArchive<hipc::charbuf> blob_name_;
   IN size_t blob_off_;
@@ -187,7 +187,7 @@ class GetBlobPhase {
 };
 
 /** A task to get data from a blob */
-struct GetBlobTask : public Task, SrlFlags<false, true> {
+struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
   IN BlobId blob_id_;
   IN size_t blob_off_;
   INOUT ssize_t data_size_;
@@ -253,7 +253,7 @@ struct GetBlobTask : public Task, SrlFlags<false, true> {
 };
 
 /** A task to tag a blob */
-struct TagBlobTask : public Task, SrlFlags<true, true> {
+struct TagBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN BlobId blob_id_;
   IN TagId tag_;
 
@@ -297,7 +297,7 @@ struct TagBlobTask : public Task, SrlFlags<true, true> {
 /**
  * Check if blob has a tag
  * */
-struct BlobHasTagTask : public Task, SrlFlags<true, true> {
+struct BlobHasTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN BlobId blob_id_;
   IN TagId tag_;
   OUT bool has_tag_;
@@ -344,7 +344,7 @@ struct BlobHasTagTask : public Task, SrlFlags<true, true> {
 /**
  * Get \a blob_name BLOB from \a bkt_id bucket
  * */
-struct GetBlobIdTask : public Task, SrlFlags<true, true> {
+struct GetBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN TagId tag_id_;
   IN hipc::ShmArchive<hipc::charbuf> blob_name_;
   OUT BlobId blob_id_;
@@ -395,7 +395,7 @@ struct GetBlobIdTask : public Task, SrlFlags<true, true> {
 /**
  * Get \a blob_name BLOB name from \a blob_id BLOB id
  * */
-struct GetBlobNameTask : public Task, SrlFlags<true, true> {
+struct GetBlobNameTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN BlobId blob_id_;
   OUT hipc::ShmArchive<hipc::string> blob_name_;
 
@@ -442,7 +442,7 @@ struct GetBlobNameTask : public Task, SrlFlags<true, true> {
 };
 
 /** Get \a score from \a blob_id BLOB id */
-struct GetBlobScoreTask : public Task, SrlFlags<true, true> {
+struct GetBlobScoreTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN BlobId blob_id_;
   OUT float score_;
 
@@ -483,7 +483,7 @@ struct GetBlobScoreTask : public Task, SrlFlags<true, true> {
 };
 
 /** Get \a blob_id blob's buffers */
-struct GetBlobBuffersTask : public Task, SrlFlags<true, true> {
+struct GetBlobBuffersTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN BlobId blob_id_;
   OUT hipc::ShmArchive<hipc::vector<BufferInfo>> buffers_;
 
@@ -533,7 +533,7 @@ struct GetBlobBuffersTask : public Task, SrlFlags<true, true> {
  * Rename \a blob_id blob to \a new_blob_name new blob name
  * in \a bkt_id bucket.
  * */
-struct RenameBlobTask : public Task, SrlFlags<true, true> {
+struct RenameBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN BlobId blob_id_;
   IN hipc::ShmArchive<hipc::charbuf> new_blob_name_;
 
@@ -581,7 +581,7 @@ struct RenameBlobTask : public Task, SrlFlags<true, true> {
 };
 
 /** A task to truncate a blob */
-struct TruncateBlobTask : public Task, SrlFlags<true, true> {
+struct TruncateBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN BlobId blob_id_;
   IN u64 size_;
 
@@ -629,7 +629,7 @@ struct DestroyBlobPhase {
 };
 
 /** A task to destroy a blob */
-struct DestroyBlobTask : public Task, SrlFlags<true, true> {
+struct DestroyBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN BlobId blob_id_;
   TEMP int phase_;
   TEMP hipc::ShmArchive<std::vector<bdev::FreeTask *>> free_tasks_;

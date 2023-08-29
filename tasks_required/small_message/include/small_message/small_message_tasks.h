@@ -59,7 +59,7 @@ struct DestructTask : public DestroyTaskStateTask {
 /**
  * A custom task in small_message
  * */
-struct MdTask : public Task, SrlFlags<true, true> {
+struct MdTask : public Task, TaskFlags<TF_SRL_SYM> {
   OUT hipc::pod_array<int, 1> ret_;
 
   /** SHM default constructor */
@@ -100,7 +100,7 @@ struct MdTask : public Task, SrlFlags<true, true> {
 /**
  * A custom task in small_message
  * */
-struct IoTask : public Task, SrlFlags<false, true> {
+struct IoTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
   IN char data_[256];
   OUT int ret_;
 

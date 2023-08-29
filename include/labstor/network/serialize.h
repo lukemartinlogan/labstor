@@ -6,35 +6,11 @@
 #define LABSTOR_INCLUDE_LABSTOR_NETWORK_SERIALIZE_H_
 
 #include "labstor/labstor_types.h"
+#include "labstor/task_registry/task.h"
 #include <sstream>
 #include <cereal/archives/binary.hpp>
 
 namespace labstor {
-
-class Task;
-
-//#define WITH_SRL_START BIT_OPT(u32, 0)
-//#define WITH_SRL_END BIT_OPT(u32, 1)
-//#define WITH_REPLICA BIT_OPT(u32, 2)
-
-/**
- * Used for SFINAE to identify serialization parameters
- * WITH_SRL_START: true -> has SerializeStart function
- * WITH_SRL_END: true -> has SerializeEnd function
- * */
-template<bool WITH_SRL_START, bool WITH_SRL_END, bool WITH_REPLICA>
-class SrlFlags {};
-#define IS_SRL(T) \
-  std::is_base_of_v<SrlFlags<true, true>, T> || \
-  std::is_base_of_v<SrlFlags<true, false>, T> || \
-  std::is_base_of_v<SrlFlags<false, false>, T> || \
-  std::is_base_of_v<SrlFlags<false, true>, T>
-#define USES_SRL_START(T) \
-  std::is_base_of_v<SrlFlags<true, true>, T> || \
-  std::is_base_of_v<SrlFlags<true, false>, T>
-#define USES_SRL_END(T) \
-  std::is_base_of_v<SrlFlags<true, true>, T> || \
-  std::is_base_of_v<SrlFlags<false, true>, T>
 
 /** Receiver will read from data_ */
 #define DT_RECEIVER_READ BIT_OPT(u32, 0)
@@ -161,7 +137,7 @@ class BinaryOutputArchive {
   /** Serialize a parameter */
   template<typename T, typename ...Args>
   BinaryOutputArchive& Serialize(T &var, Args&& ...args) {
-    if constexpr (std::is_base_of<Task, T>::value) {
+    if constexpr (IS_TASK(T)) {
       if constexpr (IS_SRL(T)) {
         if constexpr (is_start) {
           if constexpr (USES_SRL_START(T)) {
@@ -253,7 +229,7 @@ class BinaryInputArchive {
   /** Deserialize a parameter */
   template<typename T, typename ...Args>
   BinaryInputArchive& Deserialize(u32 replica, T &var, Args&& ...args) {
-    if constexpr (std::is_base_of<Task, T>::value) {
+    if constexpr (IS_TASK(T)) {
       if constexpr (IS_SRL(T)) {
         if constexpr (is_start) {
           if constexpr (USES_SRL_START(T)) {

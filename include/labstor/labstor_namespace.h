@@ -15,7 +15,7 @@ using labstor::Task;
 using labstor::TaskPointer;
 using labstor::MultiQueue;
 using labstor::Task;
-using labstor::SrlFlags;
+using labstor::TaskFlags;
 using labstor::DataTransfer;
 
 #endif  // LABSTOR_INCLUDE_LABSTOR_LABSTOR_NAMESPACE_H_

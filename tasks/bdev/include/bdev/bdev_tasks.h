@@ -66,14 +66,14 @@ struct DestructTask : public DestroyTaskStateTask {
 /**
  * A custom task in bdev
  * */
-struct AllocTask : public LocalTask {
+struct AllocTask : public Task, TaskFlags<TF_LOCAL> {
   IN size_t size_;  /**< Size in buf */
   OUT std::vector<BufferInfo> *buffers_;
   OUT size_t alloc_size_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
-  AllocTask(hipc::Allocator *alloc) : LocalTask(alloc) {}
+  AllocTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -100,12 +100,12 @@ struct AllocTask : public LocalTask {
 /**
  * A custom task in bdev
  * */
-struct FreeTask : public LocalTask {
+struct FreeTask : public Task, TaskFlags<TF_LOCAL> {
   IN const std::vector<BufferInfo>* buffers_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
-  FreeTask(hipc::Allocator *alloc) : LocalTask(alloc) {}
+  FreeTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -130,14 +130,14 @@ struct FreeTask : public LocalTask {
 /**
  * A custom task in bdev
  * */
-struct WriteTask : public LocalTask {
+struct WriteTask : public Task, TaskFlags<TF_LOCAL> {
   IN const char *buf_;    /**< Data in memory */
   IN size_t disk_off_;    /**< Offset on disk */
   IN size_t size_;        /**< Size in buf */
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
-  WriteTask(hipc::Allocator *alloc) : LocalTask(alloc) {}
+  WriteTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -166,14 +166,14 @@ struct WriteTask : public LocalTask {
 /**
  * A custom task in bdev
  * */
-struct ReadTask : public LocalTask {
+struct ReadTask : public Task, TaskFlags<TF_LOCAL> {
   IN char *buf_;         /**< Data in memory */
   IN size_t disk_off_;   /**< Offset on disk */
   IN size_t size_;       /**< Size in disk buf */
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
-  ReadTask(hipc::Allocator *alloc) : LocalTask(alloc) {}
+  ReadTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -200,13 +200,13 @@ struct ReadTask : public LocalTask {
 };
 
 /** A task to monitor bdev statistics */
-struct MonitorTask : public LocalTask {
+struct MonitorTask : public Task, TaskFlags<TF_LOCAL> {
   IN size_t freq_ms_;  /**< Frequency in ms */
   OUT size_t rem_cap_; /**< Remaining capacity of the target */
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
-  MonitorTask(hipc::Allocator *alloc) : LocalTask(alloc) {}
+  MonitorTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -231,12 +231,12 @@ struct MonitorTask : public LocalTask {
 };
 
 /** A task to update bdev capacity */
-struct UpdateCapacityTask : public LocalTask {
+struct UpdateCapacityTask : public Task, TaskFlags<TF_LOCAL> {
   IN ssize_t diff_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
-  UpdateCapacityTask(hipc::Allocator *alloc) : LocalTask(alloc) {}
+  UpdateCapacityTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit

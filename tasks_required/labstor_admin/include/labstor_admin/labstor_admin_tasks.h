@@ -16,11 +16,9 @@ namespace labstor::Admin {
 
 /** A template to register or destroy a task library */
 template<int method>
-struct RegisterTaskLibTaskTempl : public Task, SrlFlags<true, true> {
-  IN hipc::ShmArchive<hipc::string>
-  lib_name_;
-  OUT TaskStateId
-  id_;
+struct RegisterTaskLibTaskTempl : public Task, TaskFlags<TF_SRL_SYM> {
+  IN hipc::ShmArchive<hipc::string> lib_name_;
+  OUT TaskStateId id_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -84,7 +82,7 @@ class CreateTaskStatePhase {
 };
 
 /** A task to register a Task state + Create a queue */
-struct CreateTaskStateTask : public Task, SrlFlags<true, true> {
+struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN hipc::ShmArchive<hipc::string> lib_name_;
   IN hipc::ShmArchive<hipc::string> state_name_;
   IN u32 queue_max_lanes_;
@@ -145,11 +143,11 @@ struct CreateTaskStateTask : public Task, SrlFlags<true, true> {
 };
 
 /** A task to retrieve the ID of a task */
-struct GetTaskStateIdTask : public Task, SrlFlags<true, true> {
+struct GetTaskStateIdTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN hipc::ShmArchive<hipc::string>
-  state_name_;
+      state_name_;
   OUT TaskStateId
-  id_;
+      id_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -194,9 +192,9 @@ struct GetTaskStateIdTask : public Task, SrlFlags<true, true> {
 };
 
 /** A task to destroy a Task state */
-struct DestroyTaskStateTask : public Task, SrlFlags<true, true> {
+struct DestroyTaskStateTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN TaskStateId
-  id_;
+      id_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -236,7 +234,7 @@ struct DestroyTaskStateTask : public Task, SrlFlags<true, true> {
 };
 
 /** A task to destroy a Task state */
-struct StopRuntimeTask : public Task, SrlFlags<true, true> {
+struct StopRuntimeTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** SHM default constructor */
   StopRuntimeTask(hipc::Allocator *alloc) : Task(alloc) {}
 
@@ -270,9 +268,8 @@ struct StopRuntimeTask : public Task, SrlFlags<true, true> {
 
 /** A task to destroy a Task state */
 template<int method>
-struct SetWorkOrchestratorPolicyTask : public Task, SrlFlags<true, true> {
-  IN TaskStateId
-  policy_id_;
+struct SetWorkOrchestratorPolicyTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN TaskStateId policy_id_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
