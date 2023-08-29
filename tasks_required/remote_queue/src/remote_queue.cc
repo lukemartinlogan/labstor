@@ -78,16 +78,16 @@ class Server : public TaskLib {
             }
             for (int replica = 0; replica < task->domain_ids_.size(); ++replica) {
               DomainId domain_id = task->domain_ids_[replica];
-              auto future = LABSTOR_THALLIUM->AsyncIoCall(domain_id.id_,
-                                                          "RpcPushBulk",
-                                                          io_type,
-                                                          (char *) xfer[0].data_,
-                                                          xfer[0].data_size_,
-                                                          task->exec_->id_,
-                                                          task->exec_method_,
-                                                          params,
-                                                          xfer[0].data_size_,
-                                                          io_type);
+              tl::async_response future = LABSTOR_THALLIUM->AsyncIoCall(domain_id.id_,
+                                                                        "RpcPushBulk",
+                                                                        io_type,
+                                                                        (char *) xfer[0].data_,
+                                                                        xfer[0].data_size_,
+                                                                        task->exec_->id_,
+                                                                        task->exec_method_,
+                                                                        params,
+                                                                        xfer[0].data_size_,
+                                                                        io_type);
               task->tl_future_.emplace_back(std::move(future));
             }
             break;
@@ -99,7 +99,7 @@ class Server : public TaskLib {
         task->phase_ = PushPhase::kWait;
       }
       case PushPhase::kWait: {
-        for (; task->replica_ < task->domain_ids_.size(); ++task->replica_) {
+        for (; task->replica_ < task->tl_future_.size(); ++task->replica_) {
           tl::async_response &future = task->tl_future_[task->replica_];
           if (!LABSTOR_THALLIUM->IsDone(future)) {
             return;
@@ -113,7 +113,7 @@ class Server : public TaskLib {
             BinaryInputArchive<false> ar(xfer);
             task->exec_->LoadEnd(task->replica_, task->exec_method_, ar, task);
           } catch (std::exception &e) {
-            HELOG(kFatal, "LoadEnd ({}): {}", task->task_node_, e.what());
+            HELOG(kFatal, "ERROR LoadEnd ({}): {}", task->task_node_, e.what());
           }
         }
         task->exec_->ReplicateEnd(task->orig_task_->method_, task->orig_task_);
