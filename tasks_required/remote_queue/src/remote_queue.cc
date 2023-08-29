@@ -58,13 +58,12 @@ class Server : public TaskLib {
           case 1: {
             HILOG(kInfo, "Transferring {} of {} bytes", task->task_node_, xfer[0].data_size_);
             std::string params((char *) xfer[0].data_, xfer[0].data_size_);
-            task->tl_future_.reserve(task->domain_ids_.size());
             for (DomainId domain_id : task->domain_ids_) {
-              auto future = LABSTOR_THALLIUM->AsyncCall(domain_id.id_,
-                                                        "RpcPushSmall",
-                                                        task->exec_->id_,
-                                                        task->exec_method_,
-                                                        params);
+              tl::async_response future = LABSTOR_THALLIUM->AsyncCall(domain_id.id_,
+                                                                      "RpcPushSmall",
+                                                                      task->exec_->id_,
+                                                                      task->exec_method_,
+                                                                      params);
               task->tl_future_.emplace_back(std::move(future));
             }
             break;
@@ -111,7 +110,7 @@ class Server : public TaskLib {
             xfer[0].data_size_ = ret.size();
             HILOG(kInfo, "Wait ({}) got {} bytes of data", task->task_node_, xfer[0].data_size_);
             BinaryInputArchive<false> ar(xfer);
-            task->exec_->LoadEnd(task->replica_, task->exec_method_, ar, task);
+            task->exec_->LoadEnd(task->replica_, task->exec_method_, ar, task->orig_task_);
           } catch (std::exception &e) {
             HELOG(kFatal, "ERROR LoadEnd ({}): {}", task->task_node_, e.what());
           }
@@ -164,7 +163,7 @@ class Server : public TaskLib {
 
   /** Push operation called at the remote server */
   void RpcPush(const tl::request &req,
-               TaskStateId state_id,
+               const TaskStateId &state_id,
                u32 method,
                std::vector<DataTransfer> &xfer) {
     try {
@@ -178,26 +177,26 @@ class Server : public TaskLib {
         return;
       }
       TaskPointer task_ptr = exec->LoadStart(method, ar);
-      auto &task = task_ptr.task_;
+      auto &orig_task = task_ptr.task_;
       auto &p = task_ptr.p_;
-      task->domain_id_ = DomainId::GetLocal();
+      orig_task->domain_id_ = DomainId::GetLocal();
 
       // Execute task
       auto *queue = LABSTOR_QM_CLIENT->GetQueue(QueueId(state_id));
-      queue->Emplace(task->lane_hash_, p);
-      bool is_fire_forget = task->IsFireAndForget();
+      queue->Emplace(orig_task->lane_hash_, p);
+      bool is_fire_forget = orig_task->IsFireAndForget();
 
       // Get return value (should not contain data)
       if (!is_fire_forget) {
         try {
-          task->Wait<1>();
+          orig_task->Wait<1>();
           BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
-          auto out_xfer = exec->SaveEnd(method, ar, task);
-          LABSTOR_CLIENT->DelTask(task);
-          HILOG(kInfo, "SaveEnd ({}): Returning {} bytes of data", task->task_node_, out_xfer[0].data_size_);
+          auto out_xfer = exec->SaveEnd(method, ar, orig_task);
+          LABSTOR_CLIENT->DelTask(orig_task);
+          HILOG(kInfo, "SaveEnd ({}): Returning {} bytes of data", orig_task->task_node_, out_xfer[0].data_size_);
           req.respond(std::string((char *) out_xfer[0].data_, out_xfer[0].data_size_));
         } catch (std::exception &e) {
-          HELOG(kFatal, "SaveEnd ({}): {}", task->task_node_, e.what());
+          HELOG(kFatal, "SaveEnd ({}): {}", orig_task->task_node_, e.what());
         }
       } else {
         req.respond(std::string());
