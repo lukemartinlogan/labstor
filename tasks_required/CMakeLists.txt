@@ -1,3 +1,4 @@
+add_subdirectory(TASK_NAME)
 add_subdirectory(small_message)
 add_subdirectory(labstor_admin)
 add_subdirectory(remote_queue)

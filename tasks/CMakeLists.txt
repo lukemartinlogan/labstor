@@ -1,4 +1,3 @@
-add_subdirectory(TASK_NAME)
 add_subdirectory(hermes)
 add_subdirectory(bdev)
 add_subdirectory(ram_bdev)
