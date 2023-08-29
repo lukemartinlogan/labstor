@@ -84,6 +84,7 @@ struct PushTask : public Task, TaskFlags<TF_LOCAL> {
   IN std::vector<DataTransfer> xfer_;
   TEMP std::vector<tl::async_response> tl_future_;
   TEMP int phase_;
+  TEMP int replica_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -115,6 +116,7 @@ struct PushTask : public Task, TaskFlags<TF_LOCAL> {
     exec_method_ = exec_method;
     xfer_ = std::move(xfer);
     phase_ = PushPhase::kStart;
+    replica_ = 0;
   }
 };
 

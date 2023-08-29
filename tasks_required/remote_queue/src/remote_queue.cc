@@ -99,8 +99,8 @@ class Server : public TaskLib {
         task->phase_ = PushPhase::kWait;
       }
       case PushPhase::kWait: {
-        for (int replica = 0; replica < task->domain_ids_.size(); ++replica) {
-          tl::async_response &future = task->tl_future_[replica];
+        for (; task->replica_ < task->domain_ids_.size(); ++task->replica_) {
+          tl::async_response &future = task->tl_future_[task->replica_];
           if (!LABSTOR_THALLIUM->IsDone(future)) {
             return;
           }
@@ -111,7 +111,7 @@ class Server : public TaskLib {
             xfer[0].data_size_ = ret.size();
             HILOG(kInfo, "Wait ({}) got {} bytes of data", task->task_node_, xfer[0].data_size_);
             BinaryInputArchive<false> ar(xfer);
-            task->exec_->LoadEnd(replica, task->exec_method_, ar, task);
+            task->exec_->LoadEnd(task->replica_, task->exec_method_, ar, task);
           } catch (std::exception &e) {
             HELOG(kFatal, "LoadEnd ({}): {}", task->task_node_, e.what());
           }
@@ -119,6 +119,7 @@ class Server : public TaskLib {
         task->exec_->ReplicateEnd(task->orig_task_->method_, task->orig_task_);
         task->SetComplete();
         task->orig_task_->SetComplete();
+        HILOG(kInfo, "Completing task {}", task->task_node_)
       }
     }
   }
