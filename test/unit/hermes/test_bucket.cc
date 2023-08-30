@@ -9,7 +9,7 @@
 #include "hermes/bucket.h"
 
 
-TEST_CASE("TestHermes") {
+TEST_CASE("TestHermesBucket") {
   // Initialize Hermes on all nodes
   HERMES->ClientInit();
 

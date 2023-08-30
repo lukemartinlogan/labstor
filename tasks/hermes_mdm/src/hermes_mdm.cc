@@ -11,13 +11,6 @@
 
 namespace hermes::mdm {
 
-/** Type name simplification for the various map types */
-typedef std::unordered_map<hshm::charbuf, BlobId> BLOB_ID_MAP_T;
-typedef std::unordered_map<hshm::charbuf, TagId> TAG_ID_MAP_T;
-typedef std::unordered_map<BlobId, BlobInfo> BLOB_MAP_T;
-typedef std::unordered_map<TagId, TagInfo> TAG_MAP_T;
-typedef hipc::mpsc_queue<IoStat> IO_PATTERN_LOG_T;
-
 class Server : public TaskLib {
  public:
   /**====================================

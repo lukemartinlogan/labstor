@@ -107,7 +107,11 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
               bitfield32_t flags) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
-    lane_hash_ = blob_id.unique_;
+    if (!blob_id.IsNull()) {
+      lane_hash_ = blob_id.unique_;
+    } else {
+      lane_hash_ = std::hash<hshm::charbuf>{}(blob_name);
+    }
     task_state_ = state_id;
     method_ = Method::kPutBlob;
     task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET);
