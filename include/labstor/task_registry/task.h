@@ -30,16 +30,14 @@ namespace labstor {
 #define TASK_INTERMEDIATE BIT_OPT(u32, 8)
 /** This task is completed */
 #define TASK_COMPLETE BIT_OPT(u32, 9)
-/** This task is complete enough for the user's wait to stop */
-#define TASK_USER_COMPLETE BIT_OPT(u32, 10)
 /** This task was marked completed outside of the worker thread */
-#define TASK_EXTERNAL_COMPLETE BIT_OPT(u32, 11)
+#define TASK_EXTERNAL_COMPLETE BIT_OPT(u32, 10)
 /** This task is long-running */
-#define TASK_LONG_RUNNING BIT_OPT(u32, 12)
+#define TASK_LONG_RUNNING BIT_OPT(u32, 11)
 /** This task is fire and forget. Free when completed */
-#define TASK_FIRE_AND_FORGET BIT_OPT(u32, 13)
+#define TASK_FIRE_AND_FORGET BIT_OPT(u32, 12)
 /** This task should not be run at this time */
-#define TASK_DISABLE_RUN BIT_OPT(u32, 14)
+#define TASK_DISABLE_RUN BIT_OPT(u32, 13)
 
 /** Used to define task methods */
 #define TASK_METHOD_T static inline const u32
@@ -216,7 +214,7 @@ struct Task : public hipc::ShmContainer {
 
   /** Check if task is complete */
   HSHM_ALWAYS_INLINE bool IsComplete() {
-    return task_flags_.Any(TASK_COMPLETE | TASK_USER_COMPLETE);
+    return task_flags_.Any(TASK_COMPLETE);
   }
 
   /** Set task as externally complete */
@@ -237,11 +235,6 @@ struct Task : public hipc::ShmContainer {
   /** Set task as complete */
   HSHM_ALWAYS_INLINE void SetComplete() {
     task_flags_.SetBits(TASK_COMPLETE);
-  }
-
-  /** Set task as user complete */
-  HSHM_ALWAYS_INLINE void SetUserComplete() {
-    task_flags_.SetBits(TASK_USER_COMPLETE);
   }
 
   /** Disable the running of a task */

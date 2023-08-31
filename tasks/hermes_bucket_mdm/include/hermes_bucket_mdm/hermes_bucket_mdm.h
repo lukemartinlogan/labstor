@@ -50,24 +50,20 @@ class Client {
    * Tag Operations
    * ===================================*/
 
-  /** Put blob */
+  /** Put blob (fire & forget) */
   HSHM_ALWAYS_INLINE
   void PutBlob(const TaskNode &task_node,
-               TagId tag_id, const hshm::charbuf &blob_name,
-               BlobId &blob_id, size_t blob_off, size_t blob_size,
-               const hipc::Pointer &blob, float score,
+               TagId tag_id, const BlobId &blob_id,
+               size_t blob_off, size_t blob_size,
                bitfield32_t flags) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     u32 hash = tag_id.node_id_;
-    auto *task = LABSTOR_CLIENT->NewTask<PutBlobTask>(
+    LABSTOR_CLIENT->NewTask<PutBlobTask>(
         p, task_node, DomainId::GetNode(HASH_TO_NODE_ID(hash)), id_,
-        tag_id, blob_name, blob_id,
-        blob_off, blob_size,
-        blob, score, flags);
+        tag_id, blob_id,
+        blob_off, blob_size, flags);
     queue->Emplace(hash, p);
-    task->Wait();
-    // LABSTOR_CLIENT->DelTask(task);
   }
   LABSTOR_TASK_NODE_ROOT(PutBlob);
 

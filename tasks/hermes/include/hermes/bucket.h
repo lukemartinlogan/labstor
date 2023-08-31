@@ -201,6 +201,7 @@ class Bucket {
   /**
    * Put \a blob_name Blob into the bucket
    * */
+  template<bool PARTIAL, bool APPEND>
   Status Put(const std::string &blob_name,
              const Blob &blob,
              BlobId &blob_id,
@@ -210,13 +211,30 @@ class Bucket {
     char *data = LABSTOR_CLIENT->GetPrivatePointer(p);
     memcpy(data, blob.data(), blob.size());
     // Put to shared memory
-    blob_id = BlobId::GetNull();
-    bkt_mdm_->PutBlobRoot(id_, hshm::to_charbuf(blob_name),
-                          blob_id, 0, blob.size(), p, ctx.blob_score_,
-                          bitfield32_t(HERMES_BLOB_REPLACE));
-    // Free shared memory
-    // LABSTOR_CLIENT->FreeBuffer(p);
+    hshm::charbuf blob_name_buf = hshm::to_charbuf(blob_name);
+    if (blob_id.IsNull()) {
+      blob_id = blob_mdm_->GetOrCreateBlobIdRoot(id_, blob_name_buf);
+    }
+    if constexpr(!PARTIAL) {
+      blob_mdm_->PutBlobRoot(id_, blob_name_buf,
+                             blob_id, 0, blob.size(), p, ctx.blob_score_,
+                             bitfield32_t(HERMES_BLOB_REPLACE));
+    } else {
+      blob_mdm_->PutBlobRoot(id_, blob_name_buf,
+                             blob_id, 0, blob.size(), p, ctx.blob_score_,
+                             bitfield32_t(0));
+    }
     return Status();
+  }
+
+  /**
+   * Put \a blob_name Blob into the bucket
+   * */
+  Status Put(const std::string &blob_name,
+             const Blob &blob,
+             BlobId &blob_id,
+             Context &ctx) {
+    return Put<false, false>(blob_name, blob, blob_id, ctx);
   }
 
   /**
@@ -227,18 +245,7 @@ class Bucket {
                     size_t blob_off,
                     BlobId &blob_id,
                     Context &ctx) {
-    // Copy data to shared memory
-    hipc::Pointer p = LABSTOR_CLIENT->AllocateBuffer(blob.size());
-    char *data = LABSTOR_CLIENT->GetPrivatePointer(p);
-    memcpy(data, blob.data(), blob.size());
-    // Put to shared memory
-    blob_id = BlobId::GetNull();
-    bkt_mdm_->PutBlobRoot(id_, hshm::to_charbuf(blob_name),
-                          blob_id, blob_off, blob.size(), p,
-                          ctx.blob_score_, bitfield32_t(HERMES_BLOB_REPLACE));
-    // Free shared memory
-    // LABSTOR_CLIENT->FreeBuffer(p);
-    return Status();
+    return Put<true, false>(blob_name, blob, blob_id, ctx);
   }
 
   /**
@@ -246,6 +253,8 @@ class Bucket {
    * */
   Status Append(const Blob &blob, Context &ctx) {
     return Status();
+//    BlobId blob_id(BlobId::GetNull());
+//    return Put<false, true>(blob_name, blob, blob_id, ctx);
   }
 
 

@@ -53,30 +53,10 @@ class Server : public TaskLib {
 
   /** Put a blob */
   void PutBlob(MultiQueue *queue, PutBlobTask *task) {
-    switch (task->phase_) {
-      case PutBlobPhase::kUpdateMdm: {
-        TagInfo &tag_info = tag_map_[task->tag_id_];
-        tag_info.internal_size_ = std::max(task->blob_off_ + task->data_size_,
-                                           tag_info.internal_size_);
-        hshm::charbuf blob_name = hshm::to_charbuf(*task->blob_name_);
-        if (task->flags_.Any(HERMES_BLOB_APPEND)) {
-          adapter::BlobPlacement p;
-          p.page_ = tag_info.internal_size_ / tag_info.page_size_;
-          blob_name = p.CreateBlobName();
-        }
-        task->blob_put_task_ = blob_mdm_.AsyncPutBlob(
-            task->task_node_, task->tag_id_, blob_name,
-            task->blob_id_, task->blob_off_, task->data_size_,
-            task->data_, task->score_, task->flags_);
-        task->phase_ = PutBlobPhase::kWait;
-      }
-      case PutBlobPhase::kWait: {
-        if (task->blob_put_task_->IsComplete()) {
-          task->SetComplete();
-        }
-        break;
-      }
-    }
+    TagInfo &tag_info = tag_map_[task->tag_id_];
+    tag_info.internal_size_ = std::max(task->blob_off_ + task->data_size_,
+                                       tag_info.internal_size_);
+    task->SetComplete();
   }
 
   /** Destroy a blob */

@@ -7,8 +7,9 @@ kTagBlob: 4
 kBlobHasTag: 6
 #kGetBlobTags: 7
 kGetBlobId: 8
-kGetBlobName: 9
-#kGetBlobSize: 10
-kGetBlobScore: 11
-kGetBlobBuffers: 12
-kRenameBlob: 13
+kGetOrCreateBlobId: 9
+kGetBlobName: 10
+#kGetBlobSize: 11
+kGetBlobScore: 12
+kGetBlobBuffers: 13
+kRenameBlob: 14

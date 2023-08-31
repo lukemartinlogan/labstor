@@ -22,7 +22,7 @@ TEST_CASE("TestHermesBucket") {
     // Put a blob
     hermes::Blob blob(MEGABYTES(1));
     memset(blob.data(), 10, blob.size());
-    hermes::BlobId blob_id;
+    hermes::BlobId blob_id(hermes::BlobId::GetNull());
     bkt.Put("hello", blob, blob_id, ctx);
 
     // Get a blob

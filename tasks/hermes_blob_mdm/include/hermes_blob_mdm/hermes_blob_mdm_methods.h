@@ -10,10 +10,11 @@ struct Method : public TaskMethod {
   TASK_METHOD_T kTagBlob = kLast + 4;
   TASK_METHOD_T kBlobHasTag = kLast + 6;
   TASK_METHOD_T kGetBlobId = kLast + 8;
-  TASK_METHOD_T kGetBlobName = kLast + 9;
-  TASK_METHOD_T kGetBlobScore = kLast + 11;
-  TASK_METHOD_T kGetBlobBuffers = kLast + 12;
-  TASK_METHOD_T kRenameBlob = kLast + 13;
+  TASK_METHOD_T kGetOrCreateBlobId = kLast + 9;
+  TASK_METHOD_T kGetBlobName = kLast + 10;
+  TASK_METHOD_T kGetBlobScore = kLast + 12;
+  TASK_METHOD_T kGetBlobBuffers = kLast + 13;
+  TASK_METHOD_T kRenameBlob = kLast + 14;
 };
 
 #endif  // LABSTOR_HERMES_BLOB_MDM_METHODS_H_

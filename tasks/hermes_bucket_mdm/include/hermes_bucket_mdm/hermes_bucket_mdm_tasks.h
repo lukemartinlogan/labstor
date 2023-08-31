@@ -77,15 +77,10 @@ class PutBlobPhase {
 /** Put a blob in the bucket */
 struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN TagId tag_id_;
-  IN hipc::ShmArchive<hipc::charbuf> blob_name_;
   IN size_t blob_off_;
   IN size_t data_size_;
-  IN hipc::Pointer data_;
-  IN float score_;
   IN bitfield32_t flags_;
-  INOUT BlobId blob_id_;
-  TEMP int phase_;
-  TEMP Task *blob_put_task_;
+  IN BlobId blob_id_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -98,20 +93,13 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
               const DomainId &domain_id,
               const TaskStateId &state_id,
               const TagId &tag_id,
-              const hshm::charbuf &blob_name,
               const BlobId &blob_id,
               size_t blob_off,
               size_t data_size,
-              const hipc::Pointer &data,
-              float score,
               bitfield32_t flags) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
-    if (!blob_id.IsNull()) {
-      lane_hash_ = blob_id.unique_;
-    } else {
-      lane_hash_ = std::hash<hshm::charbuf>{}(blob_name);
-    }
+    lane_hash_ = blob_id.unique_;
     task_state_ = state_id;
     method_ = Method::kPutBlob;
     task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET);
@@ -119,28 +107,21 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
 
     // Custom params
     tag_id_ = tag_id;
-    HSHM_MAKE_AR(blob_name_, LABSTOR_CLIENT->main_alloc_, blob_name);
     blob_id_ = blob_id;
     blob_off_ = blob_off;
     data_size_ = data_size;
-    data_ = data;
-    score_ = score;
     flags_ = flags;
-    phase_ = PutBlobPhase::kUpdateMdm;
   }
 
   /** Destructor */
-  ~PutBlobTask() {
-    HSHM_DESTROY_AR(blob_name_);
-    // LABSTOR_CLIENT->FreeBuffer(data_);
-  }
+  ~PutBlobTask() {}
 
   /** (De)serialize message call */
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
     // TODO(llogan): make it so data xfer doesn't happen here
-    ar(tag_id_, blob_name_, blob_id_, blob_off_, data_size_, score_, flags_, phase_);
+    ar(tag_id_, blob_id_, blob_off_, data_size_, flags_);
   }
 
   /** (De)serialize message return */

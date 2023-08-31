@@ -87,6 +87,57 @@ class PutBlobPhase {
 #define HERMES_BLOB_REPLACE BIT_OPT(u32, 0)
 #define HERMES_BLOB_APPEND BIT_OPT(u32, 1)
 
+/**
+ * Get \a blob_name BLOB from \a bkt_id bucket
+ * */
+struct GetOrCreateBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN TagId tag_id_;
+  IN hipc::ShmArchive<hipc::charbuf> blob_name_;
+  OUT BlobId blob_id_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  GetOrCreateBlobIdTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
+  GetOrCreateBlobIdTask(hipc::Allocator *alloc,
+                        const TaskNode &task_node,
+                        const DomainId &domain_id,
+                        const TaskStateId &state_id,
+                        const TagId &tag_id,
+                        const hshm::charbuf &blob_name) : Task(alloc) {
+    // Initialize task
+    task_node_ = task_node;
+    lane_hash_ = std::hash<hshm::charbuf>{}(blob_name);
+    task_state_ = state_id;
+    method_ = Method::kGetOrCreateBlobId;
+    task_flags_.SetBits(TASK_LOW_LATENCY);
+    domain_id_ = domain_id;
+
+    // Custom
+    tag_id_ = tag_id;
+    HSHM_MAKE_AR(blob_name_, LABSTOR_CLIENT->main_alloc_, blob_name)
+  }
+
+  /** Destructor */
+  ~GetOrCreateBlobIdTask() {
+    HSHM_DESTROY_AR(blob_name_)
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    ar(tag_id_, blob_name_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(u32 replica, Ar &ar) {
+    ar(blob_id_);
+  }
+};
+
 /** A task to put data in a blob */
 struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
   IN TagId tag_id_;
@@ -96,7 +147,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   IN hipc::Pointer data_;
   IN float score_;
   IN bitfield32_t flags_;
-  INOUT BlobId blob_id_;
+  IN BlobId blob_id_;
   TEMP bool did_create_;
   TEMP int phase_;
   TEMP int plcmnt_idx_;
@@ -125,10 +176,13 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
               bitfield32_t flags) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
-    lane_hash_ = blob_id.unique_;
+    lane_hash_ = blob_id_.unique_;
     task_state_ = state_id;
     method_ = Method::kPutBlob;
-    task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET);
+    task_flags_.SetBits(TASK_FIRE_AND_FORGET);
+    if (data_size <= KILOBYTES(4)) {
+      task_flags_.SetBits(TASK_LOW_LATENCY);
+    }
     domain_id_ = domain_id;
 
     // Custom params
@@ -147,8 +201,6 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   /** Destructor */
   ~PutBlobTask() {
     HSHM_DESTROY_AR(blob_name_);
-    // TODO(llogan): fix double-free from network deserialization
-    LABSTOR_CLIENT->FreeBuffer(data_);
   }
 
   /** (De)serialize message call */
@@ -159,7 +211,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
                       data_size_, domain_id_);
     task_serialize<Ar>(ar);
     ar & xfer;
-    ar(tag_id_, blob_name_, blob_off_, data_size_, score_, flags_);
+    ar(tag_id_, blob_name_, blob_id_, blob_off_, data_size_, score_, flags_);
   }
 
   /** Deserialize message call */
@@ -169,14 +221,12 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     task_serialize<Ar>(ar);
     ar & xfer;
     data_ = HERMES_MEMORY_MANAGER->Convert<void, hipc::Pointer>(xfer.data_);
-    ar(tag_id_, blob_name_, blob_off_, data_size_, score_, flags_);
+    ar(tag_id_, blob_name_, blob_id_, blob_off_, data_size_, score_, flags_);
   }
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(u32 replica, Ar &ar) {
-    ar(blob_id_);
-  }
+  void SerializeEnd(u32 replica, Ar &ar) {}
 };
 
 /** Phases for the get task */
@@ -207,20 +257,23 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
               const TaskStateId &state_id,
               const BlobId &blob_id,
               size_t off,
-              ssize_t size) : Task(alloc) {
+              ssize_t data_size) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
     task_state_ = state_id;
     method_ = Method::kGetBlob;
-    task_flags_.SetBits(TASK_LOW_LATENCY);
+    task_flags_.SetBits(0);
+    if (data_size <= KILOBYTES(4)) {
+      task_flags_.SetBits(TASK_LOW_LATENCY);
+    }
     domain_id_ = domain_id;
 
     // Custom params
     phase_ = GetBlobPhase::kStart;
     blob_id_ = blob_id;
     blob_off_ = off;
-    data_size_ = size;
+    data_size_ = data_size;
   }
 
   /** (De)serialize message call */
