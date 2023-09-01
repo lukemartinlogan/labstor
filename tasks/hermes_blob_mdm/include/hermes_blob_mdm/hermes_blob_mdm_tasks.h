@@ -154,7 +154,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   TEMP int sub_plcmnt_idx_;
   TEMP hermes::bdev::AllocTask *cur_bdev_alloc_;
   TEMP hipc::ShmArchive<std::vector<PlacementSchema>> schema_;
-  TEMP hipc::ShmArchive<std::vector<hermes::bdev::WriteTask *>> bdev_writes_;
+  TEMP hipc::ShmArchive<std::vector<hermes::bdev::WriteTask*>> bdev_writes_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -179,10 +179,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     lane_hash_ = blob_id_.unique_;
     task_state_ = state_id;
     method_ = Method::kPutBlob;
-    task_flags_.SetBits(TASK_FIRE_AND_FORGET);
-    if (data_size <= KILOBYTES(4)) {
-      task_flags_.SetBits(TASK_LOW_LATENCY);
-    }
+    task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET);
     domain_id_ = domain_id;
 
     // Custom params
@@ -196,6 +193,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     flags_ = flags;
     phase_ = PutBlobPhase::kCreate;
     plcmnt_idx_ = 0;
+    sub_plcmnt_idx_ = 0;
   }
 
   /** Destructor */
@@ -243,7 +241,7 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   INOUT ssize_t data_size_;
   INOUT hipc::Pointer data_;
   TEMP int phase_;
-  TEMP hipc::ShmArchive<std::vector<bdev::ReadTask *>> bdev_reads_;
+  TEMP hipc::ShmArchive<std::vector<bdev::ReadTask*>> bdev_reads_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -257,16 +255,14 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
               const TaskStateId &state_id,
               const BlobId &blob_id,
               size_t off,
-              ssize_t data_size) : Task(alloc) {
+              ssize_t data_size,
+              hipc::Pointer &data) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
     task_state_ = state_id;
     method_ = Method::kGetBlob;
-    task_flags_.SetBits(0);
-    if (data_size <= KILOBYTES(4)) {
-      task_flags_.SetBits(TASK_LOW_LATENCY);
-    }
+    task_flags_.SetBits(TASK_LOW_LATENCY);
     domain_id_ = domain_id;
 
     // Custom params
@@ -274,6 +270,7 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     blob_id_ = blob_id;
     blob_off_ = off;
     data_size_ = data_size;
+    data_ = data;
   }
 
   /** (De)serialize message call */

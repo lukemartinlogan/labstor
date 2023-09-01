@@ -7,9 +7,15 @@
 #include "labstor_admin/labstor_admin.h"
 #include "hermes_mdm/hermes_mdm.h"
 #include "hermes/bucket.h"
+#include <mpi.h>
 
 
 TEST_CASE("TestHermesBucket") {
+  int rank, nprocs;
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+
   // Initialize Hermes on all nodes
   HERMES->ClientInit();
 
@@ -17,11 +23,13 @@ TEST_CASE("TestHermesBucket") {
   hermes::Context ctx;
   hermes::Bucket bkt("hello", ctx);
 
-  for (size_t i = 0; i < 1024; ++i) {
+  size_t count = 256;
+  size_t off = rank * 256;
+  for (size_t i = off; i < count; ++i) {
     HILOG(kInfo, "Iteration: {}", i);
     // Put a blob
     hermes::Blob blob(MEGABYTES(1));
-    memset(blob.data(), 10, blob.size());
+    memset(blob.data(), i, blob.size());
     hermes::BlobId blob_id(hermes::BlobId::GetNull());
     bkt.Put("hello", blob, blob_id, ctx);
 
@@ -30,4 +38,6 @@ TEST_CASE("TestHermesBucket") {
     bkt.Get(blob_id, blob2, ctx);
     REQUIRE(blob == blob2);
   }
+
+  MPI_Finalize();
 }

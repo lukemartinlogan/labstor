@@ -129,12 +129,13 @@ class Client {
   /** Free data */
   HSHM_ALWAYS_INLINE
   FreeTask* AsyncFree(const TaskNode &task_node,
-                      const std::vector<BufferInfo> &buffers) {
+                      const std::vector<BufferInfo> &buffers,
+                      bool fire_and_forget) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<FreeTask>(
         p,
-        task_node, domain_id_, id_, buffers);
+        task_node, domain_id_, id_, buffers, fire_and_forget);
     queue->Emplace(0, p);
     return task;
   }

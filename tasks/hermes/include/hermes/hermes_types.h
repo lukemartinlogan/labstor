@@ -196,7 +196,7 @@ class Constant {
 /** Represents an allocated fraction of a target */
 struct BufferInfo {
   TargetId tid_;        /**< The destination target */
-  size_t t_slab_;          /**< The index of the slab in the target */
+  size_t t_slab_;       /**< The index of the slab in the target */
   size_t t_off_;        /**< Offset in the target */
   size_t t_size_;       /**< Size in the target */
 
@@ -252,7 +252,7 @@ struct BlobInfo {
   hshm::charbuf name_;  /**< Name of the blob */
   std::vector<BufferInfo> buffers_;  /**< Set of buffers */
   std::vector<TagId> tags_;  /**< Set of tags */
-  size_t blob_size_;  /**< The overall size of the blob */
+  size_t blob_size_;      /**< The overall size of the blob */
   size_t max_blob_size_;  /**< The amount of space current buffers support */
   float score_;  /**< The priority of this blob */
   std::atomic<u32> access_freq_;  /**< Number of times blob accessed in epoch */

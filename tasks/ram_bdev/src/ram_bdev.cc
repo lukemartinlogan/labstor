@@ -31,12 +31,14 @@ class Server : public TaskLib {
   }
 
   void Alloc(MultiQueue *queue, AllocTask *task) {
+    HILOG(kDebug, "Allocating {} bytes (RAM)", task->size_);
     alloc_.Allocate(task->size_, *task->buffers_, task->alloc_size_);
+    HILOG(kDebug, "Allocated {} bytes (RAM)", task->alloc_size_);
     task->SetComplete();
   }
 
   void Free(MultiQueue *queue, FreeTask *task) {
-    alloc_.Free(*task->buffers_);
+    alloc_.Free(task->buffers_);
     task->SetComplete();
   }
 

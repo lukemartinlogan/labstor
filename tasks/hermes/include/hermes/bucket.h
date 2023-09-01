@@ -266,11 +266,13 @@ class Bucket {
              Context &ctx) {
     // Get from shared memory
     ssize_t data_size = -1;
-    hipc::Pointer data_p = blob_mdm_->GetBlobRoot(blob_id, 0, data_size);
+    hipc::Pointer data_p = hipc::Pointer::GetNull();
+    blob_mdm_->GetBlobRoot(blob_id, 0, data_size, data_p);
     char *data = LABSTOR_CLIENT->GetPrivatePointer(data_p);
+    // Copy data to blob
+    // TODO(llogan): intercept mmap to avoid copy
     blob.resize(data_size);
     memcpy(blob.data(), data, data_size);
-    // Free shared memory
     LABSTOR_CLIENT->FreeBuffer(data_p);
     return Status();
   }
@@ -285,11 +287,12 @@ class Bucket {
                     BlobId &blob_id,
                     Context &ctx) {
     // Get from shared memory
-    hipc::Pointer data_p = blob_mdm_->GetBlobRoot(blob_id, blob_off_, data_size);
+    hipc::Pointer data_p = LABSTOR_CLIENT->AllocateBuffer(data_size);
+    blob_mdm_->GetBlobRoot(blob_id, blob_off_, data_size, data_p);
     char *data = LABSTOR_CLIENT->GetPrivatePointer(data_p);
+    // TODO(llogan): intercept mmap to avoid copy
     blob.resize(data_size);
     memcpy(blob.data(), data, data_size);
-    // Free shared memory
     LABSTOR_CLIENT->FreeBuffer(data_p);
     return Status();
   }

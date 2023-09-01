@@ -19,6 +19,7 @@ class Server : public TaskLib {
   SlabAllocator alloc_;
   char *mem_ptr_;
   int fd_;
+  std::string path_;
 
  public:
   void Construct(MultiQueue *queue, ConstructTask *task) {
@@ -29,6 +30,7 @@ class Server : public TaskLib {
         "/" + "slab_" + dev_info.dev_name_;
     auto canon = stdfs::weakly_canonical(text).string();
     dev_info.mount_point_ = canon;
+    path_ = canon;
     fd_ = open(dev_info.mount_point_.c_str(),
                   O_TRUNC | O_CREAT, 0666);
     if (fd_ < 0) {
@@ -45,12 +47,14 @@ class Server : public TaskLib {
   }
 
   void Alloc(MultiQueue *queue, AllocTask *task) {
+    HILOG(kInfo, "Allocating {} bytes ({})", task->size_, path_);
     alloc_.Allocate(task->size_, *task->buffers_, task->alloc_size_);
+    HILOG(kInfo, "Allocated {} bytes ({})", task->alloc_size_, path_);
     task->SetComplete();
   }
 
   void Free(MultiQueue *queue, FreeTask *task) {
-    alloc_.Free(*task->buffers_);
+    alloc_.Free(task->buffers_);
     task->SetComplete();
   }
 

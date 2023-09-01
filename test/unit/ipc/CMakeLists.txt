@@ -17,7 +17,7 @@ add_executable(test_ipc_exec
 
 add_dependencies(test_ipc_exec labstor_client)
 target_link_libraries(test_ipc_exec
-        labstor_client Catch2::Catch2 MPI::MPI_CXX)
+        labstor_client Catch2::Catch2 MPI::MPI_CXX OpenMP::OpenMP_CXX)
 
 #------------------------------------------------------------------------------
 # Test Cases

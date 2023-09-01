@@ -8,14 +8,14 @@ set(CMAKE_CXX_STANDARD 17)
 #------------------------------------------------------------------------------
 
 add_executable(test_hermes_exec
-        ${TEST_MAIN}/main.cc
+        ${TEST_MAIN}/main_mpi.cc
         test_init.cc
         test_bucket.cc
 )
 add_dependencies(test_hermes_exec
         ${Labstor_CLIENT_DEPS} hermes_config_manager)
 target_link_libraries(test_hermes_exec
-        ${Labstor_CLIENT_LIBRARIES} hermes_config_manager Catch2::Catch2)
+        ${Labstor_CLIENT_LIBRARIES} hermes_config_manager Catch2::Catch2 MPI::MPI_CXX)
 
 #------------------------------------------------------------------------------
 # Test Cases

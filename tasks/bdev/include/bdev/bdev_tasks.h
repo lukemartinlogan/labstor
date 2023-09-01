@@ -101,7 +101,7 @@ struct AllocTask : public Task, TaskFlags<TF_LOCAL> {
  * A custom task in bdev
  * */
 struct FreeTask : public Task, TaskFlags<TF_LOCAL> {
-  IN const std::vector<BufferInfo>* buffers_;
+  IN std::vector<BufferInfo> buffers_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -113,17 +113,21 @@ struct FreeTask : public Task, TaskFlags<TF_LOCAL> {
            const TaskNode &task_node,
            const DomainId &domain_id,
            const TaskStateId &state_id,
-           const std::vector<BufferInfo> &buffers) : Task(alloc) {
+           const std::vector<BufferInfo> &buffers,
+           bool fire_and_forget) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
     task_state_ = state_id;
     method_ = Method::kFree;
     task_flags_.SetBits(0);
+    if (fire_and_forget) {
+      task_flags_.SetBits(TASK_FIRE_AND_FORGET);
+    }
     domain_id_ = domain_id;
 
     // Free params
-    buffers_ = &buffers;
+    buffers_ = buffers;
   }
 };
 
