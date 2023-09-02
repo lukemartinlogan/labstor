@@ -59,9 +59,7 @@ class ConfigurationManager {
     if (config_path.empty()) {
       config_path = Constants::GetEnvSafe(Constants::kServerConfEnv);
     }
-    if (mode_ == LabstorMode::kServer) {
-      HILOG(kInfo, "Loading server configuration: {}", config_path);
-    }
+    HILOG(kInfo, "Loading server configuration: {}", config_path);
     server_config_.LoadFromFile(config_path);
   }
 
