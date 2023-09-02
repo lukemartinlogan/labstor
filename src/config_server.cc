@@ -55,11 +55,11 @@ void ServerConfig::ParseQueueManager(YAML::Node yaml_conf) {
 void ServerConfig::ParseRpcInfo(YAML::Node yaml_conf) {
   std::string suffix;
   if (yaml_conf["host_file"]) {
-    HILOG(kInfo, "Host file: {}", yaml_conf["host_file"].as<std::string>());
     rpc_.host_file_ =
         hshm::ConfigParse::ExpandPath(yaml_conf["host_file"].as<std::string>());
-    HILOG(kInfo, "Host file: {}", rpc_.host_file_);
-    rpc_.host_names_ = hshm::ConfigParse::ParseHostfile(rpc_.host_file_);
+    if (rpc_.host_file_.size() > 0) {
+      rpc_.host_names_ = hshm::ConfigParse::ParseHostfile(rpc_.host_file_);
+    }
   }
   if (yaml_conf["host_names"]) {
     for (YAML::Node host_name_gen : yaml_conf["host_names"]) {
