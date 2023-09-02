@@ -185,8 +185,11 @@ class Server : public TaskLib {
       auto *queue = LABSTOR_QM_CLIENT->GetQueue(QueueId(state_id));
       queue->Emplace(orig_task->lane_hash_, p);
       bool is_fire_forget = orig_task->IsFireAndForget();
-      HILOG(kInfo, "RpcPush ({}): Executing task {} (fire_and_forget={})",
-            orig_task->task_node_, orig_task->task_state_, is_fire_forget);
+      HILOG(kInfo, "RpcPush ({}): Executing task ({}/{}) (fire_and_forget={})",
+            orig_task->task_node_,
+            orig_task->task_state_,
+            state_id,
+            is_fire_forget);
 
       // Get return value (should not contain data)
       if (!is_fire_forget) {
