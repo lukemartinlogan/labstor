@@ -129,7 +129,7 @@ struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar(lib_name_, state_name_, queue_max_lanes_, queue_num_lanes_,
+    ar(lib_name_, state_name_, id_, queue_max_lanes_, queue_num_lanes_,
        queue_depth_, queue_flags_, phase_);
   }
 
