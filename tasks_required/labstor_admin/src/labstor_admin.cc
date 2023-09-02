@@ -28,39 +28,70 @@ class Server : public TaskLib {
     task->SetComplete();
   }
 
-  void CreateTaskState(MultiQueue *queue, CreateTaskStateTask *task) {
-    std::string lib_name = task->lib_name_->str();
+  void GetOrCreateTaskStateId(MultiQueue *queue, GetOrCreateTaskStateIdTask *task) {
     std::string state_name = task->state_name_->str();
-    HILOG(kInfo, "(node {}) Creating task state {} with id {}", LABSTOR_QM_CLIENT->node_id_, state_name, task->id_);
-    TaskState *task_state = LABSTOR_TASK_REGISTRY->GetTaskState(state_name, task->id_);
-    if (task_state) {
-      // The tasks exists and is initialized
-      task->id_ = task_state->id_;
-      task->SetComplete();
-    } else {
-      // The state is being created
-      // NOTE(llogan): this does NOT return since task creations can have phases
-      task->method_ = Method::kConstruct;
+    task->id_ = LABSTOR_TASK_REGISTRY->GetOrCreateTaskStateId(state_name);
+    task->SetComplete();
+  }
 
-      // Create the task queue for the state
-      TaskStateId new_id = task->id_;
-      if (new_id.IsNull()) {
-        new_id = LABSTOR_TASK_REGISTRY->CreateTaskStateId();
+  void CreateTaskState(MultiQueue *queue, CreateTaskStateTask *task) {
+    switch (task->phase_) {
+      case CreateTaskStatePhase::kIdAllocStart: {
+        std::string lib_name = task->lib_name_->str();
+        std::string state_name = task->state_name_->str();
+        // Check local registry for task state
+        TaskState *task_state = LABSTOR_TASK_REGISTRY->GetTaskState(state_name, task->id_);
+        if (task_state) {
+          task->id_ = task_state->id_;
+          task->SetComplete();
+          return;
+        }
+        // Check global registry for task state
+        if (task->id_.IsNull()) {
+          u64 hash = std::hash<std::string>{}(state_name);
+          DomainId domain = DomainId::GetNode(HASH_TO_NODE_ID(hash));
+          task->get_id_task_ = LABSTOR_ADMIN->AsyncGetOrCreateTaskStateId(
+              task->task_node_, domain, state_name);
+          task->phase_ = CreateTaskStatePhase::kIdAllocWait;
+        } else {
+          task->phase_ = CreateTaskStatePhase::kStateCreate;
+        }
+        return;
       }
-      QueueId qid(new_id);
-      if (task->queue_max_lanes_ > 0) {
-        LABSTOR_QM_RUNTIME->CreateQueue(
-            qid, task->queue_max_lanes_, task->queue_num_lanes_,
-            task->queue_depth_, task->queue_flags_);
+      case CreateTaskStatePhase::kIdAllocWait: {
+        if (!task->get_id_task_->IsComplete()) {
+          return;
+        }
+        task->id_ = task->get_id_task_->id_;
+        task->phase_ = CreateTaskStatePhase::kStateCreate;
+        LABSTOR_CLIENT->DelTask(task->get_id_task_);
       }
+      case CreateTaskStatePhase::kStateCreate: {
+        std::string lib_name = task->lib_name_->str();
+        std::string state_name = task->state_name_->str();
+        HILOG(kInfo, "(node {}) Creating task state {} with id {}",
+              LABSTOR_QM_CLIENT->node_id_, state_name, task->id_);
 
-      // Begin creating the task state
-      LABSTOR_TASK_REGISTRY->CreateTaskState(
-          lib_name.c_str(),
-          state_name.c_str(),
-          new_id,
-          task);
-      task->task_state_ = task->id_;
+        // The state is being created
+        // NOTE(llogan): this does NOT return since task creations can have phases
+        task->method_ = Method::kConstruct;
+
+        // Create the task queue for the state
+        QueueId qid(task->id_);
+        if (task->queue_max_lanes_ > 0) {
+          LABSTOR_QM_RUNTIME->CreateQueue(
+              qid, task->queue_max_lanes_, task->queue_num_lanes_,
+              task->queue_depth_, task->queue_flags_);
+        }
+
+        // Begin creating the task state
+        LABSTOR_TASK_REGISTRY->CreateTaskState(
+            lib_name.c_str(),
+            state_name.c_str(),
+            task->id_,
+            task);
+        task->task_state_ = task->id_;
+      }
     }
   }
 

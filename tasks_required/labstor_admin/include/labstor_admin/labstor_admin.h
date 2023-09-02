@@ -78,14 +78,44 @@ class Client {
   LABSTOR_TASK_NODE_ROOT(CreateTaskState);
 
   /** Get the ID of a task state */
-  TaskStateId GetTaskStateId(const TaskNode &task_node,
+  GetOrCreateTaskStateIdTask* AsyncGetOrCreateTaskStateId(const TaskNode &task_node,
+                                                  const DomainId &domain_id,
+                                                  const std::string &state_name) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
+    auto *task = LABSTOR_CLIENT->NewTask<GetOrCreateTaskStateIdTask>(
+        p, task_node, domain_id, state_name);
+    queue->Emplace(0, p);
+    return task;
+  }
+  LABSTOR_TASK_NODE_ROOT(AsyncGetOrCreateTaskStateId);
+  TaskStateId GetOrCreateTaskStateId(const TaskNode &task_node,
                              const DomainId &domain_id,
                              const std::string &state_name) {
+    GetOrCreateTaskStateIdTask *task = AsyncGetOrCreateTaskStateId(task_node, domain_id, state_name);
+    task->Wait();
+    TaskStateId new_id = task->id_;
+    LABSTOR_CLIENT->DelTask(task);
+    return new_id;
+  }
+  LABSTOR_TASK_NODE_ROOT(GetOrCreateTaskStateId);
+
+  /** Get the ID of a task state */
+  GetTaskStateIdTask* AsyncGetTaskStateId(const TaskNode &task_node,
+                                          const DomainId &domain_id,
+                                          const std::string &state_name) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
     auto *task = LABSTOR_CLIENT->NewTask<GetTaskStateIdTask>(
         p, task_node, domain_id, state_name);
     queue->Emplace(0, p);
+    return task;
+  }
+  LABSTOR_TASK_NODE_ROOT(AsyncGetTaskStateId);
+  TaskStateId GetTaskStateId(const TaskNode &task_node,
+                             const DomainId &domain_id,
+                             const std::string &state_name) {
+    GetTaskStateIdTask *task = AsyncGetTaskStateId(task_node, domain_id, state_name);
     task->Wait();
     TaskStateId new_id = task->id_;
     LABSTOR_CLIENT->DelTask(task);

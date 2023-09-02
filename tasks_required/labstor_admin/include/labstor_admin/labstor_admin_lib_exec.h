@@ -12,6 +12,10 @@ void Run(MultiQueue *queue, u32 method, Task *task) override {
       DestroyTaskLib(queue, reinterpret_cast<DestroyTaskLibTask *>(task));
       break;
     }
+    case Method::kGetOrCreateTaskStateId: {
+      GetOrCreateTaskStateId(queue, reinterpret_cast<GetOrCreateTaskStateIdTask *>(task));
+      break;
+    }
     case Method::kCreateTaskState: {
       CreateTaskState(queue, reinterpret_cast<CreateTaskStateTask *>(task));
       break;
@@ -38,6 +42,88 @@ void Run(MultiQueue *queue, u32 method, Task *task) override {
     }
   }
 }
+/** Ensure there is space to store replicated outputs */
+void ReplicateStart(u32 method, u32 count, Task *task) override {
+  switch (method) {
+    case Method::kRegisterTaskLib: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<RegisterTaskLibTask*>(task));
+      break;
+    }
+    case Method::kDestroyTaskLib: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<DestroyTaskLibTask*>(task));
+      break;
+    }
+    case Method::kGetOrCreateTaskStateId: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<GetOrCreateTaskStateIdTask*>(task));
+      break;
+    }
+    case Method::kCreateTaskState: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<CreateTaskStateTask*>(task));
+      break;
+    }
+    case Method::kGetTaskStateId: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<GetTaskStateIdTask*>(task));
+      break;
+    }
+    case Method::kDestroyTaskState: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<DestroyTaskStateTask*>(task));
+      break;
+    }
+    case Method::kStopRuntime: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<StopRuntimeTask*>(task));
+      break;
+    }
+    case Method::kSetWorkOrchestratorQueuePolicy: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<SetWorkOrchestratorQueuePolicyTask*>(task));
+      break;
+    }
+    case Method::kSetWorkOrchestratorProcessPolicy: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<SetWorkOrchestratorProcessPolicyTask*>(task));
+      break;
+    }
+  }
+}
+/** Determine success and handle failures */
+void ReplicateEnd(u32 method, Task *task) override {
+  switch (method) {
+    case Method::kRegisterTaskLib: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<RegisterTaskLibTask*>(task));
+      break;
+    }
+    case Method::kDestroyTaskLib: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<DestroyTaskLibTask*>(task));
+      break;
+    }
+    case Method::kGetOrCreateTaskStateId: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<GetOrCreateTaskStateIdTask*>(task));
+      break;
+    }
+    case Method::kCreateTaskState: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<CreateTaskStateTask*>(task));
+      break;
+    }
+    case Method::kGetTaskStateId: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<GetTaskStateIdTask*>(task));
+      break;
+    }
+    case Method::kDestroyTaskState: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<DestroyTaskStateTask*>(task));
+      break;
+    }
+    case Method::kStopRuntime: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<StopRuntimeTask*>(task));
+      break;
+    }
+    case Method::kSetWorkOrchestratorQueuePolicy: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<SetWorkOrchestratorQueuePolicyTask*>(task));
+      break;
+    }
+    case Method::kSetWorkOrchestratorProcessPolicy: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<SetWorkOrchestratorProcessPolicyTask*>(task));
+      break;
+    }
+  }
+}
 /** Serialize a task when initially pushing into remote */
 std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, Task *task) override {
   switch (method) {
@@ -47,6 +133,10 @@ std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, T
     }
     case Method::kDestroyTaskLib: {
       ar << *reinterpret_cast<DestroyTaskLibTask*>(task);
+      break;
+    }
+    case Method::kGetOrCreateTaskStateId: {
+      ar << *reinterpret_cast<GetOrCreateTaskStateIdTask*>(task);
       break;
     }
     case Method::kCreateTaskState: {
@@ -88,6 +178,11 @@ TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) override {
     case Method::kDestroyTaskLib: {
       task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<DestroyTaskLibTask>(task_ptr.p_);
       ar >> *reinterpret_cast<DestroyTaskLibTask*>(task_ptr.task_);
+      break;
+    }
+    case Method::kGetOrCreateTaskStateId: {
+      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<GetOrCreateTaskStateIdTask>(task_ptr.p_);
+      ar >> *reinterpret_cast<GetOrCreateTaskStateIdTask*>(task_ptr.task_);
       break;
     }
     case Method::kCreateTaskState: {
@@ -134,6 +229,10 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
       ar << *reinterpret_cast<DestroyTaskLibTask*>(task);
       break;
     }
+    case Method::kGetOrCreateTaskStateId: {
+      ar << *reinterpret_cast<GetOrCreateTaskStateIdTask*>(task);
+      break;
+    }
     case Method::kCreateTaskState: {
       ar << *reinterpret_cast<CreateTaskStateTask*>(task);
       break;
@@ -165,35 +264,39 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
 void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task) override {
   switch (method) {
     case Method::kRegisterTaskLib: {
-      ar >> *reinterpret_cast<RegisterTaskLibTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<RegisterTaskLibTask*>(task));
       break;
     }
     case Method::kDestroyTaskLib: {
-      ar >> *reinterpret_cast<DestroyTaskLibTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<DestroyTaskLibTask*>(task));
+      break;
+    }
+    case Method::kGetOrCreateTaskStateId: {
+      ar.Deserialize(replica, *reinterpret_cast<GetOrCreateTaskStateIdTask*>(task));
       break;
     }
     case Method::kCreateTaskState: {
-      ar >> *reinterpret_cast<CreateTaskStateTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<CreateTaskStateTask*>(task));
       break;
     }
     case Method::kGetTaskStateId: {
-      ar >> *reinterpret_cast<GetTaskStateIdTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<GetTaskStateIdTask*>(task));
       break;
     }
     case Method::kDestroyTaskState: {
-      ar >> *reinterpret_cast<DestroyTaskStateTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<DestroyTaskStateTask*>(task));
       break;
     }
     case Method::kStopRuntime: {
-      ar >> *reinterpret_cast<StopRuntimeTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<StopRuntimeTask*>(task));
       break;
     }
     case Method::kSetWorkOrchestratorQueuePolicy: {
-      ar >> *reinterpret_cast<SetWorkOrchestratorQueuePolicyTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<SetWorkOrchestratorQueuePolicyTask*>(task));
       break;
     }
     case Method::kSetWorkOrchestratorProcessPolicy: {
-      ar >> *reinterpret_cast<SetWorkOrchestratorProcessPolicyTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<SetWorkOrchestratorProcessPolicyTask*>(task));
       break;
     }
   }

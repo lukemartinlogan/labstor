@@ -78,7 +78,57 @@ class CreateTaskStatePhase {
  public:
   // NOTE(llogan): kLast is intentially 0 so that the constructor
   // can seamlessly pass data to submethods
-  TASK_METHOD_T kLast = 0;
+  TASK_METHOD_T kIdAllocStart = 0;
+  TASK_METHOD_T kIdAllocWait = 1;
+  TASK_METHOD_T kStateCreate = 2;
+  TASK_METHOD_T kLast = 3;
+};
+
+/** A task to get or retrieve the ID of a task */
+struct GetOrCreateTaskStateIdTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN hipc::ShmArchive<hipc::string> state_name_;
+  OUT TaskStateId id_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  GetOrCreateTaskStateIdTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
+  GetOrCreateTaskStateIdTask(hipc::Allocator *alloc,
+                             const TaskNode &task_node,
+                             const DomainId &domain_id,
+                             const std::string &state_name) : Task(alloc) {
+    // Initialize task
+    task_node_ = task_node;
+    lane_hash_ = 0;
+    task_state_ = LABSTOR_QM_CLIENT->admin_task_state_;
+    method_ = Method::kGetOrCreateTaskStateId;
+    task_flags_.SetBits(0);
+    domain_id_ = domain_id;
+
+    // Initialize
+    HSHM_MAKE_AR(state_name_, alloc, state_name);
+  }
+
+  ~GetOrCreateTaskStateIdTask() {
+    HSHM_DESTROY_AR(state_name_);
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(state_name_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(u32 replica, Ar &ar) {
+    ar(id_);
+  }
+
+  TASK_SERIALIZE
 };
 
 /** A task to register a Task state + Create a queue */
@@ -91,6 +141,7 @@ struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
   IN bitfield32_t queue_flags_;
   INOUT TaskStateId id_;
   TEMP int phase_;
+  TEMP GetOrCreateTaskStateIdTask *get_id_task_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit

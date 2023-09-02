@@ -187,22 +187,14 @@ class TaskRegistry {
     return it != task_states_.end();
   }
 
-  /** Check if task state exists by name */
-  HSHM_ALWAYS_INLINE
-  bool TaskStateExists(const char *state_name) {
-    if (state_name == nullptr) {
-      return false;
-    }
-    auto it = task_state_ids_.find(state_name);
-    return it != task_state_ids_.end();
-  }
-
   /** Create a task state */
   TaskStateId CreateTaskState(const char *lib_name,
                               const char *state_name,
                               const TaskStateId &state_id,
                               Admin::CreateTaskStateTask *task) {
     HILOG(kInfo, "Creating an instance of {} with name {}", lib_name, state_name)
+    TaskStateId new_id = state_id;
+
     // Find the task library to instantiate
     auto it = libs_.find(lib_name);
     if (it == libs_.end()) {
@@ -213,18 +205,19 @@ class TaskRegistry {
       return TaskStateId::GetNull();
     }
 
-    // Check that the state doesn't already exist
-    if (TaskStateExists(state_name) || TaskStateExists(state_id)) {
+    // Get the TaskStateId
+    new_id = GetTaskStateId(state_name);
+    if (!new_id.IsNull() && TaskStateExists(state_id)) {
       HELOG(kError, "The task state already exists: {}", state_name);
       if (task) {
         task->SetComplete();
       }
       return TaskStateId::GetNull();
     }
-
-    // Check if state_id needs to be allocated
-    TaskStateId new_id = state_id;
-    if (state_id.IsNull()) {
+    if (new_id.IsNull()) {
+      new_id = state_id;
+    }
+    if (new_id.IsNull()) {
       new_id = CreateTaskStateId();
     }
     if (task) {
@@ -250,6 +243,17 @@ class TaskRegistry {
     return new_id;
   }
 
+  /** Get or create a task state's ID */
+  TaskStateId GetOrCreateTaskStateId(const std::string &state_name) {
+    auto it = task_state_ids_.find(state_name);
+    if (it == task_state_ids_.end()) {
+      TaskStateId state_id = CreateTaskStateId();
+      task_state_ids_.emplace(state_name, state_id);
+      return state_id;
+    }
+    return it->second;
+  }
+
   /** Get a task state's ID */
   TaskStateId GetTaskStateId(const std::string &state_name) {
     auto it = task_state_ids_.find(state_name);
@@ -270,9 +274,9 @@ class TaskRegistry {
 
   /** Get task state instance by name OR by ID */
   TaskState* GetTaskState(const std::string &task_name, const TaskStateId &task_state_id) {
-    TaskStateId id = task_state_id;
-    if (TaskStateExists(task_name.c_str())) {
-      id = GetTaskStateId(task_name);
+    TaskStateId id = GetTaskStateId(task_name);
+    if (id.IsNull()) {
+      id = task_state_id;
     }
     return GetTaskState(id);
   }

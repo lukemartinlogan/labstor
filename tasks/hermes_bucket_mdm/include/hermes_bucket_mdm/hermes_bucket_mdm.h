@@ -27,7 +27,7 @@ class Client {
   void Create(const TaskNode &task_node,
               const DomainId &domain_id,
               const std::string &state_name) {
-    id_ = LABSTOR_CLIENT->MakeTaskStateId();
+    id_ = TaskStateId::GetNull();
     id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
         task_node, domain_id, state_name, id_,
         LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
