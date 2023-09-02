@@ -119,7 +119,7 @@ struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
     HSHM_MAKE_AR(state_name_, alloc, state_name);
     HSHM_MAKE_AR(lib_name_, alloc, lib_name);
     id_ = id;
-    HILOG(kInfo, "The ID to replicate for CreateTask: {}", id);
+    HILOG(kInfo, "The ID to replicate for {}: {}", state_name, id);
     queue_max_lanes_ = max_lanes;
     queue_num_lanes_ = num_lanes;
     queue_depth_ = depth;
