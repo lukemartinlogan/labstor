@@ -61,9 +61,6 @@ class RpcContext {
   /** Default constructor */
   RpcContext() = default;
 
-  /** Parse a hostfile */
-  static std::vector<std::string> ParseHostfile(const std::string &path);
-
   /** Get the nubmer of hosts */
   HSHM_ALWAYS_INLINE
   size_t GetNumHosts() {
