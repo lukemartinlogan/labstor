@@ -128,6 +128,7 @@ struct GetOrCreateBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message call */
   template<typename Ar>
   void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
     ar(tag_id_, blob_name_);
   }
 
@@ -335,6 +336,7 @@ struct TagBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message call */
   template<typename Ar>
   void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
     ar(blob_id_, tag_);
   }
 
@@ -381,6 +383,7 @@ struct BlobHasTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message call */
   template<typename Ar>
   void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
     ar(blob_id_, tag_);
   }
 
@@ -432,6 +435,7 @@ struct GetBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message call */
   template<typename Ar>
   void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
     ar(blob_id_, blob_name_);
   }
 
@@ -481,6 +485,7 @@ struct GetBlobNameTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message call */
   template<typename Ar>
   void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
     ar(blob_id_);
   }
 
@@ -522,6 +527,7 @@ struct GetBlobScoreTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message call */
   template<typename Ar>
   void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
     ar(blob_id_);
   }
 
@@ -569,6 +575,7 @@ struct GetBlobBuffersTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message call */
   template<typename Ar>
   void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
     ar(blob_id_);
   }
 
@@ -620,6 +627,7 @@ struct RenameBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message call */
   template<typename Ar>
   void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
     ar(blob_id_);
   }
 
@@ -663,6 +671,7 @@ struct TruncateBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message call */
   template<typename Ar>
   void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
     ar(blob_id_, size_);
   }
 
@@ -712,6 +721,7 @@ struct DestroyBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message call */
   template<typename Ar>
   void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
     ar(blob_id_);
   }
 
