@@ -21,8 +21,7 @@ TEST_CASE("TestHermesBucket") {
 
   // Create a bucket
   HILOG(kInfo, "WE ARE HERE!!!")
-  hermes::Context ctx;
-  hermes::Bucket bkt("hello", ctx);
+  hermes::Bucket bkt("hello");
   HILOG(kInfo, "BUCKET LOADED!!!")
 
   size_t count = 256;
