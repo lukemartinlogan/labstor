@@ -82,7 +82,7 @@ class CreateTaskStatePhase {
 };
 
 /** A task to register a Task state + Create a queue */
-struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM> {
+struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
   IN hipc::ShmArchive<hipc::string> lib_name_;
   IN hipc::ShmArchive<hipc::string> state_name_;
   IN u32 queue_max_lanes_;
@@ -119,10 +119,19 @@ struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM> {
     HSHM_MAKE_AR(state_name_, alloc, state_name);
     HSHM_MAKE_AR(lib_name_, alloc, lib_name);
     id_ = id;
+    HILOG(kInfo, "The ID to replicate for CreateTask: {}", id);
     queue_max_lanes_ = max_lanes;
     queue_num_lanes_ = num_lanes;
     queue_depth_ = depth;
     queue_flags_ = flags;
+  }
+
+  /** Replication (does nothing) */
+  void ReplicateStart(u32 count) {
+  }
+
+  /** Replicate end (does nothing) */
+  void ReplicateEnd() {
   }
 
   /** (De)serialize message call */
