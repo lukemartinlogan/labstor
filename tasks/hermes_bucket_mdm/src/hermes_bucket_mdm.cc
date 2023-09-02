@@ -65,6 +65,7 @@ class Server : public TaskLib {
   /** Get or create a tag */
   void GetOrCreateTag(MultiQueue *queue, GetOrCreateTagTask *task) {
     TagId tag_id;
+    HILOG(kDebug, "Creating a tag")
 
     // Check if the tag exists
     hshm::charbuf tag_name = hshm::to_charbuf(*task->tag_name_);

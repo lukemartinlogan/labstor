@@ -162,6 +162,8 @@ struct GetOrCreateTagTask : public Task, TaskFlags<TF_SRL_SYM> {
     domain_id_ = domain_id;
 
     // Custom params
+    blob_owner_ = blob_owner;
+    backend_size_ = backend_size;
     HSHM_MAKE_AR(tag_name_, LABSTOR_CLIENT->main_alloc_, tag_name)
     HSHM_MAKE_AR(traits_, LABSTOR_CLIENT->main_alloc_, traits)
   }

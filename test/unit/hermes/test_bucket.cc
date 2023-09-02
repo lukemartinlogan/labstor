@@ -23,6 +23,7 @@ TEST_CASE("TestHermesBucket") {
   HILOG(kInfo, "WE ARE HERE!!!")
   hermes::Context ctx;
   hermes::Bucket bkt("hello", ctx);
+  HILOG(kInfo, "BUCKET LOADED!!!")
 
   size_t count = 256;
   size_t off = rank * 256;
