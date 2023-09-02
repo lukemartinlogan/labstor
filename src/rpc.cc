@@ -20,22 +20,6 @@
 
 namespace labstor {
 
-/** parse hostfile */
-std::vector<std::string> RpcContext::ParseHostfile(const std::string &path) {
-  std::vector<std::string> hosts;
-  std::ifstream file(path);
-  if (file.is_open()) {
-    std::string line;
-    while (std::getline(file, line)) {
-      hshm::ConfigParse::ParseHostNameString(line, hosts);
-    }
-    file.close();
-  } else {
-    HELOG(kFatal, "Could not open the hostfile: {}", path)
-  }
-  return hosts;
-}
-
 /**
  * initialize host info list
  * Requires the MetadataManager to be initialized.
@@ -49,10 +33,6 @@ void RpcContext::ServerInit(ServerConfig *config) {
   if (hosts_.size()) { return; }
   // Uses hosts produced by host_names
   auto &hosts = config_->rpc_.host_names_;
-  // Load hosts from hostfile
-  if (!config_->rpc_.host_file_.empty()) {
-    hosts = ParseHostfile(config_->rpc_.host_file_);
-  }
 
   // Get all host info
   hosts_.reserve(hosts.size());
