@@ -31,6 +31,7 @@ class Server : public TaskLib {
   void CreateTaskState(MultiQueue *queue, CreateTaskStateTask *task) {
     std::string lib_name = task->lib_name_->str();
     std::string state_name = task->state_name_->str();
+    HILOG(kInfo, "(node {}) Creating task state {} with id {}", LABSTOR_QM_CLIENT->node_id_, state_name, task->id_);
     TaskState *task_state = LABSTOR_TASK_REGISTRY->GetTaskState(state_name, task->id_);
     if (task_state) {
       // The tasks exists and is initialized
