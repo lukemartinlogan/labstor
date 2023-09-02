@@ -17,6 +17,8 @@ namespace labstor {
 struct LabstorShm {
   u32 node_id_;
   QueueManagerShm queue_manager_;
+  std::atomic<u64> unique_;
+  u64 num_nodes_;
 };
 
 /** The configuration used inherited by runtime + client */

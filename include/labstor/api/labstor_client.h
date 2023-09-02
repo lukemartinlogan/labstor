@@ -19,11 +19,11 @@ class Client : public ConfigurationManager {
  public:
   int data_;
   QueueManagerClient queue_manager_;
-  std::atomic<u64> unique_;
+  std::atomic<u64> *unique_;
 
  public:
   /** Default constructor */
-  Client() : unique_(0) {}
+  Client() {}
 
   /** Initialize the client */
   Client* Create(std::string server_config_path = "",
@@ -70,6 +70,7 @@ class Client : public ConfigurationManager {
     }
     main_alloc_ = mem_mngr->GetAllocator(main_alloc_id_);
     header_ = main_alloc_->GetCustomHeader<LabstorShm>();
+    unique_ = &header_->unique_;
   }
 
   /** Finalize Hermes explicitly */
@@ -77,7 +78,12 @@ class Client : public ConfigurationManager {
 
   /** Create task node id */
   TaskNode MakeTaskNodeId() {
-    return TaskId(header_->node_id_, unique_.fetch_add(1));;
+    return TaskId(header_->node_id_, unique_->fetch_add(1));;
+  }
+
+  /** Create a unique ID */
+  TaskStateId MakeTaskStateId() {
+    return TaskStateId(header_->node_id_, unique_->fetch_add(1));
   }
 
   /** Create a task */

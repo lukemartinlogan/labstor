@@ -60,7 +60,9 @@ class Runtime : public ConfigurationManager {
     rpc_.ServerInit(&server_config_);
     thallium_.ServerInit(&rpc_);
     header_->node_id_ = rpc_.node_id_;
-    task_registry_.ServerInit(&server_config_, rpc_.node_id_);
+    header_->unique_ = 0;
+    header_->num_nodes_ = server_config_.rpc_.host_names_.size();
+    task_registry_.ServerInit(&server_config_, rpc_.node_id_, header_->unique_);
     // Queue manager + client must be initialized before Work Orchestrator
     queue_manager_.ServerInit(main_alloc_,
                               rpc_.node_id_,

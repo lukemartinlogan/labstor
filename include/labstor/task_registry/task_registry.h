@@ -73,15 +73,16 @@ class TaskRegistry {
   /** Map of a semantic exec id to state */
   std::unordered_map<TaskStateId, TaskState*> task_states_;
   /** A unique identifier counter */
-  std::atomic<u64> unique_;
+  std::atomic<u64> *unique_;
 
  public:
   /** Default constructor */
-  TaskRegistry() : unique_(0) {}
+  TaskRegistry() {}
 
   /** Initialize the Task Registry */
-  void ServerInit(ServerConfig *config, u32 node_id) {
+  void ServerInit(ServerConfig *config, u32 node_id, std::atomic<u64> &unique) {
     node_id_ = node_id;
+    unique_ = &unique;
 
     // Load the LD_LIBRARY_PATH variable
     auto ld_lib_path_env = getenv("LD_LIBRARY_PATH");
@@ -176,7 +177,7 @@ class TaskRegistry {
   /** Allocate a task state ID */
   HSHM_ALWAYS_INLINE
   TaskStateId CreateTaskStateId() {
-    return TaskStateId(node_id_, unique_.fetch_add(1));
+    return TaskStateId(node_id_, unique_->fetch_add(1));
   }
 
   /** Check if task state exists by ID */

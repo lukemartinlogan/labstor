@@ -40,7 +40,7 @@ class Client {
                             const std::string &lib_name,
                             DeviceInfo &dev_info) {
     domain_id_ = domain_id;
-    id_ = TaskStateId::GetNull();
+    id_ = LABSTOR_CLIENT->MakeTaskStateId();
     CopyDevInfo(dev_info);
     Monitor(task_node, 100);
     return LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
