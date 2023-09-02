@@ -56,7 +56,7 @@ class Server : public TaskLib {
         task->tl_future_.reserve(task->domain_ids_.size());
         switch (task->xfer_.size()) {
           case 1: {
-            HILOG(kInfo, "Transferring {} of {} bytes", task->task_node_, xfer[0].data_size_);
+            HILOG(kInfo, "(SM) Transferring {} of {} bytes", task->task_node_, xfer[0].data_size_);
             std::string params((char *) xfer[0].data_, xfer[0].data_size_);
             for (DomainId domain_id : task->domain_ids_) {
               tl::async_response future = LABSTOR_THALLIUM->AsyncCall(domain_id.id_,
@@ -69,7 +69,7 @@ class Server : public TaskLib {
             break;
           }
           case 2: {
-            HILOG(kInfo, "Transferring {} of {} bytes", task->task_node_, xfer[0].data_size_);
+            HILOG(kInfo, "(IO) Transferring {} of {} bytes", task->task_node_, xfer[0].data_size_);
             std::string params((char *) xfer[1].data_, xfer[1].data_size_);
             IoType io_type = IoType::kRead;
             if (xfer[0].flags_.Any(DT_RECEIVER_READ)) {
