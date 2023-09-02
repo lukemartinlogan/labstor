@@ -39,6 +39,7 @@ class Server : public TaskLib {
       }
       case ConstructTaskPhase::kWait: {
         if (blob_mdm_task_->IsComplete()) {
+          HILOG(kDebug, "Blob MDM created")
           blob_mdm_.AsyncCreateComplete(blob_mdm_task_);
           task->SetComplete();
           return;

@@ -112,31 +112,25 @@ class Server : public TaskLib {
    * Create a blob's metadata
    * */
   void PutBlob(MultiQueue *queue, PutBlobTask *task) {
-    switch (task->phase_) {
-      case PutBlobPhase::kCreate: {
-        PutBlobCreatePhase(task);
+    if (task->phase_ == PutBlobPhase::kCreate) {
+      PutBlobCreatePhase(task);
+    }
+    if (task->phase_ == PutBlobPhase::kAllocate) {
+      PutBlobAllocatePhase(task);
+    }
+    if (task->phase_ == PutBlobPhase::kWaitAllocate) {
+      if (!task->cur_bdev_alloc_->IsComplete()){
+        return;
       }
-
-      case PutBlobPhase::kAllocate: {
-        PutBlobAllocatePhase(task);
-      }
-
-      case PutBlobPhase::kWaitAllocate: {
-        if (!task->cur_bdev_alloc_->IsComplete()){
-          return;
-        }
-        PutBlobWaitAllocatePhase(task);
-      }
-
-      case PutBlobPhase::kModify: {
-        PutBlobModifyPhase(task);
-      }
-
-      case PutBlobPhase::kWaitModify: {
-        PutBlobWaitModifyPhase(task);
-        if (task->phase_ == PutBlobPhase::kWaitModify) {
-          return;
-        }
+      PutBlobWaitAllocatePhase(task);
+    }
+    if (task->phase_ == PutBlobPhase::kModify) {
+      PutBlobModifyPhase(task);
+    }
+    if (task->phase_ == PutBlobPhase::kWaitModify) {
+      PutBlobWaitModifyPhase(task);
+      if (task->phase_ == PutBlobPhase::kWaitModify) {
+        return;
       }
     }
   }

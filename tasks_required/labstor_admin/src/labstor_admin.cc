@@ -48,8 +48,9 @@ class Server : public TaskLib {
         }
         // Check global registry for task state
         if (task->id_.IsNull()) {
-          u64 hash = std::hash<std::string>{}(state_name);
-          DomainId domain = DomainId::GetNode(HASH_TO_NODE_ID(hash));
+          // u64 hash = std::hash<std::string>{}(state_name);
+          // DomainId domain = DomainId::GetNode(HASH_TO_NODE_ID(hash));
+          DomainId domain = DomainId::GetNode(1);
           task->get_id_task_ = LABSTOR_ADMIN->AsyncGetOrCreateTaskStateId(
               task->task_node_, domain, state_name);
           task->phase_ = CreateTaskStatePhase::kIdAllocWait;
@@ -85,12 +86,13 @@ class Server : public TaskLib {
         }
 
         // Begin creating the task state
+        task->phase_ = 0;
+        task->task_state_ = task->id_;
         LABSTOR_TASK_REGISTRY->CreateTaskState(
             lib_name.c_str(),
             state_name.c_str(),
             task->id_,
             task);
-        task->task_state_ = task->id_;
       }
     }
   }
