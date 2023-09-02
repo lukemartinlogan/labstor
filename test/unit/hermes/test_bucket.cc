@@ -20,6 +20,7 @@ TEST_CASE("TestHermesBucket") {
   HERMES->ClientInit();
 
   // Create a bucket
+  HILOG(kInfo, "WE ARE HERE!!!")
   hermes::Context ctx;
   hermes::Bucket bkt("hello", ctx);
 
