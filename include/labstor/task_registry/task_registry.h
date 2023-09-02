@@ -223,7 +223,7 @@ class TaskRegistry {
 
     // Check if state_id needs to be allocated
     TaskStateId new_id = state_id;
-    if (state_id == TaskStateId::GetNull()) {
+    if (state_id.IsNull()) {
       new_id = CreateTaskStateId();
     }
     if (task) {
