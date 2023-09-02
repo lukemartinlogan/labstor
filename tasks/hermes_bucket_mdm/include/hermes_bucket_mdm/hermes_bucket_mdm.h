@@ -79,6 +79,7 @@ class Client {
     HILOG(kInfo, "Creating a tag")
     u32 hash = std::hash<hshm::charbuf>{}(tag_name);
     HILOG(kInfo, "HASH: {}", hash)
+    HILOG(kInfo, "HASH2: {}", HASH_TO_NODE_ID(hash))
     auto *task = LABSTOR_CLIENT->NewTask<GetOrCreateTagTask>(
         p, task_node, DomainId::GetNode(HASH_TO_NODE_ID(hash)), id_,
         tag_name, blob_owner, traits, backend_size);
