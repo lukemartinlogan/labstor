@@ -67,10 +67,11 @@ class Client {
    * Get \a blob_name BLOB from \a bkt_id bucket
    * */
   GetOrCreateBlobIdTask* AsyncGetOrCreateBlobId(const TaskNode &task_node,
-                                        TagId tag_id, const hshm::charbuf &blob_name) {
+                                                TagId tag_id, const hshm::charbuf &blob_name) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     u32 hash = std::hash<hshm::charbuf>{}(blob_name);
+    HILOG(kInfo, "AsyncGetOrCreateBlobId: {} {}", blob_name.str(), HASH_TO_NODE_ID(hash));
     auto *task = LABSTOR_CLIENT->NewTask<GetOrCreateBlobIdTask>(
         p,
         task_node, DomainId::GetNode(HASH_TO_NODE_ID(hash)), id_,
