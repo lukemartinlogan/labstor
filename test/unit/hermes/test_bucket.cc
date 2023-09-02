@@ -27,13 +27,14 @@ TEST_CASE("TestHermesBucket") {
 
   size_t count = 256;
   size_t off = rank * 256;
+  int max_blobs = 16;
   for (size_t i = off; i < count; ++i) {
     HILOG(kInfo, "Iteration: {}", i);
     // Put a blob
     hermes::Blob blob(MEGABYTES(1));
     memset(blob.data(), i, blob.size());
     hermes::BlobId blob_id(hermes::BlobId::GetNull());
-    bkt.Put("hello", blob, blob_id, ctx);
+    bkt.Put("hello" + std::to_string(i % max_blobs), blob, blob_id, ctx);
 
     // Get a blob
     hermes::Blob blob2;
