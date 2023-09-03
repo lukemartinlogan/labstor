@@ -211,6 +211,12 @@ struct DomainId {
   bool operator==(const DomainId &other) const {
     return id_ == other.id_ && flags_.bits_ == other.flags_.bits_;
   }
+
+  /** Inequality operator */
+  HSHM_ALWAYS_INLINE
+  bool operator!=(const DomainId &other) const {
+    return id_ != other.id_ || flags_.bits_ != other.flags_.bits_;
+  }
 };
 
 /** Represents unique ID for states + queues */
