@@ -50,6 +50,7 @@ class Server : public TaskLib {
         if (task->id_.IsNull()) {
           if (task->domain_id_ == DomainId::GetLocal()) {
             task->id_ = LABSTOR_TASK_REGISTRY->GetOrCreateTaskStateId(state_name);
+            task->phase_ = CreateTaskStatePhase::kStateCreate;
           } else {
             // u64 hash = std::hash<std::string>{}(state_name);
             // DomainId domain = DomainId::GetNode(HASH_TO_NODE_ID(hash));
