@@ -62,8 +62,9 @@ void Worker::PollUnordered(u32 lane_id, MultiQueue *queue) {
     bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_QM_CLIENT->node_id_);
     if (!task->IsRunDisabled()) {
       if (is_remote) {
-        HILOG(kInfo, "Dispersing task {} {}",
-              task->task_state_, task->task_node_);
+        HILOG(kInfo, "Dispersing task {} {} {} {}",
+              task->task_state_, task->task_node_,
+              LABSTOR_RPC->GetNumHosts(), LABSTOR_QM_CLIENT->node_id_);
         auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
         LABSTOR_REMOTE_QUEUE->Disperse(task, exec, ids);
         task->DisableRun();
