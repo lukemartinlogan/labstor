@@ -65,8 +65,11 @@ void Worker::PollUnordered(u32 lane_id, MultiQueue *queue) {
         // flags_.Any(kGlobal | kSet) || (flags_.Any(kNode) && id_ != this_node)
         HILOG(kInfo, "Dispersing task task_state={} task_node={} is_global={} is_set={} is_node={} dom_id={} this_node={}",
               task->task_state_, task->task_node_,
-              flags_.Any(DomainId::kGlobal), flags_.Any(DomainId::kSet),
-              flags_.Any(DomainId::kNode), task->domain_id_.id_, LABSTOR_QM_CLIENT->node_id_);
+              task->domain_id_.flags_.Any(DomainId::kGlobal),
+              task->domain_id_.flags_.Any(DomainId::kSet),
+              task->domain_id_.flags_.Any(DomainId::kNode),
+              task->domain_id_.id_,
+              LABSTOR_QM_CLIENT->node_id_);
         auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
         LABSTOR_REMOTE_QUEUE->Disperse(task, exec, ids);
         task->DisableRun();
