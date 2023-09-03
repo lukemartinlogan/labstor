@@ -56,7 +56,7 @@ class Server : public TaskLib {
         task->tl_future_.reserve(task->domain_ids_.size());
         switch (task->xfer_.size()) {
           case 1: {
-            HILOG(kInfo, "(SM) Transferring {} bytes of data (task_node={}, task_state={}, method={}): {}",
+            HILOG(kInfo, "(SM) Transferring {} bytes of data (task_node={}, task_state={}, method={})",
                   xfer[0].data_size_,
                   task->orig_task_->task_node_,
                   task->orig_task_->task_state_,
@@ -112,7 +112,7 @@ class Server : public TaskLib {
             std::vector<DataTransfer> xfer(1);
             xfer[0].data_ = ret.data();
             xfer[0].data_size_ = ret.size();
-            HILOG(kInfo, "Wait got {} bytes of data (task_node={}, task_state={}, method={}): {}",
+            HILOG(kInfo, "Wait got {} bytes of data (task_node={}, task_state={}, method={})",
                   xfer[0].data_size_,
                   task->orig_task_->task_node_,
                   task->orig_task_->task_state_,
