@@ -179,7 +179,7 @@ class Server : public TaskLib {
       TaskPointer task_ptr = exec->LoadStart(method, ar);
       auto &orig_task = task_ptr.task_;
       auto &p = task_ptr.p_;
-      orig_task->domain_id_ = DomainId::GetLocal();
+      orig_task->domain_id_ = DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_);
 
       // Execute task
       auto *queue = LABSTOR_QM_CLIENT->GetQueue(QueueId(state_id));
