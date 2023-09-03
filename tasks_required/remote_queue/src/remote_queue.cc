@@ -172,7 +172,7 @@ class Server : public TaskLib {
       // Deserialize task
       TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(state_id);
       if (exec == nullptr) {
-        HELOG(kError, "Could not find the task state {}", state_id);
+        HELOG(kFatal, "Could not find the task state {}", state_id);
         req.respond(std::string());
         return;
       }

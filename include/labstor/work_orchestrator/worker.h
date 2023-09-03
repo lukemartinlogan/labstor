@@ -198,7 +198,7 @@ class Worker {
     std::vector<WorkEntry> work_queue;
     while (!poll_queues_.pop(work_queue).IsNull()) {
       for (auto &entry : work_queue) {
-        HILOG(kDebug, "Scheduled queue {} (lane {})", entry.queue_->id_, entry.lane_);
+        // HILOG(kDebug, "Scheduled queue {} (lane {})", entry.queue_->id_, entry.lane_);
         work_queue_.emplace_back(entry);
       }
     }
