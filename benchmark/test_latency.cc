@@ -2,6 +2,7 @@
 // Created by llogan on 7/1/23.
 //
 
+#include <thread>
 #include "basic_test.h"
 #include "labstor/api/labstor_client.h"
 #include "labstor_admin/labstor_admin.h"
@@ -169,6 +170,44 @@ TEST_CASE("TestRoundTripLatency") {
   t.Pause();
 
   HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
+}
+
+/** Time to spawn and join a thread */
+TEST_CASE("TestSpawnJoinThread") {
+  hshm::Timer t;
+  t.Resume();
+  size_t count = 16 * (1 << 10);
+  for (int i = 0; i < count; ++i) {
+    std::thread thread([]() { });
+    thread.join();
+  }
+  t.Pause();
+  HILOG(kInfo, "Latency: {} MOps", count / t.GetUsec());
+}
+
+/** Time to spawn and join a thread */
+TEST_CASE("TestSpawnJoinArgoThread") {
+  hshm::Timer t;
+  t.Resume();
+  ABT_xstream xstream;
+  ABT_thread tl_thread_;
+  size_t count = 16 * (1 << 10);
+  ABT_init(0, nullptr);
+  int ret = ABT_xstream_create(ABT_SCHED_NULL, &xstream);
+  if (ret != ABT_SUCCESS) {
+    HELOG(kFatal, "Could not create argobots xstream");
+  }
+  for (int i = 0; i < count; ++i) {
+    int ret = ABT_thread_create_on_xstream(xstream,
+                                           [](void *args) { }, nullptr,
+                                           ABT_THREAD_ATTR_NULL, &tl_thread_);
+    if (ret != ABT_SUCCESS) {
+      HELOG(kFatal, "Couldn't spawn worker");
+    }
+    ABT_thread_join(tl_thread_);
+  }
+  t.Pause();
+  HILOG(kInfo, "Latency: {} MOps", count / t.GetUsec());
 }
 
 #include "hermes/hermes.h"

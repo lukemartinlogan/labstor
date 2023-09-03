@@ -12,9 +12,9 @@ add_executable(test_performance_exec
         test_init.cc
         test_latency.cc)
 add_dependencies(test_performance_exec
-        ${Labstor_CLIENT_DEPS} hermes_config_manager)
+        ${Labstor_RUNTIME_DEPS} hermes_config_manager)
 target_link_libraries(test_performance_exec
-        ${Labstor_CLIENT_LIBRARIES} hermes_config_manager Catch2::Catch2
+        ${Labstor_RUNTIME_LIBRARIES} hermes_config_manager Catch2::Catch2
         MPI::MPI_CXX)
 
 #add_executable(test_performance_exec
