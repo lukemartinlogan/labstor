@@ -54,7 +54,7 @@ void Worker::PollUnordered(u32 lane_id, MultiQueue *queue) {
 //    }
     TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
     if (!exec) {
-      HELOG(kError, "(node {}) Could not find the task state: {}",
+      HELOG(kFatal, "(node {}) Could not find the task state: {}",
             LABSTOR_QM_CLIENT->node_id_, task->task_state_);
       task->SetComplete();
     }
@@ -105,7 +105,8 @@ void Worker::PollOrdered(u32 lane_id, MultiQueue *queue) {
 //    }
     TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
     if (!exec) {
-      HELOG(kError, "Could not find the task state: {}", task->task_state_);
+      HELOG(kFatal, "(node {}) Could not find the task state: {}",
+            LABSTOR_QM_CLIENT->node_id_, task->task_state_);
       task->SetComplete();
     }
     // Disperse or execute task
