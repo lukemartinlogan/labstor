@@ -211,6 +211,7 @@ class TaskRegistry {
     if (!new_id.IsNull() && TaskStateExists(state_id)) {
       HELOG(kError, "The task state already exists: {}", state_name);
       if (task) {
+        task->id_ = new_id;
         task->SetComplete();
       }
       return TaskStateId::GetNull();
