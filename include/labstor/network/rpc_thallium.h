@@ -273,7 +273,7 @@ class ThalliumRpc {
         }
         case IoType::kWrite: {
           // Write to "local_bulk" from "bulk"
-          io_bytes = local_bulk << bulk.on(endpoint);
+          io_bytes = bulk.on(endpoint) >> local_bulk;
           break;
         }
         case IoType::kNone: {

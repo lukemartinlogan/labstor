@@ -90,7 +90,17 @@ class Server : public TaskLib {
                     LABSTOR_QM_CLIENT->node_id_,
                     domain_id.id_,
                     static_cast<int>(io_type));
-              tl::async_response future = LABSTOR_THALLIUM->AsyncIoCall(domain_id.id_,
+              LABSTOR_THALLIUM->IoCall<std::string>(domain_id.id_,
+                                                    "RpcPushBulk",
+                                                    io_type,
+                                                    (char *) xfer[0].data_,
+                                                    xfer[0].data_size_,
+                                                    task->exec_->id_,
+                                                    task->exec_method_,
+                                                    params,
+                                                    xfer[0].data_size_,
+                                                    io_type);
+              /* tl::async_response future = LABSTOR_THALLIUM->AsyncIoCall(domain_id.id_,
                                                                         "RpcPushBulk",
                                                                         io_type,
                                                                         (char *) xfer[0].data_,
@@ -100,7 +110,7 @@ class Server : public TaskLib {
                                                                         params,
                                                                         xfer[0].data_size_,
                                                                         io_type);
-              task->tl_future_.emplace_back(std::move(future));
+              task->tl_future_.emplace_back(std::move(future));*/
             }
             break;
           }
