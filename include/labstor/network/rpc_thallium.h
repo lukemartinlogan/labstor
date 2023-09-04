@@ -106,7 +106,7 @@ class ThalliumRpc {
 
   /** Thallium-compatible server name */
   std::string GetServerName(u32 node_id) {
-    std::string ip_address = rpc_->GetIpAddressFromNodeId(DomainId::GetNode(rpc_->node_id_));
+    std::string ip_address = rpc_->GetIpAddressFromNodeId(DomainId::GetNode(node_id));
     return rpc_->protocol_ + "://" +
         std::string(ip_address) +
         ":" + std::to_string(rpc_->port_);

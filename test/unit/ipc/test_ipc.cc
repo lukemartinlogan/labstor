@@ -11,6 +11,7 @@
 #include "hermes_shm/util/timer.h"
 #include "labstor/work_orchestrator/affinity.h"
 #include "omp.h"
+#include "labstor/api/labstor_runtime.h"
 
 TEST_CASE("TestIpc") {
   int rank, nprocs;
@@ -18,10 +19,8 @@ TEST_CASE("TestIpc") {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
   labstor::small_message::Client client;
-  if (rank == 0) {
-    LABSTOR_ADMIN->RegisterTaskLibraryRoot(labstor::DomainId::GetGlobal(), "small_message");
-    client.CreateRoot(labstor::DomainId::GetGlobal(), "ipc_test");
-  }
+  LABSTOR_ADMIN->RegisterTaskLibraryRoot(labstor::DomainId::GetGlobal(), "small_message");
+  client.CreateRoot(labstor::DomainId::GetGlobal(), "ipc_test");
   MPI_Barrier(MPI_COMM_WORLD);
   hshm::Timer t;
 
@@ -83,12 +82,8 @@ TEST_CASE("TestIO") {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
   labstor::small_message::Client client;
-  try {
-    LABSTOR_ADMIN->RegisterTaskLibraryRoot(labstor::DomainId::GetGlobal(), "small_message");
-    client.CreateRoot(labstor::DomainId::GetGlobal(), "ipc_test");
-  } catch (std::exception &e) {
-    HELOG(kFatal, e.what());
-  }
+  LABSTOR_ADMIN->RegisterTaskLibraryRoot(labstor::DomainId::GetGlobal(), "small_message");
+  client.CreateRoot(labstor::DomainId::GetGlobal(), "ipc_test");
   hshm::Timer t;
 
   int pid = getpid();
@@ -108,4 +103,10 @@ TEST_CASE("TestIO") {
   t.Pause();
 
   HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
+}
+
+TEST_CASE("TestHostfile") {
+  for (u32 node_id = 1; node_id < LABSTOR_THALLIUM->rpc_->hosts_.size() + 1; ++node_id) {
+    HILOG(kInfo, "Node {}: {}", node_id, LABSTOR_THALLIUM->GetServerName(node_id));
+  }
 }
