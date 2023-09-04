@@ -31,7 +31,7 @@ TEST_CASE("TestHermesBucket") {
   for (size_t i = off; i < count; ++i) {
     HILOG(kInfo, "Iteration: {}", i);
     // Put a blob
-    hermes::Blob blob(MEGABYTES(1));
+    hermes::Blob blob(KILOBYTES(4));
     memset(blob.data(), i, blob.size());
     hermes::BlobId blob_id(hermes::BlobId::GetNull());
     bkt.Put(std::to_string(i % max_blobs), blob, blob_id, ctx);
