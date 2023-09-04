@@ -93,6 +93,8 @@ TEST_CASE("TestIO") {
   int pid = getpid();
   ProcessAffiner::SetCpuAffinity(pid, 8);
 
+  HILOG(kInfo, "Starting IO test: {}", nprocs);
+
   t.Resume();
   size_t ops = 16;
   for (size_t i = 0; i < ops; ++i) {
