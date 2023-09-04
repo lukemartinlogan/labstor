@@ -140,20 +140,20 @@ class ThalliumRpc {
   thallium::async_response AsyncIoCall(u32 node_id, const char *func_name,
                                        IoType type, char *data, size_t size,
                                        Args&& ...args) {
-    HILOG(kDebug, "Calling {} {} -> {}", func_name, rpc_->node_id_, node_id)
+    HILOG(kDebug, "Calling {} {} -> {} (data={}, size={})", func_name, rpc_->node_id_, node_id, (size_t)data, size);
     std::string server_name = GetServerName(node_id);
     tl::bulk_mode flag;
     switch (type) {
       case IoType::kRead: {
         // The "bulk" object will be modified
-        // flag = tl::bulk_mode::write_only;
-        flag = tl::bulk_mode::read_write;
+        flag = tl::bulk_mode::write_only;
+        // flag = tl::bulk_mode::read_write;
         break;
       }
       case IoType::kWrite: {
         // The "bulk" object will only be read from
-        // flag = tl::bulk_mode::read_only;
-        flag = tl::bulk_mode::read_write;
+        flag = tl::bulk_mode::read_only;
+        // flag = tl::bulk_mode::read_write;
         break;
       }
       case IoType::kNone: {
@@ -196,16 +196,16 @@ class ThalliumRpc {
     switch (type) {
       case IoType::kRead: {
         // The "local_bulk" object will only be read from
-        // flag = tl::bulk_mode::read_only;
-        flag = tl::bulk_mode::read_write;
+        flag = tl::bulk_mode::read_only;
+        // flag = tl::bulk_mode::read_write;
         HILOG(kInfo, "(node {}) Reading {} bytes from the server",
               rpc_->node_id_, size)
         break;
       }
       case IoType::kWrite: {
         // The "local_bulk" object will only be written to
-        // flag = tl::bulk_mode::write_only;
-        flag = tl::bulk_mode::read_write;
+        flag = tl::bulk_mode::write_only;
+        // flag = tl::bulk_mode::read_write;
         HILOG(kInfo, "(node {}) Writing {} bytes to the server",
               rpc_->node_id_, size)
         break;
