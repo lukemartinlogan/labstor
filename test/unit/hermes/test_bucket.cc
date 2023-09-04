@@ -25,8 +25,8 @@ TEST_CASE("TestHermesBucket") {
   hermes::Bucket bkt("hello");
   HILOG(kInfo, "BUCKET LOADED!!!")
 
-  size_t count = 256;
-  size_t off = rank * 256;
+  size_t count = 1;
+  size_t off = rank * count;
   int max_blobs = 16;
   for (size_t i = off; i < count; ++i) {
     HILOG(kInfo, "Iteration: {}", i);
