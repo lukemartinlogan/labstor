@@ -80,7 +80,7 @@ std::string RpcContext::GetHostNameFromNodeId(const DomainId &domain_id) {
 std::string RpcContext::GetIpAddressFromNodeId(const DomainId &domain_id) {
   // NOTE(llogan): node_id 0 is reserved as the NULL node
   u32 node_id = domain_id.id_;
-  if (node_id <= 0 || node_id > (i32)hosts_.size()) {
+  if (node_id <= 0 || node_id > (u32)hosts_.size()) {
     HELOG(kFatal, "Attempted to get from node {}, which is out of "
           "the range 1-{}", node_id, hosts_.size() + 1)
   }
