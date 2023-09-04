@@ -190,11 +190,14 @@ class Server : public TaskLib {
       // Deserialize task
       TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(state_id);
       if (exec == nullptr) {
-        HELOG(kFatal, "Could not find the task state {}", state_id);
+        HELOG(kFatal, "(node {}) Could not find the task state {}",
+              LABSTOR_QM_CLIENT->node_id_, state_id);
         req.respond(std::string());
         return;
       } else {
-        HILOG(kInfo, "Found task state {}", state_id);
+        HILOG(kInfo, "(node {}) Found task state {}",
+              LABSTOR_QM_CLIENT->node_id_,
+              state_id);
       }
       TaskPointer task_ptr = exec->LoadStart(method, ar);
       auto &orig_task = task_ptr.task_;
@@ -205,7 +208,8 @@ class Server : public TaskLib {
       auto *queue = LABSTOR_QM_CLIENT->GetQueue(QueueId(state_id));
       queue->Emplace(orig_task->lane_hash_, p);
       bool is_fire_forget = orig_task->IsFireAndForget();
-      HILOG(kInfo, "Executing task (task_node={}, task_state={}/{}, method={}, f&f={})",
+      HILOG(kInfo, "(node {}) Executing task (task_node={}, task_state={}/{}, method={}, f&f={})",
+            LABSTOR_QM_CLIENT->node_id_,
             orig_task->task_node_,
             orig_task->task_state_,
             state_id,
