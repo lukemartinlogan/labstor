@@ -109,7 +109,8 @@ struct MdTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
  * A custom task in small_message
  * */
 struct IoTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
-  IN char data_[256];
+  static inline int const DATA_SIZE=4096;
+  IN char data_[DATA_SIZE];
   OUT int ret_;
 
   /** SHM default constructor */
@@ -131,13 +132,13 @@ struct IoTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
     domain_id_ = domain_id;
 
     // Custom params
-    memset(data_, 10, 256);
+    memset(data_, 10, DATA_SIZE);
   }
 
   /** (De)serialize message call */
   template<typename Ar>
   void SaveStart(Ar &ar) {
-    DataTransfer xfer(DT_RECEIVER_READ, data_, 256, domain_id_);
+    DataTransfer xfer(DT_RECEIVER_READ, data_, DATA_SIZE, domain_id_);
     task_serialize<Ar>(ar);
     ar & xfer;
   }
