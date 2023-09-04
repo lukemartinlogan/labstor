@@ -193,6 +193,8 @@ class Server : public TaskLib {
         HELOG(kFatal, "Could not find the task state {}", state_id);
         req.respond(std::string());
         return;
+      } else {
+        HILOG(kInfo, "Found task state {}", state_id);
       }
       TaskPointer task_ptr = exec->LoadStart(method, ar);
       auto &orig_task = task_ptr.task_;
