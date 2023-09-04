@@ -215,16 +215,16 @@ class Bucket {
     hshm::charbuf blob_name_buf = hshm::to_charbuf(blob_name);
     if (blob_id.IsNull()) {
       blob_id = blob_mdm_->GetOrCreateBlobIdRoot(id_, blob_name_buf);
-    }/*
+    }
     if constexpr(!PARTIAL) {
-      blob_mdm_->PutBlobRoot(id_, blob_name_buf,
-                             blob_id, 0, blob.size(), p, ctx.blob_score_,
-                             bitfield32_t(HERMES_BLOB_REPLACE));
+      blob_mdm_->AsyncPutBlobRoot(id_, blob_name_buf,
+                                  blob_id, 0, blob.size(), p, ctx.blob_score_,
+                                  bitfield32_t(HERMES_BLOB_REPLACE));
     } else {
-      blob_mdm_->PutBlobRoot(id_, blob_name_buf,
-                             blob_id, 0, blob.size(), p, ctx.blob_score_,
-                             bitfield32_t(0));
-    }*/
+      blob_mdm_->AsyncPutBlobRoot(id_, blob_name_buf,
+                                  blob_id, 0, blob.size(), p, ctx.blob_score_,
+                                  bitfield32_t(0));
+    }
     return Status();
   }
 

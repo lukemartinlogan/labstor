@@ -162,6 +162,7 @@ class Runtime : public ConfigurationManager {
       ids.reserve(1);
       ids.push_back(domain_id);
     }
+    // TODO(llogan): handle named domain ID sets
     return ids;
   }
 };

@@ -124,17 +124,6 @@ class Client {
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncPutBlob);
-  void PutBlob(
-      const TaskNode &task_node,
-      TagId tag_id, const hshm::charbuf &blob_name,
-      BlobId &blob_id, size_t blob_off, size_t blob_size,
-      const hipc::Pointer &blob, float score,
-      bitfield32_t flags) {
-    auto *task = AsyncPutBlob(task_node, tag_id, blob_name, blob_id,
-                              blob_off, blob_size, blob, score, flags);
-    // task->Wait();
-  }
-  LABSTOR_TASK_NODE_ROOT(PutBlob);
 
   /** Get a blob's data */
   GetBlobTask* AsyncGetBlob(const TaskNode &task_node,
