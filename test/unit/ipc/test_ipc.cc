@@ -11,7 +11,6 @@
 #include "hermes_shm/util/timer.h"
 #include "labstor/work_orchestrator/affinity.h"
 #include "omp.h"
-#include "labstor/api/labstor_runtime.h"
 
 TEST_CASE("TestIpc") {
   int rank, nprocs;
