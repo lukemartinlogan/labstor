@@ -195,11 +195,13 @@ class ThalliumRpc {
       case IoType::kRead: {
         // The "local_bulk" object will only be read from
         flag = tl::bulk_mode::read_only;
+        HILOG(kInfo, "Reading {} bytes from the server", size)
         break;
       }
       case IoType::kWrite: {
         // The "local_bulk" object will only be written to
         flag = tl::bulk_mode::write_only;
+        HILOG(kInfo, "Writing {} bytes to the server", size)
         break;
       }
       default: {
