@@ -83,11 +83,8 @@ TEST_CASE("TestIO") {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
   labstor::small_message::Client client;
-  if (rank == 0) {
-    LABSTOR_ADMIN->RegisterTaskLibraryRoot(labstor::DomainId::GetGlobal(), "small_message");
-    client.CreateRoot(labstor::DomainId::GetGlobal(), "ipc_test");
-  }
-  MPI_Barrier(MPI_COMM_WORLD);
+  LABSTOR_ADMIN->RegisterTaskLibraryRoot(labstor::DomainId::GetGlobal(), "small_message");
+  client.CreateRoot(labstor::DomainId::GetGlobal(), "ipc_test");
   hshm::Timer t;
 
   int pid = getpid();
