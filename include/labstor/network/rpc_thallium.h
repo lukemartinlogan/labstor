@@ -198,14 +198,16 @@ class ThalliumRpc {
         // The "local_bulk" object will only be read from
         // flag = tl::bulk_mode::read_only;
         flag = tl::bulk_mode::read_write;
-        HILOG(kInfo, "Reading {} bytes from the server", size)
+        HILOG(kInfo, "(node {}) Reading {} bytes from the server",
+              rpc_->node_id_, size)
         break;
       }
       case IoType::kWrite: {
         // The "local_bulk" object will only be written to
         // flag = tl::bulk_mode::write_only;
         flag = tl::bulk_mode::read_write;
-        HILOG(kInfo, "Writing {} bytes to the server", size)
+        HILOG(kInfo, "(node {}) Writing {} bytes to the server",
+              rpc_->node_id_, size)
         break;
       }
       default: {
@@ -238,7 +240,8 @@ class ThalliumRpc {
         }
       }
     } catch (std::exception &e) {
-      HELOG(kFatal, "Failed to perform bulk I/O thallium: {}", e.what())
+      HELOG(kFatal, "(node {}) Failed to perform bulk I/O thallium: {} (type={})",
+            rpc_->node_id_, e.what(), (type==IoType::kRead)?"read":"write");
     }
     if (io_bytes != size) {
       HELOG(kFatal, "Failed to perform bulk I/O thallium")
