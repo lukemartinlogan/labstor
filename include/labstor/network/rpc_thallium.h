@@ -136,7 +136,7 @@ class ThalliumRpc {
   }
 
   /** I/O transfers */
-  template<typename ReturnType, typename ...Args>
+  template<typename ReturnType, bool ASYNC, typename ...Args>
   ReturnType IoCall(i32 node_id, const char *func_name,
                     IoType type, char *data, size_t size, Args&& ...args) {
     HILOG(kDebug, "Calling {} {} -> {}", func_name, rpc_->node_id_, node_id)
@@ -168,11 +168,23 @@ class ThalliumRpc {
     segments[0].second = size;
 
     tl::bulk bulk = client_engine_->expose(segments, flag);
-    if constexpr(std::is_same_v<ReturnType, void>) {
-      remote_proc.on(server)(bulk, std::forward<Args>(args)...);
+    if constexpr (!ASYNC) {
+      if constexpr (std::is_same_v<ReturnType, void>) {
+        remote_proc.on(server)(bulk, std::forward<Args>(args)...);
+      } else {
+        return remote_proc.on(server)(bulk, std::forward<Args>(args)...);
+      }
     } else {
-      return remote_proc.on(server)(bulk, std::forward<Args>(args)...);
+      return remote_proc.on(server).async(bulk, std::forward<Args>(args)...);
     }
+  }
+
+  /** Synchronous I/O transfer */
+  template<typename ReturnType, typename ...Args>
+  ReturnType SyncIoCall(i32 node_id, const char *func_name,
+                        IoType type, char *data, size_t size, Args&& ...args) {
+    return IoCall<ReturnType, false>(
+        node_id, func_name, type, data, size, std::forward<Args>(args)...);
   }
 
   /** I/O transfers */
@@ -180,39 +192,8 @@ class ThalliumRpc {
   thallium::async_response AsyncIoCall(u32 node_id, const char *func_name,
                                        IoType type, char *data, size_t size,
                                        Args&& ...args) {
-    HILOG(kDebug, "Calling {} {} -> {} (data={}, size={})", func_name, rpc_->node_id_, node_id, (size_t)data, size);
-    std::string server_name = GetServerName(node_id);
-    tl::bulk_mode flag;
-    switch (type) {
-      case IoType::kRead: {
-        // The "bulk" object will be modified
-        flag = tl::bulk_mode::write_only;
-        // flag = tl::bulk_mode::read_write;
-        break;
-      }
-      case IoType::kWrite: {
-        // The "bulk" object will only be read from
-        flag = tl::bulk_mode::read_only;
-        // flag = tl::bulk_mode::read_write;
-        break;
-      }
-      case IoType::kNone: {
-        // TODO(llogan)
-        HELOG(kFatal, "Cannot have none I/O type")
-        exit(1);
-      }
-    }
-
-    tl::remote_procedure remote_proc = client_engine_->define(func_name);
-    tl::endpoint server = client_engine_->lookup(server_name);
-
-    // TODO(llogan): bug test
-    std::vector<std::pair<void*, size_t>> segments(1);
-    segments[0].first  = data;
-    segments[0].second = size;
-
-    tl::bulk bulk = client_engine_->expose(segments, flag);
-    return remote_proc.on(server).async(bulk, std::forward<Args>(args)...);
+    return IoCall<thallium::async_response, true>(
+        node_id, func_name, type, data, size, std::forward<Args>(args)...);
   }
 
   /** Check if request is complete */

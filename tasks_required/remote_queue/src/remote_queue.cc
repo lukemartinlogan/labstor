@@ -90,7 +90,7 @@ class Server : public TaskLib {
                     LABSTOR_QM_CLIENT->node_id_,
                     domain_id.id_,
                     static_cast<int>(io_type));
-              std::string ret = LABSTOR_THALLIUM->IoCall<std::string>(domain_id.id_,
+              std::string ret = LABSTOR_THALLIUM->SyncIoCall<std::string>(domain_id.id_,
                                                     "RpcPushBulk",
                                                     io_type,
                                                     (char *) xfer[0].data_,
