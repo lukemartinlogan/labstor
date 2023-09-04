@@ -28,8 +28,8 @@ class QueueManager {
  public:
   void Init(u32 node_id) {
     node_id_ = node_id;
-    admin_queue_ = QueueId(node_id_, 0);
-    admin_task_state_ = TaskStateId(node_id_, 0);
+    admin_queue_ = QueueId(1, 0);
+    admin_task_state_ = TaskStateId(1, 0);
   }
 
   /**

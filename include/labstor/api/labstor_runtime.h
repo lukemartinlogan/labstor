@@ -74,11 +74,12 @@ class Runtime : public ConfigurationManager {
     auto admin_task = hipc::make_uptr<Admin::CreateTaskStateTask>();
 
     // Create the admin library
+    LABSTOR_CLIENT->MakeTaskStateId();
     task_registry_.RegisterTaskLib("labstor_admin");
     task_registry_.CreateTaskState(
         "labstor_admin",
         "labstor_admin",
-        LABSTOR_CLIENT->MakeTaskStateId(),
+        LABSTOR_QM_CLIENT->admin_task_state_,
         admin_task.get());
 
     // Create the work orchestrator queue scheduling library
