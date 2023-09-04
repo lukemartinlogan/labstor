@@ -55,13 +55,16 @@ class Server : public TaskLib {
         task->tl_future_.reserve(task->domain_ids_.size());
         switch (task->xfer_.size()) {
           case 1: {
-            HILOG(kInfo, "(SM) Transferring {} bytes of data (task_node={}, task_state={}, method={})",
-                  xfer[0].data_size_,
-                  task->orig_task_->task_node_,
-                  task->orig_task_->task_state_,
-                  task->orig_task_->method_);
             std::string params((char *) xfer[0].data_, xfer[0].data_size_);
-            for (DomainId domain_id : task->domain_ids_) {
+            for (int replica = 0; replica < task->domain_ids_.size(); ++replica) {
+              DomainId domain_id = task->domain_ids_[replica];
+              HILOG(kInfo, "(SM) Transferring {} bytes of data (task_node={}, task_state={}, method={}, from={}, to={})",
+                    xfer[0].data_size_,
+                    task->orig_task_->task_node_,
+                    task->orig_task_->task_state_,
+                    task->orig_task_->method_,
+                    LABSTOR_QM_CLIENT->node_id_,
+                    domain_id.id_);
               tl::async_response future = LABSTOR_THALLIUM->AsyncCall(domain_id.id_,
                                                                       "RpcPushSmall",
                                                                       task->exec_->id_,
@@ -72,7 +75,6 @@ class Server : public TaskLib {
             break;
           }
           case 2: {
-            HILOG(kInfo, "(IO) Transferring {} of {} bytes", task->task_node_, xfer[0].data_size_);
             std::string params((char *) xfer[1].data_, xfer[1].data_size_);
             IoType io_type = IoType::kRead;
             if (xfer[0].flags_.Any(DT_RECEIVER_READ)) {
@@ -80,6 +82,13 @@ class Server : public TaskLib {
             }
             for (int replica = 0; replica < task->domain_ids_.size(); ++replica) {
               DomainId domain_id = task->domain_ids_[replica];
+              HILOG(kInfo, "(IO) Transferring {} bytes of data (task_node={}, task_state={}, method={}, from={}, to={})",
+                    xfer[0].data_size_,
+                    task->orig_task_->task_node_,
+                    task->orig_task_->task_state_,
+                    task->orig_task_->method_,
+                    LABSTOR_QM_CLIENT->node_id_,
+                    domain_id.id_);
               tl::async_response future = LABSTOR_THALLIUM->AsyncIoCall(domain_id.id_,
                                                                         "RpcPushBulk",
                                                                         io_type,
