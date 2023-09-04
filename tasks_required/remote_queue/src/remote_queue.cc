@@ -100,7 +100,6 @@ class Server : public TaskLib {
                                                                         params,
                                                                         xfer[0].data_size_,
                                                                         io_type);
-              task->tl_future_.emplace_back(std::move(future));
             }
             break;
           }
