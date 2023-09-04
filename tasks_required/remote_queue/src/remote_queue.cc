@@ -31,7 +31,7 @@ class Server : public TaskLib {
       this->RpcPushSmall(req, state_id, method, params);
     });
     LABSTOR_THALLIUM->RegisterRpc("RpcPushBulk", [this](const tl::request &req,
-                                                        tl::bulk &bulk,
+                                                        const tl::bulk &bulk,
                                                         TaskStateId state_id,
                                                         u32 method,
                                                         std::string &params,
@@ -168,7 +168,7 @@ class Server : public TaskLib {
                    TaskStateId state_id,
                    u32 method,
                    std::string &params,
-                   tl::bulk &bulk,
+                   const tl::bulk &bulk,
                    size_t data_size,
                    IoType io_type) {
     hshm::charbuf data(data_size);

@@ -191,7 +191,7 @@ class ThalliumRpc {
   }
 
   /** Io transfer at the server */
-  size_t IoCallServer(const tl::request &req, tl::bulk &bulk,
+  size_t IoCallServer(const tl::request &req, const tl::bulk &bulk,
                       IoType type, char *data, size_t size) {
     tl::bulk_mode flag = tl::bulk_mode::write_only;
     switch (type) {
