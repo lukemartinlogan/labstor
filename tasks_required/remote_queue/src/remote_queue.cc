@@ -82,13 +82,14 @@ class Server : public TaskLib {
             }
             for (int replica = 0; replica < task->domain_ids_.size(); ++replica) {
               DomainId domain_id = task->domain_ids_[replica];
-              HILOG(kInfo, "(IO) Transferring {} bytes of data (task_node={}, task_state={}, method={}, from={}, to={})",
+              HILOG(kInfo, "(IO) Transferring {} bytes of data (task_node={}, task_state={}, method={}, from={}, to={}, type={})",
                     xfer[0].data_size_,
                     task->orig_task_->task_node_,
                     task->orig_task_->task_state_,
                     task->orig_task_->method_,
                     LABSTOR_QM_CLIENT->node_id_,
-                    domain_id.id_);
+                    domain_id.id_,
+                    static_cast<int>(io_type));
               tl::async_response future = LABSTOR_THALLIUM->AsyncIoCall(domain_id.id_,
                                                                         "RpcPushBulk",
                                                                         io_type,
