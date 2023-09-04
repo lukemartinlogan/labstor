@@ -221,20 +221,24 @@ class ThalliumRpc {
     tl::bulk local_bulk = server_engine_->expose(segments, flag);
     size_t io_bytes = 0;
 
-    switch (type) {
-      case IoType::kRead: {
-        // Read from "local_bulk" to "bulk"
-        io_bytes = bulk.on(endpoint) << local_bulk;
-        break;
+    try {
+      switch (type) {
+        case IoType::kRead: {
+          // Read from "local_bulk" to "bulk"
+          io_bytes = bulk.on(endpoint) << local_bulk;
+          break;
+        }
+        case IoType::kWrite: {
+          // Write to "local_bulk" from "bulk"
+          io_bytes = bulk.on(endpoint) >> local_bulk;
+          break;
+        }
+        case IoType::kNone: {
+          HELOG(kFatal, "Cannot have none I/O type")
+        }
       }
-      case IoType::kWrite: {
-        // Write to "local_bulk" from "bulk"
-        io_bytes = bulk.on(endpoint) >> local_bulk;
-        break;
-      }
-      case IoType::kNone: {
-        HELOG(kFatal, "Cannot have none I/O type")
-      }
+    } catch (std::exception &e) {
+      HELOG(kFatal, "Failed to perform bulk I/O thallium: {}", e.what())
     }
     if (io_bytes != size) {
       HELOG(kFatal, "Failed to perform bulk I/O thallium")
