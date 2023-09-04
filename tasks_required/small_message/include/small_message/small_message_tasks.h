@@ -109,7 +109,7 @@ struct MdTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
  * A custom task in small_message
  * */
 struct IoTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
-  static inline int const DATA_SIZE=4096;
+  static inline int const DATA_SIZE = 256;
   IN char data_[DATA_SIZE];
   OUT int ret_;
 
