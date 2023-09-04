@@ -167,10 +167,8 @@ class ThalliumRpc {
     tl::endpoint server = client_engine_->lookup(server_name);
 
     // TODO(llogan): bug test
-    void *new_data = malloc(size);
-    memcpy(new_data, data, size);
     std::vector<std::pair<void*, size_t>> segments(1);
-    segments[0].first  = new_data;
+    segments[0].first  = data;
     segments[0].second = size;
 
     tl::bulk bulk = client_engine_->expose(segments, flag);

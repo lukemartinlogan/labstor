@@ -215,7 +215,7 @@ class Bucket {
     hshm::charbuf blob_name_buf = hshm::to_charbuf(blob_name);
     if (blob_id.IsNull()) {
       blob_id = blob_mdm_->GetOrCreateBlobIdRoot(id_, blob_name_buf);
-    }
+    }/*
     if constexpr(!PARTIAL) {
       blob_mdm_->PutBlobRoot(id_, blob_name_buf,
                              blob_id, 0, blob.size(), p, ctx.blob_score_,
@@ -224,7 +224,7 @@ class Bucket {
       blob_mdm_->PutBlobRoot(id_, blob_name_buf,
                              blob_id, 0, blob.size(), p, ctx.blob_score_,
                              bitfield32_t(0));
-    }
+    }*/
     return Status();
   }
 
