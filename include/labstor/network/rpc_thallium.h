@@ -99,13 +99,13 @@ class ThalliumRpc {
 
   /** Stop the thallium daemon */
   void StopAllDaemons() {
-    for (i32 node_id = 1; node_id < (int)rpc_->hosts_.size() + 1; ++node_id) {
+    for (u32 node_id = 1; node_id < (int)rpc_->hosts_.size() + 1; ++node_id) {
       StopDaemon(node_id);
     }
   }
 
   /** Thallium-compatible server name */
-  std::string GetServerName(i32 node_id) {
+  std::string GetServerName(u32 node_id) {
     std::string ip_address = rpc_->GetIpAddressFromNodeId(DomainId::GetNode(rpc_->node_id_));
     return rpc_->protocol_ + "://" +
         std::string(ip_address) +
@@ -126,7 +126,7 @@ class ThalliumRpc {
       std::string server_name = GetServerName(node_id);
       tl::remote_procedure remote_proc = client_engine_->define(func_name);
       tl::endpoint server = client_engine_->lookup(server_name);
-      HILOG(kDebug, "Found the server: {}", server_name)
+      HILOG(kDebug, "Found the server: {}={}", node_id, server_name)
       return remote_proc.on(server).async(std::forward<Args>(args)...);
     } catch (tl::margo_exception &err) {
       HELOG(kFatal, "Thallium failed on function: {}\n{}",
