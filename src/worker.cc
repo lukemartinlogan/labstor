@@ -97,9 +97,6 @@ void Worker::PollOrdered(u32 lane_id, MultiQueue *queue) {
   // TODO(llogan): Consider popping the entire queue and storing a dependency graph
   // TODO(llogan): Consider implementing look-ahead
   for (int i = 0; i < 1; ++i) {
-    if (queue->id_ == QueueId(1, 10) && lane_id == 0) {
-      HILOG(kInfo, "At the lane");
-    }
     if (!queue->Peek(lane_id, task, p, i)) {
       break;
     }
