@@ -64,7 +64,7 @@ class QueueManagerRuntime : public QueueManager {
       HILOG(kDebug, "Queue {} already exists", id);
       return;
     }
-    HILOG(kDebug, "Creating queue {} with {} lanes", id, num_lanes);
+    HILOG(kDebug, "Creating queue {} with {} lanes and flags {}", id, num_lanes, flags.bits_);
     queue_map_->replace(queue_map_->begin() + id.unique_,
                         id, max_lanes, num_lanes, depth, flags);
   }

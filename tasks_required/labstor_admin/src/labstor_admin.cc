@@ -78,6 +78,14 @@ class Server : public TaskLib {
         HILOG(kInfo, "(node {}) Creating task state {} with id {}",
               LABSTOR_QM_CLIENT->node_id_, state_name, task->id_);
 
+        // Verify the state doesn't exist
+        if (LABSTOR_TASK_REGISTRY->TaskStateExists(task->id_)) {
+          HILOG(kInfo, "(node {}) The task state {} with id {} exists",
+                LABSTOR_QM_CLIENT->node_id_, state_name, task->id_);
+          task->SetComplete();
+          return;
+        }
+
         // The state is being created
         // NOTE(llogan): this does NOT return since task creations can have phases
         task->method_ = Method::kConstruct;
@@ -88,16 +96,24 @@ class Server : public TaskLib {
           LABSTOR_QM_RUNTIME->CreateQueue(
               qid, task->queue_max_lanes_, task->queue_num_lanes_,
               task->queue_depth_, task->queue_flags_);
+          HILOG(kInfo, "(node {}) Allocated task state {} with id {}",
+                LABSTOR_QM_CLIENT->node_id_, state_name, task->task_state_);
         }
 
         // Begin creating the task state
         task->phase_ = 0;
         task->task_state_ = task->id_;
-        LABSTOR_TASK_REGISTRY->CreateTaskState(
+        bool ret = LABSTOR_TASK_REGISTRY->CreateTaskState(
             lib_name.c_str(),
             state_name.c_str(),
             task->id_,
             task);
+        if (!ret) {
+          task->SetComplete();
+          return;
+        }
+        HILOG(kInfo, "(node {}) Allocated task state {} with id {}",
+              LABSTOR_QM_CLIENT->node_id_, state_name, task->task_state_);
       }
     }
   }
@@ -128,12 +144,6 @@ class Server : public TaskLib {
       return;
     }
     hipc::Pointer p;
-    /*
-       u32 lane_hash,
-       u32 method,
-       bitfield32_t task_flags
-     * */
-
     queue_sched_ = LABSTOR_CLIENT->NewTask<Task>(
         p, task->task_node_, DomainId::GetLocal(), task->policy_id_,
         0, SchedulerMethod::kSchedule, bitfield32_t(TASK_LONG_RUNNING));

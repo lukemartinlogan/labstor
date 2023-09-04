@@ -32,15 +32,11 @@ class Server : public TaskLib {
 
   void Construct(MultiQueue *queue, ConstructTask *task) {
     count_ = 0;
-    if (task) {
-      task->SetComplete();
-    }
+    task->SetComplete();
   }
 
   void Destruct(MultiQueue *queue, DestructTask *task) {
-    if (task) {
-      task->SetComplete();
-    }
+    task->SetComplete();
   }
 
   void Schedule(MultiQueue *queue, Task *task) {
@@ -51,7 +47,7 @@ class Server : public TaskLib {
       }
       if (count_ == 0) {
         // Admin queue is scheduled on the first worker
-        // HILOG(kInfo, "Scheduling the queue {}", queue.id_);
+        HILOG(kDebug, "Scheduling the queue {}", queue.id_);
         Worker &worker = LABSTOR_WORK_ORCHESTRATOR->workers_[0];
         worker.PollQueues({WorkEntry(0, &queue)});
         queue.num_scheduled_ = 1;
@@ -60,7 +56,7 @@ class Server : public TaskLib {
       }
       for (u32 lane_id = queue.num_scheduled_; lane_id < queue.num_lanes_; ++lane_id) {
         // NOTE(llogan): Assumes a minimum of two workers
-        // HILOG(kInfo, "Scheduling the queue {} (lane {})", queue.id_, lane_id);
+        HILOG(kDebug, "Scheduling the queue {} (lane {})", queue.id_, lane_id);
         u32 worker_id = (count_ % (LABSTOR_WORK_ORCHESTRATOR->workers_.size() - 1)) + 1;
         Worker &worker = LABSTOR_WORK_ORCHESTRATOR->workers_[worker_id];
         worker.PollQueues({WorkEntry(lane_id, &queue)});

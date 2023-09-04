@@ -147,6 +147,10 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
     if (IsEmplacePlugged()) {
       WaitForEmplacePlug();
     }
+    /* Task *task = HERMES_MEMORY_MANAGER->Convert<Task>(p);
+    if (task->task_state_.IsNull()) {
+      HILOG(kFatal, "Task state is null");
+    }*/
     u32 lane_id = key % num_lanes_;
     Lane &lane = GetLane(lane_id);
     hshm::qtok_t ret = lane.emplace(p);

@@ -16,7 +16,6 @@ class Server : public TaskLib {
 
  public:
   void Construct(MultiQueue *queue, ConstructTask *task) {
-    id_ = task->id_;
     DeviceInfo &dev_info = task->info_;
     alloc_.Init(id_, dev_info.capacity_, dev_info.slab_sizes_);
     mem_ptr_ = (char*)malloc(dev_info.capacity_);

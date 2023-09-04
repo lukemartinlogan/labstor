@@ -187,63 +187,55 @@ class TaskRegistry {
     return it != task_states_.end();
   }
 
-  /** Create a task state */
-  TaskStateId CreateTaskState(const char *lib_name,
-                              const char *state_name,
-                              const TaskStateId &state_id,
-                              Admin::CreateTaskStateTask *task) {
+  /**
+   * Create a task state
+   * state_id must not be NULL.
+   * */
+  bool CreateTaskState(const char *lib_name,
+                       const char *state_name,
+                       const TaskStateId &state_id,
+                       Admin::CreateTaskStateTask *task) {
+    // Ensure state_id is not NULL
+    if (state_id.IsNull()) {
+      HILOG(kError, "The task state ID cannot be null");
+      task->SetComplete();
+      return false;
+    }
     HILOG(kInfo, "(node {}) Creating an instance of {} with name {}",
           LABSTOR_QM_CLIENT->node_id_, lib_name, state_name)
-    TaskStateId new_id = state_id;
 
     // Find the task library to instantiate
     auto it = libs_.find(lib_name);
     if (it == libs_.end()) {
       HELOG(kError, "Could not find the task lib: {}", lib_name);
-      if (task) {
-        task->SetComplete();
-      }
-      return TaskStateId::GetNull();
+      task->SetComplete();
+      return false;
     }
 
-    // Get the TaskStateId
-    new_id = GetTaskStateId(state_name);
-    if (!new_id.IsNull() && TaskStateExists(state_id)) {
+    // Ensure the task state does not already exist
+    if (TaskStateExists(state_id)) {
       HELOG(kError, "The task state already exists: {}", state_name);
-      if (task) {
-        task->id_ = new_id;
-        task->SetComplete();
-      }
-      return TaskStateId::GetNull();
-    }
-    if (new_id.IsNull()) {
-      new_id = state_id;
-    }
-    if (new_id.IsNull()) {
-      new_id = CreateTaskStateId();
-    }
-    if (task) {
-      task->id_ = new_id;
+      task->SetComplete();
+      return true;
     }
 
     // Create the state instance
+    task->id_ = state_id;
     TaskLibInfo &info = it->second;
     TaskState *task_state = info.create_state_(task);
     if (!task_state) {
       HELOG(kError, "Could not create the task state: {}", state_name);
-      if (task) {
-        task->SetComplete();
-      }
-      return TaskStateId::GetNull();
+      task->SetComplete();
+      return false;
     }
 
     // Add the state to the registry
-    task_state->id_ = new_id;
-    task_state_ids_.emplace(state_name, new_id);
-    task_states_.emplace(new_id, task_state);
-    HILOG(kInfo, "(node {})  Created an instance of {} with name {} and ID {}",
-          LABSTOR_QM_CLIENT->node_id_, lib_name, state_name, new_id)
-    return new_id;
+    task_state->id_ = state_id;
+    task_state_ids_.emplace(state_name, state_id);
+    task_states_.emplace(state_id, task_state);
+    HILOG(kInfo, "(node {})  Allocated an instance of {} with name {} and ID {}",
+          LABSTOR_QM_CLIENT->node_id_, lib_name, state_name, state_id)
+    return true;
   }
 
   /** Get or create a task state's ID */

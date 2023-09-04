@@ -36,7 +36,6 @@ class Bucket {
    * */
   explicit Bucket(const std::string &bkt_name,
                   size_t backend_size = 0) {
-    HILOG(kInfo, "GETTING BUCKET START");
     mdm_ = &HERMES->mdm_;
     blob_mdm_ = &HERMES->blob_mdm_;
     bkt_mdm_ = &HERMES->bkt_mdm_;

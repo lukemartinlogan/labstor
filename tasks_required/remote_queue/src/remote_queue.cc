@@ -24,7 +24,6 @@ class Server : public TaskLib {
 
   /** Construct remote queue */
   void Construct(MultiQueue *queue, ConstructTask *task) {
-    id_ = task->id_;
     LABSTOR_THALLIUM->RegisterRpc("RpcPushSmall", [this](const tl::request &req,
                                                          TaskStateId state_id,
                                                          u32 method,

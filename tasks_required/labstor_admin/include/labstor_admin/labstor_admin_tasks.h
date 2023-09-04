@@ -157,6 +157,8 @@ struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
                       const TaskStateId &id,
                       u32 max_lanes, u32 num_lanes,
                       u32 depth, bitfield32_t flags) : Task(alloc) {
+    HILOG(kInfo, "Spawning request to create task state: {} (admin={})",
+          state_name, LABSTOR_QM_CLIENT->admin_task_state_)
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;

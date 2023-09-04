@@ -42,13 +42,12 @@ class Client {
     domain_id_ = domain_id;
     id_ = TaskStateId::GetNull();
     CopyDevInfo(dev_info);
-    Monitor(task_node, 100);
     return LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
         task_node, domain_id, state_name, lib_name, id_,
         LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
         LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
         LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
-        bitfield32_t(0),
+        bitfield32_t(QUEUE_UNORDERED),
         dev_info);
   }
   LABSTOR_TASK_NODE_ROOT(AsyncCreateTaskState);
@@ -68,6 +67,7 @@ class Client {
     auto *task = AsyncCreate(task_node, std::forward<Args>(args)...);
     task->Wait();
     AsyncCreateComplete(task);
+    Monitor(task_node, 100);
   }
   LABSTOR_TASK_NODE_ROOT(Create);
 

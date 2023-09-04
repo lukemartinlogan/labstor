@@ -116,9 +116,10 @@ typedef const char* (*get_task_lib_name_t)(void);
 /** Used internally by task source file */
 #define LABSTOR_TASK_CC(TRAIT_CLASS, TASK_NAME) \
     extern "C" {                              \
-        void* create_state(labstor::Task *task) { \
+        void* create_state(labstor::Admin::CreateTaskStateTask *task) { \
           labstor::TaskState *exec = reinterpret_cast<labstor::TaskState*>( \
             new TYPE_UNWRAP(TRAIT_CLASS)()); \
+          exec->id_ = task->id_; \
           exec->Run(nullptr, labstor::TaskMethod::kConstruct, task); \
           return exec; \
         } \

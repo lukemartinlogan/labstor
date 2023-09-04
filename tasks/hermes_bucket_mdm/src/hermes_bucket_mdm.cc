@@ -30,7 +30,6 @@ class Server : public TaskLib {
   void Construct(MultiQueue *queue, ConstructTask *task) {
     switch (task->phase_) {
       case ConstructTaskPhase::kInit: {
-        id_ = task->id_;
         id_alloc_ = 0;
         node_id_ = LABSTOR_QM_CLIENT->node_id_;
         blob_mdm_task_ = blob_mdm_.AsyncCreateRoot(
@@ -39,7 +38,7 @@ class Server : public TaskLib {
       }
       case ConstructTaskPhase::kWait: {
         if (blob_mdm_task_->IsComplete()) {
-          HILOG(kDebug, "Blob MDM created")
+          HILOG(kDebug, "Bucket MDM created")
           blob_mdm_.AsyncCreateComplete(blob_mdm_task_);
           task->SetComplete();
           return;

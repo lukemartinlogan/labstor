@@ -76,10 +76,8 @@ class Client {
                       size_t backend_size) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    HILOG(kInfo, "Creating a tag")
+    HILOG(kInfo, "Creating a tag {}", tag_name.str());
     u32 hash = std::hash<hshm::charbuf>{}(tag_name);
-    HILOG(kInfo, "HASH: {}", hash)
-    HILOG(kInfo, "HASH2: {}", LABSTOR_CLIENT->GetNumNodes())
     auto *task = LABSTOR_CLIENT->NewTask<GetOrCreateTagTask>(
         p, task_node, DomainId::GetNode(HASH_TO_NODE_ID(hash)), id_,
         tag_name, blob_owner, traits, backend_size);

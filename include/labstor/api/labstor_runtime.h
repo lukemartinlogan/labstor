@@ -71,30 +71,33 @@ class Runtime : public ConfigurationManager {
     LABSTOR_CLIENT->Create(server_config_path, "", true);
     HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kPthread);
     work_orchestrator_.ServerInit(&server_config_, queue_manager_);
+    auto admin_task = hipc::make_uptr<Admin::CreateTaskStateTask>();
 
     // Create the admin library
     task_registry_.RegisterTaskLib("labstor_admin");
     task_registry_.CreateTaskState(
         "labstor_admin",
         "labstor_admin",
-        TaskStateId::GetNull(),
-        nullptr);
+        LABSTOR_CLIENT->MakeTaskStateId(),
+        admin_task.get());
 
     // Create the work orchestrator queue scheduling library
+    TaskStateId queue_sched_id = LABSTOR_CLIENT->MakeTaskStateId();
     task_registry_.RegisterTaskLib("worch_queue_round_robin");
-    auto queue_sched_id = task_registry_.CreateTaskState(
+    task_registry_.CreateTaskState(
         "worch_queue_round_robin",
         "worch_queue_round_robin",
-        TaskStateId::GetNull(),
-        nullptr);
+        queue_sched_id,
+        admin_task.get());
 
     // Create the work orchestrator process scheduling library
+    TaskStateId proc_sched_id = LABSTOR_CLIENT->MakeTaskStateId();
     task_registry_.RegisterTaskLib("worch_proc_round_robin");
-    auto proc_sched_id = task_registry_.CreateTaskState(
+    task_registry_.CreateTaskState(
         "worch_proc_round_robin",
         "worch_proc_round_robin",
-        TaskStateId::GetNull(),
-        nullptr);
+        proc_sched_id,
+        admin_task.get());
 
     // Create the remote queue library
     task_registry_.RegisterTaskLib("remote_queue");

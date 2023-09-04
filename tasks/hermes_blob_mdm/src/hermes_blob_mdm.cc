@@ -81,6 +81,7 @@ class Server : public TaskLib {
           }
           bdev::Client &client = targets_[i];
           client.AsyncCreateComplete(tgt_task);
+          client.Monitor(task->task_node_, 100);
           target_map_.emplace(client.id_, &client);
           target_tasks_.pop_back();
         }
