@@ -146,12 +146,14 @@ class ThalliumRpc {
     switch (type) {
       case IoType::kRead: {
         // The "bulk" object will be modified
-        flag = tl::bulk_mode::write_only;
+        // flag = tl::bulk_mode::write_only;
+        flag = tl::bulk_mode::read_write;
         break;
       }
       case IoType::kWrite: {
         // The "bulk" object will only be read from
-        flag = tl::bulk_mode::read_only;
+        // flag = tl::bulk_mode::read_only;
+        flag = tl::bulk_mode::read_write;
         break;
       }
       case IoType::kNone: {
@@ -194,13 +196,15 @@ class ThalliumRpc {
     switch (type) {
       case IoType::kRead: {
         // The "local_bulk" object will only be read from
-        flag = tl::bulk_mode::read_only;
+        // flag = tl::bulk_mode::read_only;
+        flag = tl::bulk_mode::read_write;
         HILOG(kInfo, "Reading {} bytes from the server", size)
         break;
       }
       case IoType::kWrite: {
         // The "local_bulk" object will only be written to
-        flag = tl::bulk_mode::write_only;
+        // flag = tl::bulk_mode::write_only;
+        flag = tl::bulk_mode::read_write;
         HILOG(kInfo, "Writing {} bytes to the server", size)
         break;
       }
