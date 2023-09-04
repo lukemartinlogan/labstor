@@ -31,17 +31,8 @@ struct DataTransferBase {
 
   /** Serialize a data transfer object */
   template<typename Ar>
-  void save(Ar &ar) const {
-    u32 flags = flags_.bits_;
-    ar(flags, (size_t)data_, data_size_, node_id_);
-  }
-
-  /** Deserialize a data transfer object */
-  template<typename Ar>
-  void load(Ar &ar) {
-    u32 flags;
-    ar(flags, (size_t)data_, data_size_, node_id_);
-    flags_.bits_ = flags;
+  void serialize(Ar &ar) const {
+    ar(flags_, (size_t)data_, data_size_, node_id_);
   }
 
   /** Default constructor */
