@@ -90,7 +90,7 @@ class Server : public TaskLib {
                     LABSTOR_QM_CLIENT->node_id_,
                     domain_id.id_,
                     static_cast<int>(io_type));
-              LABSTOR_THALLIUM->IoCall<std::string>(domain_id.id_,
+              std::string ret = LABSTOR_THALLIUM->IoCall<std::string>(domain_id.id_,
                                                     "RpcPushBulk",
                                                     io_type,
                                                     (char *) xfer[0].data_,
@@ -100,6 +100,24 @@ class Server : public TaskLib {
                                                     params,
                                                     xfer[0].data_size_,
                                                     io_type);
+              std::vector<DataTransfer> xfer(1);
+              xfer[0].data_ = ret.data();
+              xfer[0].data_size_ = ret.size();
+              HILOG(kInfo, "Wait got {} bytes of data (task_node={}, task_state={}, method={})",
+                    xfer[0].data_size_,
+                    task->orig_task_->task_node_,
+                    task->orig_task_->task_state_,
+                    task->orig_task_->method_);
+              BinaryInputArchive<false> ar(xfer);
+              task->exec_->LoadEnd(task->replica_, task->exec_method_, ar, task->orig_task_);
+              task->exec_->ReplicateEnd(task->orig_task_->method_, task->orig_task_);
+              task->SetComplete();
+              task->orig_task_->SetComplete();
+              HILOG(kInfo, "Completing task (task_node={}, task_state={}, method={})",
+                    task->orig_task_->task_node_,
+                    task->orig_task_->task_state_,
+                    task->orig_task_->method_);
+
               /* tl::async_response future = LABSTOR_THALLIUM->AsyncIoCall(domain_id.id_,
                                                                         "RpcPushBulk",
                                                                         io_type,
