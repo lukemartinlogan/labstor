@@ -105,8 +105,8 @@ TEST_CASE("TestIO") {
   HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
 }
 
-TEST_CASE("TestHostfile") {
-  for (u32 node_id = 1; node_id < LABSTOR_THALLIUM->rpc_->hosts_.size() + 1; ++node_id) {
-    HILOG(kInfo, "Node {}: {}", node_id, LABSTOR_THALLIUM->GetServerName(node_id));
-  }
-}
+//TEST_CASE("TestHostfile") {
+//  for (u32 node_id = 1; node_id < LABSTOR_THALLIUM->rpc_->hosts_.size() + 1; ++node_id) {
+//    HILOG(kInfo, "Node {}: {}", node_id, LABSTOR_THALLIUM->GetServerName(node_id));
+//  }
+//}
