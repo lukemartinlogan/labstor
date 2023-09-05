@@ -216,6 +216,7 @@ class Bucket {
     if (blob_id.IsNull()) {
       blob_id = blob_mdm_->GetOrCreateBlobIdRoot(id_, blob_name_buf);
     }
+    HILOG(kInfo, "The bucket's ID is: {}", blob_id);
     if constexpr(!PARTIAL) {
       blob_mdm_->AsyncPutBlobRoot(id_, blob_name_buf,
                                   blob_id, 0, blob.size(), p, ctx.blob_score_,
