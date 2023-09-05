@@ -310,10 +310,9 @@ class Bucket {
   /**
    * Determine if the bucket contains \a blob_id BLOB
    * */
-  bool ContainsBlob(const std::string &blob_name,
-                    const BlobId &blob_id) {
-    blob_id = blob_mdm_->GetBlobIdRoot(id_, hshm::to_charbuf(blob_name));
-    return !blob_id.IsNull();
+  bool ContainsBlob(const std::string &blob_name) {
+    BlobId new_blob_id = blob_mdm_->GetBlobIdRoot(id_, hshm::to_charbuf(blob_name));
+    return !new_blob_id.IsNull();
   }
 
   /**
