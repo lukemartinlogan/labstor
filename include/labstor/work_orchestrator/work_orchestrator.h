@@ -33,6 +33,9 @@ class WorkOrchestrator {
   void ServerInit(ServerConfig *config, QueueManager &qm) {
     config_ = config;
 
+    // Initialize argobots
+    ABT_init(0, nullptr);
+
     // Create argobots xstream
     int ret = ABT_xstream_create(ABT_SCHED_NULL, &xstream_);
     if (ret != ABT_SUCCESS) {
@@ -95,6 +98,25 @@ class WorkOrchestrator {
   /** Whether runtime should still be executing */
   bool IsRuntimeAlive() {
     return !stop_runtime_.load();
+  }
+
+  /** Spawn an argobots thread */
+  template<typename FUNC>
+  ABT_thread SpawnAsyncThread(FUNC &&func) {
+    ABT_thread tl_thread;
+    int ret = ABT_thread_create_on_xstream(xstream_,
+                                           func, nullptr,
+                                           ABT_THREAD_ATTR_NULL,
+                                           &tl_thread);
+    if (ret != ABT_SUCCESS) {
+      HELOG(kFatal, "Couldn't spawn worker");
+    }
+    return tl_thread;
+  }
+
+  /** Wait for argobots thread */
+  void JoinAsyncThread(ABT_thread tl_thread) {
+    ABT_thread_join(tl_thread);
   }
 };
 

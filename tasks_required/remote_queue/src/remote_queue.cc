@@ -18,6 +18,7 @@ namespace labstor::remote_queue {
 class Server : public TaskLib {
  public:
   labstor::remote_queue::Client client_;
+  ABT_xstream xstream_;
 
  public:
   Server() = default;
@@ -48,7 +49,7 @@ class Server : public TaskLib {
   }
 
   /** Handle output from replica PUSH */
-  void HandlePushReplicaOutput(std::string &ret, PushTask *task) {
+  void HandlePushReplicaOutput(int replica, std::string &ret, PushTask *task) {
     try {
       std::vector<DataTransfer> xfer(1);
       xfer[0].data_ = ret.data();
@@ -59,7 +60,7 @@ class Server : public TaskLib {
             task->orig_task_->task_state_,
             task->orig_task_->method_);
       BinaryInputArchive<false> ar(xfer);
-      task->exec_->LoadEnd(task->replica_, task->exec_method_, ar, task->orig_task_);
+      task->exec_->LoadEnd(replica, task->exec_method_, ar, task->orig_task_);
     } catch (std::exception &e) {
       HILOG(kFatal, "Error LoadEnd (task_node={}, task_state={}, method={}): {}",
             task->orig_task_->task_node_,
@@ -98,19 +99,20 @@ class Server : public TaskLib {
                     task->orig_task_->method_,
                     LABSTOR_QM_CLIENT->node_id_,
                     domain_id.id_);
-              std::string ret = LABSTOR_THALLIUM->SyncCall<std::string>(domain_id.id_,
-                                                                        "RpcPushSmall",
-                                                                        task->exec_->id_,
-                                                                        task->exec_method_,
-                                                                        params);
-              HandlePushReplicaOutput(ret, task);
+              // LABSTOR_WORK_ORCHESTRATOR->SpawnAsyncThread([](void *data) { });
+//              std::string ret = LABSTOR_THALLIUM->SyncCall<std::string>(domain_id.id_,
+//                                                                          "RpcPushSmall",
+//                                                                          task->exec_->id_,
+//                                                                          task->exec_method_,
+//                                                                          params);
+//              HandlePushReplicaOutput(replica, ret, task);
 
-//              tl::async_response future = LABSTOR_THALLIUM->AsyncCall(domain_id.id_,
-//                                                                      "RpcPushSmall",
-//                                                                      task->exec_->id_,
-//                                                                      task->exec_method_,
-//                                                                      params);
-//              task->tl_future_.emplace_back(std::move(future));
+              tl::async_response future = LABSTOR_THALLIUM->AsyncCall(domain_id.id_,
+                                                                      "RpcPushSmall",
+                                                                      task->exec_->id_,
+                                                                      task->exec_method_,
+                                                                      params);
+              task->tl_future_.emplace_back(std::move(future));
             }
             break;
           }
@@ -131,29 +133,29 @@ class Server : public TaskLib {
                     domain_id.id_,
                     static_cast<int>(io_type));
               // NOTE(llogan): there's a bug in thallium which makes it impossible to use async I/O call
-              std::string ret = LABSTOR_THALLIUM->SyncIoCall<std::string>(domain_id.id_,
-                                                    "RpcPushBulk",
-                                                    io_type,
-                                                    (char *) xfer[0].data_,
-                                                    xfer[0].data_size_,
-                                                    task->exec_->id_,
-                                                    task->exec_method_,
-                                                    params,
-                                                    xfer[0].data_size_,
-                                                    io_type);
-              HandlePushReplicaOutput(ret, task);
+//              std::string ret = LABSTOR_THALLIUM->SyncIoCall<std::string>(domain_id.id_,
+//                                                    "RpcPushBulk",
+//                                                    io_type,
+//                                                    (char *) xfer[0].data_,
+//                                                    xfer[0].data_size_,
+//                                                    task->exec_->id_,
+//                                                    task->exec_method_,
+//                                                    params,
+//                                                    xfer[0].data_size_,
+//                                                    io_type);
+//              HandlePushReplicaOutput(replica, ret, task);
 
-//              tl::async_response future = LABSTOR_THALLIUM->AsyncIoCall(domain_id.id_,
-//                                                                        "RpcPushBulk",
-//                                                                        io_type,
-//                                                                        (char *) xfer[0].data_,
-//                                                                        xfer[0].data_size_,
-//                                                                        task->exec_->id_,
-//                                                                        task->exec_method_,
-//                                                                        params,
-//                                                                        xfer[0].data_size_,
-//                                                                        io_type);
-//              task->tl_future_.emplace_back(std::move(future));
+              tl::async_response future = LABSTOR_THALLIUM->AsyncIoCall(domain_id.id_,
+                                                                        "RpcPushBulk",
+                                                                        io_type,
+                                                                        (char *) xfer[0].data_,
+                                                                        xfer[0].data_size_,
+                                                                        task->exec_->id_,
+                                                                        task->exec_method_,
+                                                                        params,
+                                                                        xfer[0].data_size_,
+                                                                        io_type);
+              task->tl_future_.emplace_back(std::move(future));
             }
             break;
           }
@@ -170,7 +172,7 @@ class Server : public TaskLib {
             return;
           }
           std::string ret = LABSTOR_THALLIUM->Wait<std::string>(future);
-          HandlePushReplicaOutput(ret, task);
+          HandlePushReplicaOutput(task->replica_, ret, task);
         }
         HandlePushReplicaEnd(task);
       }
