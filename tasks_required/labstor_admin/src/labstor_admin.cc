@@ -82,7 +82,7 @@ class Server : public TaskLib {
               LABSTOR_QM_CLIENT->node_id_, state_name, task->id_);
 
         // Verify the state isn't NULL
-        if (LABSTOR_TASK_REGISTRY->TaskStateExists(task->id_)) {
+        if (task->id_.IsNull()) {
           HELOG(kError, "(node {}) Error. The task state {} with id {} is NULL.",
                 LABSTOR_QM_CLIENT->node_id_, state_name, task->id_);
           task->SetComplete();
