@@ -58,7 +58,7 @@ class Server : public TaskLib {
             HILOG(kDebug, "Domain ID is global for {} (task_node={})", state_name, task->task_node_);
             DomainId domain = DomainId::GetNode(1);
             task->get_id_task_ = LABSTOR_ADMIN->AsyncGetOrCreateTaskStateId(
-                task->task_node_, domain, state_name);
+                task->task_node_ + 1, domain, state_name);
             task->phase_ = CreateTaskStatePhase::kIdAllocWait;
           }
         } else {

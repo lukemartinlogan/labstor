@@ -63,7 +63,7 @@ class Server : public TaskLib {
           targets_.emplace_back();
           bdev::Client &client = targets_.back();
           bdev::ConstructTask *create_task = client.AsyncCreate(
-              task->task_node_,
+              task->task_node_ + 1,
               DomainId::GetLocal(),
               "hermes_" + dev.dev_name_,
               dev_type,
@@ -81,7 +81,7 @@ class Server : public TaskLib {
           }
           bdev::Client &client = targets_[i];
           client.AsyncCreateComplete(tgt_task);
-          client.Monitor(task->task_node_, 100);
+          client.Monitor(task->task_node_ + 1, 100);
           target_map_.emplace(client.id_, &client);
           target_tasks_.pop_back();
         }
@@ -202,7 +202,7 @@ class Server : public TaskLib {
   void PutBlobFreeBuffersPhase(BlobInfo &blob_info, PutBlobTask *task) {
     for (BufferInfo &buf : blob_info.buffers_) {
       TargetInfo &target = *target_map_[buf.tid_];
-      target.AsyncFree(task->task_node_, {buf}, true);
+      target.AsyncFree(task->task_node_ + 1, {buf}, true);
     }
     blob_info.buffers_.clear();
     blob_info.max_blob_size_ = 0;
@@ -216,7 +216,7 @@ class Server : public TaskLib {
     SubPlacement &placement = schema.plcmnts_[task->sub_plcmnt_idx_];
     TargetInfo &bdev = *target_map_[placement.tid_];
     HILOG(kDebug, "Allocating {} bytes of blob {}", placement.size_, task->blob_id_);
-    task->cur_bdev_alloc_ = bdev.AsyncAllocate(task->task_node_,
+    task->cur_bdev_alloc_ = bdev.AsyncAllocate(task->task_node_ + 1,
                                                placement.size_,
                                                blob_info.buffers_);
     task->phase_ = PutBlobPhase::kWaitAllocate;
@@ -263,7 +263,7 @@ class Server : public TaskLib {
         size_t tgt_off = buf.t_off_ + rel_off;
         size_t buf_size = buf.t_size_ - rel_off;
         TargetInfo &target = *target_map_[buf.tid_];
-        bdev::WriteTask *write_task = target.AsyncWrite(task->task_node_,
+        bdev::WriteTask *write_task = target.AsyncWrite(task->task_node_ + 1,
                                                         blob_data + blob_off,
                                                         tgt_off, buf_size);
         write_tasks.emplace_back(write_task);
@@ -317,7 +317,7 @@ class Server : public TaskLib {
             size_t tgt_off = buf.t_off_ + rel_off;
             size_t buf_size = buf.t_size_ - rel_off;
             TargetInfo &target = *target_map_[buf.tid_];
-            auto read_task = target.AsyncRead(task->task_node_,
+            auto read_task = target.AsyncRead(task->task_node_ + 1,
                                               blob_data + blob_off, tgt_off, buf_size);
             read_tasks.emplace_back(read_task);
           }
@@ -509,7 +509,7 @@ class Server : public TaskLib {
         task->free_tasks_->reserve(blob_info.buffers_.size());
         for (BufferInfo &buf : blob_info.buffers_) {
           TargetInfo &tgt_info = *target_map_[buf.tid_];
-          auto *free_task = tgt_info.AsyncFree(task->task_node_, {buf}, false);
+          auto *free_task = tgt_info.AsyncFree(task->task_node_ + 1, {buf}, false);
           task->free_tasks_->emplace_back(free_task);
         }
       }
