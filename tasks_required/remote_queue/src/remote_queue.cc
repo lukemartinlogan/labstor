@@ -343,7 +343,8 @@ class Server : public TaskLib {
           BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
           auto out_xfer = exec->SaveEnd(method, ar, orig_task);
           LABSTOR_CLIENT->DelTask(orig_task);
-          HILOG(kDebug, "Returning {} bytes of data (task_node={}, task_state={}/{}, method={}, f&f={})",
+          HILOG(kDebug, "(node {}) Returning {} bytes of data (task_node={}, task_state={}/{}, method={}, f&f={})",
+                LABSTOR_QM_CLIENT->node_id_,
                 out_xfer[0].data_size_,
                 orig_task->task_node_,
                 orig_task->task_state_,
