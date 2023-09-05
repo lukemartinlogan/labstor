@@ -38,6 +38,8 @@ namespace labstor {
 #define TASK_FIRE_AND_FORGET BIT_OPT(u32, 12)
 /** This task should not be run at this time */
 #define TASK_DISABLE_RUN BIT_OPT(u32, 13)
+/** This task should not be run at this time */
+#define TASK_OWNS_DATA BIT_OPT(u32, 14)
 
 /** Used to define task methods */
 #define TASK_METHOD_T static inline const u32
@@ -250,6 +252,21 @@ struct Task : public hipc::ShmContainer {
   /** Check if running task is disable */
   HSHM_ALWAYS_INLINE bool IsRunDisabled() {
     return task_flags_.Any(TASK_DISABLE_RUN);
+  }
+
+  /** Set task as data owner */
+  HSHM_ALWAYS_INLINE void SetDataOwner() {
+    task_flags_.SetBits(TASK_OWNS_DATA);
+  }
+
+  /** Check if task is data owner */
+  HSHM_ALWAYS_INLINE bool IsDataOwner() {
+    return task_flags_.Any(TASK_OWNS_DATA);
+  }
+
+  /** Unset task as data owner */
+  HSHM_ALWAYS_INLINE void UnsetDataOwner() {
+    task_flags_.UnsetBits(TASK_OWNS_DATA);
   }
 
   /** Wait for task to complete */

@@ -318,6 +318,7 @@ class Server : public TaskLib {
       auto &orig_task = task_ptr.task_;
       auto &p = task_ptr.p_;
       orig_task->domain_id_ = DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_);
+      orig_task->UnsetDataOwner();
 
       // Execute task
       auto *queue = LABSTOR_QM_CLIENT->GetQueue(QueueId(state_id));
@@ -338,13 +339,6 @@ class Server : public TaskLib {
             orig_task->lane_hash_);
 
       try {
-        HILOG(kInfo, "(node {}) Waiting for task (task_node={}, task_state={}/{}, method={}, f&f={})",
-              LABSTOR_QM_CLIENT->node_id_,
-              orig_task->task_node_,
-              orig_task->task_state_,
-              state_id,
-              method,
-              is_fire_forget);
         orig_task->Wait<1>();
         BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
         auto out_xfer = exec->SaveEnd(method, ar, orig_task);

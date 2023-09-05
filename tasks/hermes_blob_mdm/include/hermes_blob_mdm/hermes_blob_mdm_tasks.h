@@ -180,7 +180,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     lane_hash_ = blob_id_.unique_;
     task_state_ = state_id;
     method_ = Method::kPutBlob;
-    task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET);
+    task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET | TASK_OWNS_DATA);
     domain_id_ = domain_id;
 
     HILOG(kInfo, "PUT BLOB START: {} {} bytes", blob_name_->str(), data_size);
@@ -202,9 +202,9 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   /** Destructor */
   ~PutBlobTask() {
     HSHM_DESTROY_AR(blob_name_);
-    // TODO(llogan): add this back. Double free because remote_queue owns the data. Need to add a flag indicating
-    // data ownership
-    // LABSTOR_CLIENT->FreeBuffer(data_);
+    if (IsDataOwner()) {
+      LABSTOR_CLIENT->FreeBuffer(data_);
+    }
   }
 
   /** (De)serialize message call */

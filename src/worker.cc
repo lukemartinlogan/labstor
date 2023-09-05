@@ -30,21 +30,12 @@ void Worker::Run() {
   if (relinquish_queues_.size() > 0) {
     _RelinquishQueues();
   }
-
-  size_t time = (size_t)timer_.GetMsecFromStart();
   for (auto &[lane_id, queue] : work_queue_) {
-    if (time >= 1000) {
-      HILOG(kInfo, "(node {}) Polling queue {} (lane={}, unordered={})",
-            LABSTOR_QM_CLIENT->node_id_, queue->id_, lane_id, queue->flags_.Any(QUEUE_UNORDERED));
-    }
     if (queue->flags_.Any(QUEUE_UNORDERED)) {
       PollUnordered(lane_id, queue);
     } else {
       PollOrdered(lane_id, queue);
     }
-  }
-  if (time >= 1000) {
-    timer_.Resume();
   }
 }
 
@@ -72,7 +63,7 @@ void Worker::PollUnordered(u32 lane_id, MultiQueue *queue) {
     if (!task->IsRunDisabled()) {
       if (is_remote) {
         // flags_.Any(kGlobal | kSet) || (flags_.Any(kNode) && id_ != this_node)
-        HILOG(kInfo, "Dispersing task task_state={} task_node={} is_global={} is_set={} is_node={} dom_id={} this_node={}",
+        HILOG(kDebug, "Dispersing task task_state={} task_node={} is_global={} is_set={} is_node={} dom_id={} this_node={}",
               task->task_state_, task->task_node_,
               task->domain_id_.flags_.Any(DomainId::kGlobal),
               task->domain_id_.flags_.Any(DomainId::kSet),
