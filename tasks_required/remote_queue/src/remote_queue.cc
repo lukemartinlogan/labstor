@@ -337,7 +337,8 @@ class Server : public TaskLib {
             data_size);
 
       try {
-        HILOG(kInfo, "Waiting for task (task_node={}, task_state={}/{}, method={}, f&f={})",
+        HILOG(kInfo, "(node {}) Waiting for task (task_node={}, task_state={}/{}, method={}, f&f={})",
+              LABSTOR_QM_CLIENT->node_id_,
               orig_task->task_node_,
               orig_task->task_state_,
               state_id,
