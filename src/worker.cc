@@ -31,12 +31,20 @@ void Worker::Run() {
     _RelinquishQueues();
   }
 
+  size_t time = (size_t)timer_.GetMsecFromStart();
   for (auto &[lane_id, queue] : work_queue_) {
+    if (time >= 1000) {
+      HILOG(kInfo, "(node {}) Polling queue {} (lane={}, unordered={})",
+            LABSTOR_QM_CLIENT->node_id_, queue->id_, lane_id, queue->flags_.Any(QUEUE_UNORDERED));
+    }
     if (queue->flags_.Any(QUEUE_UNORDERED)) {
       PollUnordered(lane_id, queue);
     } else {
       PollOrdered(lane_id, queue);
     }
+  }
+  if (time >= 1000) {
+    timer_.Reset();
   }
 }
 

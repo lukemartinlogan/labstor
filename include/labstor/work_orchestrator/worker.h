@@ -114,6 +114,7 @@ class Worker {
   u32 retries_;      /** The number of times to repeat the internal run loop before sleeping */
   bitfield32_t flags_;  /** Worker metadata flags */
   std::unordered_map<WorkEntry, std::queue<Task*>> active_tasks_;  /**< The set of active tasks */
+  hshm::Timer timer_;
 
  public:
   /** Constructor */
@@ -127,6 +128,7 @@ class Worker {
     pid_ = 0;
     thread_ = std::make_unique<std::thread>(&Worker::Loop, this);
     pthread_id_ = thread_->native_handle();
+    timer_.Resume();
     /* int ret = ABT_thread_create_on_xstream(xstream,
                                            [](void *args) { ((Worker*)args)->Loop(); }, this,
                                            ABT_THREAD_ATTR_NULL, &tl_thread_);
