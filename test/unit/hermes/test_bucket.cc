@@ -15,7 +15,7 @@ TEST_CASE("TestHermesPut") {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
-  if (rank == 0) {
+
     // Initialize Hermes on all nodes
     HERMES->ClientInit();
 
@@ -23,6 +23,7 @@ TEST_CASE("TestHermesPut") {
     hermes::Context ctx;
     hermes::Bucket bkt("hello");
 
+  if (rank == 0) {
     size_t count_per_proc = 16;
     size_t off = rank * count_per_proc;
     size_t max_blobs = 4;
@@ -31,7 +32,7 @@ TEST_CASE("TestHermesPut") {
       HILOG(kInfo, "Iteration: {}", i);
       // Put a blob
       hermes::Blob blob(KILOBYTES(4));
-      memset(blob.data(), i, blob.size());
+      memset(blob.data(), i % 256, blob.size());
       hermes::BlobId blob_id(hermes::BlobId::GetNull());
       bkt.Put(std::to_string(i % max_blobs), blob, blob_id, ctx);
 
@@ -67,7 +68,7 @@ TEST_CASE("TestHermesPutGet") {
     HILOG(kInfo, "Iteration: {}", i);
     // Put a blob
     hermes::Blob blob(KILOBYTES(4));
-    memset(blob.data(), i, blob.size());
+    memset(blob.data(), i % 256, blob.size());
     hermes::BlobId blob_id(hermes::BlobId::GetNull());
     bkt.Put(std::to_string(i % max_blobs), blob, blob_id, ctx);
 
