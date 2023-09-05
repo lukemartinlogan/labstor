@@ -196,21 +196,6 @@ class ThalliumRpc {
         node_id, func_name, type, data, size, std::forward<Args>(args)...);
   }
 
-  /** Check if request is complete */
-  bool IsDone(thallium::async_response &req) {
-    return req.received();
-  }
-
-  /** Wait for thallium to complete */
-  template<typename RetT>
-  RetT Wait(thallium::async_response &req) {
-    if constexpr(std::is_same_v<void, RetT>) {
-      req.wait().as<RetT>();
-    } else {
-      return req.wait();
-    }
-  }
-
   /** Io transfer at the server */
   size_t IoCallServer(const tl::request &req, const tl::bulk &bulk,
                       IoType type, char *data, size_t size) {
@@ -269,6 +254,21 @@ class ThalliumRpc {
       HELOG(kFatal, "Failed to perform bulk I/O thallium")
     }
     return io_bytes;
+  }
+
+  /** Check if request is complete */
+  bool IsDone(thallium::async_response &req) {
+    return req.received();
+  }
+
+  /** Wait for thallium to complete */
+  template<typename RetT>
+  RetT Wait(thallium::async_response &req) {
+    if constexpr(std::is_same_v<void, RetT>) {
+      req.wait().as<RetT>();
+    } else {
+      return req.wait();
+    }
   }
 };
 

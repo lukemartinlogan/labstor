@@ -21,7 +21,6 @@ target_link_libraries(labstor_client
 # Build Labstor Runtime Library
 #------------------------------------------------------------------------------
 add_library(labstor_runtime
-        rpc.cc
         worker.cc
         labstor_runtime.cc)
 add_dependencies(labstor_runtime ${Labstor_CLIENT_DEPS})
