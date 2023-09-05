@@ -15,32 +15,29 @@ TEST_CASE("TestHermesPut") {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
-  if (rank == 0) {
-    // Initialize Hermes on all nodes
-    HERMES->ClientInit();
+  // Initialize Hermes on all nodes
+  HERMES->ClientInit();
 
-    // Create a bucket
-    hermes::Context ctx;
-    hermes::Bucket bkt("hello");
+  // Create a bucket
+  hermes::Context ctx;
+  hermes::Bucket bkt("hello");
 
-    size_t count = 16;
-    size_t off = rank * count;
-    int max_blobs = 16;
+  size_t count_per_proc = 16;
+  size_t off = rank * count_per_proc;
+  size_t max_blobs = 16;
+  size_t total_count = count_per_proc * nprocs;
+  for (size_t i = off; i < total_count; ++i) {
+    HILOG(kInfo, "Iteration: {}", i);
+    // Put a blob
+    hermes::Blob blob(KILOBYTES(4));
+    memset(blob.data(), i, blob.size());
+    hermes::BlobId blob_id(hermes::BlobId::GetNull());
+    bkt.Put(std::to_string(i % max_blobs), blob, blob_id, ctx);
 
-    for (size_t i = 1; i < 2; ++i) {
-      HILOG(kInfo, "Iteration: {}", i);
-      // Put a blob
-      hermes::Blob blob(KILOBYTES(4));
-      memset(blob.data(), i, blob.size());
-      hermes::BlobId blob_id(hermes::BlobId::GetNull());
-      // hermes::BlobId blob_id(2, 0);
-      bkt.Put(std::to_string(i % max_blobs), blob, blob_id, ctx);
-
-      // Get a blob
-      HILOG(kInfo, "Put {} returned successfully", i);
-      size_t size = bkt.GetBlobSize(blob_id);
-      REQUIRE(blob.size() == size);
-    }
+    // Get a blob
+    HILOG(kInfo, "Put {} returned successfully", i);
+    size_t size = bkt.GetBlobSize(blob_id);
+    REQUIRE(blob.size() == size);
   }
   MPI_Barrier(MPI_COMM_WORLD);
 }
@@ -60,10 +57,11 @@ TEST_CASE("TestHermesPutGet") {
   hermes::Bucket bkt("hello");
   HILOG(kInfo, "BUCKET LOADED!!!")
 
-  size_t count = 16;
-  size_t off = rank * count;
-  int max_blobs = 16;
-  for (size_t i = off; i < count; ++i) {
+  size_t count_per_proc = 16;
+  size_t off = rank * count_per_proc;
+  size_t max_blobs = 16;
+  size_t total_count = count_per_proc * nprocs;
+  for (size_t i = off; i < total_count; ++i) {
     HILOG(kInfo, "Iteration: {}", i);
     // Put a blob
     hermes::Blob blob(KILOBYTES(4));
