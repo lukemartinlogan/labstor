@@ -34,7 +34,8 @@ TEST_CASE("TestHermesPut") {
       // Put a blob
       hermes::Blob blob(KILOBYTES(4));
       memset(blob.data(), i, blob.size());
-      hermes::BlobId blob_id(hermes::BlobId::GetNull());
+      // hermes::BlobId blob_id(hermes::BlobId::GetNull());
+      hermes::BlobId blob_id(2, 0);
       bkt.Put(std::to_string(i % max_blobs), blob, blob_id, ctx);
 
       // Get a blob
