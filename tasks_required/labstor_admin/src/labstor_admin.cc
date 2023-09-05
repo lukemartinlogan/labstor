@@ -50,8 +50,8 @@ class Server : public TaskLib {
         }
         // Check global registry for task state
         if (task->id_.IsNull()) {
-          HILOG(kInfo, "Domain ID is local for {}", state_name);
           if (task->domain_id_ == DomainId::GetLocal()) {
+            HILOG(kInfo, "Domain ID is local for {}", state_name);
             task->id_ = LABSTOR_TASK_REGISTRY->GetOrCreateTaskStateId(state_name);
             task->phase_ = CreateTaskStatePhase::kStateCreate;
           } else {
