@@ -148,7 +148,6 @@ class Server : public TaskLib {
 //                                                                        io_type);
 //              task->tl_future_.emplace_back(std::move(future));
             }
-            HandlePushReplicaEnd(task);
             break;
           }
           default: {
