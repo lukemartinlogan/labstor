@@ -113,6 +113,7 @@ class Server : public TaskLib {
    * Create a blob's metadata
    * */
   void PutBlob(MultiQueue *queue, PutBlobTask *task) {
+    HILOG(kInfo, "PutBlob is being called!!!")
     if (task->phase_ == PutBlobPhase::kCreate) {
       PutBlobCreatePhase(task);
     }

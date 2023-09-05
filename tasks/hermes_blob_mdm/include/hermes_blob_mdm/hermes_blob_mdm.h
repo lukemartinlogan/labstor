@@ -71,8 +71,6 @@ class Client {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     u32 hash = std::hash<hshm::charbuf>{}(blob_name);
-    HILOG(kInfo, "AsyncGetOrCreateBlobId: {} {} {}",
-          blob_name.str(), HASH_TO_NODE_ID(hash), LABSTOR_CLIENT->GetNumNodes());
     auto *task = LABSTOR_CLIENT->NewTask<GetOrCreateBlobIdTask>(
         p,
         task_node, DomainId::GetNode(HASH_TO_NODE_ID(hash)), id_,
