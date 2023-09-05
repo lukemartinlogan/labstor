@@ -25,7 +25,7 @@ TEST_CASE("TestHermesBucket") {
   hermes::Bucket bkt("hello");
   HILOG(kInfo, "BUCKET LOADED!!!")
 
-  size_t count = 1;
+  size_t count = 16;
   size_t off = rank * count;
   int max_blobs = 16;
   for (size_t i = off; i < count; ++i) {
@@ -37,9 +37,9 @@ TEST_CASE("TestHermesBucket") {
     bkt.Put(std::to_string(i % max_blobs), blob, blob_id, ctx);
 
     // Get a blob
-    // hermes::Blob blob2;
-    // bkt.Get(blob_id, blob2, ctx);
-    // REQUIRE(blob == blob2);
+     hermes::Blob blob2;
+     bkt.Get(blob_id, blob2, ctx);
+     REQUIRE(blob == blob2);
   }
 
   MPI_Finalize();
