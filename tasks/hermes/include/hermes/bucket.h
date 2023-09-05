@@ -267,8 +267,11 @@ class Bucket {
              Context &ctx) {
     // Get from shared memory
     ssize_t data_size = blob.size();
-    hipc::Pointer data_p = hipc::Pointer::GetNull();
-    blob_mdm_->GetBlobRoot(blob_id, 0, data_size, data_p);
+    if (data_size == 0) {
+      data_size = blob_mdm_->GetBlobSizeRoot(blob_id);
+    }
+    hipc::Pointer data_p = LABSTOR_CLIENT->AllocateBuffer(data_size);
+    data_size = blob_mdm_->GetBlobRoot(blob_id, 0, data_size, data_p);
     char *data = LABSTOR_CLIENT->GetPrivatePointer(data_p);
     // Copy data to blob
     // TODO(llogan): intercept mmap to avoid copy

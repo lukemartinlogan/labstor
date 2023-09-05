@@ -308,9 +308,6 @@ class Server : public TaskLib {
         if (task->data_size_ < 0) {
           task->data_size_ = (ssize_t)(blob_info.blob_size_ - task->blob_off_);
         }
-        if (task->data_.IsNull()) {
-          task->data_ = LABSTOR_CLIENT->AllocateBuffer(task->data_size_);
-        }
         hipc::mptr<char> blob_data_mptr(task->data_);
         char *blob_data = blob_data_mptr.get();
         for (BufferInfo &buf : blob_info.buffers_) {

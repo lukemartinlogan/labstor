@@ -242,8 +242,8 @@ class GetBlobPhase {
 struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
   IN BlobId blob_id_;
   IN size_t blob_off_;
+  IN hipc::Pointer data_;
   INOUT ssize_t data_size_;
-  INOUT hipc::Pointer data_;
   TEMP int phase_;
   TEMP hipc::ShmArchive<std::vector<bdev::ReadTask*>> bdev_reads_;
 
