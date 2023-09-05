@@ -73,6 +73,7 @@ class PushPhase {
   TASK_METHOD_T kWait = 1;
 };
 
+
 /**
  * A task to push a serialized task onto the remote queue
  * */
@@ -82,9 +83,11 @@ struct PushTask : public Task, TaskFlags<TF_LOCAL> {
   IN TaskState *exec_;
   IN u32 exec_method_;
   IN std::vector<DataTransfer> xfer_;
-  TEMP std::vector<tl::async_response> tl_future_;
+  // TEMP std::vector<tl::async_response> tl_future_;
+  TEMP std::vector<void*> tl_future_;
   TEMP int phase_;
   TEMP int replica_;
+  TEMP std::string params_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit

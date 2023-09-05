@@ -101,11 +101,11 @@ class WorkOrchestrator {
   }
 
   /** Spawn an argobots thread */
-  template<typename FUNC>
-  ABT_thread SpawnAsyncThread(FUNC &&func) {
+  template<typename FUNC, typename TaskT>
+  ABT_thread SpawnAsyncThread(FUNC &&func, TaskT *data) {
     ABT_thread tl_thread;
     int ret = ABT_thread_create_on_xstream(xstream_,
-                                           func, nullptr,
+                                           func, (void*) data,
                                            ABT_THREAD_ATTR_NULL,
                                            &tl_thread);
     if (ret != ABT_SUCCESS) {
