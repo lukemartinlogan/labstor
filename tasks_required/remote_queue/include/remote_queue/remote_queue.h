@@ -76,10 +76,10 @@ class Client {
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
 
     // Serialize task + create the wait task
-    HILOG(kInfo, "Beginning dispersion")
+    HILOG(kInfo, "Beginning dispersion for (task_node={}, task_state={}, method={})",
+          orig_task->task_node_, orig_task->task_state_, orig_task->method_)
     BinaryOutputArchive<true> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
     auto xfer = exec->SaveStart(orig_task->method_, ar, orig_task);
-    HILOG(kInfo, "Serialized dispersion")
 
     // Create subtasks
     exec->ReplicateStart(orig_task->method_, domain_ids.size(), orig_task);
