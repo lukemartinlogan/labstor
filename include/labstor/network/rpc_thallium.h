@@ -119,15 +119,25 @@ class ThalliumRpc {
   }
 
   /** RPC call */
-  template <typename... Args>
-  thallium::async_response AsyncCall(u32 node_id, const char *func_name, Args&&... args) {
+  template <typename RetT, bool ASYNC, typename... Args>
+  RetT Call(u32 node_id, const char *func_name, Args&&... args) {
     HILOG(kDebug, "Calling {} {} -> {}", func_name, rpc_->node_id_, node_id)
     try {
       std::string server_name = GetServerName(node_id);
       tl::remote_procedure remote_proc = client_engine_->define(func_name);
       tl::endpoint server = client_engine_->lookup(server_name);
       HILOG(kDebug, "Found the server: {}={}", node_id, server_name)
-      return remote_proc.on(server).async(std::forward<Args>(args)...);
+      if constexpr(!ASYNC) {
+        if constexpr (std::is_same<RetT, void>::value) {
+          remote_proc.disable_response();
+          remote_proc.on(server)(std::forward<Args>(args)...);
+        } else {
+          RetT result = remote_proc.on(server)(std::forward<Args>(args)...);
+          return result;
+        }
+      } else {
+        return remote_proc.on(server).async(std::forward<Args>(args)...);
+      }
     } catch (tl::margo_exception &err) {
       HELOG(kFatal, "Thallium failed on function: {}\n{}",
             func_name, err.what())
@@ -135,10 +145,24 @@ class ThalliumRpc {
     }
   }
 
+  /** RPC call */
+  template <typename RetT, typename... Args>
+  RetT SyncCall(u32 node_id, const char *func_name, Args&&... args) {
+    return Call<RetT, false>(
+        node_id, func_name, std::forward<Args>(args)...);
+  }
+
+  /** Async RPC call */
+  template <typename... Args>
+  thallium::async_response AsyncCall(u32 node_id, const char *func_name, Args&&... args) {
+    return Call<thallium::async_response, true>(
+        node_id, func_name, std::forward<Args>(args)...);
+  }
+
   /** I/O transfers */
-  template<typename ReturnType, bool ASYNC, typename ...Args>
-  ReturnType IoCall(i32 node_id, const char *func_name,
-                    IoType type, char *data, size_t size, Args&& ...args) {
+  template<typename RetT, bool ASYNC, typename ...Args>
+  RetT IoCall(i32 node_id, const char *func_name,
+              IoType type, char *data, size_t size, Args&& ...args) {
     HILOG(kDebug, "Calling {} {} -> {}", func_name, rpc_->node_id_, node_id)
     std::string server_name = GetServerName(node_id);
     tl::bulk_mode flag;
@@ -169,7 +193,7 @@ class ThalliumRpc {
 
     tl::bulk bulk = client_engine_->expose(segments, flag);
     if constexpr (!ASYNC) {
-      if constexpr (std::is_same_v<ReturnType, void>) {
+      if constexpr (std::is_same_v<RetT, void>) {
         remote_proc.on(server)(bulk, std::forward<Args>(args)...);
       } else {
         return remote_proc.on(server)(bulk, std::forward<Args>(args)...);
@@ -180,10 +204,10 @@ class ThalliumRpc {
   }
 
   /** Synchronous I/O transfer */
-  template<typename ReturnType, typename ...Args>
-  ReturnType SyncIoCall(i32 node_id, const char *func_name,
-                        IoType type, char *data, size_t size, Args&& ...args) {
-    return IoCall<ReturnType, false>(
+  template<typename RetT, typename ...Args>
+  RetT SyncIoCall(i32 node_id, const char *func_name,
+                  IoType type, char *data, size_t size, Args&& ...args) {
+    return IoCall<RetT, false>(
         node_id, func_name, type, data, size, std::forward<Args>(args)...);
   }
 

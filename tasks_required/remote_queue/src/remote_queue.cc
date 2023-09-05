@@ -72,12 +72,12 @@ class Server : public TaskLib {
   /** Handle finalization of PUSH replicate */
   void HandlePushReplicaEnd(PushTask *task) {
     task->exec_->ReplicateEnd(task->orig_task_->method_, task->orig_task_);
-    task->SetComplete();
     task->orig_task_->SetComplete();
     HILOG(kInfo, "Completing task (task_node={}, task_state={}, method={})",
           task->orig_task_->task_node_,
           task->orig_task_->task_state_,
           task->orig_task_->method_);
+    task->SetComplete();
   }
 
   /** Push operation called on client */
@@ -98,12 +98,19 @@ class Server : public TaskLib {
                     task->orig_task_->method_,
                     LABSTOR_QM_CLIENT->node_id_,
                     domain_id.id_);
-              tl::async_response future = LABSTOR_THALLIUM->AsyncCall(domain_id.id_,
-                                                                      "RpcPushSmall",
-                                                                      task->exec_->id_,
-                                                                      task->exec_method_,
-                                                                      params);
-              task->tl_future_.emplace_back(std::move(future));
+              std::string ret = LABSTOR_THALLIUM->SyncCall<std::string>(domain_id.id_,
+                                                                        "RpcPushSmall",
+                                                                        task->exec_->id_,
+                                                                        task->exec_method_,
+                                                                        params);
+              HandlePushReplicaOutput(ret, task);
+
+//              tl::async_response future = LABSTOR_THALLIUM->AsyncCall(domain_id.id_,
+//                                                                      "RpcPushSmall",
+//                                                                      task->exec_->id_,
+//                                                                      task->exec_method_,
+//                                                                      params);
+//              task->tl_future_.emplace_back(std::move(future));
             }
             break;
           }
