@@ -31,8 +31,9 @@ class Client {
   HSHM_ALWAYS_INLINE
   ConstructTask* AsyncCreate(const TaskNode &task_node,
                              const DomainId &domain_id,
-                             const std::string &state_name) {
-    id_ = TaskStateId::GetNull();
+                             const std::string &state_name,
+                             const TaskStateId &state_id) {
+    id_ = state_id;
     return LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
         task_node, domain_id, state_name, id_,
         LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
