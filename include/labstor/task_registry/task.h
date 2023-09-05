@@ -232,6 +232,11 @@ struct Task : public hipc::ShmContainer {
     return task_flags_.Any(TASK_FIRE_AND_FORGET);
   }
 
+  /** Unset fire & forget */
+  HSHM_ALWAYS_INLINE void UnsetFireAndForget() {
+    task_flags_.UnsetBits(TASK_FIRE_AND_FORGET);
+  }
+
   /** Set task as complete */
   HSHM_ALWAYS_INLINE void SetComplete() {
     task_flags_.SetBits(TASK_COMPLETE);

@@ -321,8 +321,11 @@ class Server : public TaskLib {
 
       // Execute task
       auto *queue = LABSTOR_QM_CLIENT->GetQueue(QueueId(state_id));
-      queue->Emplace(orig_task->lane_hash_, p);
       bool is_fire_forget = orig_task->IsFireAndForget();
+      if (is_fire_forget) {
+        orig_task->UnsetFireAndForget();
+      }
+      queue->Emplace(orig_task->lane_hash_, p);
       HILOG(kDebug, "(node {}) Executing task (task_node={}, task_state={}/{}, state_name={}, method={}, f&f={}, size={})",
             LABSTOR_QM_CLIENT->node_id_,
             orig_task->task_node_,
@@ -334,7 +337,7 @@ class Server : public TaskLib {
             data_size);
 
       // Get return value (should not contain data)
-      if (!is_fire_forget) {
+      // if (!is_fire_forget) {
         try {
           orig_task->Wait<1>();
           BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
@@ -357,9 +360,9 @@ class Server : public TaskLib {
                 is_fire_forget,
                 e.what());
         }
-      } else {
-        req.respond(std::string());
-      }
+//      } else {
+//        req.respond(std::string());
+//      }
     } catch (std::exception &e) {
       HELOG(kFatal, "LoadStart {}/{}: {}", state_id, method, e.what());
     }
