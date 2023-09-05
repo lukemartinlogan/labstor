@@ -48,6 +48,10 @@ void Run(MultiQueue *queue, u32 method, Task *task) override {
       GetBlobName(queue, reinterpret_cast<GetBlobNameTask *>(task));
       break;
     }
+    case Method::kGetBlobSize: {
+      GetBlobSize(queue, reinterpret_cast<GetBlobSizeTask *>(task));
+      break;
+    }
     case Method::kGetBlobScore: {
       GetBlobScore(queue, reinterpret_cast<GetBlobScoreTask *>(task));
       break;
@@ -107,6 +111,10 @@ void ReplicateStart(u32 method, u32 count, Task *task) override {
     }
     case Method::kGetBlobName: {
       labstor::CALL_REPLICA_START(count, reinterpret_cast<GetBlobNameTask*>(task));
+      break;
+    }
+    case Method::kGetBlobSize: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<GetBlobSizeTask*>(task));
       break;
     }
     case Method::kGetBlobScore: {
@@ -170,6 +178,10 @@ void ReplicateEnd(u32 method, Task *task) override {
       labstor::CALL_REPLICA_END(reinterpret_cast<GetBlobNameTask*>(task));
       break;
     }
+    case Method::kGetBlobSize: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<GetBlobSizeTask*>(task));
+      break;
+    }
     case Method::kGetBlobScore: {
       labstor::CALL_REPLICA_END(reinterpret_cast<GetBlobScoreTask*>(task));
       break;
@@ -229,6 +241,10 @@ std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, T
     }
     case Method::kGetBlobName: {
       ar << *reinterpret_cast<GetBlobNameTask*>(task);
+      break;
+    }
+    case Method::kGetBlobSize: {
+      ar << *reinterpret_cast<GetBlobSizeTask*>(task);
       break;
     }
     case Method::kGetBlobScore: {
@@ -305,6 +321,11 @@ TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) override {
       ar >> *reinterpret_cast<GetBlobNameTask*>(task_ptr.task_);
       break;
     }
+    case Method::kGetBlobSize: {
+      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<GetBlobSizeTask>(task_ptr.p_);
+      ar >> *reinterpret_cast<GetBlobSizeTask*>(task_ptr.task_);
+      break;
+    }
     case Method::kGetBlobScore: {
       task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<GetBlobScoreTask>(task_ptr.p_);
       ar >> *reinterpret_cast<GetBlobScoreTask*>(task_ptr.task_);
@@ -370,6 +391,10 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
       ar << *reinterpret_cast<GetBlobNameTask*>(task);
       break;
     }
+    case Method::kGetBlobSize: {
+      ar << *reinterpret_cast<GetBlobSizeTask*>(task);
+      break;
+    }
     case Method::kGetBlobScore: {
       ar << *reinterpret_cast<GetBlobScoreTask*>(task);
       break;
@@ -430,6 +455,10 @@ void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task)
     }
     case Method::kGetBlobName: {
       ar.Deserialize(replica, *reinterpret_cast<GetBlobNameTask*>(task));
+      break;
+    }
+    case Method::kGetBlobSize: {
+      ar.Deserialize(replica, *reinterpret_cast<GetBlobSizeTask*>(task));
       break;
     }
     case Method::kGetBlobScore: {

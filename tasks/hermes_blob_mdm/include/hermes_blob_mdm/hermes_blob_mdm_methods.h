@@ -12,6 +12,7 @@ struct Method : public TaskMethod {
   TASK_METHOD_T kGetBlobId = kLast + 8;
   TASK_METHOD_T kGetOrCreateBlobId = kLast + 9;
   TASK_METHOD_T kGetBlobName = kLast + 10;
+  TASK_METHOD_T kGetBlobSize = kLast + 11;
   TASK_METHOD_T kGetBlobScore = kLast + 12;
   TASK_METHOD_T kGetBlobBuffers = kLast + 13;
   TASK_METHOD_T kRenameBlob = kLast + 14;

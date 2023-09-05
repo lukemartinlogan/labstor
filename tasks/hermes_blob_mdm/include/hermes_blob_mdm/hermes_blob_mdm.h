@@ -129,7 +129,7 @@ class Client {
   GetBlobTask* AsyncGetBlob(const TaskNode &task_node,
                             BlobId blob_id,
                             size_t off,
-                            ssize_t &size,
+                            ssize_t size,
                             hipc::Pointer &data) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
@@ -146,6 +146,9 @@ class Client {
                BlobId blob_id, size_t off,
                ssize_t &size,
                hipc::Pointer &data) {
+    if (size < 0) {
+      size = (ssize_t)GetBlobSize(task_node, blob_id);
+    }
     GetBlobTask *task = AsyncGetBlob(task_node, blob_id, off, size, data);
     task->Wait();
     data = task->data_;
@@ -258,6 +261,32 @@ class Client {
     return blob_name;
   }
   LABSTOR_TASK_NODE_ROOT(GetBlobName);
+
+  /**
+   * Get \a size from \a blob_id BLOB id
+   * */
+  GetBlobSizeTask* AsyncGetBlobSize(const TaskNode &task_node,
+                                    BlobId blob_id) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    u32 hash = blob_id.unique_;
+    auto *task = LABSTOR_CLIENT->NewTask<GetBlobSizeTask>(
+        p,
+        task_node, DomainId::GetNode(blob_id.node_id_), id_,
+        blob_id);
+    queue->Emplace(hash, p);
+    return task;
+  }
+  LABSTOR_TASK_NODE_ROOT(AsyncGetBlobSize);
+  size_t GetBlobSize(const TaskNode &task_node,
+                     BlobId blob_id) {
+    GetBlobSizeTask *task = AsyncGetBlobSize(task_node, blob_id);
+    task->Wait();
+    size_t size = task->size_;
+    LABSTOR_CLIENT->DelTask(task);
+    return size;
+  }
+  LABSTOR_TASK_NODE_ROOT(GetBlobSize);
 
   /**
    * Get \a score from \a blob_id BLOB id

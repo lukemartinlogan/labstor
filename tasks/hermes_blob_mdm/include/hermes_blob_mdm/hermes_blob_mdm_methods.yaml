@@ -9,7 +9,7 @@ kBlobHasTag: 6
 kGetBlobId: 8
 kGetOrCreateBlobId: 9
 kGetBlobName: 10
-#kGetBlobSize: 11
+kGetBlobSize: 11
 kGetBlobScore: 12
 kGetBlobBuffers: 13
 kRenameBlob: 14

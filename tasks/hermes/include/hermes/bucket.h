@@ -266,7 +266,7 @@ class Bucket {
              Blob &blob,
              Context &ctx) {
     // Get from shared memory
-    ssize_t data_size = -1;
+    ssize_t data_size = blob.size();
     hipc::Pointer data_p = hipc::Pointer::GetNull();
     blob_mdm_->GetBlobRoot(blob_id, 0, data_size, data_p);
     char *data = LABSTOR_CLIENT->GetPrivatePointer(data_p);
@@ -284,7 +284,7 @@ class Bucket {
   Status PartialGet(const std::string &blob_name,
                     Blob &blob,
                     size_t blob_off_,
-                    ssize_t &data_size,
+                    ssize_t data_size,
                     BlobId &blob_id,
                     Context &ctx) {
     // Get from shared memory

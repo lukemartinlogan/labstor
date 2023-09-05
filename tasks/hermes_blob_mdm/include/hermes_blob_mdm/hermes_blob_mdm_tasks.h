@@ -500,6 +500,48 @@ struct GetBlobNameTask : public Task, TaskFlags<TF_SRL_SYM> {
 };
 
 /** Get \a score from \a blob_id BLOB id */
+struct GetBlobSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN BlobId blob_id_;
+  OUT size_t size_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  GetBlobSizeTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
+  GetBlobSizeTask(hipc::Allocator *alloc,
+                   const TaskNode &task_node,
+                   const DomainId &domain_id,
+                   const TaskStateId &state_id,
+                   const BlobId &blob_id) : Task(alloc) {
+    // Initialize task
+    task_node_ = task_node;
+    lane_hash_ = blob_id.unique_;
+    task_state_ = state_id;
+    method_ = Method::kGetBlobSize;
+    task_flags_.SetBits(TASK_LOW_LATENCY);
+    domain_id_ = domain_id;
+
+    // Custom
+    blob_id_ = blob_id;
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(blob_id_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(u32 replica, Ar &ar) {
+    ar(size_);
+  }
+};
+
+/** Get \a score from \a blob_id BLOB id */
 struct GetBlobScoreTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN BlobId blob_id_;
   OUT float score_;

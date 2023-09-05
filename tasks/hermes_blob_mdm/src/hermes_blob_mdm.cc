@@ -424,6 +424,20 @@ class Server : public TaskLib {
   /**
    * Get \a score from \a blob_id BLOB id
    * */
+  void GetBlobSize(MultiQueue *queue, GetBlobSizeTask *task) {
+    auto it = blob_map_.find(task->blob_id_);
+    if (it == blob_map_.end()) {
+      task->SetComplete();
+      return;
+    }
+    BlobInfo &blob = it->second;
+    task->size_ = blob.blob_size_;
+    return task->SetComplete();
+  }
+
+  /**
+   * Get \a score from \a blob_id BLOB id
+   * */
   void GetBlobScore(MultiQueue *queue, GetBlobScoreTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
