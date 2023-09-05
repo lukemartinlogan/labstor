@@ -336,34 +336,35 @@ class Server : public TaskLib {
             is_fire_forget,
             data_size);
 
-      // Get return value (should not contain data)
-      // if (!is_fire_forget) {
-        try {
-          orig_task->Wait<1>();
-          BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
-          auto out_xfer = exec->SaveEnd(method, ar, orig_task);
-          LABSTOR_CLIENT->DelTask(orig_task);
-          HILOG(kDebug, "(node {}) Returning {} bytes of data (task_node={}, task_state={}/{}, method={}, f&f={})",
-                LABSTOR_QM_CLIENT->node_id_,
-                out_xfer[0].data_size_,
-                orig_task->task_node_,
-                orig_task->task_state_,
-                state_id,
-                method,
-                is_fire_forget);
-          req.respond(std::string((char *) out_xfer[0].data_, out_xfer[0].data_size_));
-        } catch (std::exception &e) {
-          HILOG(kDebug, "SaveEnd failed (task_node={}, task_state={}/{}, method={}, f&f={}): {}",
-                orig_task->task_node_,
-                orig_task->task_state_,
-                state_id,
-                method,
-                is_fire_forget,
-                e.what());
-        }
-//      } else {
-//        req.respond(std::string());
-//      }
+      try {
+        HILOG(kInfo, "Waiting for task (task_node={}, task_state={}/{}, method={}, f&f={})",
+              orig_task->task_node_,
+              orig_task->task_state_,
+              state_id,
+              method,
+              is_fire_forget);
+        orig_task->Wait<1>();
+        BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
+        auto out_xfer = exec->SaveEnd(method, ar, orig_task);
+        LABSTOR_CLIENT->DelTask(orig_task);
+        HILOG(kDebug, "(node {}) Returning {} bytes of data (task_node={}, task_state={}/{}, method={}, f&f={})",
+              LABSTOR_QM_CLIENT->node_id_,
+              out_xfer[0].data_size_,
+              orig_task->task_node_,
+              orig_task->task_state_,
+              state_id,
+              method,
+              is_fire_forget);
+        req.respond(std::string((char *) out_xfer[0].data_, out_xfer[0].data_size_));
+      } catch (std::exception &e) {
+        HILOG(kDebug, "SaveEnd failed (task_node={}, task_state={}/{}, method={}, f&f={}): {}",
+              orig_task->task_node_,
+              orig_task->task_state_,
+              state_id,
+              method,
+              is_fire_forget,
+              e.what());
+      }
     } catch (std::exception &e) {
       HELOG(kFatal, "LoadStart {}/{}: {}", state_id, method, e.what());
     }
