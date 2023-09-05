@@ -258,17 +258,23 @@ class Bucket {
 //    return Put<false, true>(blob_name, blob, blob_id, ctx);
   }
 
+  /**
+   * Get the current size of the blob in the bucket
+   * */
+  size_t GetBlobSize(const BlobId &blob_id) {
+    return blob_mdm_->GetBlobSizeRoot(blob_id);
+  }
 
   /**
    * Get \a blob_id Blob from the bucket
    * */
-  Status Get(BlobId blob_id,
+  Status Get(const BlobId &blob_id,
              Blob &blob,
              Context &ctx) {
     // Get from shared memory
     ssize_t data_size = blob.size();
     if (data_size == 0) {
-      data_size = blob_mdm_->GetBlobSizeRoot(blob_id);
+      data_size = GetBlobSize(blob_id);
     }
     hipc::Pointer data_p = LABSTOR_CLIENT->AllocateBuffer(data_size);
     data_size = blob_mdm_->GetBlobRoot(blob_id, 0, data_size, data_p);
@@ -288,7 +294,7 @@ class Bucket {
                     Blob &blob,
                     size_t blob_off_,
                     ssize_t data_size,
-                    BlobId &blob_id,
+                    const BlobId &blob_id,
                     Context &ctx) {
     // Get from shared memory
     hipc::Pointer data_p = LABSTOR_CLIENT->AllocateBuffer(data_size);
@@ -305,7 +311,7 @@ class Bucket {
    * Determine if the bucket contains \a blob_id BLOB
    * */
   bool ContainsBlob(const std::string &blob_name,
-                    BlobId &blob_id) {
+                    const BlobId &blob_id) {
     blob_id = blob_mdm_->GetBlobIdRoot(id_, hshm::to_charbuf(blob_name));
     return !blob_id.IsNull();
   }
@@ -313,14 +319,14 @@ class Bucket {
   /**
    * Rename \a blob_id blob to \a new_blob_name new name
    * */
-  void RenameBlob(BlobId blob_id, std::string new_blob_name, Context &ctx) {
+  void RenameBlob(const BlobId &blob_id, std::string new_blob_name, Context &ctx) {
     blob_mdm_->RenameBlobRoot(blob_id, hshm::to_charbuf(new_blob_name));
   }
 
   /**
    * Delete \a blob_id blob
    * */
-  void DestroyBlob(BlobId blob_id, Context &ctx) {
+  void DestroyBlob(const BlobId &blob_id, Context &ctx) {
     // TODO(llogan): Make apart of bkt_mdm_ instead
     blob_mdm_->DestroyBlobRoot(blob_id);
   }

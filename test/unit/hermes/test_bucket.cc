@@ -9,8 +9,39 @@
 #include "hermes/bucket.h"
 #include <mpi.h>
 
+TEST_CASE("TestHermesPut") {
+  int rank, nprocs;
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
-TEST_CASE("TestHermesBucket") {
+  // Initialize Hermes on all nodes
+  HERMES->ClientInit();
+
+  // Create a bucket
+  HILOG(kInfo, "WE ARE HERE!!!")
+  hermes::Context ctx;
+  hermes::Bucket bkt("hello");
+  HILOG(kInfo, "BUCKET LOADED!!!")
+
+  size_t count = 16;
+  size_t off = rank * count;
+  int max_blobs = 16;
+  for (size_t i = off; i < count; ++i) {
+    HILOG(kInfo, "Iteration: {}", i);
+    // Put a blob
+    hermes::Blob blob(KILOBYTES(4));
+    memset(blob.data(), i, blob.size());
+    hermes::BlobId blob_id(hermes::BlobId::GetNull());
+    bkt.Put(std::to_string(i % max_blobs), blob, blob_id, ctx);
+
+    // Get a blob
+    size_t size = bkt.GetBlobSize(blob_id);
+    REQUIRE(blob.size() == size);
+  }
+}
+
+TEST_CASE("TestHermesPutGet") {
   int rank, nprocs;
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);

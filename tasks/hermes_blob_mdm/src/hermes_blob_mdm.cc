@@ -429,7 +429,7 @@ class Server : public TaskLib {
     }
     BlobInfo &blob = it->second;
     task->size_ = blob.blob_size_;
-    return task->SetComplete();
+    task->SetComplete();
   }
 
   /**
