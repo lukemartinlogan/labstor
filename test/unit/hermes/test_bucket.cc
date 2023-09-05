@@ -15,19 +15,20 @@ TEST_CASE("TestHermesPut") {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
-  // Initialize Hermes on all nodes
-  HERMES->ClientInit();
-
-  // Create a bucket
-  HILOG(kInfo, "WE ARE HERE!!!")
-  hermes::Context ctx;
-  hermes::Bucket bkt("hello");
-  HILOG(kInfo, "BUCKET LOADED!!!")
-
-  size_t count = 16;
-  size_t off = rank * count;
-  int max_blobs = 16;
   if (rank == 0) {
+    // Initialize Hermes on all nodes
+    HERMES->ClientInit();
+
+    // Create a bucket
+    HILOG(kInfo, "WE ARE HERE!!!")
+    hermes::Context ctx;
+    hermes::Bucket bkt("hello");
+    HILOG(kInfo, "BUCKET LOADED!!!")
+
+    size_t count = 16;
+    size_t off = rank * count;
+    int max_blobs = 16;
+
     for (size_t i = off; i < count; ++i) {
       HILOG(kInfo, "Iteration: {}", i);
       // Put a blob
