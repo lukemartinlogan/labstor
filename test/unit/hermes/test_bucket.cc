@@ -43,7 +43,7 @@ TEST_CASE("TestHermesPut") {
       // REQUIRE(blob.size() == size);
     }
   }
-  sleep(1);
+  sleep(10);
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
