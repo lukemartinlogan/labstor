@@ -139,6 +139,7 @@ class Server : public TaskLib {
         HandlePushReplicaOutput(replica, ret, task);
         tl_task->done_ = true;
       }, tl_task);
+      task->tl_future_.emplace_back(tl_task);
 
 
 //              tl::async_response future = LABSTOR_THALLIUM->AsyncCall(domain_id.id_,
@@ -189,6 +190,7 @@ class Server : public TaskLib {
         HandlePushReplicaOutput(replica, ret, task);
         tl_task->done_ = true;
       }, tl_task);
+      task->tl_future_.emplace_back(tl_task);
 
 //              tl::async_response future = LABSTOR_THALLIUM->AsyncIoCall(domain_id.id_,
 //                                                                        "RpcPushBulk",
