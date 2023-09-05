@@ -113,8 +113,9 @@ class Worker {
   size_t sleep_us_;  /** Time the worker should sleep after a run */
   u32 retries_;      /** The number of times to repeat the internal run loop before sleeping */
   bitfield32_t flags_;  /** Worker metadata flags */
-  std::unordered_map<WorkEntry, std::queue<Task*>> active_tasks_;  /**< The set of active tasks */
-  hshm::Timer timer_;
+  std::unordered_map<hshm::charbuf, TaskNode> group_map_;  /** Determine if a task can be executed right now */
+  hshm::charbuf group_;  /** The current group */
+
 
  public:
   /** Constructor */
@@ -128,7 +129,9 @@ class Worker {
     pid_ = 0;
     thread_ = std::make_unique<std::thread>(&Worker::Loop, this);
     pthread_id_ = thread_->native_handle();
-    timer_.Resume();
+    // TODO(llogan): implement reserve for group
+    group_.resize(512);
+    group_.resize(0);
     /* int ret = ABT_thread_create_on_xstream(xstream,
                                            [](void *args) { ((Worker*)args)->Loop(); }, this,
                                            ABT_THREAD_ATTR_NULL, &tl_thread_);
@@ -224,6 +227,44 @@ class Worker {
    * */
   void Run();
 
+  HSHM_ALWAYS_INLINE
+  bool CheckTaskGroup(Task *task, TaskState *exec, TaskNode node) {
+    int ret = exec->GetGroup(task->method_, task, group_);
+    if (ret == TASK_UNORDERED) {
+      group_.resize(0);
+      return true;
+    }
+    auto it = group_map_.find(group_);
+    if (it == group_map_.end()) {
+      node.node_depth_ = 1;
+      group_map_.emplace(group_, node);
+      return true;
+    }
+    TaskNode &node_cmp = it->second;
+    if (node_cmp.IsNull()) {
+      return true;
+    }
+    if (node_cmp.root_ == node.root_ && !task->IsStarted()) {
+      task->SetStarted();
+      node_cmp.node_depth_ += 1;
+      return true;
+    }
+    return it->second.root_ == node.root_;
+  }
+
+  HSHM_ALWAYS_INLINE
+  void RemoveTaskGroup() {
+    if (group_.size() == 0) {
+      return;
+    }
+    TaskNode &node = group_map_[group_];
+    node.node_depth_ -= 1;
+    if (node.node_depth_ == 0) {
+      group_map_.erase(group_);
+    }
+  }
+
+  void PollGrouped(u32 lane_id, MultiQueue *queue);
   void PollUnordered(u32 lane_id, MultiQueue *queue);
   void PollOrdered(u32 lane_id, MultiQueue *queue);
 };

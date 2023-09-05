@@ -26,8 +26,8 @@ namespace labstor {
 #define TASK_STATELESS BIT_OPT(u32, 6)
 /** This task does not depend on its position in the queue */
 #define TASK_UNORDERED BIT_OPT(u32, 7)
-/** This task was spawned as consequence of another task */
-#define TASK_INTERMEDIATE BIT_OPT(u32, 8)
+/** This task has began execution */
+#define TASK_HAS_STARTED BIT_OPT(u32, 8)
 /** This task is completed */
 #define TASK_COMPLETE BIT_OPT(u32, 9)
 /** This task was marked completed outside of the worker thread */
@@ -38,7 +38,7 @@ namespace labstor {
 #define TASK_FIRE_AND_FORGET BIT_OPT(u32, 12)
 /** This task should not be run at this time */
 #define TASK_DISABLE_RUN BIT_OPT(u32, 13)
-/** This task should not be run at this time */
+/** This task owns the data in the task */
 #define TASK_OWNS_DATA BIT_OPT(u32, 14)
 
 /** Used to define task methods */
@@ -59,7 +59,7 @@ struct TaskMethod {
  * Tasks apart of the same task group need to be ordered
  * */
 
-/** An identifier used for representing a graph */
+/** An identifier used for representing the location of a task in a task graph */
 struct TaskNode {
   TaskId root_;         /**< The id of the root task */
   u32 node_depth_;      /**< The depth of the task in the task graph */
@@ -267,6 +267,16 @@ struct Task : public hipc::ShmContainer {
   /** Unset task as data owner */
   HSHM_ALWAYS_INLINE void UnsetDataOwner() {
     task_flags_.UnsetBits(TASK_OWNS_DATA);
+  }
+
+  /** Set this task as started */
+  HSHM_ALWAYS_INLINE void SetStarted() {
+    task_flags_.SetBits(TASK_HAS_STARTED);
+  }
+
+  /** Check if task has started */
+  HSHM_ALWAYS_INLINE bool IsStarted() {
+    return task_flags_.Any(TASK_HAS_STARTED);
   }
 
   /** Wait for task to complete */

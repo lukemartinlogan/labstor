@@ -31,10 +31,57 @@ void Worker::Run() {
     _RelinquishQueues();
   }
   for (auto &[lane_id, queue] : work_queue_) {
-    if (queue->flags_.Any(QUEUE_UNORDERED)) {
-      PollUnordered(lane_id, queue);
+    PollGrouped(lane_id, queue);
+//    if (queue->flags_.Any(QUEUE_UNORDERED)) {
+//      PollUnordered(lane_id, queue);
+//    } else {
+//      PollOrdered(lane_id, queue);
+//    }
+  }
+}
+
+void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
+  Task *task;
+  hipc::Pointer p;
+  // TODO(llogan): We now have a way to determine if two tasks can be executed in parallel
+  for (int i = 0; i < 1024; ++i) {
+    // Get the task message
+    if (!queue->Pop(lane_id, task, p)) {
+      break;
+    }
+    // Get the task state
+    TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
+    if (!exec) {
+      HELOG(kFatal, "(node {}) Could not find the task state: {}",
+            LABSTOR_QM_CLIENT->node_id_, task->task_state_);
+      task->SetComplete();
+    }
+    // Check if the task can execute
+    if (!CheckTaskGroup(task, exec, task->task_node_)) {
+      continue;
+    }
+    // Disperse or execute task
+    bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_QM_CLIENT->node_id_);
+    if (!task->IsRunDisabled()) {
+      if (is_remote) {
+        auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
+        LABSTOR_REMOTE_QUEUE->Disperse(task, exec, ids);
+        task->DisableRun();
+      } else if (!task->IsComplete()) {
+        exec->Run(queue, task->method_, task);
+      }
+    }
+    // Cleanup on task completion
+    if (task->IsExternalComplete()) {
+      task->SetComplete();
+    }
+    if (task->IsComplete()) {
+      RemoveTaskGroup();
+      if (task->IsFireAndForget()) {
+        LABSTOR_CLIENT->DelTask(task);
+      }
     } else {
-      PollOrdered(lane_id, queue);
+      queue->Emplace(lane_id, p);
     }
   }
 }
