@@ -211,8 +211,8 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     DataTransfer xfer(DT_RECEIVER_READ,
                       HERMES_MEMORY_MANAGER->Convert<char>(data_),
                       data_size_, domain_id_);
-    ar & xfer;
     task_serialize<Ar>(ar);
+    ar & xfer;
     ar(tag_id_, blob_name_, blob_id_, blob_off_, data_size_, score_, flags_);
   }
 
