@@ -22,7 +22,6 @@ TEST_CASE("TestIpc") {
   client.CreateRoot(labstor::DomainId::GetGlobal(), "ipc_test");
   MPI_Barrier(MPI_COMM_WORLD);
   hshm::Timer t;
-  return;
 
   int pid = getpid();
   ProcessAffiner::SetCpuAffinity(pid, 8);

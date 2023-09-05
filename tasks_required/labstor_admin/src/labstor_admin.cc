@@ -51,18 +51,18 @@ class Server : public TaskLib {
         // Check global registry for task state
         if (task->id_.IsNull()) {
           if (task->domain_id_ == DomainId::GetLocal()) {
-            HILOG(kInfo, "Domain ID is local for {} (task_node={})", state_name, task->task_node_);
+            HILOG(kDebug, "Domain ID is local for {} (task_node={})", state_name, task->task_node_);
             task->id_ = LABSTOR_TASK_REGISTRY->GetOrCreateTaskStateId(state_name);
             task->phase_ = CreateTaskStatePhase::kStateCreate;
           } else {
-            HILOG(kInfo, "Domain ID is global for {} (task_node={})", state_name, task->task_node_);
+            HILOG(kDebug, "Domain ID is global for {} (task_node={})", state_name, task->task_node_);
             DomainId domain = DomainId::GetNode(1);
             task->get_id_task_ = LABSTOR_ADMIN->AsyncGetOrCreateTaskStateId(
                 task->task_node_, domain, state_name);
             task->phase_ = CreateTaskStatePhase::kIdAllocWait;
           }
         } else {
-          HILOG(kInfo, "Domain ID is given as {} for {} (task_node={})", task->id_, state_name, task->task_node_);
+          HILOG(kDebug, "Domain ID is given as {} for {} (task_node={})", task->id_, state_name, task->task_node_);
           task->phase_ = CreateTaskStatePhase::kStateCreate;
         }
         return;
@@ -83,7 +83,7 @@ class Server : public TaskLib {
 
         // Verify the state isn't NULL
         if (task->id_.IsNull()) {
-          HELOG(kError, "(node {}) Error. The task state {} with id {} is NULL.",
+          HELOG(kError, "(node {}) The task state {} with id {} is NULL.",
                 LABSTOR_QM_CLIENT->node_id_, state_name, task->id_);
           task->SetComplete();
           return;
@@ -107,8 +107,6 @@ class Server : public TaskLib {
           LABSTOR_QM_RUNTIME->CreateQueue(
               qid, task->queue_max_lanes_, task->queue_num_lanes_,
               task->queue_depth_, task->queue_flags_);
-          HILOG(kInfo, "(node {}) Allocated task state {} with id {}",
-                LABSTOR_QM_CLIENT->node_id_, state_name, task->task_state_);
         }
 
         // Begin creating the task state

@@ -86,7 +86,7 @@ class Server : public TaskLib {
       std::vector<DataTransfer> xfer(1);
       xfer[0].data_ = ret.data();
       xfer[0].data_size_ = ret.size();
-      HILOG(kInfo, "Wait got {} bytes of data (task_node={}, task_state={}, method={})",
+      HILOG(kDebug, "Wait got {} bytes of data (task_node={}, task_state={}, method={})",
             xfer[0].data_size_,
             task->orig_task_->task_node_,
             task->orig_task_->task_state_,
@@ -106,7 +106,7 @@ class Server : public TaskLib {
   static void HandlePushReplicaEnd(PushTask *task) {
     task->exec_->ReplicateEnd(task->orig_task_->method_, task->orig_task_);
     task->orig_task_->SetComplete();
-    HILOG(kInfo, "Completing task (task_node={}, task_state={}, method={})",
+    HILOG(kDebug, "Completing task (task_node={}, task_state={}, method={})",
           task->orig_task_->task_node_,
           task->orig_task_->task_state_,
           task->orig_task_->method_);
@@ -124,7 +124,7 @@ class Server : public TaskLib {
         DomainId &domain_id = tl_task->domain_id_;
         PushTask *task = tl_task->task_;
         int replica = tl_task->replica_;
-        HILOG(kInfo, "(SM) Transferring {} bytes of data (task_node={}, task_state={}, method={}, from={}, to={})",
+        HILOG(kDebug, "(SM) Transferring {} bytes of data (task_node={}, task_state={}, method={}, from={}, to={})",
               task->params_.size(),
               task->orig_task_->task_node_,
               task->orig_task_->task_state_,
@@ -169,7 +169,7 @@ class Server : public TaskLib {
         PushTask *task = tl_task->task_;
         int replica = tl_task->replica_;
         IoType &io_type = tl_task->io_type_;
-        HILOG(kInfo, "(IO) Transferring {} bytes of data (task_node={}, task_state={}, method={}, from={}, to={}, type={})",
+        HILOG(kDebug, "(IO) Transferring {} bytes of data (task_node={}, task_state={}, method={}, from={}, to={}, type={})",
               tl_task->data_size_,
               task->orig_task_->task_node_,
               task->orig_task_->task_state_,
@@ -261,8 +261,8 @@ class Server : public TaskLib {
     std::vector<DataTransfer> xfer(1);
     xfer[0].data_ = params.data();
     xfer[0].data_size_ = params.size();
-    HILOG(kInfo, "Received small message of size {} "
-                 "(task_state={}, method={})", xfer[0].data_size_, state_id, method);
+    HILOG(kDebug, "Received small message of size {} "
+                  "(task_state={}, method={})", xfer[0].data_size_, state_id, method);
 
     // Process the message
     RpcPush(req, state_id, method, xfer);
@@ -286,8 +286,8 @@ class Server : public TaskLib {
     xfer[1].data_ = params.data();
     xfer[1].data_size_ = params.size();
 
-    HILOG(kInfo, "Received large message of size {} "
-                 "(task_state={}, method={})", xfer[0].data_size_, state_id, method);
+    HILOG(kDebug, "Received large message of size {} "
+                  "(task_state={}, method={})", xfer[0].data_size_, state_id, method);
 
     // Process the message
     RpcPush(req, state_id, method, xfer);
@@ -309,7 +309,7 @@ class Server : public TaskLib {
         req.respond(std::string());
         return;
       } else {
-        HILOG(kInfo, "(node {}) Found task state {}",
+        HILOG(kDebug, "(node {}) Found task state {}",
               LABSTOR_QM_CLIENT->node_id_,
               state_id);
       }
@@ -322,7 +322,7 @@ class Server : public TaskLib {
       auto *queue = LABSTOR_QM_CLIENT->GetQueue(QueueId(state_id));
       queue->Emplace(orig_task->lane_hash_, p);
       bool is_fire_forget = orig_task->IsFireAndForget();
-      HILOG(kInfo, "(node {}) Executing task (task_node={}, task_state={}/{}, method={}, f&f={})",
+      HILOG(kDebug, "(node {}) Executing task (task_node={}, task_state={}/{}, method={}, f&f={})",
             LABSTOR_QM_CLIENT->node_id_,
             orig_task->task_node_,
             orig_task->task_state_,
@@ -337,7 +337,7 @@ class Server : public TaskLib {
           BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
           auto out_xfer = exec->SaveEnd(method, ar, orig_task);
           LABSTOR_CLIENT->DelTask(orig_task);
-          HILOG(kInfo, "Returning {} bytes of data (task_node={}, task_state={}/{}, method={}, f&f={})",
+          HILOG(kDebug, "Returning {} bytes of data (task_node={}, task_state={}/{}, method={}, f&f={})",
                 out_xfer[0].data_size_,
                 orig_task->task_node_,
                 orig_task->task_state_,
@@ -346,7 +346,7 @@ class Server : public TaskLib {
                 is_fire_forget);
           req.respond(std::string((char *) out_xfer[0].data_, out_xfer[0].data_size_));
         } catch (std::exception &e) {
-          HILOG(kInfo, "SaveEnd failed (task_node={}, task_state={}/{}, method={}, f&f={}): {}",
+          HILOG(kDebug, "SaveEnd failed (task_node={}, task_state={}/{}, method={}, f&f={}): {}",
                 orig_task->task_node_,
                 orig_task->task_state_,
                 state_id,
