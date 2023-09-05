@@ -47,6 +47,39 @@ class Server : public TaskLib {
     task->SetComplete();
   }
 
+  /** Handle output from replica PUSH */
+  void HandlePushReplicaOutput(std::string &ret, PushTask *task) {
+    try {
+      std::vector<DataTransfer> xfer(1);
+      xfer[0].data_ = ret.data();
+      xfer[0].data_size_ = ret.size();
+      HILOG(kInfo, "Wait got {} bytes of data (task_node={}, task_state={}, method={})",
+            xfer[0].data_size_,
+            task->orig_task_->task_node_,
+            task->orig_task_->task_state_,
+            task->orig_task_->method_);
+      BinaryInputArchive<false> ar(xfer);
+      task->exec_->LoadEnd(task->replica_, task->exec_method_, ar, task->orig_task_);
+    } catch (std::exception &e) {
+      HILOG(kFatal, "Error LoadEnd (task_node={}, task_state={}, method={}): {}",
+            task->orig_task_->task_node_,
+            task->orig_task_->task_state_,
+            task->orig_task_->method_,
+            e.what());
+    }
+  }
+
+  /** Handle finalization of PUSH replicate */
+  void HandlePushReplicaEnd(PushTask *task) {
+    task->exec_->ReplicateEnd(task->orig_task_->method_, task->orig_task_);
+    task->SetComplete();
+    task->orig_task_->SetComplete();
+    HILOG(kInfo, "Completing task (task_node={}, task_state={}, method={})",
+          task->orig_task_->task_node_,
+          task->orig_task_->task_state_,
+          task->orig_task_->method_);
+  }
+
   /** Push operation called on client */
   void Push(MultiQueue *queue, PushTask *task) {
     switch (task->phase_) {
@@ -90,46 +123,32 @@ class Server : public TaskLib {
                     LABSTOR_QM_CLIENT->node_id_,
                     domain_id.id_,
                     static_cast<int>(io_type));
-//              std::string ret = LABSTOR_THALLIUM->SyncIoCall<std::string>(domain_id.id_,
-//                                                    "RpcPushBulk",
-//                                                    io_type,
-//                                                    (char *) xfer[0].data_,
-//                                                    xfer[0].data_size_,
-//                                                    task->exec_->id_,
-//                                                    task->exec_method_,
-//                                                    params,
-//                                                    xfer[0].data_size_,
-//                                                    io_type);
-//              std::vector<DataTransfer> xfer(1);
-//              xfer[0].data_ = ret.data();
-//              xfer[0].data_size_ = ret.size();
-//              HILOG(kInfo, "Wait got {} bytes of data (task_node={}, task_state={}, method={})",
-//                    xfer[0].data_size_,
-//                    task->orig_task_->task_node_,
-//                    task->orig_task_->task_state_,
-//                    task->orig_task_->method_);
-//              BinaryInputArchive<false> ar(xfer);
-//              task->exec_->LoadEnd(task->replica_, task->exec_method_, ar, task->orig_task_);
-//              task->exec_->ReplicateEnd(task->orig_task_->method_, task->orig_task_);
-//              task->SetComplete();
-//              task->orig_task_->SetComplete();
-//              HILOG(kInfo, "Completing task (task_node={}, task_state={}, method={})",
-//                    task->orig_task_->task_node_,
-//                    task->orig_task_->task_state_,
-//                    task->orig_task_->method_);
+              // NOTE(llogan): there's a bug in thallium which makes it impossible to use async I/O call
+              std::string ret = LABSTOR_THALLIUM->SyncIoCall<std::string>(domain_id.id_,
+                                                    "RpcPushBulk",
+                                                    io_type,
+                                                    (char *) xfer[0].data_,
+                                                    xfer[0].data_size_,
+                                                    task->exec_->id_,
+                                                    task->exec_method_,
+                                                    params,
+                                                    xfer[0].data_size_,
+                                                    io_type);
+              HandlePushReplicaOutput(ret, task);
 
-              tl::async_response future = LABSTOR_THALLIUM->AsyncIoCall(domain_id.id_,
-                                                                        "RpcPushBulk",
-                                                                        io_type,
-                                                                        (char *) xfer[0].data_,
-                                                                        xfer[0].data_size_,
-                                                                        task->exec_->id_,
-                                                                        task->exec_method_,
-                                                                        params,
-                                                                        xfer[0].data_size_,
-                                                                        io_type);
-              task->tl_future_.emplace_back(std::move(future));
+//              tl::async_response future = LABSTOR_THALLIUM->AsyncIoCall(domain_id.id_,
+//                                                                        "RpcPushBulk",
+//                                                                        io_type,
+//                                                                        (char *) xfer[0].data_,
+//                                                                        xfer[0].data_size_,
+//                                                                        task->exec_->id_,
+//                                                                        task->exec_method_,
+//                                                                        params,
+//                                                                        xfer[0].data_size_,
+//                                                                        io_type);
+//              task->tl_future_.emplace_back(std::move(future));
             }
+            HandlePushReplicaEnd(task);
             break;
           }
           default: {
@@ -144,33 +163,10 @@ class Server : public TaskLib {
           if (!LABSTOR_THALLIUM->IsDone(future)) {
             return;
           }
-          try {
-            std::string ret = LABSTOR_THALLIUM->Wait<std::string>(future);
-            std::vector<DataTransfer> xfer(1);
-            xfer[0].data_ = ret.data();
-            xfer[0].data_size_ = ret.size();
-            HILOG(kInfo, "Wait got {} bytes of data (task_node={}, task_state={}, method={})",
-                  xfer[0].data_size_,
-                  task->orig_task_->task_node_,
-                  task->orig_task_->task_state_,
-                  task->orig_task_->method_);
-            BinaryInputArchive<false> ar(xfer);
-            task->exec_->LoadEnd(task->replica_, task->exec_method_, ar, task->orig_task_);
-          } catch (std::exception &e) {
-            HILOG(kFatal, "Error LoadEnd (task_node={}, task_state={}, method={}): {}",
-                  task->orig_task_->task_node_,
-                  task->orig_task_->task_state_,
-                  task->orig_task_->method_,
-                  e.what());
-          }
+          std::string ret = LABSTOR_THALLIUM->Wait<std::string>(future);
+          HandlePushReplicaOutput(ret, task);
         }
-        task->exec_->ReplicateEnd(task->orig_task_->method_, task->orig_task_);
-        task->SetComplete();
-        task->orig_task_->SetComplete();
-        HILOG(kInfo, "Completing task (task_node={}, task_state={}, method={})",
-              task->orig_task_->task_node_,
-              task->orig_task_->task_state_,
-              task->orig_task_->method_);
+        HandlePushReplicaEnd(task);
       }
     }
   }
