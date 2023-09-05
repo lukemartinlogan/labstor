@@ -265,6 +265,7 @@ class Client {
    * */
   GetBlobSizeTask* AsyncGetBlobSize(const TaskNode &task_node,
                                     BlobId blob_id) {
+    HILOG(kDebug, "Getting blob size {}", task_node);
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
