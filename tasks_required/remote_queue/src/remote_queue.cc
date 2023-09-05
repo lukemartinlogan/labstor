@@ -327,8 +327,8 @@ class Server : public TaskLib {
             LABSTOR_QM_CLIENT->node_id_,
             orig_task->task_node_,
             orig_task->task_state_,
-            exec->name_,
             state_id,
+            exec->name_,
             method,
             is_fire_forget,
             data_size);
