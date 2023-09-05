@@ -24,13 +24,12 @@ TEST_CASE("TestHermesPut") {
     hermes::Context ctx;
     hermes::Bucket bkt("hello");
     HILOG(kInfo, "BUCKET LOADED!!!")
-    goto END;
 
     size_t count = 16;
     size_t off = rank * count;
     int max_blobs = 16;
 
-    for (size_t i = off; i < count; ++i) {
+    for (size_t i = 1; i < 2; ++i) {
       HILOG(kInfo, "Iteration: {}", i);
       // Put a blob
       hermes::Blob blob(KILOBYTES(4));
@@ -44,7 +43,6 @@ TEST_CASE("TestHermesPut") {
       REQUIRE(blob.size() == size);
     }
   }
-  END:
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
