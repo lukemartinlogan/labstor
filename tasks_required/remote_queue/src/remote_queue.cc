@@ -118,19 +118,19 @@ class Server : public TaskLib {
     task->params_ = std::string((char *) xfer[0].data_, xfer[0].data_size_);
     for (int replica = 0; replica < task->domain_ids_.size(); ++replica) {
       DomainId domain_id = task->domain_ids_[replica];
-      HILOG(kInfo, "(SM) Transferring {} bytes of data (task_node={}, task_state={}, method={}, from={}, to={})",
-            xfer[0].data_size_,
-            task->orig_task_->task_node_,
-            task->orig_task_->task_state_,
-            task->orig_task_->method_,
-            LABSTOR_QM_CLIENT->node_id_,
-            domain_id.id_);
       ThalliumTask *tl_task = new ThalliumTask(replica, task, domain_id);
       tl_task->thread_ = LABSTOR_WORK_ORCHESTRATOR->SpawnAsyncThread([](void *data) {
         ThalliumTask *tl_task = (ThalliumTask *) data;
         DomainId &domain_id = tl_task->domain_id_;
         PushTask *task = tl_task->task_;
         int replica = tl_task->replica_;
+        HILOG(kInfo, "(SM) Transferring {} bytes of data (task_node={}, task_state={}, method={}, from={}, to={})",
+              task->params_.size(),
+              task->orig_task_->task_node_,
+              task->orig_task_->task_state_,
+              task->orig_task_->method_,
+              LABSTOR_QM_CLIENT->node_id_,
+              domain_id.id_);
         std::string ret = LABSTOR_THALLIUM->SyncCall<std::string>(domain_id.id_,
                                                                   "RpcPushSmall",
                                                                   task->exec_->id_,
@@ -159,15 +159,6 @@ class Server : public TaskLib {
     }
     for (int replica = 0; replica < task->domain_ids_.size(); ++replica) {
       DomainId domain_id = task->domain_ids_[replica];
-      HILOG(kInfo, "(IO) Transferring {} bytes of data (task_node={}, task_state={}, method={}, from={}, to={}, type={})",
-            xfer[0].data_size_,
-            task->orig_task_->task_node_,
-            task->orig_task_->task_state_,
-            task->orig_task_->method_,
-            LABSTOR_QM_CLIENT->node_id_,
-            domain_id.id_,
-            static_cast<int>(io_type));
-      // NOTE(llogan): there's a bug in thallium which makes it impossible to use async I/O call
       ThalliumTask *tl_task = new ThalliumTask(
           replica, task, domain_id, io_type,
           xfer[0].data_, xfer[0].data_size_);
@@ -177,6 +168,14 @@ class Server : public TaskLib {
         PushTask *task = tl_task->task_;
         int replica = tl_task->replica_;
         IoType &io_type = tl_task->io_type_;
+        HILOG(kInfo, "(IO) Transferring {} bytes of data (task_node={}, task_state={}, method={}, from={}, to={}, type={})",
+              tl_task->data_size_,
+              task->orig_task_->task_node_,
+              task->orig_task_->task_state_,
+              task->orig_task_->method_,
+              LABSTOR_QM_CLIENT->node_id_,
+              domain_id.id_,
+              static_cast<int>(io_type));
         std::string ret = LABSTOR_THALLIUM->SyncIoCall<std::string>(domain_id.id_,
                                                                     "RpcPushBulk",
                                                                     io_type,
