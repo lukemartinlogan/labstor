@@ -99,14 +99,13 @@ class RpcContext {
 
   /** get RPC address */
   std::string GetRpcAddress(const DomainId &domain_id, int port) {
-    // NOTE(llogan): node_id 0 is reserved as the NULL node
-    u32 node_id = domain_id.id_;
-    if (node_id <= 0 || node_id > (i32)hosts_.size()) {
-      HELOG(kFatal, "Attempted to get from node {}, which is out of "
-                    "the range 1-{}", node_id, hosts_.size() + 1)
+    std::string result = config_->rpc_.protocol_ + "://";
+    if (!config_->rpc_.domain_.empty()) {
+      result += config_->rpc_.domain_ + "/";
     }
-    u32 index = node_id - 1;
-    return hosts_[index].hostname_;
+    std::string host_name = GetHostNameFromNodeId(domain_id);
+    result += host_name + ":" + std::to_string(port);
+    return result;
   }
 
   /** Get RPC address for this node */
@@ -118,19 +117,19 @@ class RpcContext {
   std::string GetHostNameFromNodeId(const DomainId &domain_id) {
     // NOTE(llogan): node_id 0 is reserved as the NULL node
     u32 node_id = domain_id.id_;
-    if (node_id <= 0 || node_id > (u32)hosts_.size()) {
+    if (node_id <= 0 || node_id > (i32)hosts_.size()) {
       HELOG(kFatal, "Attempted to get from node {}, which is out of "
                     "the range 1-{}", node_id, hosts_.size() + 1)
     }
     u32 index = node_id - 1;
-    return hosts_[index].ip_addr_;
+    return hosts_[index].hostname_;
   }
 
   /** get host name from node ID */
-  std::string GetIpAddressFromNodeId(const DomainId &domain_id) {
-    u32 node_id = domain_id.id_;
+  std::string GetIpAddressFromNodeId(const DomainId &domain_id){
     // NOTE(llogan): node_id 0 is reserved as the NULL node
-    if (node_id <= 0 || node_id > (i32)hosts_.size()) {
+    u32 node_id = domain_id.id_;
+    if (node_id <= 0 || node_id > (u32)hosts_.size()) {
       HELOG(kFatal, "Attempted to get from node {}, which is out of "
                     "the range 1-{}", node_id, hosts_.size() + 1)
     }
