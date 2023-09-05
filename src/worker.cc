@@ -44,7 +44,7 @@ void Worker::Run() {
     }
   }
   if (time >= 1000) {
-    timer_.Reset();
+    timer_.Resume();
   }
 }
 
