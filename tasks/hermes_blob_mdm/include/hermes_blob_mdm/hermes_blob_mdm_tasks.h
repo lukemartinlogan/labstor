@@ -183,6 +183,8 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET);
     domain_id_ = domain_id;
 
+    HILOG(kInfo, "PUT BLOB START: {} {} bytes", blob_name_->str(), data_size);
+
     // Custom params
     tag_id_ = tag_id;
     HSHM_MAKE_AR(blob_name_, LABSTOR_CLIENT->main_alloc_, blob_name);
