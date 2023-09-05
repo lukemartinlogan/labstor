@@ -322,12 +322,15 @@ class Server : public TaskLib {
       auto *queue = LABSTOR_QM_CLIENT->GetQueue(QueueId(state_id));
       queue->Emplace(orig_task->lane_hash_, p);
       bool is_fire_forget = orig_task->IsFireAndForget();
-      HILOG(kDebug, "(node {}) Executing task (task_node={}, task_state={}/{}, f&f={}, size={})",
+      HILOG(kDebug, "(node {}) Executing task (task_node={}, task_state={}/{}, f&f={})",
             LABSTOR_QM_CLIENT->node_id_,
             orig_task->task_node_,
             orig_task->task_state_,
             method,
-            is_fire_forget,
+            is_fire_forget);
+      HILOG(kDebug, "(node {}) Executing task (task_node={}, size={})",
+            LABSTOR_QM_CLIENT->node_id_,
+            orig_task->task_node_,
             xfer[0].data_size_);
 
       // Get return value (should not contain data)
