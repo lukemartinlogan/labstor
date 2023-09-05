@@ -202,6 +202,9 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   /** Destructor */
   ~PutBlobTask() {
     HSHM_DESTROY_AR(blob_name_);
+    // TODO(llogan): add this back. Double free because remote_queue owns the data. Need to add a flag indicating
+    // data ownership
+    // LABSTOR_CLIENT->FreeBuffer(data_);
   }
 
   /** (De)serialize message call */
