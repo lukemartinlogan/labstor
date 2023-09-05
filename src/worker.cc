@@ -57,10 +57,10 @@ void Worker::PollUnordered(u32 lane_id, MultiQueue *queue) {
     if (!queue->Pop(lane_id, task, p)) {
       break;
     }
-    if (!task->task_flags_.Any(TASK_LONG_RUNNING)) {
-      HILOG(kInfo, "(node {}) Popping task: task_node={} task_state={}",
-            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_);
-    }
+//    if (!task->task_flags_.Any(TASK_LONG_RUNNING)) {
+//      HILOG(kInfo, "(node {}) Popping task: task_node={} task_state={}",
+//            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_);
+//    }
     TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
     if (!exec) {
       HELOG(kFatal, "(node {}) Could not find the task state: {}",
@@ -109,10 +109,10 @@ void Worker::PollOrdered(u32 lane_id, MultiQueue *queue) {
     if (!queue->Peek(lane_id, task, p, i)) {
       break;
     }
-    if (!task->task_flags_.Any(TASK_LONG_RUNNING)) {
-      HILOG(kInfo, "(node {}) Popping task: task_node={} task_state={}",
-            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_);
-    }
+//    if (!task->task_flags_.Any(TASK_LONG_RUNNING)) {
+//      HILOG(kInfo, "(node {}) Popping task: task_node={} task_state={}",
+//            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_);
+//    }
     TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
     if (!exec) {
       HELOG(kFatal, "(node {}) Could not find the task state: {}",
