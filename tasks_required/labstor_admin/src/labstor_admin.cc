@@ -31,8 +31,8 @@ class Server : public TaskLib {
   void GetOrCreateTaskStateId(MultiQueue *queue, GetOrCreateTaskStateIdTask *task) {
     std::string state_name = task->state_name_->str();
     task->id_ = LABSTOR_TASK_REGISTRY->GetOrCreateTaskStateId(state_name);
-    HILOG(kInfo, "(node {}) GetOrCreateTaskStateId {} with id {}",
-          LABSTOR_QM_CLIENT->node_id_, state_name, task->id_);
+    HILOG(kInfo, "(node {}) GetOrCreateTaskStateId for {} has id {} (task_node={})",
+          LABSTOR_QM_CLIENT->node_id_, state_name, task->id_, task->task_node_);
     task->SetComplete();
   }
 
@@ -51,18 +51,18 @@ class Server : public TaskLib {
         // Check global registry for task state
         if (task->id_.IsNull()) {
           if (task->domain_id_ == DomainId::GetLocal()) {
-            HILOG(kInfo, "Domain ID is local for {}", state_name);
+            HILOG(kInfo, "Domain ID is local for {} (task_node={})", state_name, task->task_node_);
             task->id_ = LABSTOR_TASK_REGISTRY->GetOrCreateTaskStateId(state_name);
             task->phase_ = CreateTaskStatePhase::kStateCreate;
           } else {
-            HILOG(kInfo, "Domain ID is global for {}", state_name);
+            HILOG(kInfo, "Domain ID is global for {} (task_node={})", state_name, task->task_node_);
             DomainId domain = DomainId::GetNode(1);
             task->get_id_task_ = LABSTOR_ADMIN->AsyncGetOrCreateTaskStateId(
                 task->task_node_, domain, state_name);
             task->phase_ = CreateTaskStatePhase::kIdAllocWait;
           }
         } else {
-          HILOG(kInfo, "Domain ID is given as {} for {}", task->id_, state_name);
+          HILOG(kInfo, "Domain ID is given as {} for {} (task_node={})", task->id_, state_name, task->task_node_);
           task->phase_ = CreateTaskStatePhase::kStateCreate;
         }
         return;
@@ -78,8 +78,8 @@ class Server : public TaskLib {
       case CreateTaskStatePhase::kStateCreate: {
         std::string lib_name = task->lib_name_->str();
         std::string state_name = task->state_name_->str();
-        HILOG(kInfo, "(node {}) Creating task state {} with id {}",
-              LABSTOR_QM_CLIENT->node_id_, state_name, task->id_);
+        HILOG(kInfo, "(node {}) Creating task state {} with id {} (task_node={})",
+              LABSTOR_QM_CLIENT->node_id_, state_name, task->id_, task->task_node_);
 
         // Verify the state isn't NULL
         if (task->id_.IsNull()) {
