@@ -151,9 +151,8 @@ class Server : public TaskLib {
       return;
     }
     hipc::Pointer p;
-    queue_sched_ = LABSTOR_CLIENT->NewTask<Task>(
-        p, task->task_node_, DomainId::GetLocal(), task->policy_id_,
-        0, SchedulerMethod::kSchedule, bitfield32_t(TASK_LONG_RUNNING));
+    queue_sched_ = LABSTOR_CLIENT->NewTask<ScheduleTask>(
+        p, task->task_node_, DomainId::GetLocal(), task->policy_id_);
     queue->Emplace(0, p);
     task->SetComplete();
   }
@@ -166,10 +165,8 @@ class Server : public TaskLib {
       return;
     }
     hipc::Pointer p;
-    proc_sched_ = LABSTOR_CLIENT->NewTask<Task>(
-        p, task->task_node_, DomainId::GetLocal(), task->policy_id_,
-        0, SchedulerMethod::kSchedule,
-        bitfield32_t(TASK_LONG_RUNNING));
+    proc_sched_ = LABSTOR_CLIENT->NewTask<ScheduleTask>(
+        p, task->task_node_, DomainId::GetLocal(), task->policy_id_);
     queue->Emplace(0, p);
     task->SetComplete();
   }

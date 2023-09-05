@@ -1,5 +1,5 @@
-#ifndef LABSTOR_SMALL_MESSAGE_LIB_EXEC_H_
-#define LABSTOR_SMALL_MESSAGE_LIB_EXEC_H_
+#ifndef LABSTOR_WORCH_QUEUE_ROUND_ROBIN_LIB_EXEC_H_
+#define LABSTOR_WORCH_QUEUE_ROUND_ROBIN_LIB_EXEC_H_
 
 /** Execute a task */
 void Run(MultiQueue *queue, u32 method, Task *task) override {
@@ -12,12 +12,8 @@ void Run(MultiQueue *queue, u32 method, Task *task) override {
       Destruct(queue, reinterpret_cast<DestructTask *>(task));
       break;
     }
-    case Method::kMd: {
-      Md(queue, reinterpret_cast<MdTask *>(task));
-      break;
-    }
-    case Method::kIo: {
-      Io(queue, reinterpret_cast<IoTask *>(task));
+    case Method::kSchedule: {
+      Schedule(queue, reinterpret_cast<ScheduleTask *>(task));
       break;
     }
   }
@@ -33,12 +29,8 @@ void ReplicateStart(u32 method, u32 count, Task *task) override {
       labstor::CALL_REPLICA_START(count, reinterpret_cast<DestructTask*>(task));
       break;
     }
-    case Method::kMd: {
-      labstor::CALL_REPLICA_START(count, reinterpret_cast<MdTask*>(task));
-      break;
-    }
-    case Method::kIo: {
-      labstor::CALL_REPLICA_START(count, reinterpret_cast<IoTask*>(task));
+    case Method::kSchedule: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<ScheduleTask*>(task));
       break;
     }
   }
@@ -54,12 +46,8 @@ void ReplicateEnd(u32 method, Task *task) override {
       labstor::CALL_REPLICA_END(reinterpret_cast<DestructTask*>(task));
       break;
     }
-    case Method::kMd: {
-      labstor::CALL_REPLICA_END(reinterpret_cast<MdTask*>(task));
-      break;
-    }
-    case Method::kIo: {
-      labstor::CALL_REPLICA_END(reinterpret_cast<IoTask*>(task));
+    case Method::kSchedule: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<ScheduleTask*>(task));
       break;
     }
   }
@@ -75,12 +63,8 @@ std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, T
       ar << *reinterpret_cast<DestructTask*>(task);
       break;
     }
-    case Method::kMd: {
-      ar << *reinterpret_cast<MdTask*>(task);
-      break;
-    }
-    case Method::kIo: {
-      ar << *reinterpret_cast<IoTask*>(task);
+    case Method::kSchedule: {
+      ar << *reinterpret_cast<ScheduleTask*>(task);
       break;
     }
   }
@@ -100,14 +84,9 @@ TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) override {
       ar >> *reinterpret_cast<DestructTask*>(task_ptr.task_);
       break;
     }
-    case Method::kMd: {
-      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<MdTask>(task_ptr.p_);
-      ar >> *reinterpret_cast<MdTask*>(task_ptr.task_);
-      break;
-    }
-    case Method::kIo: {
-      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<IoTask>(task_ptr.p_);
-      ar >> *reinterpret_cast<IoTask*>(task_ptr.task_);
+    case Method::kSchedule: {
+      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<ScheduleTask>(task_ptr.p_);
+      ar >> *reinterpret_cast<ScheduleTask*>(task_ptr.task_);
       break;
     }
   }
@@ -124,12 +103,8 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
       ar << *reinterpret_cast<DestructTask*>(task);
       break;
     }
-    case Method::kMd: {
-      ar << *reinterpret_cast<MdTask*>(task);
-      break;
-    }
-    case Method::kIo: {
-      ar << *reinterpret_cast<IoTask*>(task);
+    case Method::kSchedule: {
+      ar << *reinterpret_cast<ScheduleTask*>(task);
       break;
     }
   }
@@ -146,12 +121,8 @@ void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task)
       ar.Deserialize(replica, *reinterpret_cast<DestructTask*>(task));
       break;
     }
-    case Method::kMd: {
-      ar.Deserialize(replica, *reinterpret_cast<MdTask*>(task));
-      break;
-    }
-    case Method::kIo: {
-      ar.Deserialize(replica, *reinterpret_cast<IoTask*>(task));
+    case Method::kSchedule: {
+      ar.Deserialize(replica, *reinterpret_cast<ScheduleTask*>(task));
       break;
     }
   }
@@ -165,14 +136,11 @@ int GetGroup(u32 method, Task *task, hshm::charbuf &group) override {
     case Method::kDestruct: {
       return reinterpret_cast<DestructTask*>(task)->GetGroup(group);
     }
-    case Method::kMd: {
-      return reinterpret_cast<MdTask*>(task)->GetGroup(group);
-    }
-    case Method::kIo: {
-      return reinterpret_cast<IoTask*>(task)->GetGroup(group);
+    case Method::kSchedule: {
+      return reinterpret_cast<ScheduleTask*>(task)->GetGroup(group);
     }
   }
   return -1;
 }
 
-#endif  // LABSTOR_SMALL_MESSAGE_METHODS_H_
+#endif  // LABSTOR_WORCH_QUEUE_ROUND_ROBIN_METHODS_H_

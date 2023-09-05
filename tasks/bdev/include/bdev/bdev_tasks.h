@@ -45,6 +45,12 @@ struct ConstructTask : public CreateTaskStateTask {
     // Custom params
     info_ = info;
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /** A task to destroy hermes_mdm */
@@ -61,6 +67,12 @@ struct DestructTask : public DestroyTaskStateTask {
                TaskStateId &state_id,
                const DomainId &domain_id)
   : DestroyTaskStateTask(alloc, task_node, domain_id, state_id) {}
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /**
@@ -95,6 +107,12 @@ struct AllocTask : public Task, TaskFlags<TF_LOCAL> {
     size_ = size;
     buffers_ = buffers;
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /**
@@ -128,6 +146,12 @@ struct FreeTask : public Task, TaskFlags<TF_LOCAL> {
 
     // Free params
     buffers_ = buffers;
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
   }
 };
 
@@ -165,6 +189,12 @@ struct WriteTask : public Task, TaskFlags<TF_LOCAL> {
     disk_off_ = disk_off;
     size_ = size;
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /**
@@ -201,6 +231,12 @@ struct ReadTask : public Task, TaskFlags<TF_LOCAL> {
     disk_off_ = disk_off;
     size_ = size;
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /** A task to monitor bdev statistics */
@@ -232,6 +268,12 @@ struct MonitorTask : public Task, TaskFlags<TF_LOCAL> {
     freq_ms_ = freq_ms;
     rem_cap_ = rem_cap;
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /** A task to update bdev capacity */
@@ -259,6 +301,12 @@ struct UpdateCapacityTask : public Task, TaskFlags<TF_LOCAL> {
 
     // Custom
     diff_ = diff;
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
   }
 };
 

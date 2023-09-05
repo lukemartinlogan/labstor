@@ -10,23 +10,6 @@ namespace labstor::worch_proc_round_robin {
 
 class Server : public TaskLib {
  public:
-  void Run(MultiQueue *queue, u32 method, Task *task) override {
-    switch (method) {
-      case Method::kConstruct: {
-        Construct(queue, reinterpret_cast<ConstructTask *>(task));
-        break;
-      }
-      case Method::kDestruct: {
-        Destruct(queue, reinterpret_cast<DestructTask *>(task));
-        break;
-      }
-      case Method::kSchedule: {
-        Schedule(queue, task);
-        break;
-      }
-    }
-  }
-
   void Construct(MultiQueue *queue, ConstructTask *task) {
     task->SetComplete();
   }
@@ -35,13 +18,15 @@ class Server : public TaskLib {
     task->SetComplete();
   }
 
-  void Schedule(MultiQueue *queue, Task *task) {
+  void Schedule(MultiQueue *queue, ScheduleTask *task) {
     int rr = 0;
     for (Worker &worker : LABSTOR_WORK_ORCHESTRATOR->workers_) {
       worker.SetCpuAffinity(rr % HERMES_SYSTEM_INFO->ncpu_);
       ++rr;
     }
   }
+
+#include "worch_proc_round_robin/worch_proc_round_robin_lib_exec.h"
 };
 
 }  // namespace labstor

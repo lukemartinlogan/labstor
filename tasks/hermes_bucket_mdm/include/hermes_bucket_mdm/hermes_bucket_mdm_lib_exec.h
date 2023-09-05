@@ -359,5 +359,44 @@ void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task)
     }
   }
 }
+/** Get the grouping of the task */
+int GetGroup(u32 method, Task *task, hshm::charbuf &group) override {
+  switch (method) {
+    case Method::kConstruct: {
+      return reinterpret_cast<ConstructTask*>(task)->GetGroup(group);
+    }
+    case Method::kDestruct: {
+      return reinterpret_cast<DestructTask*>(task)->GetGroup(group);
+    }
+    case Method::kGetOrCreateTag: {
+      return reinterpret_cast<GetOrCreateTagTask*>(task)->GetGroup(group);
+    }
+    case Method::kGetTagId: {
+      return reinterpret_cast<GetTagIdTask*>(task)->GetGroup(group);
+    }
+    case Method::kGetTagName: {
+      return reinterpret_cast<GetTagNameTask*>(task)->GetGroup(group);
+    }
+    case Method::kRenameTag: {
+      return reinterpret_cast<RenameTagTask*>(task)->GetGroup(group);
+    }
+    case Method::kDestroyTag: {
+      return reinterpret_cast<DestroyTagTask*>(task)->GetGroup(group);
+    }
+    case Method::kTagAddBlob: {
+      return reinterpret_cast<TagAddBlobTask*>(task)->GetGroup(group);
+    }
+    case Method::kTagRemoveBlob: {
+      return reinterpret_cast<TagRemoveBlobTask*>(task)->GetGroup(group);
+    }
+    case Method::kTagClearBlobs: {
+      return reinterpret_cast<TagClearBlobsTask*>(task)->GetGroup(group);
+    }
+    case Method::kPutBlob: {
+      return reinterpret_cast<PutBlobTask*>(task)->GetGroup(group);
+    }
+  }
+  return -1;
+}
 
 #endif  // LABSTOR_HERMES_BUCKET_MDM_METHODS_H_

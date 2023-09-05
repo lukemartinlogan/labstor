@@ -98,5 +98,17 @@ void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task)
     }
   }
 }
+/** Get the grouping of the task */
+int GetGroup(u32 method, Task *task, hshm::charbuf &group) override {
+  switch (method) {
+    case Method::kConstruct: {
+      return reinterpret_cast<ConstructTask*>(task)->GetGroup(group);
+    }
+    case Method::kDestruct: {
+      return reinterpret_cast<DestructTask*>(task)->GetGroup(group);
+    }
+  }
+  return -1;
+}
 
 #endif  // LABSTOR_HERMES_MDM_METHODS_H_

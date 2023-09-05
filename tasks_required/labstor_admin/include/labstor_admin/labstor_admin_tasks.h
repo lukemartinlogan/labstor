@@ -65,7 +65,11 @@ struct RegisterTaskLibTaskTempl : public Task, TaskFlags<TF_SRL_SYM> {
     ar(id_);
   }
 
-  TASK_SERIALIZE
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /** A task to register a Task Library */
@@ -128,7 +132,11 @@ struct GetOrCreateTaskStateIdTask : public Task, TaskFlags<TF_SRL_SYM> {
     ar(id_);
   }
 
-  TASK_SERIALIZE
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /** A task to register a Task state + Create a queue */
@@ -198,7 +206,11 @@ struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
     ar(id_);
   }
 
-  TASK_SERIALIZE
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /** A task to retrieve the ID of a task */
@@ -247,13 +259,16 @@ struct GetTaskStateIdTask : public Task, TaskFlags<TF_SRL_SYM> {
     ar(id_);
   }
 
-  TASK_SERIALIZE
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /** A task to destroy a Task state */
 struct DestroyTaskStateTask : public Task, TaskFlags<TF_SRL_SYM> {
-  IN TaskStateId
-      id_;
+  IN TaskStateId id_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -289,7 +304,11 @@ struct DestroyTaskStateTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
   }
 
-  TASK_SERIALIZE
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /** A task to destroy a Task state */
@@ -322,7 +341,11 @@ struct StopRuntimeTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
   }
 
-  TASK_SERIALIZE
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /** A task to destroy a Task state */
@@ -369,7 +392,11 @@ struct SetWorkOrchestratorPolicyTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
   }
 
-  TASK_SERIALIZE
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 using SetWorkOrchestratorQueuePolicyTask = SetWorkOrchestratorPolicyTask<0>;
 using SetWorkOrchestratorProcessPolicyTask = SetWorkOrchestratorPolicyTask<1>;

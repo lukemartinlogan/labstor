@@ -21,6 +21,11 @@ typedef SchedulerMethod Method;
  * */
 using labstor::Admin::CreateTaskStateTask;
 struct ConstructTask : public CreateTaskStateTask {
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  ConstructTask(hipc::Allocator *alloc) : CreateTaskStateTask(alloc) {}
+
+  /** Emplace constructor */
   HSHM_ALWAYS_INLINE
   ConstructTask(hipc::Allocator *alloc,
                 const TaskNode &task_node,
@@ -34,19 +39,37 @@ struct ConstructTask : public CreateTaskStateTask {
                             num_lanes, depth, flags) {
   }
 
+  /** Destructor */
   HSHM_ALWAYS_INLINE
   ~ConstructTask() {}
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /** A task to destroy worch_queue_round_robin */
 using labstor::Admin::DestroyTaskStateTask;
 struct DestructTask : public DestroyTaskStateTask {
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  DestructTask(hipc::Allocator *alloc) : DestroyTaskStateTask(alloc) {}
+
+  /** Emplace constructor */
   HSHM_ALWAYS_INLINE
   DestructTask(hipc::Allocator *alloc,
                const TaskNode &task_node,
                TaskStateId &state_id,
                const DomainId &domain_id)
       : DestroyTaskStateTask(alloc, task_node, domain_id, state_id) {}
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 }  // namespace labstor::worch_queue_round_robin

@@ -154,6 +154,20 @@ for method_enum_name, method_off in methods:
 lines += ['  }']
 lines += ['}']
 
+## Create the CheckIfConcurrent Method
+lines += ['/** Get the grouping of the task */',
+          'int GetGroup(u32 method, Task *task, hshm::charbuf &group) override {',
+          '  switch (method) {']
+for method_enum_name, method_off in methods:
+    method_name = method_enum_name.replace('k', '', 1)
+    task_name = method_name + "Task"
+    lines += [f'    case Method::{method_enum_name}: {{',
+              f'      return reinterpret_cast<{task_name}*>(task)->GetGroup(group);',
+              f'    }}']
+lines += ['  }']
+lines += ['  return -1;']
+lines += ['}']
+
 ## Finish the file
 lines += ['', f'#endif  // {METHOD_MACRO}']
 

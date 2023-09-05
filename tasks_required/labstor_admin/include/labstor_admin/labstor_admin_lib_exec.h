@@ -301,5 +301,38 @@ void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task)
     }
   }
 }
+/** Get the grouping of the task */
+int GetGroup(u32 method, Task *task, hshm::charbuf &group) override {
+  switch (method) {
+    case Method::kRegisterTaskLib: {
+      return reinterpret_cast<RegisterTaskLibTask*>(task)->GetGroup(group);
+    }
+    case Method::kDestroyTaskLib: {
+      return reinterpret_cast<DestroyTaskLibTask*>(task)->GetGroup(group);
+    }
+    case Method::kGetOrCreateTaskStateId: {
+      return reinterpret_cast<GetOrCreateTaskStateIdTask*>(task)->GetGroup(group);
+    }
+    case Method::kCreateTaskState: {
+      return reinterpret_cast<CreateTaskStateTask*>(task)->GetGroup(group);
+    }
+    case Method::kGetTaskStateId: {
+      return reinterpret_cast<GetTaskStateIdTask*>(task)->GetGroup(group);
+    }
+    case Method::kDestroyTaskState: {
+      return reinterpret_cast<DestroyTaskStateTask*>(task)->GetGroup(group);
+    }
+    case Method::kStopRuntime: {
+      return reinterpret_cast<StopRuntimeTask*>(task)->GetGroup(group);
+    }
+    case Method::kSetWorkOrchestratorQueuePolicy: {
+      return reinterpret_cast<SetWorkOrchestratorQueuePolicyTask*>(task)->GetGroup(group);
+    }
+    case Method::kSetWorkOrchestratorProcessPolicy: {
+      return reinterpret_cast<SetWorkOrchestratorProcessPolicyTask*>(task)->GetGroup(group);
+    }
+  }
+  return -1;
+}
 
 #endif  // LABSTOR_LABSTOR_ADMIN_METHODS_H_

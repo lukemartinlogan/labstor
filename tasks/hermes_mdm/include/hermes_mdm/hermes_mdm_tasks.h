@@ -72,6 +72,12 @@ struct ConstructTask : public CreateTaskStateTask {
   /** (De)serialize message return */
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {}
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /** A task to destroy hermes_mdm */
@@ -88,6 +94,12 @@ struct DestructTask : public DestroyTaskStateTask {
                const DomainId &domain_id,
                const TaskStateId &state_id)
       : DestroyTaskStateTask(alloc, task_node, domain_id, state_id) {}
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 }  // namespace hermes::mdm

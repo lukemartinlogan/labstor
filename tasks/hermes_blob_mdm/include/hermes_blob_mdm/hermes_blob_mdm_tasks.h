@@ -52,6 +52,12 @@ struct ConstructTask : public CreateTaskStateTask {
                             "hermes_blob_mdm", id, max_lanes,
                             num_lanes, depth, flags) {
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /** A task to destroy hermes_mdm */
@@ -68,6 +74,12 @@ struct DestructTask : public DestroyTaskStateTask {
                const DomainId &domain_id,
                const TaskStateId &state_id)
   : DestroyTaskStateTask(alloc, task_node, domain_id, state_id) {}
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /**====================================
@@ -136,6 +148,12 @@ struct GetOrCreateBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(blob_id_);
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
   }
 };
 
@@ -231,6 +249,14 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   /** (De)serialize message return */
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {}
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(blob_id_));
+    memcpy(group.data(), &blob_id_, sizeof(blob_id_));
+    return 0;
+  }
 };
 
 /** Phases for the get task */
@@ -306,6 +332,14 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(blob_id_);
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(blob_id_));
+    memcpy(group.data(), &blob_id_, sizeof(blob_id_));
+    return 0;
+  }
 };
 
 /** A task to tag a blob */
@@ -348,6 +382,14 @@ struct TagBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message return */
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(blob_id_));
+    memcpy(group.data(), &blob_id_, sizeof(blob_id_));
+    return 0;
   }
 };
 
@@ -396,6 +438,14 @@ struct BlobHasTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(has_tag_);
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(blob_id_));
+    memcpy(group.data(), &blob_id_, sizeof(blob_id_));
+    return 0;
   }
 };
 
@@ -449,6 +499,12 @@ struct GetBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(blob_id_);
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /**
@@ -499,6 +555,14 @@ struct GetBlobNameTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(blob_name_);
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(blob_id_));
+    memcpy(group.data(), &blob_id_, sizeof(blob_id_));
+    return 0;
+  }
 };
 
 /** Get \a score from \a blob_id BLOB id */
@@ -541,6 +605,14 @@ struct GetBlobSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(size_);
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(blob_id_));
+    memcpy(group.data(), &blob_id_, sizeof(blob_id_));
+    return 0;
+  }
 };
 
 /** Get \a score from \a blob_id BLOB id */
@@ -582,6 +654,14 @@ struct GetBlobScoreTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(score_);
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(blob_id_));
+    memcpy(group.data(), &blob_id_, sizeof(blob_id_));
+    return 0;
   }
 };
 
@@ -630,6 +710,14 @@ struct GetBlobBuffersTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(buffers_);
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(blob_id_));
+    memcpy(group.data(), &blob_id_, sizeof(blob_id_));
+    return 0;
   }
 };
 
@@ -683,6 +771,14 @@ struct RenameBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(new_blob_name_);
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(blob_id_));
+    memcpy(group.data(), &blob_id_, sizeof(blob_id_));
+    return 0;
+  }
 };
 
 /** A task to truncate a blob */
@@ -725,6 +821,14 @@ struct TruncateBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message return */
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(blob_id_));
+    memcpy(group.data(), &blob_id_, sizeof(blob_id_));
+    return 0;
   }
 };
 
@@ -775,6 +879,14 @@ struct DestroyBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message return */
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(blob_id_));
+    memcpy(group.data(), &blob_id_, sizeof(blob_id_));
+    return 0;
   }
 };
 

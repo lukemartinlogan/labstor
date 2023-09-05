@@ -49,6 +49,12 @@ struct ConstructTask : public CreateTaskStateTask {
                             "hermes_bucket_mdm", id, max_lanes,
                             num_lanes, depth, flags) {
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /** A task to destroy hermes_bucket_mdm */
@@ -65,6 +71,12 @@ struct DestructTask : public DestroyTaskStateTask {
                const DomainId &domain_id,
                TaskStateId &state_id)
       : DestroyTaskStateTask(alloc, task_node, domain_id, state_id) {}
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /** Phases for the put task */
@@ -129,6 +141,14 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(blob_id_);
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(tag_id_));
+    memcpy(group.data(), &tag_id_, sizeof(tag_id_));
+    return 0;
+  }
 };
 
 /** A task to get or create a tag */
@@ -186,6 +206,14 @@ struct GetOrCreateTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(tag_id_);
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(tag_name_->size());
+    memcpy(group.data(), tag_name_->data(), tag_name_->size());
+    return 0;
+  }
 };
 
 /** A task to get a tag id */
@@ -233,6 +261,14 @@ struct GetTagIdTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(tag_id_);
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(tag_name_->size());
+    memcpy(group.data(), tag_name_->data(), tag_name_->size());
+    return 0;
+  }
 };
 
 /** A task to get a tag name */
@@ -279,6 +315,14 @@ struct GetTagNameTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(tag_name_);
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(tag_id_));
+    memcpy(group.data(), &tag_id_, sizeof(tag_id_));
+    return 0;
   }
 };
 
@@ -329,6 +373,14 @@ struct RenameTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(tag_name_);
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(tag_id_));
+    memcpy(group.data(), &tag_id_, sizeof(tag_id_));
+    return 0;
+  }
 };
 
 /** A task to destroy a tag */
@@ -368,6 +420,14 @@ struct DestroyTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message return */
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {}
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(tag_id_));
+    memcpy(group.data(), &tag_id_, sizeof(tag_id_));
+    return 0;
+  }
 };
 
 /** A task to add a blob to the tag */
@@ -410,6 +470,14 @@ struct TagAddBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message return */
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {}
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(tag_id_));
+    memcpy(group.data(), &tag_id_, sizeof(tag_id_));
+    return 0;
+  }
 };
 
 /** A task to remove a blob from a tag */
@@ -452,6 +520,14 @@ struct TagRemoveBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message return */
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {}
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(tag_id_));
+    memcpy(group.data(), &tag_id_, sizeof(tag_id_));
+    return 0;
+  }
 };
 
 /** A task to get the group of blobs associated with a tag */
@@ -500,6 +576,14 @@ struct TagClearBlobsTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message return */
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {}
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    group.resize(sizeof(tag_id_));
+    memcpy(group.data(), &tag_id_, sizeof(tag_id_));
+    return 0;
+  }
 };
 
 }  // namespace hermes::bucket_mdm

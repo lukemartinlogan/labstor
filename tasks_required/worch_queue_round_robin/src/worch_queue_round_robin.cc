@@ -13,23 +13,6 @@ class Server : public TaskLib {
   u32 count_;
 
  public:
-  void Run(MultiQueue *queue, u32 method, Task *task) override {
-    switch (method) {
-      case Method::kConstruct: {
-        Construct(queue, reinterpret_cast<ConstructTask *>(task));
-        break;
-      }
-      case Method::kDestruct: {
-        Destruct(queue, reinterpret_cast<DestructTask *>(task));
-        break;
-      }
-      case Method::kSchedule: {
-        Schedule(queue, task);
-        break;
-      }
-    }
-  }
-
   void Construct(MultiQueue *queue, ConstructTask *task) {
     count_ = 0;
     task->SetComplete();
@@ -39,7 +22,7 @@ class Server : public TaskLib {
     task->SetComplete();
   }
 
-  void Schedule(MultiQueue *queue, Task *task) {
+  void Schedule(MultiQueue *queue, ScheduleTask *task) {
     // Check if any new queues need to be scheduled
     for (MultiQueue &queue : *LABSTOR_QM_RUNTIME->queue_map_) {
       if (queue.id_.IsNull()) {
@@ -65,6 +48,8 @@ class Server : public TaskLib {
       queue.num_scheduled_ = queue.num_lanes_;
     }
   }
+
+#include "worch_queue_round_robin/worch_queue_round_robin_lib_exec.h"
 };
 
 }  // namespace labstor

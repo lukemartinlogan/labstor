@@ -366,17 +366,17 @@ struct Task : public hipc::ShmContainer {
  void task_serialize(Ar &ar) {
    ar(task_state_, task_node_, domain_id_, lane_hash_, method_, task_flags_);
  }
-};
 
-#define TASK_SERIALIZE \
- template<typename Ar> \
- void serialize(Ar &ar) { \
-   if (task_flags_.Any(TASK_COMPLETE)) { \
-     SerializeEnd(ar); \
-   } else { \
-     SerializeStart(ar); \
-   } \
- }
+  /**====================================
+   * Grouping
+   * ===================================*/
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
+};
 
 /** Decorator macros */
 #define IN

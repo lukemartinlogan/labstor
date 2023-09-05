@@ -103,6 +103,12 @@ struct MdTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(ret_[replica]);
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /**
@@ -156,6 +162,12 @@ struct IoTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {
     ar(ret_);
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
   }
 };
 

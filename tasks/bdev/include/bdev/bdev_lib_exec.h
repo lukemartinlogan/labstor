@@ -38,6 +38,80 @@ void Run(MultiQueue *queue, u32 method, Task *task) override {
     }
   }
 }
+/** Ensure there is space to store replicated outputs */
+void ReplicateStart(u32 method, u32 count, Task *task) override {
+  switch (method) {
+    case Method::kConstruct: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<ConstructTask*>(task));
+      break;
+    }
+    case Method::kDestruct: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<DestructTask*>(task));
+      break;
+    }
+    case Method::kWrite: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<WriteTask*>(task));
+      break;
+    }
+    case Method::kRead: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<ReadTask*>(task));
+      break;
+    }
+    case Method::kAlloc: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<AllocTask*>(task));
+      break;
+    }
+    case Method::kFree: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<FreeTask*>(task));
+      break;
+    }
+    case Method::kMonitor: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<MonitorTask*>(task));
+      break;
+    }
+    case Method::kUpdateCapacity: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<UpdateCapacityTask*>(task));
+      break;
+    }
+  }
+}
+/** Determine success and handle failures */
+void ReplicateEnd(u32 method, Task *task) override {
+  switch (method) {
+    case Method::kConstruct: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<ConstructTask*>(task));
+      break;
+    }
+    case Method::kDestruct: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<DestructTask*>(task));
+      break;
+    }
+    case Method::kWrite: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<WriteTask*>(task));
+      break;
+    }
+    case Method::kRead: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<ReadTask*>(task));
+      break;
+    }
+    case Method::kAlloc: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<AllocTask*>(task));
+      break;
+    }
+    case Method::kFree: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<FreeTask*>(task));
+      break;
+    }
+    case Method::kMonitor: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<MonitorTask*>(task));
+      break;
+    }
+    case Method::kUpdateCapacity: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<UpdateCapacityTask*>(task));
+      break;
+    }
+  }
+}
 /** Serialize a task when initially pushing into remote */
 std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, Task *task) override {
   switch (method) {
@@ -165,38 +239,68 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
 void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task) override {
   switch (method) {
     case Method::kConstruct: {
-      ar >> *reinterpret_cast<ConstructTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<ConstructTask*>(task));
       break;
     }
     case Method::kDestruct: {
-      ar >> *reinterpret_cast<DestructTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<DestructTask*>(task));
       break;
     }
     case Method::kWrite: {
-      ar >> *reinterpret_cast<WriteTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<WriteTask*>(task));
       break;
     }
     case Method::kRead: {
-      ar >> *reinterpret_cast<ReadTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<ReadTask*>(task));
       break;
     }
     case Method::kAlloc: {
-      ar >> *reinterpret_cast<AllocTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<AllocTask*>(task));
       break;
     }
     case Method::kFree: {
-      ar >> *reinterpret_cast<FreeTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<FreeTask*>(task));
       break;
     }
     case Method::kMonitor: {
-      ar >> *reinterpret_cast<MonitorTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<MonitorTask*>(task));
       break;
     }
     case Method::kUpdateCapacity: {
-      ar >> *reinterpret_cast<UpdateCapacityTask*>(task);
+      ar.Deserialize(replica, *reinterpret_cast<UpdateCapacityTask*>(task));
       break;
     }
   }
+}
+/** Get the grouping of the task */
+int GetGroup(u32 method, Task *task, hshm::charbuf &group) override {
+  switch (method) {
+    case Method::kConstruct: {
+      return reinterpret_cast<ConstructTask*>(task)->GetGroup(group);
+    }
+    case Method::kDestruct: {
+      return reinterpret_cast<DestructTask*>(task)->GetGroup(group);
+    }
+    case Method::kWrite: {
+      return reinterpret_cast<WriteTask*>(task)->GetGroup(group);
+    }
+    case Method::kRead: {
+      return reinterpret_cast<ReadTask*>(task)->GetGroup(group);
+    }
+    case Method::kAlloc: {
+      return reinterpret_cast<AllocTask*>(task)->GetGroup(group);
+    }
+    case Method::kFree: {
+      return reinterpret_cast<FreeTask*>(task)->GetGroup(group);
+    }
+    case Method::kMonitor: {
+      return reinterpret_cast<MonitorTask*>(task)->GetGroup(group);
+    }
+    case Method::kUpdateCapacity: {
+      return reinterpret_cast<UpdateCapacityTask*>(task)->GetGroup(group);
+    }
+  }
+  return -1;
 }
 
 #endif  // LABSTOR_BDEV_METHODS_H_

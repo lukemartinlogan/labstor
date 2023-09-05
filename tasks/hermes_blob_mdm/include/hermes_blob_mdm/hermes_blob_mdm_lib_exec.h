@@ -475,5 +475,56 @@ void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task)
     }
   }
 }
+/** Get the grouping of the task */
+int GetGroup(u32 method, Task *task, hshm::charbuf &group) override {
+  switch (method) {
+    case Method::kConstruct: {
+      return reinterpret_cast<ConstructTask*>(task)->GetGroup(group);
+    }
+    case Method::kDestruct: {
+      return reinterpret_cast<DestructTask*>(task)->GetGroup(group);
+    }
+    case Method::kPutBlob: {
+      return reinterpret_cast<PutBlobTask*>(task)->GetGroup(group);
+    }
+    case Method::kGetBlob: {
+      return reinterpret_cast<GetBlobTask*>(task)->GetGroup(group);
+    }
+    case Method::kTruncateBlob: {
+      return reinterpret_cast<TruncateBlobTask*>(task)->GetGroup(group);
+    }
+    case Method::kDestroyBlob: {
+      return reinterpret_cast<DestroyBlobTask*>(task)->GetGroup(group);
+    }
+    case Method::kTagBlob: {
+      return reinterpret_cast<TagBlobTask*>(task)->GetGroup(group);
+    }
+    case Method::kBlobHasTag: {
+      return reinterpret_cast<BlobHasTagTask*>(task)->GetGroup(group);
+    }
+    case Method::kGetBlobId: {
+      return reinterpret_cast<GetBlobIdTask*>(task)->GetGroup(group);
+    }
+    case Method::kGetOrCreateBlobId: {
+      return reinterpret_cast<GetOrCreateBlobIdTask*>(task)->GetGroup(group);
+    }
+    case Method::kGetBlobName: {
+      return reinterpret_cast<GetBlobNameTask*>(task)->GetGroup(group);
+    }
+    case Method::kGetBlobSize: {
+      return reinterpret_cast<GetBlobSizeTask*>(task)->GetGroup(group);
+    }
+    case Method::kGetBlobScore: {
+      return reinterpret_cast<GetBlobScoreTask*>(task)->GetGroup(group);
+    }
+    case Method::kGetBlobBuffers: {
+      return reinterpret_cast<GetBlobBuffersTask*>(task)->GetGroup(group);
+    }
+    case Method::kRenameBlob: {
+      return reinterpret_cast<RenameBlobTask*>(task)->GetGroup(group);
+    }
+  }
+  return -1;
+}
 
 #endif  // LABSTOR_HERMES_BLOB_MDM_METHODS_H_

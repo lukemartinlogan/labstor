@@ -45,6 +45,12 @@ struct ConstructTask : public CreateTaskStateTask {
   ~ConstructTask() {
     // Custom params
   }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /** A task to destroy TASK_NAME */
@@ -62,6 +68,12 @@ struct DestructTask : public DestroyTaskStateTask {
                const DomainId &domain_id,
                TaskStateId &state_id)
   : DestroyTaskStateTask(alloc, task_node, domain_id, state_id) {}
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 /**
@@ -100,7 +112,11 @@ struct CustomTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
   }
 
-  TASK_SERIALIZE
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
 };
 
 }  // namespace labstor::TASK_NAME

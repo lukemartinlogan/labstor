@@ -101,6 +101,11 @@ class TaskLib {
   /** Deserialize a task when returning from remote queue */
   virtual void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task) {
   }
+
+  /** Deserialize a task when returning from remote queue */
+  virtual int GetGroup(u32 method, Task *task, hshm::charbuf &buf) {
+    return 0;
+  }
 };
 
 /** Represents a TaskLib in action */
