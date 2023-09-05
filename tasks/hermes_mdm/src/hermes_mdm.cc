@@ -22,7 +22,7 @@ class Server : public TaskLib {
   Server() = default;
 
   void Construct(MultiQueue *queue, ConstructTask *task) {
-    HILOG(kInfo, "ConstructTaskPhase::kLoadConfig")
+    HILOG(kDebug, "ConstructTaskPhase::kLoadConfig")
     std::string config_path = task->server_config_path_->str();
     HERMES->LoadServerConfig(config_path);
     node_id_ = LABSTOR_QM_CLIENT->node_id_;

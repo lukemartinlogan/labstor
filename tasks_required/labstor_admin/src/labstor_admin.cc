@@ -31,8 +31,6 @@ class Server : public TaskLib {
   void GetOrCreateTaskStateId(MultiQueue *queue, GetOrCreateTaskStateIdTask *task) {
     std::string state_name = task->state_name_->str();
     task->id_ = LABSTOR_TASK_REGISTRY->GetOrCreateTaskStateId(state_name);
-    HILOG(kInfo, "(node {}) GetOrCreateTaskStateId for {} has id {} (task_node={})",
-          LABSTOR_QM_CLIENT->node_id_, state_name, task->id_, task->task_node_);
     task->SetComplete();
   }
 

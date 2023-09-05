@@ -46,9 +46,8 @@ class Server : public TaskLib {
   }
 
   void Alloc(MultiQueue *queue, AllocTask *task) {
-    HILOG(kInfo, "Allocating {} bytes ({})", task->size_, path_);
     alloc_.Allocate(task->size_, *task->buffers_, task->alloc_size_);
-    HILOG(kInfo, "Allocated {} bytes ({})", task->alloc_size_, path_);
+    HILOG(kDebug, "Allocated {}/{} bytes ({})", task->alloc_size_, task->size_, path_);
     task->SetComplete();
   }
 

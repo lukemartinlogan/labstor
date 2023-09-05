@@ -108,7 +108,6 @@ class Client {
       BlobId &blob_id, size_t blob_off, size_t blob_size,
       const hipc::Pointer &blob, float score,
       bitfield32_t flags) {
-    HILOG(kInfo, "PutBlob: {}", blob_name.str());
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;

@@ -20,10 +20,8 @@ TEST_CASE("TestHermesPut") {
     HERMES->ClientInit();
 
     // Create a bucket
-    HILOG(kInfo, "WE ARE HERE!!!")
     hermes::Context ctx;
     hermes::Bucket bkt("hello");
-    HILOG(kInfo, "BUCKET LOADED!!!")
 
     size_t count = 16;
     size_t off = rank * count;

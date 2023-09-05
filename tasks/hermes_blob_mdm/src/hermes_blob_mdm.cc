@@ -113,7 +113,6 @@ class Server : public TaskLib {
    * Create a blob's metadata
    * */
   void PutBlob(MultiQueue *queue, PutBlobTask *task) {
-    HILOG(kInfo, "PutBlob is being called!!!")
     if (task->phase_ == PutBlobPhase::kCreate) {
       PutBlobCreatePhase(task);
     }
@@ -183,7 +182,7 @@ class Server : public TaskLib {
       size_diff = needed_space - blob_info.max_blob_size_;
     }
     blob_info.blob_size_ += size_diff;
-    HILOG(kInfo, "The size diff is {} bytes", size_diff)
+    HILOG(kDebug, "The size diff is {} bytes", size_diff)
 
     // Initialize archives
     HSHM_MAKE_AR0(task->schema_, nullptr);
