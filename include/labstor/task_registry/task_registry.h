@@ -231,6 +231,7 @@ class TaskRegistry {
 
     // Add the state to the registry
     task_state->id_ = state_id;
+    task_state->name_ = state_name;
     task_state_ids_.emplace(state_name, state_id);
     task_states_.emplace(state_id, task_state);
     HILOG(kInfo, "(node {})  Allocated an instance of {} with name {} and ID {}",
