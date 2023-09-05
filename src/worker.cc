@@ -50,7 +50,8 @@ void Worker::PollUnordered(u32 lane_id, MultiQueue *queue) {
       break;
     }
     if (!task->task_flags_.Any(TASK_LONG_RUNNING)) {
-      HILOG(kInfo, "Popping task: {}", task->task_state_);
+      HILOG(kInfo, "Popping task: task_node={} task_state={}",
+            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_);
     }
     TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
     if (!exec) {
@@ -101,7 +102,8 @@ void Worker::PollOrdered(u32 lane_id, MultiQueue *queue) {
       break;
     }
     if (!task->task_flags_.Any(TASK_LONG_RUNNING)) {
-      HILOG(kInfo, "Popping task: {}", task->task_state_);
+      HILOG(kInfo, "Popping task: task_node={} task_state={}",
+            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_);
     }
     TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
     if (!exec) {
