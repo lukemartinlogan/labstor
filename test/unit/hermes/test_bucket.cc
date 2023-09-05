@@ -27,18 +27,22 @@ TEST_CASE("TestHermesPut") {
   size_t count = 16;
   size_t off = rank * count;
   int max_blobs = 16;
-  for (size_t i = off; i < count; ++i) {
-    HILOG(kInfo, "Iteration: {}", i);
-    // Put a blob
-    hermes::Blob blob(KILOBYTES(4));
-    memset(blob.data(), i, blob.size());
-    hermes::BlobId blob_id(hermes::BlobId::GetNull());
-    bkt.Put(std::to_string(i % max_blobs), blob, blob_id, ctx);
+  if (rank == 0) {
+    for (size_t i = off; i < count; ++i) {
+      HILOG(kInfo, "Iteration: {}", i);
+      // Put a blob
+      hermes::Blob blob(KILOBYTES(4));
+      memset(blob.data(), i, blob.size());
+      hermes::BlobId blob_id(hermes::BlobId::GetNull());
+      bkt.Put(std::to_string(i % max_blobs), blob, blob_id, ctx);
 
-    // Get a blob
-    size_t size = bkt.GetBlobSize(blob_id);
-    REQUIRE(blob.size() == size);
+      // Get a blob
+      HILOG(kInfo, "Put {} returned successfully", i);
+      size_t size = bkt.GetBlobSize(blob_id);
+      REQUIRE(blob.size() == size);
+    }
   }
+  MPI_Barrier(MPI_COMM_WORLD);
 }
 
 TEST_CASE("TestHermesPutGet") {
