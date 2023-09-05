@@ -326,7 +326,7 @@ class Server : public TaskLib {
         orig_task->UnsetFireAndForget();
       }
       queue->Emplace(orig_task->lane_hash_, p);
-      HILOG(kDebug, "(node {}) Executing task (task_node={}, task_state={}/{}, state_name={}, method={}, f&f={}, size={})",
+      HILOG(kDebug, "(node {}) Executing task (task_node={}, task_state={}/{}, state_name={}, method={}, f&f={}, size={}, lane_hash={})",
             LABSTOR_QM_CLIENT->node_id_,
             orig_task->task_node_,
             orig_task->task_state_,
@@ -334,7 +334,8 @@ class Server : public TaskLib {
             exec->name_,
             method,
             is_fire_forget,
-            data_size);
+            data_size,
+            orig_task->lane_hash_);
 
       try {
         HILOG(kInfo, "(node {}) Waiting for task (task_node={}, task_state={}/{}, method={}, f&f={})",
