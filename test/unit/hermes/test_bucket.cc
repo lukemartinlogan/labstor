@@ -41,6 +41,4 @@ TEST_CASE("TestHermesBucket") {
      bkt.Get(blob_id, blob2, ctx);
      REQUIRE(blob == blob2);
   }
-
-  MPI_Finalize();
 }
