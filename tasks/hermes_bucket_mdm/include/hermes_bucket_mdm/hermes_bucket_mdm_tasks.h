@@ -145,8 +145,9 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** Create group */
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
-    group.resize(sizeof(tag_id_));
-    memcpy(group.data(), &tag_id_, sizeof(tag_id_));
+    labstor::LocalSerialize srl(group);
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
@@ -320,8 +321,9 @@ struct GetTagNameTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** Create group */
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
-    group.resize(sizeof(tag_id_));
-    memcpy(group.data(), &tag_id_, sizeof(tag_id_));
+    labstor::LocalSerialize srl(group);
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
@@ -377,15 +379,24 @@ struct RenameTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** Create group */
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
-    group.resize(sizeof(tag_id_));
-    memcpy(group.data(), &tag_id_, sizeof(tag_id_));
+    labstor::LocalSerialize srl(group);
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
+};
+
+class DestroyTagPhase {
+ public:
+  TASK_METHOD_T kDestroyBlobs = 0;
+  TASK_METHOD_T kWaitDestroyBlobs = 1;
 };
 
 /** A task to destroy a tag */
 struct DestroyTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN TagId tag_id_;
+  TEMP int phase_;
+  TEMP hipc::ShmArchive<std::vector<blob_mdm::DestroyBlobTask*>> destroy_blob_tasks_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -408,6 +419,7 @@ struct DestroyTagTask : public Task, TaskFlags<TF_SRL_SYM> {
 
     // Custom params
     tag_id_ = tag_id;
+    phase_ = DestroyTagPhase::kDestroyBlobs;
   }
 
   /** (De)serialize message call */
@@ -424,8 +436,9 @@ struct DestroyTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** Create group */
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
-    group.resize(sizeof(tag_id_));
-    memcpy(group.data(), &tag_id_, sizeof(tag_id_));
+    labstor::LocalSerialize srl(group);
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
@@ -474,8 +487,9 @@ struct TagAddBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** Create group */
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
-    group.resize(sizeof(tag_id_));
-    memcpy(group.data(), &tag_id_, sizeof(tag_id_));
+    labstor::LocalSerialize srl(group);
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
@@ -524,8 +538,9 @@ struct TagRemoveBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** Create group */
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
-    group.resize(sizeof(tag_id_));
-    memcpy(group.data(), &tag_id_, sizeof(tag_id_));
+    labstor::LocalSerialize srl(group);
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
@@ -580,8 +595,9 @@ struct TagClearBlobsTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** Create group */
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
-    group.resize(sizeof(tag_id_));
-    memcpy(group.data(), &tag_id_, sizeof(tag_id_));
+    labstor::LocalSerialize srl(group);
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };

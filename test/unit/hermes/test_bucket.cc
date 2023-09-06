@@ -25,8 +25,8 @@ TEST_CASE("TestHermesPut") {
   size_t count_per_proc = 16;
   size_t off = rank * count_per_proc;
   size_t max_blobs = 4;
-  size_t total_count = count_per_proc * nprocs;
-  for (size_t i = off; i < total_count; ++i) {
+  size_t proc_count = off + count_per_proc;
+  for (size_t i = off; i < proc_count; ++i) {
     HILOG(kInfo, "Iteration: {}", i);
     // Put a blob
     hermes::Blob blob(KILOBYTES(4));
@@ -59,8 +59,8 @@ TEST_CASE("TestHermesPutGet") {
   size_t count_per_proc = 16;
   size_t off = rank * count_per_proc;
   size_t max_blobs = 16;
-  size_t total_count = count_per_proc * nprocs;
-  for (size_t i = off; i < total_count; ++i) {
+  size_t proc_count = off + count_per_proc;
+  for (size_t i = off; i < proc_count; ++i) {
     HILOG(kInfo, "Iteration: {}", i);
     // Put a blob
     hermes::Blob blob(KILOBYTES(4));
@@ -92,9 +92,9 @@ TEST_CASE("TestHermesPartialPutGet") {
 
   size_t count_per_proc = 16;
   size_t off = rank * count_per_proc;
-  size_t total_count = count_per_proc * nprocs;
+  size_t proc_count = off + count_per_proc;
   size_t half_blob = KILOBYTES(4);
-  for (size_t i = off; i < total_count; ++i) {
+  for (size_t i = off; i < proc_count; ++i) {
     HILOG(kInfo, "Iteration: {}", i);
     // Make left and right blob
     hermes::Blob lblob(half_blob);
@@ -135,8 +135,8 @@ TEST_CASE("TestHermesBlobDestroy") {
 
   size_t count_per_proc = 16;
   size_t off = rank * count_per_proc;
-  size_t total_count = count_per_proc * nprocs;
-  for (size_t i = off; i < total_count; ++i) {
+  size_t proc_count = off + count_per_proc;
+  for (size_t i = off; i < proc_count; ++i) {
     HILOG(kInfo, "Iteration: {}", i);
     // Put a blob
     hermes::Blob blob(KILOBYTES(4));
@@ -148,6 +148,7 @@ TEST_CASE("TestHermesBlobDestroy") {
 }
 
 TEST_CASE("TestHermesBucketDestroy") {
+  // TODO(llogan): need to inform bucket when a blob has been placed in it
   int rank, nprocs;
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -162,8 +163,8 @@ TEST_CASE("TestHermesBucketDestroy") {
 
   size_t count_per_proc = 16;
   size_t off = rank * count_per_proc;
-  size_t total_count = count_per_proc * nprocs;
-  for (size_t i = off; i < total_count; ++i) {
+  size_t proc_count = off + count_per_proc;
+  for (size_t i = off; i < proc_count; ++i) {
     HILOG(kInfo, "Iteration: {}", i);
     // Put a blob
     hermes::Blob blob(KILOBYTES(4));
@@ -172,9 +173,9 @@ TEST_CASE("TestHermesBucketDestroy") {
   }
 
   bkt.Destroy();
+  MPI_Barrier(MPI_COMM_WORLD);
 
-  for (size_t i = off; i < total_count; ++i) {
-    hermes::BlobId blob_id = bkt.GetBlobId(std::to_string(i));
-    REQUIRE(blob_id.IsNull());
+  for (size_t i = off; i < proc_count; ++i) {
+    REQUIRE(!bkt.ContainsBlob(std::to_string(i)));
   }
 }

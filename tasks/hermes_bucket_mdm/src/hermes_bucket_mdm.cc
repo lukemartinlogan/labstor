@@ -139,14 +139,36 @@ class Server : public TaskLib {
 
   /** Destroy tag */
   void DestroyTag(MultiQueue *queue, DestroyTagTask *task) {
-    auto it = tag_map_.find(task->tag_id_);
-    if (it == tag_map_.end()) {
-      task->SetModuleComplete();
-      return;
+    switch (task->phase_) {
+      case DestroyTagPhase::kDestroyBlobs: {
+        TagInfo &tag = tag_map_[task->tag_id_];
+        tag_id_map_.erase(tag.name_);
+        HSHM_MAKE_AR0(task->destroy_blob_tasks_, nullptr);
+        std::vector<blob_mdm::DestroyBlobTask*> blob_tasks = *task->destroy_blob_tasks_;
+        blob_tasks.reserve(tag.blobs_.size());
+        for (BlobId &blob_id : tag.blobs_) {
+          blob_mdm::DestroyBlobTask *blob_task =
+              blob_mdm_.AsyncDestroyBlob(task->task_node_ + 1, blob_id);
+          blob_tasks.emplace_back(blob_task);
+        }
+        task->phase_ = DestroyTagPhase::kWaitDestroyBlobs;
+        return;
+      }
+      case DestroyTagPhase::kWaitDestroyBlobs: {
+        std::vector<blob_mdm::DestroyBlobTask*> blob_tasks = *task->destroy_blob_tasks_;
+        for (auto it = blob_tasks.rbegin(); it != blob_tasks.rend(); ++it) {
+          blob_mdm::DestroyBlobTask *blob_task = *it;
+          if (!blob_task->IsComplete()) {
+            return;
+          }
+          LABSTOR_CLIENT->DelTask(blob_task);
+          blob_tasks.pop_back();
+        }
+        HSHM_DESTROY_AR(task->destroy_blob_tasks_);
+        tag_map_.erase(task->tag_id_);
+        task->SetModuleComplete();
+      }
     }
-    tag_id_map_.erase(it->second.name_);
-    tag_map_.erase(it);
-    task->SetModuleComplete();
   }
 
   /** Add a blob to a tag */
