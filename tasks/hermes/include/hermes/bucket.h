@@ -39,7 +39,6 @@ class Bucket {
     mdm_ = &HERMES->mdm_;
     blob_mdm_ = &HERMES->blob_mdm_;
     bkt_mdm_ = &HERMES->bkt_mdm_;
-    HILOG(kInfo, "GETTING BUCKET: {}", bkt_name);
     bkt_mdm_->GetOrCreateTagRoot(hshm::charbuf(bkt_name), true,
                                  std::vector<TraitId>(), backend_size);
   }
@@ -216,7 +215,7 @@ class Bucket {
     if (blob_id.IsNull()) {
       blob_id = blob_mdm_->GetOrCreateBlobIdRoot(id_, blob_name_buf);
     }
-    HILOG(kInfo, "The bucket's ID is: {}", blob_id);
+    HILOG(kDebug, "The bucket's ID is: {}", blob_id);
     if constexpr(!PARTIAL) {
       blob_mdm_->AsyncPutBlobRoot(id_, blob_name_buf,
                                   blob_id, 0, blob.size(), p, ctx.blob_score_,

@@ -108,7 +108,7 @@ class Client {
       BlobId &blob_id, size_t blob_off, size_t blob_size,
       const hipc::Pointer &blob, float score,
       bitfield32_t flags) {
-    HILOG(kInfo, "Beginning PUT (task_node={})", task_node);
+    HILOG(kDebug, "Beginning PUT (task_node={})", task_node);
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
@@ -129,7 +129,7 @@ class Client {
                             size_t off,
                             ssize_t data_size,
                             hipc::Pointer &data) {
-    HILOG(kInfo, "Beginning GET (task_node={})", task_node);
+    HILOG(kDebug, "Beginning GET (task_node={})", task_node);
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
