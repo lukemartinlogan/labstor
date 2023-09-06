@@ -243,10 +243,6 @@ class Worker {
       node.node_depth_ = 1;
       group_map_.emplace(group_, node);
       task->SetStarted();
-      std::stringstream ss;
-      for (int i = 0; i < group_.size(); ++i) {
-        ss << std::to_string((int)group_[i]);
-      }
       return true;
     }
     TaskNode &node_cmp = it->second;
@@ -255,6 +251,11 @@ class Worker {
       task->SetStarted();
       return true;
     }
+    std::stringstream ss;
+    for (int i = 0; i < group_.size(); ++i) {
+      ss << std::to_string((int)group_[i]);
+    }
+    HILOG(kDebug, "Task {} is waiting for group {}", task->task_node_, ss.str());
     return false;
   }
 
