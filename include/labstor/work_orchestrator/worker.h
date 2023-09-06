@@ -230,7 +230,7 @@ class Worker {
   HSHM_ALWAYS_INLINE
   bool CheckTaskGroup(Task *task, TaskState *exec, TaskNode node) {
     int ret = exec->GetGroup(task->method_, task, group_);
-    if (ret == TASK_UNORDERED) {
+    if (ret == TASK_UNORDERED || task->IsUnordered()) {
       group_.resize(0);
       task->SetStarted();
       return true;

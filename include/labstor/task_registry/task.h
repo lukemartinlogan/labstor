@@ -40,6 +40,8 @@ namespace labstor {
 #define TASK_DISABLE_RUN BIT_OPT(u32, 13)
 /** This task owns the data in the task */
 #define TASK_OWNS_DATA BIT_OPT(u32, 14)
+/** This task is marked */
+#define TASK_MARKED BIT_OPT(u32, 15)
 
 /** Used to define task methods */
 #define TASK_METHOD_T static inline const u32
@@ -287,6 +289,16 @@ struct Task : public hipc::ShmContainer {
   /** Check if task has started */
   HSHM_ALWAYS_INLINE bool IsStarted() {
     return task_flags_.Any(TASK_HAS_STARTED);
+  }
+
+  /** Set this task as started */
+  HSHM_ALWAYS_INLINE void SetMarked() {
+    task_flags_.SetBits(TASK_MARKED);
+  }
+
+  /** Check if task is marked */
+  HSHM_ALWAYS_INLINE bool IsMarked() {
+    return task_flags_.Any(TASK_MARKED);
   }
 
   /** Wait for task to complete */
