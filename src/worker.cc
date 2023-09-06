@@ -54,10 +54,10 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
             LABSTOR_QM_CLIENT->node_id_, task->task_state_);
       task->SetModuleComplete();
     }
-    if (!task->IsStarted()) {
-      HILOG(kDebug, "(node {}) Running task: task_node={} task_state={} state_name={}",
-            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_, exec->name_);
-    }
+//    if (!task->IsStarted()) {
+//      HILOG(kDebug, "(node {}) Running task: task_node={} task_state={} state_name={}",
+//            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_, exec->name_);
+//    }
     // Check if the task can execute
     if (!CheckTaskGroup(task, exec, task->task_node_)) {
       queue->Emplace(lane_id, p);
