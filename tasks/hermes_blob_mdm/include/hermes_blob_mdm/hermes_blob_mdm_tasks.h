@@ -851,7 +851,6 @@ struct DestroyBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN BlobId blob_id_;
   TEMP int phase_;
   TEMP hipc::ShmArchive<std::vector<bdev::FreeTask *>> free_tasks_;
-  TEMP BlobInfo *blob_info_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit

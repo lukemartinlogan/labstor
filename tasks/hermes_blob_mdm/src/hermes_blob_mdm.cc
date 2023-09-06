@@ -512,27 +512,32 @@ class Server : public TaskLib {
           return;
         }
         BlobInfo &blob_info = it->second;
-        blob_id_map_.erase(blob_info.name_);
-        task->blob_info_ = &blob_info;
-        HSHM_MAKE_AR0(task->free_tasks_, LABSTOR_CLIENT->main_alloc_);
+        hshm::charbuf unique_name = GetBlobNameWithBucket(blob_info.tag_id_, blob_info.name_);
+        blob_id_map_.erase(unique_name);
+        HSHM_MAKE_AR0(task->free_tasks_, nullptr);
         task->free_tasks_->reserve(blob_info.buffers_.size());
         for (BufferInfo &buf : blob_info.buffers_) {
           TargetInfo &tgt_info = *target_map_[buf.tid_];
-          auto *free_task = tgt_info.AsyncFree(task->task_node_ + 1, {buf}, false);
+          bdev::FreeTask *free_task = tgt_info.AsyncFree(task->task_node_ + 1, {buf}, false);
           task->free_tasks_->emplace_back(free_task);
         }
+        task->phase_ = DestroyBlobPhase::kWaitFreeBuffers;
       }
       case DestroyBlobPhase::kWaitFreeBuffers: {
-        for (auto *free_task : *task->free_tasks_) {
+        std::vector<bdev::FreeTask *> &free_tasks = *task->free_tasks_;
+        for (auto it = free_tasks.rbegin(); it != free_tasks.rend(); ++it) {
+          bdev::FreeTask *free_task = *it;
           if (!free_task->IsComplete()) {
             return;
           }
+          LABSTOR_CLIENT->DelTask(free_task);
+          free_tasks.pop_back();
         }
         HSHM_DESTROY_AR(task->free_tasks_);
         blob_map_.erase(task->blob_id_);
+        task->SetModuleComplete();
       }
     }
-    return task->SetModuleComplete();
   }
 
  public:

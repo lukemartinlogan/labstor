@@ -92,7 +92,6 @@ TEST_CASE("TestHermesPartialPutGet") {
 
   size_t count_per_proc = 16;
   size_t off = rank * count_per_proc;
-  size_t max_blobs = 16;
   size_t total_count = count_per_proc * nprocs;
   size_t half_blob = KILOBYTES(4);
   for (size_t i = off; i < total_count; ++i) {
@@ -104,8 +103,8 @@ TEST_CASE("TestHermesPartialPutGet") {
     memset(rblob.data(), (i + 1) % 256, rblob.size());
 
     // PartialPut a blob
-    hermes::BlobId lblob_id = bkt.PartialPut(std::to_string(i % max_blobs), lblob, 0, ctx);
-    hermes::BlobId rblob_id = bkt.PartialPut(std::to_string(i % max_blobs), rblob, half_blob, ctx);
+    hermes::BlobId lblob_id = bkt.PartialPut(std::to_string(i), lblob, 0, ctx);
+    hermes::BlobId rblob_id = bkt.PartialPut(std::to_string(i), rblob, half_blob, ctx);
     REQUIRE(lblob_id == rblob_id);
 
     // PartialGet a blob
@@ -131,10 +130,8 @@ TEST_CASE("TestHermesBlobDestroy") {
   HERMES->ClientInit();
 
   // Create a bucket
-  HILOG(kInfo, "WE ARE HERE!!!")
   hermes::Context ctx;
   hermes::Bucket bkt("hello");
-  HILOG(kInfo, "BUCKET LOADED!!!")
 
   size_t count_per_proc = 16;
   size_t off = rank * count_per_proc;
@@ -160,10 +157,8 @@ TEST_CASE("TestHermesBucketDestroy") {
   HERMES->ClientInit();
 
   // Create a bucket
-  HILOG(kInfo, "WE ARE HERE!!!")
   hermes::Context ctx;
   hermes::Bucket bkt("hello");
-  HILOG(kInfo, "BUCKET LOADED!!!")
 
   size_t count_per_proc = 16;
   size_t off = rank * count_per_proc;
