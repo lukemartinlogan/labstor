@@ -269,6 +269,15 @@ class Bucket {
   }
 
   /**
+   * Reorganize a blob to a new score or node
+   * */
+  void ReorganizeBlob(const BlobId &blob_id,
+                      float score,
+                      Context &ctx) {
+    blob_mdm_->ReorganizeBlobRoot(blob_id, score);
+  }
+
+  /**
    * Append \a blob_name Blob into the bucket
    * */
   Status Append(const Blob &blob, Context &ctx) {

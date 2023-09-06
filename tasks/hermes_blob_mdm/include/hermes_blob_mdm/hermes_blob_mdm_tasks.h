@@ -898,6 +898,83 @@ struct DestroyBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   }
 };
 
+/** Phases of the destroy blob task */
+struct ReorganizeBlobPhase {
+  TASK_METHOD_T kGet = 0;
+  TASK_METHOD_T kWaitGet = 1;
+  TASK_METHOD_T kPut = 2;
+  TASK_METHOD_T kWaitPut = 3;
+};
+
+/** A task to reorganize a blob's composition in the hierarchy */
+struct ReorganizeBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN BlobId blob_id_;
+  IN float score_;
+  IN u32 node_id_;
+  TEMP int phase_ = ReorganizeBlobPhase::kGet;
+  TEMP hipc::Pointer data_;
+  TEMP size_t data_size_;
+  TEMP GetBlobTask *get_task_;
+  TEMP PutBlobTask *put_task_;
+  TEMP TagId tag_id_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  ReorganizeBlobTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
+  ReorganizeBlobTask(hipc::Allocator *alloc,
+                     const TaskNode &task_node,
+                     const DomainId &domain_id,
+                     const TaskStateId &state_id,
+                     const BlobId &blob_id,
+                     float score,
+                     u32 node_id) : Task(alloc) {
+    // Initialize task
+    task_node_ = task_node;
+    lane_hash_ = blob_id.unique_;
+    task_state_ = state_id;
+    method_ = Method::kDestroyBlob;
+    task_flags_.SetBits(TASK_LOW_LATENCY);
+    domain_id_ = domain_id;
+
+    // Custom params
+    blob_id_ = blob_id;
+    score_ = score;
+    node_id_ = node_id;
+  }
+
+  /** Destructor */
+  HSHM_ALWAYS_INLINE
+  ~ReorganizeBlobTask() {
+    if (IsDataOwner()) {
+      LABSTOR_CLIENT->FreeBuffer(data_);
+    }
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(blob_id_, score_, node_id_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(u32 replica, Ar &ar) {
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    labstor::LocalSerialize srl(group);
+    srl << blob_id_.unique_;
+    srl << blob_id_.node_id_;
+    return 0;
+  }
+};
+
 }  // namespace hermes::blob_mdm
 
 #endif //LABSTOR_TASKS_HERMES_BLOB_MDM_INCLUDE_HERMES_BLOB_MDM_HERMES_BLOB_MDM_TASKS_H_

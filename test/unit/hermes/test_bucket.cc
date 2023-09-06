@@ -179,3 +179,35 @@ TEST_CASE("TestHermesBucketDestroy") {
     REQUIRE(!bkt.ContainsBlob(std::to_string(i)));
   }
 }
+
+TEST_CASE("TestHermesReorganizeBlob") {
+  // TODO(llogan): need to inform bucket when a blob has been placed in it
+  int rank, nprocs;
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+
+  // Initialize Hermes on all nodes
+  HERMES->ClientInit();
+
+  // Create a bucket
+  hermes::Context ctx;
+  hermes::Bucket bkt("hello");
+
+  size_t count_per_proc = 16;
+  size_t off = rank * count_per_proc;
+  size_t proc_count = off + count_per_proc;
+  for (size_t i = off; i < proc_count; ++i) {
+    HILOG(kInfo, "Iteration: {}", i);
+    // Put a blob
+    hermes::Blob blob(KILOBYTES(4));
+    memset(blob.data(), i % 256, blob.size());
+    bkt.Put(std::to_string(i), blob, ctx);
+  }
+
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  for (size_t i = off; i < proc_count; ++i) {
+    REQUIRE(!bkt.ContainsBlob(std::to_string(i)));
+  }
+}

@@ -22,6 +22,12 @@ class Client {
   /** Destructor */
   ~Client() = default;
 
+  /** Initialize directly using TaskStateId */
+  void Init(const TaskStateId &id) {
+    id_ = id;
+    queue_id_ = QueueId(id_);
+  }
+
   /** Create a hermes_blob_mdm */
   HSHM_ALWAYS_INLINE
   ConstructTask* AsyncCreate(const TaskNode &task_node,
@@ -102,7 +108,7 @@ class Client {
   * @param replace whether to replace the blob if it exists
   * @param[OUT] did_create whether the blob was created or not
   * */
-  Task* AsyncPutBlob(
+  PutBlobTask* AsyncPutBlob(
       const TaskNode &task_node,
       TagId tag_id, const hshm::charbuf &blob_name,
       BlobId &blob_id, size_t blob_off, size_t blob_size,
@@ -153,6 +159,28 @@ class Client {
     return true_size;
   }
   LABSTOR_TASK_NODE_ROOT(GetBlob);
+
+  /**
+   * Reorganize a blob
+   *
+   * @param blob_id id of the blob being reorganized
+   * @param score the new score of the blob
+   * @param node_id the node to reorganize the blob to
+   * */
+    ReorganizeBlobTask* AsyncReorganizeBlob(const TaskNode &task_node,
+                                            BlobId blob_id, float score,
+                                            u32 node_id) {
+        HILOG(kDebug, "Beginning REORGANIZE (task_node={})", task_node);
+        hipc::Pointer p;
+        MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+        u32 hash = blob_id.unique_;
+        auto *task = LABSTOR_CLIENT->NewTask<ReorganizeBlobTask>(
+            p,
+            task_node, DomainId::GetNode(blob_id.node_id_), id_,
+            blob_id, score, node_id);
+        queue->Emplace(hash, p);
+        return task;
+    }
 
   /**
    * Tag a blob

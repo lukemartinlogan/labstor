@@ -13,3 +13,4 @@ kGetBlobSize: 11
 kGetBlobScore: 12
 kGetBlobBuffers: 13
 kRenameBlob: 14
+kReorganizeBlob: 15

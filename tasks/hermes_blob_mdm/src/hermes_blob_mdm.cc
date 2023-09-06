@@ -42,6 +42,7 @@ class Server : public TaskLib {
   std::vector<bdev::ConstructTask*> target_tasks_;
   std::vector<bdev::Client> targets_;
   std::unordered_map<TargetId, TargetInfo*> target_map_;
+  Client blob_mdm_;
 
  public:
   Server() = default;
@@ -85,6 +86,7 @@ class Server : public TaskLib {
           target_map_.emplace(client.id_, &client);
           target_tasks_.pop_back();
         }
+        blob_mdm_.Init(id_);
       }
     }
 
@@ -535,6 +537,54 @@ class Server : public TaskLib {
         }
         HSHM_DESTROY_AR(task->free_tasks_);
         blob_map_.erase(task->blob_id_);
+        task->SetModuleComplete();
+      }
+    }
+  }
+
+  /**
+   * Reorganize \a blob_id blob in \a bkt_id bucket
+   * */
+  void ReorganizeBlob(MultiQueue *queue, ReorganizeBlobTask *task) {
+    switch (task->phase_) {
+      case ReorganizeBlobPhase::kGet: {
+        auto it = blob_map_.find(task->blob_id_);
+        if (it == blob_map_.end()) {
+          task->SetModuleComplete();
+          return;
+        }
+        BlobInfo &blob_info = it->second;
+        task->data_ = LABSTOR_CLIENT->AllocateBuffer(blob_info.blob_size_);
+        task->data_size_ = blob_info.blob_size_;
+        task->get_task_ = blob_mdm_.AsyncGetBlob(task->task_node_ + 1,
+                                                 task->blob_id_,
+                                                 0,
+                                                 task->data_size_,
+                                                 task->data_);
+        task->tag_id_ = blob_info.tag_id_;
+        task->phase_ = ReorganizeBlobPhase::kWaitGet;
+      }
+      case ReorganizeBlobPhase::kWaitGet: {
+        if (!task->get_task_->IsComplete()) {
+          return;
+        }
+        LABSTOR_CLIENT->DelTask(task->get_task_);
+      }
+      case ReorganizeBlobPhase::kPut: {
+        task->put_task_ = blob_mdm_.AsyncPutBlob(task->task_node_ + 1,
+                                                 task->tag_id_, hshm::charbuf(""),
+                                                 task->blob_id_, 0,
+                                                 task->data_size_,
+                                                 task->data_,
+                                                 task->score_,
+                                                 bitfield32_t(0));
+        task->phase_ = ReorganizeBlobPhase::kWaitPut;
+      }
+      case ReorganizeBlobPhase::kWaitPut: {
+        if (!task->put_task_->IsComplete()) {
+          return;
+        }
+        LABSTOR_CLIENT->DelTask(task->put_task_);
         task->SetModuleComplete();
       }
     }
