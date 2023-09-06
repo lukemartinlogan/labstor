@@ -78,34 +78,25 @@ class TaskLib {
   virtual void Run(MultiQueue *queue, u32 method, Task *task) = 0;
 
   /** Allow task to store replicas of completion */
-  virtual void ReplicateStart(u32 method, u32 count, Task *task) {}
+  virtual void ReplicateStart(u32 method, u32 count, Task *task) = 0;
 
   /** Can be used to summarize the completions */
-  virtual void ReplicateEnd(u32 method, Task *task) {}
+  virtual void ReplicateEnd(u32 method, Task *task) = 0;
 
   /** Serialize a task when initially pushing into remote */
-  virtual std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, Task *task) {
-    return {};
-  }
+  virtual std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, Task *task) = 0;
 
   /** Deserialize a task when popping from remote queue */
-  virtual TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) {
-    return {};
-  }
+  virtual TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) = 0;
 
   /** Serialize a task when returning from remote queue */
-  virtual std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Task *task) {
-    return {};
-  }
+  virtual std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Task *task) = 0;
 
   /** Deserialize a task when returning from remote queue */
-  virtual void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task) {
-  }
+  virtual void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task) = 0;
 
   /** Deserialize a task when returning from remote queue */
-  virtual int GetGroup(u32 method, Task *task, hshm::charbuf &buf) {
-    return 0;
-  }
+  virtual int GetGroup(u32 method, Task *task, hshm::charbuf &buf) = 0;
 };
 
 /** Represents a TaskLib in action */

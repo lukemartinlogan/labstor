@@ -42,7 +42,6 @@ void Worker::Run() {
 void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
   Task *task;
   hipc::Pointer p;
-  // TODO(llogan): We now have a way to determine if two tasks can be executed in parallel
   for (int i = 0; i < 1024; ++i) {
     // Get the task message
     if (!queue->Pop(lane_id, task, p)) {
@@ -55,14 +54,14 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
             LABSTOR_QM_CLIENT->node_id_, task->task_state_);
       task->SetModuleComplete();
     }
-    if (!task->IsStarted() || !task->task_flags_.Any(TASK_LONG_RUNNING)) {
-      HILOG(kDebug, "(node {}) Starting task: task_node={} task_state={} state_name={}",
-            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_, exec->name_);
-    }
     // Check if the task can execute
     if (!CheckTaskGroup(task, exec, task->task_node_)) {
       queue->Emplace(lane_id, p);
       continue;
+    }
+    if (!task->IsLongRunning()) {
+      HILOG(kDebug, "(node {}) Running task: task_node={} task_state={} state_name={} lane={}",
+            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_, exec->name_, lane_id);
     }
     // Disperse or execute task
     bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_QM_CLIENT->node_id_);
