@@ -64,6 +64,10 @@ void Run(MultiQueue *queue, u32 method, Task *task) override {
       RenameBlob(queue, reinterpret_cast<RenameBlobTask *>(task));
       break;
     }
+    case Method::kReorganizeBlob: {
+      ReorganizeBlob(queue, reinterpret_cast<ReorganizeBlobTask *>(task));
+      break;
+    }
   }
 }
 /** Ensure there is space to store replicated outputs */
@@ -127,6 +131,10 @@ void ReplicateStart(u32 method, u32 count, Task *task) override {
     }
     case Method::kRenameBlob: {
       labstor::CALL_REPLICA_START(count, reinterpret_cast<RenameBlobTask*>(task));
+      break;
+    }
+    case Method::kReorganizeBlob: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<ReorganizeBlobTask*>(task));
       break;
     }
   }
@@ -194,6 +202,10 @@ void ReplicateEnd(u32 method, Task *task) override {
       labstor::CALL_REPLICA_END(reinterpret_cast<RenameBlobTask*>(task));
       break;
     }
+    case Method::kReorganizeBlob: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<ReorganizeBlobTask*>(task));
+      break;
+    }
   }
 }
 /** Serialize a task when initially pushing into remote */
@@ -257,6 +269,10 @@ std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, T
     }
     case Method::kRenameBlob: {
       ar << *reinterpret_cast<RenameBlobTask*>(task);
+      break;
+    }
+    case Method::kReorganizeBlob: {
+      ar << *reinterpret_cast<ReorganizeBlobTask*>(task);
       break;
     }
   }
@@ -341,6 +357,11 @@ TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) override {
       ar >> *reinterpret_cast<RenameBlobTask*>(task_ptr.task_);
       break;
     }
+    case Method::kReorganizeBlob: {
+      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<ReorganizeBlobTask>(task_ptr.p_);
+      ar >> *reinterpret_cast<ReorganizeBlobTask*>(task_ptr.task_);
+      break;
+    }
   }
   return task_ptr;
 }
@@ -405,6 +426,10 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
     }
     case Method::kRenameBlob: {
       ar << *reinterpret_cast<RenameBlobTask*>(task);
+      break;
+    }
+    case Method::kReorganizeBlob: {
+      ar << *reinterpret_cast<ReorganizeBlobTask*>(task);
       break;
     }
   }
@@ -473,6 +498,10 @@ void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task)
       ar.Deserialize(replica, *reinterpret_cast<RenameBlobTask*>(task));
       break;
     }
+    case Method::kReorganizeBlob: {
+      ar.Deserialize(replica, *reinterpret_cast<ReorganizeBlobTask*>(task));
+      break;
+    }
   }
 }
 /** Get the grouping of the task */
@@ -522,6 +551,9 @@ int GetGroup(u32 method, Task *task, hshm::charbuf &group) override {
     }
     case Method::kRenameBlob: {
       return reinterpret_cast<RenameBlobTask*>(task)->GetGroup(group);
+    }
+    case Method::kReorganizeBlob: {
+      return reinterpret_cast<ReorganizeBlobTask*>(task)->GetGroup(group);
     }
   }
   return -1;

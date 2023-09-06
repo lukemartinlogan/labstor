@@ -273,8 +273,9 @@ class Bucket {
    * */
   void ReorganizeBlob(const BlobId &blob_id,
                       float score,
+                      u32 node_id,
                       Context &ctx) {
-    blob_mdm_->ReorganizeBlobRoot(blob_id, score);
+    blob_mdm_->AsyncReorganizeBlobRoot(blob_id, score, node_id);
   }
 
   /**

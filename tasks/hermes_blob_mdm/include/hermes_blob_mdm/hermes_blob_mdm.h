@@ -167,20 +167,21 @@ class Client {
    * @param score the new score of the blob
    * @param node_id the node to reorganize the blob to
    * */
-    ReorganizeBlobTask* AsyncReorganizeBlob(const TaskNode &task_node,
-                                            BlobId blob_id, float score,
-                                            u32 node_id) {
-        HILOG(kDebug, "Beginning REORGANIZE (task_node={})", task_node);
-        hipc::Pointer p;
-        MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-        u32 hash = blob_id.unique_;
-        auto *task = LABSTOR_CLIENT->NewTask<ReorganizeBlobTask>(
-            p,
-            task_node, DomainId::GetNode(blob_id.node_id_), id_,
-            blob_id, score, node_id);
-        queue->Emplace(hash, p);
-        return task;
-    }
+  ReorganizeBlobTask* AsyncReorganizeBlob(const TaskNode &task_node,
+                                          BlobId blob_id, float score,
+                                          u32 node_id) {
+    HILOG(kDebug, "Beginning REORGANIZE (task_node={})", task_node);
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    u32 hash = blob_id.unique_;
+    auto *task = LABSTOR_CLIENT->NewTask<ReorganizeBlobTask>(
+        p,
+        task_node, DomainId::GetNode(blob_id.node_id_), id_,
+        blob_id, score, node_id);
+    queue->Emplace(hash, p);
+    return task;
+  }
+  LABSTOR_TASK_NODE_ROOT(AsyncReorganizeBlob);
 
   /**
    * Tag a blob

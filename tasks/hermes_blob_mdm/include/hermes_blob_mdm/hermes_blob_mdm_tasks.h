@@ -936,7 +936,7 @@ struct ReorganizeBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     lane_hash_ = blob_id.unique_;
     task_state_ = state_id;
     method_ = Method::kDestroyBlob;
-    task_flags_.SetBits(TASK_LOW_LATENCY);
+    task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET);
     domain_id_ = domain_id;
 
     // Custom params
