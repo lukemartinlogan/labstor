@@ -287,6 +287,11 @@ struct Task : public hipc::ShmContainer {
     task_flags_.SetBits(TASK_HAS_STARTED);
   }
 
+  /** Set this task as started */
+  HSHM_ALWAYS_INLINE void UnsetStarted() {
+    task_flags_.UnsetBits(TASK_HAS_STARTED);
+  }
+
   /** Check if task has started */
   HSHM_ALWAYS_INLINE bool IsStarted() {
     return task_flags_.Any(TASK_HAS_STARTED);
@@ -295,6 +300,11 @@ struct Task : public hipc::ShmContainer {
   /** Set this task as started */
   HSHM_ALWAYS_INLINE void SetMarked() {
     task_flags_.SetBits(TASK_MARKED);
+  }
+
+  /** Set this task as started */
+  HSHM_ALWAYS_INLINE void UnsetMarked() {
+    task_flags_.UnsetBits(TASK_MARKED);
   }
 
   /** Check if task is marked */

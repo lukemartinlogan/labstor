@@ -326,6 +326,8 @@ class Server : public TaskLib {
       if (is_fire_forget) {
         orig_task->UnsetFireAndForget();
       }
+      orig_task->UnsetStarted();
+      orig_task->UnsetMarked();
       queue->Emplace(orig_task->lane_hash_, p);
       HILOG(kDebug, "(node {}) Executing task (task_node={}, task_state={}/{}, state_name={}, method={}, f&f={}, size={}, lane_hash={})",
             LABSTOR_QM_CLIENT->node_id_,
