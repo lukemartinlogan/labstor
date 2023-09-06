@@ -27,7 +27,7 @@ TEST_CASE("TestHermesPut") {
     size_t off = rank * count_per_proc;
     size_t max_blobs = 4;
     size_t total_count = count_per_proc * nprocs;
-    for (size_t i = 1; i < 2; ++i) {
+    for (size_t i = off; i < total_count; ++i) {
       HILOG(kInfo, "Iteration: {}", i);
       // Put a blob
       hermes::Blob blob(KILOBYTES(4));
