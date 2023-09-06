@@ -76,7 +76,7 @@ class Client {
   void Destroy(const TaskNode &task_node,
                const std::string &state_name) {
     LABSTOR_ADMIN->DestroyTaskState(task_node, domain_id_, id_);
-    monitor_task_->SetComplete();
+    monitor_task_->SetModuleComplete();
   }
   LABSTOR_TASK_NODE_ROOT(Destroy);
 

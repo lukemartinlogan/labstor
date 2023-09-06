@@ -105,7 +105,7 @@ class Server : public TaskLib {
   /** Handle finalization of PUSH replicate */
   static void HandlePushReplicaEnd(PushTask *task) {
     task->exec_->ReplicateEnd(task->orig_task_->method_, task->orig_task_);
-    task->orig_task_->SetComplete();
+    task->orig_task_->SetModuleComplete();
     HILOG(kDebug, "Completing task (task_node={}, task_state={}, method={})",
           task->orig_task_->task_node_,
           task->orig_task_->task_state_,
