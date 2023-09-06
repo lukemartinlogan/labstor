@@ -27,11 +27,11 @@ class Server : public TaskLib {
     HERMES->LoadServerConfig(config_path);
     node_id_ = LABSTOR_QM_CLIENT->node_id_;
     task->phase_ = ConstructTaskPhase::kCreateTaskStates;
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Destruct(MultiQueue *queue, DestructTask *task) {
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
  public:

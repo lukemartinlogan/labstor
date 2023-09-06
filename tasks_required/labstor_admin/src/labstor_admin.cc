@@ -19,19 +19,19 @@ class Server : public TaskLib {
   void RegisterTaskLib(MultiQueue *queue, RegisterTaskLibTask *task) {
     std::string lib_name = task->lib_name_->str();
     LABSTOR_TASK_REGISTRY->RegisterTaskLib(lib_name);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void DestroyTaskLib(MultiQueue *queue, DestroyTaskLibTask *task) {
     std::string lib_name = task->lib_name_->str();
     LABSTOR_TASK_REGISTRY->DestroyTaskLib(lib_name);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void GetOrCreateTaskStateId(MultiQueue *queue, GetOrCreateTaskStateIdTask *task) {
     std::string state_name = task->state_name_->str();
     task->id_ = LABSTOR_TASK_REGISTRY->GetOrCreateTaskStateId(state_name);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void CreateTaskState(MultiQueue *queue, CreateTaskStateTask *task) {
@@ -43,7 +43,7 @@ class Server : public TaskLib {
         TaskState *task_state = LABSTOR_TASK_REGISTRY->GetTaskState(state_name, task->id_);
         if (task_state) {
           task->id_ = task_state->id_;
-          task->SetComplete();
+          task->SetModuleComplete();
           return;
         }
         // Check global registry for task state
@@ -83,7 +83,7 @@ class Server : public TaskLib {
         if (task->id_.IsNull()) {
           HELOG(kError, "(node {}) The task state {} with id {} is NULL.",
                 LABSTOR_QM_CLIENT->node_id_, state_name, task->id_);
-          task->SetComplete();
+          task->SetModuleComplete();
           return;
         }
 
@@ -91,7 +91,7 @@ class Server : public TaskLib {
         if (LABSTOR_TASK_REGISTRY->TaskStateExists(task->id_)) {
           HILOG(kInfo, "(node {}) The task state {} with id {} exists",
                 LABSTOR_QM_CLIENT->node_id_, state_name, task->id_);
-          task->SetComplete();
+          task->SetModuleComplete();
           return;
         }
 
@@ -116,7 +116,7 @@ class Server : public TaskLib {
             task->id_,
             task);
         if (!ret) {
-          task->SetComplete();
+          task->SetModuleComplete();
           return;
         }
         HILOG(kInfo, "(node {}) Allocated task state {} with id {}",
@@ -128,24 +128,24 @@ class Server : public TaskLib {
   void GetTaskStateId(MultiQueue *queue, GetTaskStateIdTask *task) {
     std::string state_name = task->state_name_->str();
     task->id_ = LABSTOR_TASK_REGISTRY->GetTaskStateId(state_name);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void DestroyTaskState(MultiQueue *queue, DestroyTaskStateTask *task) {
     LABSTOR_TASK_REGISTRY->DestroyTaskState(task->id_);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void StopRuntime(MultiQueue *queue, StopRuntimeTask *task) {
     HILOG(kInfo, "Stopping (server mode)");
     LABSTOR_WORK_ORCHESTRATOR->FinalizeRuntime();
     LABSTOR_THALLIUM->StopThisDaemon();
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void SetWorkOrchestratorQueuePolicy(MultiQueue *queue, SetWorkOrchestratorQueuePolicyTask *task) {
     if (queue_sched_) {
-      queue_sched_->SetExternalComplete();
+      queue_sched_->SetModuleComplete();
     }
     if (queue_sched_ && !queue_sched_->IsComplete()) {
       return;
@@ -154,12 +154,12 @@ class Server : public TaskLib {
     queue_sched_ = LABSTOR_CLIENT->NewTask<ScheduleTask>(
         p, task->task_node_, DomainId::GetLocal(), task->policy_id_);
     queue->Emplace(0, p);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void SetWorkOrchestratorProcessPolicy(MultiQueue *queue, SetWorkOrchestratorProcessPolicyTask *task) {
     if (proc_sched_) {
-      proc_sched_->SetExternalComplete();
+      proc_sched_->SetModuleComplete();
     }
     if (proc_sched_ && !proc_sched_->IsComplete()) {
       return;
@@ -168,7 +168,7 @@ class Server : public TaskLib {
     proc_sched_ = LABSTOR_CLIENT->NewTask<ScheduleTask>(
         p, task->task_node_, DomainId::GetLocal(), task->policy_id_);
     queue->Emplace(0, p);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
  public:

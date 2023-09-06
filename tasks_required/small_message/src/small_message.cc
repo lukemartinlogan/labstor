@@ -14,16 +14,16 @@ class Server : public TaskLib {
 
  public:
   void Construct(MultiQueue *queue, ConstructTask *task) {
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Destruct(MultiQueue *queue, DestructTask *task) {
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Md(MultiQueue *queue, MdTask *task) {
     task->ret_[0] = 1;
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Io(MultiQueue *queue, IoTask *task) {
@@ -34,7 +34,7 @@ class Server : public TaskLib {
         break;
       }
     }
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
  public:

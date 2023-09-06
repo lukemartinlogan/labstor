@@ -15,11 +15,11 @@ class Server : public TaskLib {
  public:
   void Construct(MultiQueue *queue, ConstructTask *task) {
     count_ = 0;
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Destruct(MultiQueue *queue, DestructTask *task) {
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Schedule(MultiQueue *queue, ScheduleTask *task) {

@@ -198,7 +198,7 @@ class TaskRegistry {
     // Ensure state_id is not NULL
     if (state_id.IsNull()) {
       HILOG(kError, "The task state ID cannot be null");
-      task->SetComplete();
+      task->SetModuleComplete();
       return false;
     }
     HILOG(kInfo, "(node {}) Creating an instance of {} with name {}",
@@ -208,14 +208,14 @@ class TaskRegistry {
     auto it = libs_.find(lib_name);
     if (it == libs_.end()) {
       HELOG(kError, "Could not find the task lib: {}", lib_name);
-      task->SetComplete();
+      task->SetModuleComplete();
       return false;
     }
 
     // Ensure the task state does not already exist
     if (TaskStateExists(state_id)) {
       HELOG(kError, "The task state already exists: {}", state_name);
-      task->SetComplete();
+      task->SetModuleComplete();
       return true;
     }
 
@@ -225,7 +225,7 @@ class TaskRegistry {
     TaskState *task_state = info.create_state_(task);
     if (!task_state) {
       HELOG(kError, "Could not create the task state: {}", state_name);
-      task->SetComplete();
+      task->SetModuleComplete();
       return false;
     }
 

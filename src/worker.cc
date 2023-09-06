@@ -8,7 +8,6 @@
 
 namespace labstor {
 
-
 void Worker::Loop() {
   pid_ = gettid();
   while (LABSTOR_WORK_ORCHESTRATOR->IsAlive()) {
@@ -54,10 +53,15 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
     if (!exec) {
       HELOG(kFatal, "(node {}) Could not find the task state: {}",
             LABSTOR_QM_CLIENT->node_id_, task->task_state_);
-      task->SetComplete();
+      task->SetModuleComplete();
+    }
+    if (!task->IsStarted() || !task->task_flags_.Any(TASK_LONG_RUNNING)) {
+      HILOG(kDebug, "(node {}) Starting task: task_node={} task_state={} state_name={}",
+            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_, exec->name_);
     }
     // Check if the task can execute
     if (!CheckTaskGroup(task, exec, task->task_node_)) {
+      queue->Emplace(lane_id, p);
       continue;
     }
     // Disperse or execute task
@@ -72,14 +76,14 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
       }
     }
     // Cleanup on task completion
-    if (task->IsExternalComplete()) {
-      task->SetComplete();
-    }
-    if (task->IsComplete()) {
+    if (task->IsModuleComplete()) {
+      HILOG(kDebug, "(node {}) Ending task: task_node={} task_state={}",
+            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_);
       RemoveTaskGroup();
       if (task->IsFireAndForget()) {
         LABSTOR_CLIENT->DelTask(task);
       }
+      task->SetComplete();
     } else {
       queue->Emplace(lane_id, p);
     }
@@ -103,7 +107,7 @@ void Worker::PollUnordered(u32 lane_id, MultiQueue *queue) {
     if (!exec) {
       HELOG(kFatal, "(node {}) Could not find the task state: {}",
             LABSTOR_QM_CLIENT->node_id_, task->task_state_);
-      task->SetComplete();
+      task->SetModuleComplete();
     }
     // Disperse or execute task
     bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_QM_CLIENT->node_id_);
@@ -125,8 +129,8 @@ void Worker::PollUnordered(u32 lane_id, MultiQueue *queue) {
       }
     }
     // Cleanup on task completion
-    if (task->IsExternalComplete()) {
-      task->SetComplete();
+    if (task->IsModuleComplete()) {
+      task->SetModuleComplete();
     }
     if (task->IsComplete()) {
       if (task->IsFireAndForget()) {
@@ -155,7 +159,7 @@ void Worker::PollOrdered(u32 lane_id, MultiQueue *queue) {
     if (!exec) {
       HELOG(kFatal, "(node {}) Could not find the task state: {}",
             LABSTOR_QM_CLIENT->node_id_, task->task_state_);
-      task->SetComplete();
+      task->SetModuleComplete();
     }
     // Disperse or execute task
     bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_QM_CLIENT->node_id_);
@@ -169,8 +173,8 @@ void Worker::PollOrdered(u32 lane_id, MultiQueue *queue) {
       }
     }
     // Cleanup on task completion
-    if (task->IsExternalComplete()) {
-      task->SetComplete();
+    if (task->IsModuleComplete()) {
+      task->SetModuleComplete();
     }
     if (task->IsComplete()) {
       queue->Pop(lane_id, task, p);

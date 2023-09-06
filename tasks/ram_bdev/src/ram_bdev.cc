@@ -21,41 +21,41 @@ class Server : public TaskLib {
     mem_ptr_ = (char*)malloc(dev_info.capacity_);
     HILOG(kDebug, "Created {} at {} of size {}",
           dev_info.dev_name_, dev_info.mount_point_, dev_info.capacity_);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Destruct(MultiQueue *queue, DestructTask *task) {
     free(mem_ptr_);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Alloc(MultiQueue *queue, AllocTask *task) {
     HILOG(kDebug, "Allocating {} bytes (RAM)", task->size_);
     alloc_.Allocate(task->size_, *task->buffers_, task->alloc_size_);
     HILOG(kDebug, "Allocated {} bytes (RAM)", task->alloc_size_);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Free(MultiQueue *queue, FreeTask *task) {
     alloc_.Free(task->buffers_);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Write(MultiQueue *queue, WriteTask *task) {
     memcpy(mem_ptr_ + task->disk_off_, task->buf_, task->size_);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Read(MultiQueue *queue, ReadTask *task) {
     memcpy(task->buf_, mem_ptr_ + task->disk_off_, task->size_);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Monitor(MultiQueue *queue, MonitorTask *task) {
   }
 
   void UpdateCapacity(MultiQueue *queue, UpdateCapacityTask *task) {
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
  public:

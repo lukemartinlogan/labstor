@@ -37,23 +37,23 @@ class Server : public TaskLib {
     }
     HILOG(kInfo, "Created {} at {} of size {}",
           dev_info.dev_name_, dev_info.mount_point_, dev_info.capacity_);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Destruct(MultiQueue *queue, DestructTask *task) {
     free(mem_ptr_);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Alloc(MultiQueue *queue, AllocTask *task) {
     alloc_.Allocate(task->size_, *task->buffers_, task->alloc_size_);
     HILOG(kDebug, "Allocated {}/{} bytes ({})", task->alloc_size_, task->size_, path_);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Free(MultiQueue *queue, FreeTask *task) {
     alloc_.Free(task->buffers_);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Write(MultiQueue *queue, WriteTask *task) {
@@ -62,7 +62,7 @@ class Server : public TaskLib {
       HELOG(kError, "BORG: wrote {} bytes, but expected {}",
             count, task->size_);
     }
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Read(MultiQueue *queue, ReadTask *task) {
@@ -72,14 +72,14 @@ class Server : public TaskLib {
       HELOG(kError, "BORG: read {} bytes, but expected {}",
             count, task->size_);
     }
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Monitor(MultiQueue *queue, MonitorTask *task) {
   }
 
   void UpdateCapacity(MultiQueue *queue, UpdateCapacityTask *task) {
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
  public:

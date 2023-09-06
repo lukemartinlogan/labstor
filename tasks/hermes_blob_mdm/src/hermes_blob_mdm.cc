@@ -90,11 +90,11 @@ class Server : public TaskLib {
 
     // Create targets
     HILOG(kInfo, "Created Blob MDM")
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   void Destruct(MultiQueue *queue, DestructTask *task) {
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
  private:
@@ -292,7 +292,7 @@ class Server : public TaskLib {
     HILOG(kDebug, "PutBlobTask complete");
     HSHM_DESTROY_AR(task->schema_);
     HSHM_DESTROY_AR(task->bdev_writes_);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   /** Get a blob's data */
@@ -337,7 +337,7 @@ class Server : public TaskLib {
         }
         HSHM_DESTROY_AR(task->bdev_reads_);
         HILOG(kDebug, "GetBlobTask complete");
-        task->SetComplete();
+        task->SetModuleComplete();
       }
     }
   }
@@ -348,12 +348,12 @@ class Server : public TaskLib {
   void TagBlob(MultiQueue *queue, TagBlobTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     BlobInfo &blob = it->second;
     blob.tags_.push_back(task->tag_);
-    return task->SetComplete();
+    return task->SetModuleComplete();
   }
 
   /**
@@ -362,14 +362,14 @@ class Server : public TaskLib {
   void BlobHasTag(MultiQueue *queue, BlobHasTagTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     BlobInfo &blob = it->second;
     task->has_tag_ = std::find(blob.tags_.begin(),
                                blob.tags_.end(),
                                task->tag_) != blob.tags_.end();
-    return task->SetComplete();
+    return task->SetModuleComplete();
   }
 
   /**
@@ -382,11 +382,11 @@ class Server : public TaskLib {
     if (it == blob_id_map_.end()) {
       task->blob_id_ = BlobId(node_id_, id_alloc_.fetch_add(1));
       blob_id_map_.emplace(blob_name_unique, task->blob_id_);
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     task->blob_id_ = it->second;
-    return task->SetComplete();
+    return task->SetModuleComplete();
   }
 
   /**
@@ -397,11 +397,11 @@ class Server : public TaskLib {
     hshm::charbuf blob_name_unique = GetBlobNameWithBucket(task->tag_id_, blob_name);
     auto it = blob_id_map_.find(blob_name_unique);
     if (it == blob_id_map_.end()) {
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     task->blob_id_ = it->second;
-    return task->SetComplete();
+    return task->SetModuleComplete();
   }
 
   /**
@@ -410,12 +410,12 @@ class Server : public TaskLib {
   void GetBlobName(MultiQueue *queue, GetBlobNameTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     BlobInfo &blob = it->second;
     (*task->blob_name_) = blob.name_;
-    return task->SetComplete();
+    return task->SetModuleComplete();
   }
 
   /**
@@ -424,12 +424,12 @@ class Server : public TaskLib {
   void GetBlobSize(MultiQueue *queue, GetBlobSizeTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     BlobInfo &blob = it->second;
     task->size_ = blob.blob_size_;
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   /**
@@ -438,12 +438,12 @@ class Server : public TaskLib {
   void GetBlobScore(MultiQueue *queue, GetBlobScoreTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     BlobInfo &blob = it->second;
     task->score_ = blob.score_;
-    return task->SetComplete();
+    return task->SetModuleComplete();
   }
 
   /**
@@ -452,12 +452,12 @@ class Server : public TaskLib {
   void GetBlobBuffers(MultiQueue *queue, GetBlobBuffersTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     BlobInfo &blob = it->second;
     (*task->buffers_) = blob.buffers_;
-    return task->SetComplete();
+    return task->SetModuleComplete();
   }
 
   /**
@@ -467,14 +467,14 @@ class Server : public TaskLib {
   void RenameBlob(MultiQueue *queue, RenameBlobTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     BlobInfo &blob = it->second;
     blob_id_map_.erase(blob.name_);
     blob_id_map_[blob.name_] = task->blob_id_;
     blob.name_ = hshm::to_charbuf(*task->new_blob_name_);
-    return task->SetComplete();
+    return task->SetModuleComplete();
   }
 
   /**
@@ -483,12 +483,12 @@ class Server : public TaskLib {
   void TruncateBlob(MultiQueue *queue, TruncateBlobTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     BlobInfo &blob_info = it->second;
     // TODO(llogan): truncate blob
-    return task->SetComplete();
+    return task->SetModuleComplete();
   }
 
   /**
@@ -499,7 +499,7 @@ class Server : public TaskLib {
       case DestroyBlobPhase::kFreeBuffers: {
         auto it = blob_map_.find(task->blob_id_);
         if (it == blob_map_.end()) {
-          task->SetComplete();
+          task->SetModuleComplete();
           return;
         }
         BlobInfo &blob_info = it->second;
@@ -523,7 +523,7 @@ class Server : public TaskLib {
         blob_map_.erase(task->blob_id_);
       }
     }
-    return task->SetComplete();
+    return task->SetModuleComplete();
   }
 
  public:

@@ -232,24 +232,26 @@ class Worker {
     int ret = exec->GetGroup(task->method_, task, group_);
     if (ret == TASK_UNORDERED) {
       group_.resize(0);
+      task->SetStarted();
+      return true;
+    }
+    if (task->IsStarted()) {
       return true;
     }
     auto it = group_map_.find(group_);
     if (it == group_map_.end()) {
       node.node_depth_ = 1;
       group_map_.emplace(group_, node);
+      task->SetStarted();
       return true;
     }
     TaskNode &node_cmp = it->second;
-    if (node_cmp.IsNull()) {
-      return true;
-    }
-    if (node_cmp.root_ == node.root_ && !task->IsStarted()) {
-      task->SetStarted();
+    if (node_cmp.root_ == node.root_) {
       node_cmp.node_depth_ += 1;
+      task->SetStarted();
       return true;
     }
-    return it->second.root_ == node.root_;
+    return false;
   }
 
   HSHM_ALWAYS_INLINE

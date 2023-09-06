@@ -40,7 +40,7 @@ class Server : public TaskLib {
         if (blob_mdm_task_->IsComplete()) {
           HILOG(kDebug, "Bucket MDM created")
           blob_mdm_.AsyncCreateComplete(blob_mdm_task_);
-          task->SetComplete();
+          task->SetModuleComplete();
           return;
         }
       }
@@ -48,7 +48,7 @@ class Server : public TaskLib {
   }
 
   void Destruct(MultiQueue *queue, DestructTask *task) {
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   /** Put a blob */
@@ -56,7 +56,7 @@ class Server : public TaskLib {
     TagInfo &tag_info = tag_map_[task->tag_id_];
     tag_info.internal_size_ = std::max(task->blob_off_ + task->data_size_,
                                        tag_info.internal_size_);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   /** Destroy a blob */
@@ -99,7 +99,7 @@ class Server : public TaskLib {
 
     task->tag_id_ = tag_id;
     // task->did_create_ = did_create;
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   /** Get tag ID */
@@ -108,81 +108,81 @@ class Server : public TaskLib {
     auto it = tag_id_map_.find(tag_name);
     if (it == tag_id_map_.end()) {
       task->tag_id_ = TagId::GetNull();
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     task->tag_id_ = it->second;
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   /** Get tag name */
   void GetTagName(MultiQueue *queue, GetTagNameTask *task) {
     auto it = tag_map_.find(task->tag_id_);
     if (it == tag_map_.end()) {
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     (*task->tag_name_) = it->second.name_;
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   /** Rename tag */
   void RenameTag(MultiQueue *queue, RenameTagTask *task) {
     auto it = tag_map_.find(task->tag_id_);
     if (it == tag_map_.end()) {
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     (*task->tag_name_) = (*task->tag_name_);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   /** Destroy tag */
   void DestroyTag(MultiQueue *queue, DestroyTagTask *task) {
     auto it = tag_map_.find(task->tag_id_);
     if (it == tag_map_.end()) {
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     tag_id_map_.erase(it->second.name_);
     tag_map_.erase(it);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   /** Add a blob to a tag */
   void TagAddBlob(MultiQueue *queue, TagAddBlobTask *task) {
     auto it = tag_map_.find(task->tag_id_);
     if (it == tag_map_.end()) {
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     TagInfo &tag = it->second;
-    return task->SetComplete();
+    return task->SetModuleComplete();
   }
 
   /** Remove a blob from a tag */
   void TagRemoveBlob(MultiQueue *queue, TagRemoveBlobTask *task) {
     auto it = tag_map_.find(task->tag_id_);
     if (it == tag_map_.end()) {
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     TagInfo &tag = it->second;
     auto blob_it = std::find(tag.blobs_.begin(), tag.blobs_.end(), task->blob_id_);
     tag.blobs_.erase(blob_it);
-    return task->SetComplete();
+    return task->SetModuleComplete();
   }
 
   /** Clear blobs from a tag */
   void TagClearBlobs(MultiQueue *queue, TagClearBlobsTask *task) {
     auto it = tag_map_.find(task->tag_id_);
     if (it == tag_map_.end()) {
-      task->SetComplete();
+      task->SetModuleComplete();
       return;
     }
     TagInfo &tag = it->second;
     tag.blobs_.clear();
-    return task->SetComplete();
+    return task->SetModuleComplete();
   }
 
  public:

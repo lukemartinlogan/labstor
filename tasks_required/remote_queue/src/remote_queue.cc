@@ -72,12 +72,12 @@ class Server : public TaskLib {
                                                         IoType io_type) {
       this->RpcPushBulk(req, state_id, method, params, bulk, data_size, io_type);
     });
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   /** Destroy remote queue */
   void Destruct(MultiQueue *queue, DestructTask *task) {
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   /** Handle output from replica PUSH */
@@ -110,7 +110,7 @@ class Server : public TaskLib {
           task->orig_task_->task_node_,
           task->orig_task_->task_state_,
           task->orig_task_->method_);
-    task->SetComplete();
+    task->SetModuleComplete();
   }
 
   /** Push for small message */

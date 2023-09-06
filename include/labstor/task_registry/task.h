@@ -31,7 +31,7 @@ namespace labstor {
 /** This task is completed */
 #define TASK_COMPLETE BIT_OPT(u32, 9)
 /** This task was marked completed outside of the worker thread */
-#define TASK_EXTERNAL_COMPLETE BIT_OPT(u32, 10)
+#define TASK_MODULE_COMPLETE BIT_OPT(u32, 10)
 /** This task is long-running */
 #define TASK_LONG_RUNNING BIT_OPT(u32, 11)
 /** This task is fire and forget. Free when completed */
@@ -220,13 +220,13 @@ struct Task : public hipc::ShmContainer {
   }
 
   /** Set task as externally complete */
-  HSHM_ALWAYS_INLINE void SetExternalComplete() {
-    task_flags_.SetBits(TASK_EXTERNAL_COMPLETE);
+  HSHM_ALWAYS_INLINE void SetModuleComplete() {
+    task_flags_.SetBits(TASK_MODULE_COMPLETE);
   }
 
   /** Check if a task marked complete externally */
-  HSHM_ALWAYS_INLINE bool IsExternalComplete() {
-    return task_flags_.Any(TASK_EXTERNAL_COMPLETE);
+  HSHM_ALWAYS_INLINE bool IsModuleComplete() {
+    return task_flags_.Any(TASK_MODULE_COMPLETE);
   }
 
   /** Check if a task is fire & forget */
