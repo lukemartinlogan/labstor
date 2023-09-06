@@ -238,24 +238,32 @@ class Worker {
     if (task->IsStarted()) {
       return true;
     }
+
+    // TODO(llogan): remove
+    std::stringstream ss;
+    for (int i = 0; i < group_.size(); ++i) {
+      ss << std::to_string((int)group_[i]);
+    }
+
     auto it = group_map_.find(group_);
     if (it == group_map_.end()) {
       node.node_depth_ = 1;
       group_map_.emplace(group_, node);
       task->SetStarted();
+      HILOG(kDebug, "(node {}) Increasing depth of group {} to {}",
+            LABSTOR_QM_CLIENT->node_id_, ss.str(), node.node_depth_);
       return true;
     }
     TaskNode &node_cmp = it->second;
     if (node_cmp.root_ == node.root_) {
       node_cmp.node_depth_ += 1;
       task->SetStarted();
+      HILOG(kDebug, "(node {}) Increasing depth of group {} to {}",
+            LABSTOR_QM_CLIENT->node_id_, ss.str(), node.node_depth_);
       return true;
     }
-    std::stringstream ss;
-    for (int i = 0; i < group_.size(); ++i) {
-      ss << std::to_string((int)group_[i]);
-    }
-    HILOG(kDebug, "Task {} is waiting for node {} on group {}", task->task_node_, node_cmp, ss.str());
+    HILOG(kDebug, "(node {}) Task {} is waiting for node {} on group {}",
+          LABSTOR_QM_CLIENT->node_id_, task->task_node_, node_cmp, ss.str());
     return false;
   }
 
@@ -264,8 +272,17 @@ class Worker {
     if (group_.size() == 0) {
       return;
     }
+
+    // TODO(llogan): remove
+    std::stringstream ss;
+    for (int i = 0; i < group_.size(); ++i) {
+      ss << std::to_string((int)group_[i]);
+    }
+
     TaskNode &node = group_map_[group_];
     node.node_depth_ -= 1;
+    HILOG(kDebug, "(node {}) Decreasing depth of group {} to {}",
+          LABSTOR_QM_CLIENT->node_id_, ss.str(), node.node_depth_);
     if (node.node_depth_ == 0) {
       group_map_.erase(group_);
     }
