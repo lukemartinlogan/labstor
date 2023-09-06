@@ -6,6 +6,7 @@
 #define LABSTOR_INCLUDE_LABSTOR_QUEUE_MANAGER_REQUEST_H_
 
 #include "labstor/labstor_types.h"
+#include "labstor/network/local_serialize.h"
 #include <thallium.hpp>
 
 namespace labstor {
