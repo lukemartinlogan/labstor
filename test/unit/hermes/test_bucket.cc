@@ -31,8 +31,7 @@ TEST_CASE("TestHermesPut") {
     // Put a blob
     hermes::Blob blob(KILOBYTES(4));
     memset(blob.data(), i % 256, blob.size());
-    hermes::BlobId blob_id(hermes::BlobId::GetNull());
-    bkt.Put(std::to_string(i % max_blobs), blob, blob_id, ctx);
+    hermes::BlobId blob_id = bkt.Put(std::to_string(i % max_blobs), blob, ctx);
 
     // Get a blob
     HILOG(kInfo, "Put {} returned successfully", i);
@@ -66,13 +65,121 @@ TEST_CASE("TestHermesPutGet") {
     // Put a blob
     hermes::Blob blob(KILOBYTES(4));
     memset(blob.data(), i % 256, blob.size());
-    hermes::BlobId blob_id(hermes::BlobId::GetNull());
-    bkt.Put(std::to_string(i % max_blobs), blob, blob_id, ctx);
+    hermes::BlobId blob_id = bkt.Put(std::to_string(i % max_blobs), blob, ctx);
 
     // Get a blob
      hermes::Blob blob2;
      bkt.Get(blob_id, blob2, ctx);
      REQUIRE(blob.size() == blob2.size());
      REQUIRE(blob == blob2);
+  }
+}
+
+TEST_CASE("TestHermesPartialPutGet") {
+  int rank, nprocs;
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+
+  // Initialize Hermes on all nodes
+  HERMES->ClientInit();
+
+  // Create a bucket
+  HILOG(kInfo, "WE ARE HERE!!!")
+  hermes::Context ctx;
+  hermes::Bucket bkt("hello");
+  HILOG(kInfo, "BUCKET LOADED!!!")
+
+  size_t count_per_proc = 16;
+  size_t off = rank * count_per_proc;
+  size_t max_blobs = 16;
+  size_t total_count = count_per_proc * nprocs;
+  size_t half_blob = KILOBYTES(4);
+  for (size_t i = off; i < total_count; ++i) {
+    HILOG(kInfo, "Iteration: {}", i);
+    // Make left and right blob
+    hermes::Blob lblob(half_blob);
+    memset(lblob.data(), i % 256, lblob.size());
+    hermes::Blob rblob(half_blob);
+    memset(rblob.data(), (i + 1) % 256, rblob.size());
+
+    // PartialPut a blob
+    hermes::BlobId lblob_id = bkt.PartialPut(std::to_string(i % max_blobs), lblob, 0, ctx);
+    hermes::BlobId rblob_id = bkt.PartialPut(std::to_string(i % max_blobs), rblob, half_blob, ctx);
+    REQUIRE(lblob_id == rblob_id);
+
+    // PartialGet a blob
+    hermes::Blob lblob2(half_blob);
+    hermes::Blob rblob2(half_blob);
+    bkt.PartialGet(lblob_id, lblob2, 0, ctx);
+    bkt.PartialGet(rblob_id, rblob2, half_blob, ctx);
+    REQUIRE(lblob2.size() == half_blob);
+    REQUIRE(rblob2.size() == half_blob);
+    REQUIRE(lblob == lblob2);
+    REQUIRE(rblob == rblob2);
+    REQUIRE(lblob2 != rblob2);
+  }
+}
+
+TEST_CASE("TestHermesBlobDestroy") {
+  int rank, nprocs;
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+
+  // Initialize Hermes on all nodes
+  HERMES->ClientInit();
+
+  // Create a bucket
+  HILOG(kInfo, "WE ARE HERE!!!")
+  hermes::Context ctx;
+  hermes::Bucket bkt("hello");
+  HILOG(kInfo, "BUCKET LOADED!!!")
+
+  size_t count_per_proc = 16;
+  size_t off = rank * count_per_proc;
+  size_t total_count = count_per_proc * nprocs;
+  for (size_t i = off; i < total_count; ++i) {
+    HILOG(kInfo, "Iteration: {}", i);
+    // Put a blob
+    hermes::Blob blob(KILOBYTES(4));
+    memset(blob.data(), i % 256, blob.size());
+    hermes::BlobId blob_id = bkt.Put(std::to_string(i), blob, ctx);
+    bkt.DestroyBlob(blob_id, ctx);
+    REQUIRE(!bkt.ContainsBlob(std::to_string(i)));
+  }
+}
+
+TEST_CASE("TestHermesBucketDestroy") {
+  int rank, nprocs;
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+
+  // Initialize Hermes on all nodes
+  HERMES->ClientInit();
+
+  // Create a bucket
+  HILOG(kInfo, "WE ARE HERE!!!")
+  hermes::Context ctx;
+  hermes::Bucket bkt("hello");
+  HILOG(kInfo, "BUCKET LOADED!!!")
+
+  size_t count_per_proc = 16;
+  size_t off = rank * count_per_proc;
+  size_t total_count = count_per_proc * nprocs;
+  for (size_t i = off; i < total_count; ++i) {
+    HILOG(kInfo, "Iteration: {}", i);
+    // Put a blob
+    hermes::Blob blob(KILOBYTES(4));
+    memset(blob.data(), i % 256, blob.size());
+    bkt.Put(std::to_string(i), blob, ctx);
+  }
+
+  bkt.Destroy();
+
+  for (size_t i = off; i < total_count; ++i) {
+    hermes::BlobId blob_id = bkt.GetBlobId(std::to_string(i));
+    REQUIRE(blob_id.IsNull());
   }
 }

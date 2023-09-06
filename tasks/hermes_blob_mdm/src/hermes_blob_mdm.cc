@@ -252,21 +252,25 @@ class Server : public TaskLib {
   void PutBlobModifyPhase(PutBlobTask *task) {
     BlobInfo &blob_info = blob_map_[task->blob_id_];
     hipc::mptr<char> blob_data_mptr(task->data_);
-    char *blob_data = blob_data_mptr.get();
+    char *blob_buf = blob_data_mptr.get();
     std::vector<bdev::WriteTask*> &write_tasks = *task->bdev_writes_;
-    size_t blob_off = 0;
+    size_t blob_off = 0, buf_off = 0;
     HILOG(kDebug, "Number of buffers {}", blob_info.buffers_.size());
     for (BufferInfo &buf : blob_info.buffers_) {
-      if (blob_off <= task->blob_off_ &&
-          task->blob_off_ + task->data_size_ <= blob_off + buf.t_size_) {
-        size_t rel_off = task->blob_off_ - blob_off;
+      if (task->blob_off_ <= blob_off) {
+        size_t rel_off = blob_off - task->blob_off_;
         size_t tgt_off = buf.t_off_ + rel_off;
         size_t buf_size = buf.t_size_ - rel_off;
+        if (blob_off + buf_size > task->blob_off_ + task->data_size_) {
+          buf_size = task->blob_off_ + task->data_size_ - blob_off;
+        }
+        HILOG(kDebug, "Writing {} bytes at off {} from target {}", buf_size, tgt_off, buf.tid_)
         TargetInfo &target = *target_map_[buf.tid_];
         bdev::WriteTask *write_task = target.AsyncWrite(task->task_node_ + 1,
-                                                        blob_data + blob_off,
+                                                        blob_buf + buf_off,
                                                         tgt_off, buf_size);
         write_tasks.emplace_back(write_task);
+        buf_off += buf_size;
       }
       blob_off += buf.t_size_;
     }
@@ -304,22 +308,27 @@ class Server : public TaskLib {
         HSHM_MAKE_AR0(task->bdev_reads_, nullptr);
         std::vector<bdev::ReadTask*> &read_tasks = *task->bdev_reads_;
         read_tasks.reserve(blob_info.buffers_.size());
-        size_t blob_off = 0;
         if (task->data_size_ < 0) {
           task->data_size_ = (ssize_t)(blob_info.blob_size_ - task->blob_off_);
         }
+        size_t blob_off = 0, buf_off = 0;
         hipc::mptr<char> blob_data_mptr(task->data_);
-        char *blob_data = blob_data_mptr.get();
+        char *blob_buf = blob_data_mptr.get();
         for (BufferInfo &buf : blob_info.buffers_) {
-          if (blob_off <= task->blob_off_ &&
-              task->blob_off_ + task->data_size_ <= blob_off + buf.t_size_) {
-            size_t rel_off = task->blob_off_ - blob_off;
+          if (task->blob_off_ <= blob_off) {
+            size_t rel_off = blob_off - task->blob_off_;
             size_t tgt_off = buf.t_off_ + rel_off;
             size_t buf_size = buf.t_size_ - rel_off;
+            if (blob_off + buf_size > task->blob_off_ + task->data_size_) {
+              buf_size = task->blob_off_ + task->data_size_ - blob_off;
+            }
+            HILOG(kDebug, "Loading {} bytes at off {} from target {}", buf_size, tgt_off, buf.tid_)
             TargetInfo &target = *target_map_[buf.tid_];
-            auto read_task = target.AsyncRead(task->task_node_ + 1,
-                                              blob_data + blob_off, tgt_off, buf_size);
+            bdev::ReadTask *read_task = target.AsyncRead(task->task_node_ + 1,
+                                                         blob_buf + buf_off,
+                                                         tgt_off, buf_size);
             read_tasks.emplace_back(read_task);
+            buf_off += buf_size;
           }
           blob_off += buf.t_size_;
         }

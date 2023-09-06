@@ -318,7 +318,6 @@ class Server : public TaskLib {
       auto &orig_task = task_ptr.task_;
       auto &p = task_ptr.p_;
       orig_task->domain_id_ = DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_);
-      orig_task->UnsetDataOwner();
 
       // Execute task
       auto *queue = LABSTOR_QM_CLIENT->GetQueue(QueueId(state_id));
@@ -328,6 +327,7 @@ class Server : public TaskLib {
       }
       orig_task->UnsetStarted();
       orig_task->UnsetMarked();
+      orig_task->UnsetDataOwner();
       queue->Emplace(orig_task->lane_hash_, p);
       HILOG(kDebug, "(node {}) Executing task (task_node={}, task_state={}/{}, state_name={}, method={}, f&f={}, size={}, lane_hash={})",
             LABSTOR_QM_CLIENT->node_id_,

@@ -53,9 +53,8 @@ class Filesystem {
     for (const auto &p : mapping) {
       const Blob page((const char*)ptr + data_offset, p.blob_size_);
       if (!append) {
-        BlobId blob_id;
         std::string blob_name(p.CreateBlobName().str());
-        bkt.PartialPut(blob_name, page, p.blob_off_, blob_id, ctx);
+        bkt.PartialPut(blob_name, page, p.blob_off_, ctx);
       } else {
         bkt.Append(page, ctx);
       }
@@ -82,10 +81,8 @@ class Filesystem {
     // Perform a PartialPut for each page
     for (const auto &p : mapping) {
       Blob page((const char*)ptr + data_offset, p.blob_size_);
-      ssize_t data_size;
-      BlobId blob_id;
       std::string blob_name(p.CreateBlobName().str());
-      bkt.PartialGet(blob_name, page, p.blob_off_, data_size, blob_id, ctx);
+      bkt.PartialGet(blob_name, page, p.blob_off_, ctx);
       data_offset += p.blob_size_;
     }
 

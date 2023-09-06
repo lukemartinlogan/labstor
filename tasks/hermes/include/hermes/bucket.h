@@ -160,11 +160,10 @@ class Bucket {
    *
    * @param blob_name the name of the blob
    * @param blob_id (output) the returned blob_id
-   * @return The Status of the operation
+   * @return
    * */
-  Status GetBlobId(const std::string &blob_name, BlobId &blob_id) {
-    blob_id = blob_mdm_->GetBlobIdRoot(id_, hshm::to_charbuf(blob_name));
-    return Status();
+  BlobId GetBlobId(const std::string &blob_name) {
+    return blob_mdm_->GetBlobIdRoot(id_, hshm::to_charbuf(blob_name));
   }
 
   /**
@@ -202,10 +201,13 @@ class Bucket {
    * Put \a blob_name Blob into the bucket
    * */
   template<bool PARTIAL, bool APPEND>
-  Status Put(const std::string &blob_name,
-             const Blob &blob,
-             BlobId &blob_id,
-             Context &ctx) {
+  HSHM_ALWAYS_INLINE
+  BlobId BasePut(const std::string &blob_name,
+                 const Blob &blob,
+                 size_t blob_off,
+                 const BlobId &orig_blob_id,
+                 Context &ctx) {
+    BlobId blob_id = orig_blob_id;
     // Copy data to shared memory
     hipc::Pointer p = LABSTOR_CLIENT->AllocateBuffer(blob.size());
     char *data = LABSTOR_CLIENT->GetPrivatePointer(p);
@@ -222,31 +224,48 @@ class Bucket {
                                   bitfield32_t(HERMES_BLOB_REPLACE));
     } else {
       blob_mdm_->AsyncPutBlobRoot(id_, blob_name_buf,
-                                  blob_id, 0, blob.size(), p, ctx.blob_score_,
+                                  blob_id, blob_off, blob.size(), p, ctx.blob_score_,
                                   bitfield32_t(0));
     }
-    return Status();
+    return blob_id;
   }
 
   /**
    * Put \a blob_name Blob into the bucket
    * */
-  Status Put(const std::string &blob_name,
+  BlobId Put(const std::string &blob_name,
              const Blob &blob,
-             BlobId &blob_id,
              Context &ctx) {
-    return Put<false, false>(blob_name, blob, blob_id, ctx);
+    return BasePut<false, false>(blob_name, blob, 0, BlobId::GetNull(), ctx);
+  }
+
+  /**
+   * Put \a blob_id Blob into the bucket
+   * */
+  BlobId Put(const BlobId &blob_id,
+             const Blob &blob,
+             Context &ctx) {
+    return BasePut<false, false>("", blob, 0, blob_id, ctx);
   }
 
   /**
    * Put \a blob_name Blob into the bucket
    * */
-  Status PartialPut(const std::string &blob_name,
+  BlobId PartialPut(const std::string &blob_name,
                     const Blob &blob,
                     size_t blob_off,
-                    BlobId &blob_id,
                     Context &ctx) {
-    return Put<true, false>(blob_name, blob, blob_id, ctx);
+    return BasePut<true, false>(blob_name, blob, blob_off, BlobId::GetNull(), ctx);
+  }
+
+  /**
+   * Put \a blob_id Blob into the bucket
+   * */
+  BlobId PartialPut(const BlobId &blob_id,
+                    const Blob &blob,
+                    size_t blob_off,
+                    Context &ctx) {
+    return BasePut<true, false>("", blob, blob_off, blob_id, ctx);
   }
 
   /**
@@ -268,43 +287,71 @@ class Bucket {
   /**
    * Get \a blob_id Blob from the bucket
    * */
-  Status Get(const BlobId &blob_id,
-             Blob &blob,
-             Context &ctx) {
+  BlobId BaseGet(const std::string &blob_name,
+                 const BlobId &orig_blob_id,
+                 Blob &blob,
+                 size_t blob_off,
+                 Context &ctx) {
+    BlobId blob_id = orig_blob_id;
+    // Get the blob ID
+    if (blob_id.IsNull()) {
+      blob_id = blob_mdm_->GetBlobIdRoot(id_, hshm::to_charbuf(blob_name));
+    }
+    if (blob_id.IsNull()) {
+      return blob_id;
+    }
     // Get from shared memory
-    ssize_t data_size = blob.size();
+    size_t data_size = blob.size();
     if (data_size == 0) {
       data_size = GetBlobSize(blob_id);
     }
     hipc::Pointer data_p = LABSTOR_CLIENT->AllocateBuffer(data_size);
-    data_size = blob_mdm_->GetBlobRoot(blob_id, 0, data_size, data_p);
+    data_size = blob_mdm_->GetBlobRoot(blob_id, blob_off, data_size, data_p);
     char *data = LABSTOR_CLIENT->GetPrivatePointer(data_p);
     // Copy data to blob
     // TODO(llogan): intercept mmap to avoid copy
     blob.resize(data_size);
     memcpy(blob.data(), data, data_size);
     LABSTOR_CLIENT->FreeBuffer(data_p);
-    return Status();
+    return blob_id;
+  }
+
+  /**
+   * Get \a blob_id Blob from the bucket
+   * */
+  BlobId Get(const std::string &blob_name,
+             Blob &blob,
+             Context &ctx) {
+    return BaseGet(blob_name, BlobId::GetNull(), blob, 0, ctx);
   }
 
   /**
    * Put \a blob_name Blob into the bucket
    * */
-  Status PartialGet(const std::string &blob_name,
+  BlobId PartialGet(const std::string &blob_name,
                     Blob &blob,
-                    size_t blob_off_,
-                    ssize_t data_size,
-                    const BlobId &blob_id,
+                    size_t blob_off,
                     Context &ctx) {
-    // Get from shared memory
-    hipc::Pointer data_p = LABSTOR_CLIENT->AllocateBuffer(data_size);
-    blob_mdm_->GetBlobRoot(blob_id, blob_off_, data_size, data_p);
-    char *data = LABSTOR_CLIENT->GetPrivatePointer(data_p);
-    // TODO(llogan): intercept mmap to avoid copy
-    blob.resize(data_size);
-    memcpy(blob.data(), data, data_size);
-    LABSTOR_CLIENT->FreeBuffer(data_p);
-    return Status();
+    return BaseGet(blob_name, BlobId::GetNull(), blob, blob_off, ctx);
+  }
+
+  /**
+   * Get \a blob_id Blob from the bucket
+   * */
+  BlobId Get(const BlobId &blob_id,
+             Blob &blob,
+             Context &ctx) {
+    return BaseGet("", blob_id, blob, 0, ctx);
+  }
+
+  /**
+   * Put \a blob_name Blob into the bucket
+   * */
+  BlobId PartialGet(const BlobId &blob_id,
+                    Blob &blob,
+                    size_t blob_off,
+                    Context &ctx) {
+    return BaseGet("", blob_id, blob, blob_off, ctx);
   }
 
   /**

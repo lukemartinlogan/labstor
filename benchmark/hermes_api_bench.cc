@@ -42,14 +42,13 @@ void PutTest(int nprocs, int rank,
   Timer t;
   hermes::Context ctx;
   hermes::Bucket bkt("hello", ctx);
-  hermes::BlobId blob_id;
   hermes::Blob blob(blob_size);
   t.Resume();
   for (int j = 0; j < repeat; ++j) {
     for (size_t i = 0; i < blobs_per_rank; ++i) {
       size_t blob_name_int = rank * blobs_per_rank + i;
       std::string name = std::to_string(blob_name_int);
-      bkt.Put(name, blob, blob_id, ctx);
+      bkt.Put(name, blob, ctx);
     }
   }
   t.Pause();
@@ -65,14 +64,13 @@ void GetTest(int nprocs, int rank,
   Timer t;
   hermes::Context ctx;
   hermes::Bucket bkt("hello", ctx);
-  hermes::BlobId blob_id;
   t.Resume();
   for (int j = 0; j < repeat; ++j) {
     for (size_t i = 0; i < blobs_per_rank; ++i) {
       size_t blob_name_int = rank * blobs_per_rank + i;
       std::string name = std::to_string(blob_name_int);
       hermes::Blob ret;
-      bkt.GetBlobId(name, blob_id);
+      hermes::BlobId blob_id = bkt.GetBlobId(name);
       bkt.Get(blob_id, ret, ctx);
     }
   }
@@ -131,7 +129,6 @@ void DeleteBucketTest(int nprocs, int rank,
                       size_t blobs_per_bucket) {
   Timer t;
   hapi::Context ctx;
-  hermes::BlobId blob_id;
 
   // Create the buckets
   for (size_t i = 0; i < bkt_per_rank; ++i) {
@@ -139,7 +136,7 @@ void DeleteBucketTest(int nprocs, int rank,
     hapi::Blob blob;
     for (size_t j = 0; j < blobs_per_bucket; ++j) {
       std::string name = std::to_string(j);
-      bkt.Put(name, blob, blob_id, ctx);
+      bkt.Put(name, blob,  ctx);
     }
   }
 
