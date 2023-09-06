@@ -255,7 +255,7 @@ class Worker {
     for (int i = 0; i < group_.size(); ++i) {
       ss << std::to_string((int)group_[i]);
     }
-    HILOG(kDebug, "Task {} is waiting for group {}", task->task_node_, ss.str());
+    HILOG(kDebug, "Task {} is waiting for node {} on group {}", task->task_node_, node_cmp, ss.str());
     return false;
   }
 
