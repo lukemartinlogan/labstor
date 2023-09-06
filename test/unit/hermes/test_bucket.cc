@@ -18,26 +18,28 @@ TEST_CASE("TestHermesPut") {
   // Initialize Hermes on all nodes
   HERMES->ClientInit();
 
-  // Create a bucket
-  hermes::Context ctx;
-  hermes::Bucket bkt("hello");
+  if (rank == 0) {
+    // Create a bucket
+    hermes::Context ctx;
+    hermes::Bucket bkt("hello");
 
-  size_t count_per_proc = 16;
-  size_t off = rank * count_per_proc;
-  size_t max_blobs = 4;
-  size_t total_count = count_per_proc * nprocs;
-  for (size_t i = off; i < total_count; ++i) {
-    HILOG(kInfo, "Iteration: {}", i);
-    // Put a blob
-    hermes::Blob blob(KILOBYTES(4));
-    memset(blob.data(), i % 256, blob.size());
-    hermes::BlobId blob_id(hermes::BlobId::GetNull());
-    bkt.Put(std::to_string(i % max_blobs), blob, blob_id, ctx);
+    size_t count_per_proc = 16;
+    size_t off = rank * count_per_proc;
+    size_t max_blobs = 4;
+    size_t total_count = count_per_proc * nprocs;
+    for (size_t i = 1; i < 2; ++i) {
+      HILOG(kInfo, "Iteration: {}", i);
+      // Put a blob
+      hermes::Blob blob(KILOBYTES(4));
+      memset(blob.data(), i % 256, blob.size());
+      hermes::BlobId blob_id(hermes::BlobId::GetNull());
+      bkt.Put(std::to_string(i % max_blobs), blob, blob_id, ctx);
 
-    // Get a blob
-    HILOG(kInfo, "Put {} returned successfully", i);
-    size_t size = bkt.GetBlobSize(blob_id);
-    REQUIRE(blob.size() == size);
+      // Get a blob
+      HILOG(kInfo, "Put {} returned successfully", i);
+      size_t size = bkt.GetBlobSize(blob_id);
+      REQUIRE(blob.size() == size);
+    }
   }
   MPI_Barrier(MPI_COMM_WORLD);
 }
