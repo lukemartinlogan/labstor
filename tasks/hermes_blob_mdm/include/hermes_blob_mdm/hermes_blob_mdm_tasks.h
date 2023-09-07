@@ -86,19 +86,6 @@ struct DestructTask : public DestroyTaskStateTask {
  * Blob Operations
  * ===================================*/
 
-/** Phases for the put task */
-class PutBlobPhase {
- public:
-  TASK_METHOD_T kCreate = 0;
-  TASK_METHOD_T kAllocate = 1;
-  TASK_METHOD_T kWaitAllocate = 2;
-  TASK_METHOD_T kModify = 3;
-  TASK_METHOD_T kWaitModify = 4;
-};
-
-#define HERMES_BLOB_REPLACE BIT_OPT(u32, 0)
-#define HERMES_BLOB_APPEND BIT_OPT(u32, 1)
-
 /**
  * Get \a blob_name BLOB from \a bkt_id bucket
  * */
@@ -156,6 +143,19 @@ struct GetOrCreateBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
     return TASK_UNORDERED;
   }
 };
+
+/** Phases for the put task */
+class PutBlobPhase {
+ public:
+  TASK_METHOD_T kCreate = 0;
+  TASK_METHOD_T kAllocate = 1;
+  TASK_METHOD_T kWaitAllocate = 2;
+  TASK_METHOD_T kModify = 3;
+  TASK_METHOD_T kWaitModify = 4;
+};
+
+#define HERMES_BLOB_REPLACE BIT_OPT(u32, 0)
+#define HERMES_BLOB_APPEND BIT_OPT(u32, 1)
 
 /** A task to put data in a blob */
 struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
@@ -903,7 +903,6 @@ struct ReorganizeBlobPhase {
   TASK_METHOD_T kGet = 0;
   TASK_METHOD_T kWaitGet = 1;
   TASK_METHOD_T kPut = 2;
-  TASK_METHOD_T kWaitPut = 3;
 };
 
 /** A task to reorganize a blob's composition in the hierarchy */
@@ -935,7 +934,7 @@ struct ReorganizeBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
     task_state_ = state_id;
-    method_ = Method::kDestroyBlob;
+    method_ = Method::kReorganizeBlob;
     task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET);
     domain_id_ = domain_id;
 
@@ -943,14 +942,6 @@ struct ReorganizeBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     blob_id_ = blob_id;
     score_ = score;
     node_id_ = node_id;
-  }
-
-  /** Destructor */
-  HSHM_ALWAYS_INLINE
-  ~ReorganizeBlobTask() {
-    if (IsDataOwner()) {
-      LABSTOR_CLIENT->FreeBuffer(data_);
-    }
   }
 
   /** (De)serialize message call */

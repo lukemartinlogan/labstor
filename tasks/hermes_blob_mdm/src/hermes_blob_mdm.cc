@@ -144,8 +144,6 @@ class Server : public TaskLib {
     // Get the blob info data structure
     task->did_create_ = false;
     hshm::charbuf blob_name = hshm::to_charbuf(*task->blob_name_);
-    hshm::charbuf blob_name_unique = GetBlobNameWithBucket(
-        task->tag_id_, blob_name);
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
       task->did_create_ = true;
@@ -569,6 +567,7 @@ class Server : public TaskLib {
           return;
         }
         LABSTOR_CLIENT->DelTask(task->get_task_);
+        task->phase_ = ReorganizeBlobPhase::kPut;
       }
       case ReorganizeBlobPhase::kPut: {
         task->put_task_ = blob_mdm_.AsyncPutBlob(task->task_node_ + 1,
@@ -577,14 +576,7 @@ class Server : public TaskLib {
                                                  task->data_size_,
                                                  task->data_,
                                                  task->score_,
-                                                 bitfield32_t(0));
-        task->phase_ = ReorganizeBlobPhase::kWaitPut;
-      }
-      case ReorganizeBlobPhase::kWaitPut: {
-        if (!task->put_task_->IsComplete()) {
-          return;
-        }
-        LABSTOR_CLIENT->DelTask(task->put_task_);
+                                                 bitfield32_t(HERMES_BLOB_REPLACE));
         task->SetModuleComplete();
       }
     }

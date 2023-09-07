@@ -97,7 +97,11 @@ class Client : public ConfigurationManager {
   template<typename TaskT, typename ...Args>
   HSHM_ALWAYS_INLINE
   TaskT* NewTask(hipc::Pointer &p, const TaskNode &task_node, Args&& ...args) {
-    return main_alloc_->NewObj<TaskT>(p, main_alloc_, task_node, std::forward<Args>(args)...);
+    TaskT *ptr = main_alloc_->NewObj<TaskT>(p, main_alloc_, task_node, std::forward<Args>(args)...);
+    if (ptr == nullptr) {
+      throw std::runtime_error("Could not allocate buffer");
+    }
+    return ptr;
   }
 
   /** Create a root task */
@@ -105,7 +109,11 @@ class Client : public ConfigurationManager {
   HSHM_ALWAYS_INLINE
   TaskT* NewTaskRoot(hipc::Pointer &p, Args&& ...args) {
     TaskNode task_node = MakeTaskNodeId();
-    return main_alloc_->NewObj<TaskT>(p, main_alloc_, task_node, std::forward<Args>(args)...);
+    TaskT *ptr = main_alloc_->NewObj<TaskT>(p, main_alloc_, task_node, std::forward<Args>(args)...);
+    if (ptr == nullptr) {
+      throw std::runtime_error("Could not allocate buffer");
+    }
+    return ptr;
   }
 
   /** Destroy a task */
@@ -130,7 +138,11 @@ class Client : public ConfigurationManager {
   /** Allocate a buffer */
   HSHM_ALWAYS_INLINE
   hipc::Pointer AllocateBuffer(size_t size) {
-    return main_alloc_->Allocate(size);
+    hipc::Pointer p = main_alloc_->Allocate(size);
+    if (p.IsNull()) {
+      throw std::runtime_error("Could not allocate buffer");
+    }
+    return p;
   }
 
   /** Convert pointer to char* */
