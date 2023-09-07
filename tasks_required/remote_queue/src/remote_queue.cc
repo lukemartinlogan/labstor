@@ -268,6 +268,7 @@ class Server : public TaskLib {
     TaskState *exec;
     Task *orig_task;
     RpcExec(req, state_id, method, xfer, orig_task, exec);
+    RpcComplete(req, method, orig_task, exec, state_id);
   }
 
   /** The RPC for processing a message with data */
