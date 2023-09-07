@@ -97,7 +97,7 @@ struct PushTask : public Task, TaskFlags<TF_LOCAL> {
   IN std::vector<DataTransfer> xfer_;
   // TEMP std::vector<tl::async_response> tl_future_;
   TEMP std::vector<void*> tl_future_;
-  TEMP int phase_;
+  TEMP int phase_ = PushPhase::kStart;
   TEMP int replica_;
   TEMP std::string params_;
 
@@ -130,7 +130,6 @@ struct PushTask : public Task, TaskFlags<TF_LOCAL> {
     exec_ = exec;
     exec_method_ = exec_method;
     xfer_ = std::move(xfer);
-    phase_ = PushPhase::kStart;
     replica_ = 0;
   }
 

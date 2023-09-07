@@ -168,9 +168,9 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   IN bitfield32_t flags_;
   IN BlobId blob_id_;
   TEMP bool did_create_;
-  TEMP int phase_;
-  TEMP int plcmnt_idx_;
-  TEMP int sub_plcmnt_idx_;
+  TEMP int phase_ = PutBlobPhase::kCreate;
+  TEMP int plcmnt_idx_ = 0;
+  TEMP int sub_plcmnt_idx_ = 0;
   TEMP hermes::bdev::AllocTask *cur_bdev_alloc_;
   TEMP hipc::ShmArchive<std::vector<PlacementSchema>> schema_;
   TEMP hipc::ShmArchive<std::vector<hermes::bdev::WriteTask*>> bdev_writes_;
@@ -210,9 +210,6 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     data_ = data;
     score_ = score;
     flags_ = flags;
-    phase_ = PutBlobPhase::kCreate;
-    plcmnt_idx_ = 0;
-    sub_plcmnt_idx_ = 0;
   }
 
   /** Destructor */
@@ -231,8 +228,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
                       data_size_, domain_id_);
     task_serialize<Ar>(ar);
     ar & xfer;
-    ar(tag_id_, blob_name_, blob_id_, blob_off_, data_size_, score_, flags_,
-       phase_, plcmnt_idx_, sub_plcmnt_idx_);
+    ar(tag_id_, blob_name_, blob_id_, blob_off_, data_size_, score_, flags_);
   }
 
   /** Deserialize message call */
@@ -273,7 +269,7 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   IN size_t blob_off_;
   IN hipc::Pointer data_;
   INOUT ssize_t data_size_;
-  TEMP int phase_;
+  TEMP int phase_ = GetBlobPhase::kStart;
   TEMP hipc::ShmArchive<std::vector<bdev::ReadTask*>> bdev_reads_;
 
   /** SHM default constructor */
@@ -299,7 +295,6 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     domain_id_ = domain_id;
 
     // Custom params
-    phase_ = GetBlobPhase::kStart;
     blob_id_ = blob_id;
     blob_off_ = off;
     data_size_ = data_size;
@@ -849,7 +844,7 @@ struct DestroyBlobPhase {
 /** A task to destroy a blob */
 struct DestroyBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN BlobId blob_id_;
-  TEMP int phase_;
+  TEMP int phase_ = DestroyBlobPhase::kFreeBuffers;
   TEMP hipc::ShmArchive<std::vector<bdev::FreeTask *>> free_tasks_;
 
   /** SHM default constructor */
@@ -873,7 +868,6 @@ struct DestroyBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
 
     // Custom params
     blob_id_ = blob_id;
-    phase_ = DestroyBlobPhase::kFreeBuffers;
   }
 
   /** (De)serialize message call */

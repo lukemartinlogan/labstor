@@ -148,7 +148,7 @@ struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
   IN u32 queue_depth_;
   IN bitfield32_t queue_flags_;
   INOUT TaskStateId id_;
-  TEMP int phase_;
+  TEMP int phase_ = 0;
   TEMP GetOrCreateTaskStateIdTask *get_id_task_;
 
   /** SHM default constructor */
@@ -172,7 +172,6 @@ struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
     method_ = Method::kCreateTaskState;
     task_flags_.SetBits(0);
     domain_id_ = domain_id;
-    phase_ = 0;
 
     // Initialize
     HSHM_MAKE_AR(state_name_, alloc, state_name);

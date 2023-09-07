@@ -395,7 +395,7 @@ class DestroyTagPhase {
 /** A task to destroy a tag */
 struct DestroyTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN TagId tag_id_;
-  TEMP int phase_;
+  TEMP int phase_ = DestroyTagPhase::kDestroyBlobs;
   TEMP hipc::ShmArchive<std::vector<blob_mdm::DestroyBlobTask*>> destroy_blob_tasks_;
 
   /** SHM default constructor */
@@ -419,7 +419,6 @@ struct DestroyTagTask : public Task, TaskFlags<TF_SRL_SYM> {
 
     // Custom params
     tag_id_ = tag_id;
-    phase_ = DestroyTagPhase::kDestroyBlobs;
   }
 
   /** (De)serialize message call */
