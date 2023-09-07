@@ -487,7 +487,7 @@ struct GetBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar(tag_id_, blob_id_, blob_name_);
+    ar(tag_id_, blob_name_);
   }
 
   /** (De)serialize message return */
