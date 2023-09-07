@@ -294,13 +294,13 @@ class Server : public TaskLib {
     // Process the message
     if (io_type == IoType::kWrite) {
       LABSTOR_THALLIUM->IoCallServer(req, bulk, io_type, data.data(), data_size);
-      HILOG(kDebug, "(node {}) Write blob integer: {}", (int)data[0])
+      HILOG(kDebug, "(node {}) Write blob integer: {}", LABSTOR_QM_CLIENT->node_id_, (int)data[0])
     }
     TaskState *exec;
     Task *orig_task;
     RpcExec(req, state_id, method, xfer, orig_task, exec);
     if (io_type == IoType::kRead) {
-      HILOG(kDebug, "(node {}) Read blob integer: {}", (int)data[0])
+      HILOG(kDebug, "(node {}) Read blob integer: {}", LABSTOR_QM_CLIENT->node_id_, (int)data[0])
       LABSTOR_THALLIUM->IoCallServer(req, bulk, io_type, data.data(), data_size);
     }
 
