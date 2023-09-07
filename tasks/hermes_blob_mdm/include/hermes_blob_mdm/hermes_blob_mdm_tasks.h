@@ -229,6 +229,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     task_serialize<Ar>(ar);
     ar & xfer;
     ar(tag_id_, blob_name_, blob_id_, blob_off_, data_size_, score_, flags_);
+    HILOG(kDebug, "(node {}) Save put blob integer: {}", (int)((char*)xfer.data_)[0])
   }
 
   /** Deserialize message call */
@@ -239,6 +240,8 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     ar & xfer;
     data_ = HERMES_MEMORY_MANAGER->Convert<void, hipc::Pointer>(xfer.data_);
     ar(tag_id_, blob_name_, blob_id_, blob_off_, data_size_, score_, flags_);
+
+    HILOG(kDebug, "(node {}) Load put blob integer: {}", (int)((char*)xfer.data_)[0])
   }
 
   /** (De)serialize message return */

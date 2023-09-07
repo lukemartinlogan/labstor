@@ -265,7 +265,9 @@ class Server : public TaskLib {
                   "(task_state={}, method={})", xfer[0].data_size_, state_id, method);
 
     // Process the message
-    RpcPush(req, state_id, method, xfer);
+    TaskState *exec;
+    Task *orig_task;
+    RpcExec(req, state_id, method, xfer, orig_task, exec);
   }
 
   /** The RPC for processing a message with data */
@@ -277,7 +279,6 @@ class Server : public TaskLib {
                    size_t data_size,
                    IoType io_type) {
     hshm::charbuf data(data_size);
-    LABSTOR_THALLIUM->IoCallServer(req, bulk, io_type, data.data(), data_size);
 
     // Create the input data transfer object
     std::vector<DataTransfer> xfer(2);
@@ -290,82 +291,80 @@ class Server : public TaskLib {
                   "(task_state={}, method={})", xfer[0].data_size_, state_id, method);
 
     // Process the message
-    RpcPush(req, state_id, method, xfer);
+    if (io_type == IoType::kWrite) {
+      LABSTOR_THALLIUM->IoCallServer(req, bulk, io_type, data.data(), data_size);
+    }
+    TaskState *exec;
+    Task *orig_task;
+    RpcExec(req, state_id, method, xfer, orig_task, exec);
+    if (io_type == IoType::kRead) {
+      LABSTOR_THALLIUM->IoCallServer(req, bulk, io_type, data.data(), data_size);
+    }
+
+    // Return
+    RpcComplete(req, method, orig_task, exec, state_id);
   }
 
   /** Push operation called at the remote server */
-  void RpcPush(const tl::request &req,
+  void RpcExec(const tl::request &req,
                const TaskStateId &state_id,
                u32 method,
-               std::vector<DataTransfer> &xfer) {
-    try {
-      size_t data_size = xfer[0].data_size_;
-      BinaryInputArchive<true> ar(xfer);
+               std::vector<DataTransfer> &xfer,
+               Task *&orig_task, TaskState *&exec) {
+    size_t data_size = xfer[0].data_size_;
+    BinaryInputArchive<true> ar(xfer);
 
-      // Deserialize task
-      TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(state_id);
-      if (exec == nullptr) {
-        HELOG(kFatal, "(node {}) Could not find the task state {}",
-              LABSTOR_QM_CLIENT->node_id_, state_id);
-        req.respond(std::string());
-        return;
-      } else {
-        HILOG(kDebug, "(node {}) Found task state {}",
-              LABSTOR_QM_CLIENT->node_id_,
-              state_id);
-      }
-      TaskPointer task_ptr = exec->LoadStart(method, ar);
-      auto &orig_task = task_ptr.task_;
-      auto &p = task_ptr.p_;
-      orig_task->domain_id_ = DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_);
-
-      // Execute task
-      auto *queue = LABSTOR_QM_CLIENT->GetQueue(QueueId(state_id));
-      bool is_fire_forget = orig_task->IsFireAndForget();
-      if (is_fire_forget) {
-        orig_task->UnsetFireAndForget();
-      }
-      orig_task->UnsetStarted();
-      orig_task->UnsetMarked();
-      orig_task->UnsetDataOwner();
-      queue->Emplace(orig_task->lane_hash_, p);
-      HILOG(kDebug, "(node {}) Executing task (task_node={}, task_state={}/{}, state_name={}, method={}, f&f={}, size={}, lane_hash={})",
+    // Deserialize task
+    exec = LABSTOR_TASK_REGISTRY->GetTaskState(state_id);
+    if (exec == nullptr) {
+      HELOG(kFatal, "(node {}) Could not find the task state {}",
+            LABSTOR_QM_CLIENT->node_id_, state_id);
+      req.respond(std::string());
+      return;
+    } else {
+      HILOG(kDebug, "(node {}) Found task state {}",
             LABSTOR_QM_CLIENT->node_id_,
-            orig_task->task_node_,
-            orig_task->task_state_,
-            state_id,
-            exec->name_,
-            method,
-            is_fire_forget,
-            data_size,
-            orig_task->lane_hash_);
-
-      try {
-        orig_task->Wait<1>();
-        BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
-        auto out_xfer = exec->SaveEnd(method, ar, orig_task);
-        LABSTOR_CLIENT->DelTask(orig_task);
-        HILOG(kDebug, "(node {}) Returning {} bytes of data (task_node={}, task_state={}/{}, method={}, f&f={})",
-              LABSTOR_QM_CLIENT->node_id_,
-              out_xfer[0].data_size_,
-              orig_task->task_node_,
-              orig_task->task_state_,
-              state_id,
-              method,
-              is_fire_forget);
-        req.respond(std::string((char *) out_xfer[0].data_, out_xfer[0].data_size_));
-      } catch (std::exception &e) {
-        HILOG(kDebug, "SaveEnd failed (task_node={}, task_state={}/{}, method={}, f&f={}): {}",
-              orig_task->task_node_,
-              orig_task->task_state_,
-              state_id,
-              method,
-              is_fire_forget,
-              e.what());
-      }
-    } catch (std::exception &e) {
-      HELOG(kFatal, "LoadStart {}/{}: {}", state_id, method, e.what());
+            state_id);
     }
+    TaskPointer task_ptr = exec->LoadStart(method, ar);
+    orig_task = task_ptr.task_;
+    hipc::Pointer &p = task_ptr.p_;
+    orig_task->domain_id_ = DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_);
+
+    // Execute task
+    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(QueueId(state_id));
+    orig_task->UnsetFireAndForget();
+    orig_task->UnsetStarted();
+    orig_task->UnsetMarked();
+    orig_task->UnsetDataOwner();
+    queue->Emplace(orig_task->lane_hash_, p);
+    HILOG(kDebug,
+          "(node {}) Executing task (task_node={}, task_state={}/{}, state_name={}, method={}, size={}, lane_hash={})",
+          LABSTOR_QM_CLIENT->node_id_,
+          orig_task->task_node_,
+          orig_task->task_state_,
+          state_id,
+          exec->name_,
+          method,
+          data_size,
+          orig_task->lane_hash_);
+  }
+
+  void RpcComplete(const tl::request &req,
+                   u32 method, Task *orig_task,
+                   TaskState *exec, TaskStateId state_id) {
+    orig_task->Wait<1>();
+    BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
+    auto out_xfer = exec->SaveEnd(method, ar, orig_task);
+    LABSTOR_CLIENT->DelTask(orig_task);
+    HILOG(kDebug, "(node {}) Returning {} bytes of data (task_node={}, task_state={}/{}, method={})",
+          LABSTOR_QM_CLIENT->node_id_,
+          out_xfer[0].data_size_,
+          orig_task->task_node_,
+          orig_task->task_state_,
+          state_id,
+          method);
+    req.respond(std::string((char *) out_xfer[0].data_, out_xfer[0].data_size_));
   }
 
  public:
