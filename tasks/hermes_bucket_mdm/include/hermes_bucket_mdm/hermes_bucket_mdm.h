@@ -69,11 +69,11 @@ class Client {
 
   /** Create a tag or get the ID of existing tag */
   HSHM_ALWAYS_INLINE
-  void GetOrCreateTag(const TaskNode &task_node,
-                      const hshm::charbuf &tag_name,
-                      bool blob_owner,
-                      const std::vector<TraitId> &traits,
-                      size_t backend_size) {
+  TagId GetOrCreateTag(const TaskNode &task_node,
+                       const hshm::charbuf &tag_name,
+                       bool blob_owner,
+                       const std::vector<TraitId> &traits,
+                       size_t backend_size) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
     HILOG(kDebug, "Creating a tag {}", tag_name.str());
@@ -83,7 +83,9 @@ class Client {
         tag_name, blob_owner, traits, backend_size);
     queue->Emplace(hash, p);
     task->Wait();
+    TagId tag_id = task->tag_id_;
     LABSTOR_CLIENT->DelTask(task);
+    return tag_id;
   }
   LABSTOR_TASK_NODE_ROOT(GetOrCreateTag);
 

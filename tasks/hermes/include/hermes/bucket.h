@@ -39,8 +39,8 @@ class Bucket {
     mdm_ = &HERMES->mdm_;
     blob_mdm_ = &HERMES->blob_mdm_;
     bkt_mdm_ = &HERMES->bkt_mdm_;
-    bkt_mdm_->GetOrCreateTagRoot(hshm::charbuf(bkt_name), true,
-                                 std::vector<TraitId>(), backend_size);
+    id_ = bkt_mdm_->GetOrCreateTagRoot(hshm::charbuf(bkt_name), true,
+                                       std::vector<TraitId>(), backend_size);
   }
 
   /**
@@ -55,8 +55,8 @@ class Bucket {
     mdm_ = &HERMES->mdm_;
     blob_mdm_ = &HERMES->blob_mdm_;
     bkt_mdm_ = &HERMES->bkt_mdm_;
-    bkt_mdm_->GetOrCreateTagRoot(hshm::charbuf(bkt_name), true,
-                                 std::vector<TraitId>(), backend_size);
+    id_ = bkt_mdm_->GetOrCreateTagRoot(hshm::charbuf(bkt_name), true,
+                                       std::vector<TraitId>(), backend_size);
   }
 
   /**
