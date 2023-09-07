@@ -194,27 +194,25 @@ TEST_CASE("TestHermesReorganizeBlob") {
   hermes::Context ctx;
   hermes::Bucket bkt("hello");
 
-  if (rank == 0) {
-    size_t count_per_proc = 16;
-    size_t off = rank * count_per_proc;
-    size_t proc_count = off + count_per_proc;
-    for (size_t i = off; i < proc_count; ++i) {
-      HILOG(kInfo, "Iteration: {}", i);
-      // Put a blob
-      hermes::Blob blob(KILOBYTES(4));
-      memset(blob.data(), i % 256, blob.size());
-      hermes::BlobId blob_id = bkt.Put(std::to_string(i), blob, ctx);
-      bkt.ReorganizeBlob(blob_id, .5, 0, ctx);
-      hermes::Blob blob2;
-      bkt.Get(blob_id, blob2, ctx);
-      REQUIRE(blob.size() == blob2.size());
-      REQUIRE(blob == blob2);
-    }
+  size_t count_per_proc = 16;
+  size_t off = rank * count_per_proc;
+  size_t proc_count = off + count_per_proc;
+  for (size_t i = off; i < proc_count; ++i) {
+    HILOG(kInfo, "Iteration: {}", i);
+    // Put a blob
+    hermes::Blob blob(KILOBYTES(4));
+    memset(blob.data(), i % 256, blob.size());
+    hermes::BlobId blob_id = bkt.Put(std::to_string(i), blob, ctx);
+    bkt.ReorganizeBlob(blob_id, .5, 0, ctx);
+    hermes::Blob blob2;
+    bkt.Get(blob_id, blob2, ctx);
+    REQUIRE(blob.size() == blob2.size());
+    REQUIRE(blob == blob2);
+  }
 
-    for (size_t i = off; i < proc_count; ++i) {
-      HILOG(kInfo, "ContainsBlob Iteration: {}", i);
-      REQUIRE(bkt.ContainsBlob(std::to_string(i)));
-    }
+  for (size_t i = off; i < proc_count; ++i) {
+    HILOG(kInfo, "ContainsBlob Iteration: {}", i);
+    REQUIRE(bkt.ContainsBlob(std::to_string(i)));
   }
 
   MPI_Barrier(MPI_COMM_WORLD);
