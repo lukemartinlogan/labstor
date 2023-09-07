@@ -408,9 +408,11 @@ class Server : public TaskLib {
     if (it == blob_id_map_.end()) {
       task->blob_id_ = BlobId::GetNull();
       task->SetModuleComplete();
+      HILOG(kInfo, "Failed to find blob {} in {}", blob_name.str(), task->tag_id_);
       return;
     }
     task->blob_id_ = it->second;
+    HILOG(kInfo, "Found blob {} / {} in {}", task->blob_id_, blob_name.str(), task->tag_id_);
     return task->SetModuleComplete();
   }
 
