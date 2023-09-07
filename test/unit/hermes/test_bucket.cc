@@ -47,33 +47,31 @@ TEST_CASE("TestHermesPutGet") {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
-  if (rank == 0) {
-    // Initialize Hermes on all nodes
-    HERMES->ClientInit();
+  // Initialize Hermes on all nodes
+  HERMES->ClientInit();
 
-    // Create a bucket
-    HILOG(kInfo, "WE ARE HERE!!!")
-    hermes::Context ctx;
-    hermes::Bucket bkt("hello");
-    HILOG(kInfo, "BUCKET LOADED!!!")
+  // Create a bucket
+  HILOG(kInfo, "WE ARE HERE!!!")
+  hermes::Context ctx;
+  hermes::Bucket bkt("hello");
+  HILOG(kInfo, "BUCKET LOADED!!!")
 
-    size_t count_per_proc = 16;
-    size_t off = rank * count_per_proc;
-    size_t max_blobs = 16;
-    size_t proc_count = off + count_per_proc;
-    for (size_t i = 1; i < 2; ++i) {
-      HILOG(kInfo, "Iteration: {}", i);
-      // Put a blob
-      hermes::Blob blob(KILOBYTES(4));
-      memset(blob.data(), i % 256, blob.size());
-      hermes::BlobId blob_id = bkt.Put(std::to_string(i % max_blobs), blob, ctx);
+  size_t count_per_proc = 16;
+  size_t off = rank * count_per_proc;
+  size_t max_blobs = 16;
+  size_t proc_count = off + count_per_proc;
+  for (size_t i = off; i < proc_count; ++i) {
+    HILOG(kInfo, "Iteration: {}", i);
+    // Put a blob
+    hermes::Blob blob(KILOBYTES(4));
+    memset(blob.data(), i % 256, blob.size());
+    hermes::BlobId blob_id = bkt.Put(std::to_string(i % max_blobs), blob, ctx);
 
-      // Get a blob
-      hermes::Blob blob2;
-      bkt.Get(blob_id, blob2, ctx);
-      REQUIRE(blob.size() == blob2.size());
-      REQUIRE(blob == blob2);
-    }
+    // Get a blob
+    hermes::Blob blob2;
+    bkt.Get(blob_id, blob2, ctx);
+    REQUIRE(blob.size() == blob2.size());
+    REQUIRE(blob == blob2);
   }
 }
 
