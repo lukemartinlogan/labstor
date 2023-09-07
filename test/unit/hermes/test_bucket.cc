@@ -212,6 +212,7 @@ TEST_CASE("TestHermesReorganizeBlob") {
     }
 
     for (size_t i = off; i < proc_count; ++i) {
+      HILOG(kInfo, "ContainsBlob Iteration: {}", i);
       REQUIRE(bkt.ContainsBlob(std::to_string(i)));
     }
   }
