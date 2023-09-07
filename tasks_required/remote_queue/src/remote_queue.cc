@@ -351,12 +351,12 @@ class Server : public TaskLib {
           method,
           data_size,
           orig_task->lane_hash_);
+    orig_task->Wait<1>();
   }
 
   void RpcComplete(const tl::request &req,
                    u32 method, Task *orig_task,
                    TaskState *exec, TaskStateId state_id) {
-    orig_task->Wait<1>();
     BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
     std::vector<DataTransfer> out_xfer = exec->SaveEnd(method, ar, orig_task);
     LABSTOR_CLIENT->DelTask(orig_task);
