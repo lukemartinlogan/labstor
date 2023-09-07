@@ -299,6 +299,8 @@ class Server : public TaskLib {
     Task *orig_task;
     RpcExec(req, state_id, method, xfer, orig_task, exec);
     if (io_type == IoType::kRead) {
+      HILOG(kDebug, "Reading {} bytes of data (task_state={}, method={})",
+            data_size, state_id, method);
       LABSTOR_THALLIUM->IoCallServer(req, bulk, io_type, data.data(), data_size);
     }
 
@@ -356,7 +358,7 @@ class Server : public TaskLib {
                    TaskState *exec, TaskStateId state_id) {
     orig_task->Wait<1>();
     BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
-    auto out_xfer = exec->SaveEnd(method, ar, orig_task);
+    std::vector<DataTransfer> out_xfer = exec->SaveEnd(method, ar, orig_task);
     LABSTOR_CLIENT->DelTask(orig_task);
     HILOG(kDebug, "(node {}) Returning {} bytes of data (task_node={}, task_state={}/{}, method={})",
           LABSTOR_QM_CLIENT->node_id_,
