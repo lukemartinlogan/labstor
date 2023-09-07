@@ -406,6 +406,7 @@ class Server : public TaskLib {
     hshm::charbuf blob_name_unique = GetBlobNameWithBucket(task->tag_id_, blob_name);
     auto it = blob_id_map_.find(blob_name_unique);
     if (it == blob_id_map_.end()) {
+      task->blob_id_ = BlobId::GetNull();
       task->SetModuleComplete();
       return;
     }
