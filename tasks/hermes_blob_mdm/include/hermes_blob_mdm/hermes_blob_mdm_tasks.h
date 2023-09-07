@@ -493,7 +493,7 @@ struct GetBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message return */
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {
-    ar(blob_id_);
+    ar(tag_id_);
   }
 
   /** Create group */
