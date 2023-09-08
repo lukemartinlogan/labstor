@@ -250,7 +250,7 @@ class Worker {
       node.node_depth_ = 1;
       group_map_.emplace(group_, node);
       task->SetStarted();
-      HILOG(kDebug, "(node {}) Increasing depth of group {} to {}",
+      HILOG(kDebug, "(node {}) Increasing (1) depth of group {} to {}",
             LABSTOR_CLIENT->node_id_, ss.str(), node.node_depth_);
       return true;
     }
@@ -258,8 +258,8 @@ class Worker {
     if (node_cmp.root_ == node.root_) {
       node_cmp.node_depth_ += 1;
       task->SetStarted();
-      HILOG(kDebug, "(node {}) Increasing depth of group {} to {}",
-            LABSTOR_CLIENT->node_id_, ss.str(), node.node_depth_);
+      HILOG(kDebug, "(node {}) Increasing (2) depth of group {} to {}",
+            LABSTOR_CLIENT->node_id_, ss.str(), node_cmp.node_depth_);
       return true;
     }
 //    HILOG(kDebug, "(node {}) Task {} is waiting for node {} on group {} with depth {}",
@@ -268,7 +268,8 @@ class Worker {
   }
 
   HSHM_ALWAYS_INLINE
-  void RemoveTaskGroup() {
+  void RemoveTaskGroup(Task *task, TaskState *exec) {
+    int ret = exec->GetGroup(task->method_, task, group_);
     if (group_.size() == 0) {
       return;
     }
@@ -280,6 +281,9 @@ class Worker {
     }
 
     TaskNode &node = group_map_[group_];
+    if (node.node_depth_ == 0) {
+      HELOG(kFatal, "Group {} depth is already 0", ss.str());
+    }
     node.node_depth_ -= 1;
     HILOG(kDebug, "(node {}) Decreasing depth of group {} to {}",
           LABSTOR_CLIENT->node_id_, ss.str(), node.node_depth_);

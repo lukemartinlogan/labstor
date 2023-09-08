@@ -134,6 +134,12 @@ struct TaskNode {
     return root_.IsNull();
   }
 
+  /** Check if the root task */
+  HSHM_ALWAYS_INLINE
+  bool IsRoot() const {
+    return node_depth_ == 0;
+  }
+
   /** Serialization*/
   template<typename Ar>
   void serialize(Ar &ar) {
@@ -256,7 +262,7 @@ struct Task : public hipc::ShmContainer {
 
   /** Set task as complete */
   HSHM_ALWAYS_INLINE void SetComplete() {
-    task_flags_.SetBits(TASK_COMPLETE);
+    task_flags_.SetBits(TASK_MODULE_COMPLETE | TASK_COMPLETE);
   }
 
   /** Disable the running of a task */

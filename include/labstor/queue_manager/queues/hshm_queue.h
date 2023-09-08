@@ -144,7 +144,7 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
   }
 
   /** Emplace a SHM pointer to a task */
-  bool Emplace(u32 key, hipc::Pointer &p) {
+  bool Emplace(u32 key, hipc::Pointer &p, bool in_worker = false) {
     if (IsEmplacePlugged()) {
       WaitForEmplacePlug();
     }
@@ -152,6 +152,10 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
     if (task->task_state_.IsNull()) {
       HILOG(kFatal, "Task state is null");
     }*/
+    if (flags_.Any(QUEUE_PRIMARY) && !in_worker) {
+      hshm::NodeThreadId tid;
+      key = tid.bits_.tid_ + tid.bits_.pid_;
+    }
     u32 lane_id = key % num_lanes_;
     Lane &lane = GetLane(lane_id);
     hshm::qtok_t ret = lane.emplace(p);

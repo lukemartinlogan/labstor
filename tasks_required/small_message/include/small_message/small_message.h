@@ -35,7 +35,7 @@ class Client {
         LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
         bitfield32_t(QUEUE_LOW_LATENCY | QUEUE_UNORDERED));
     queue_id_ = QueueId(id_);
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
     HILOG(kDebug, "Created small_message queue {}", queue->num_lanes_);
   }
   LABSTOR_TASK_NODE_ROOT(Create);
@@ -52,7 +52,7 @@ class Client {
   int Md(const TaskNode &task_node,
          const DomainId &domain_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
     auto *task = LABSTOR_CLIENT->NewTask<MdTask>(
         p,
         task_node, domain_id, id_);
@@ -68,7 +68,7 @@ class Client {
   int Io(const TaskNode &task_node,
          const DomainId &domain_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
     auto *task = LABSTOR_CLIENT->NewTask<IoTask>(
         p,
         task_node, domain_id, id_);

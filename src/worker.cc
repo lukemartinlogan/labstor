@@ -52,50 +52,62 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
     if (!exec) {
       HELOG(kFatal, "(node {}) Could not find the task state: {}",
             LABSTOR_CLIENT->node_id_, task->task_state_);
-      task->SetModuleComplete();
+      task->SetComplete();
     }
     if (!task->IsMarked()) {
-      HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={}",
-            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, exec->name_);
+      HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={}",
+            LABSTOR_CLIENT->node_id_, task->task_node_,
+            task->task_state_, exec->name_, lane_id, queue->id_);
       task->SetMarked();
     }
-    // Check if the task can execute
-    if (!CheckTaskGroup(task, exec, task->task_node_)) {
-      queue->Emplace(lane_id, p);
-      continue;
-    }
-    // Check if this task is in a primary queue and needs to be moved
-    if (queue->flags_.Any(QUEUE_PRIMARY) && !task->IsScheduled()) {
-      task->SetScheduled();
-      MultiQueue *real_queue = LABSTOR_CLIENT->GetQueue(QueueId(task->task_state_), false);
-      real_queue->Emplace(task->lane_hash_, p);
-      queue->Emplace(lane_id, p);
-      continue;
-    }
-    // Disperse or execute task
-    bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
-    if (!task->IsRunDisabled()) {
+    // Attempt to run the task if it's ready and runnable
+    if (!task->IsModuleComplete() && !task->IsRunDisabled()) {
+      if (queue->flags_.Any(QUEUE_PRIMARY)) {
+        // Check if task is already running
+        if (task->IsScheduled()) {
+          queue->Emplace(lane_id, p, true);
+          continue;
+        }
+        // Check if the primary task is ready to run
+        if (!CheckTaskGroup(task, exec, task->task_node_)) {
+          queue->Emplace(lane_id, p, true);
+          continue;
+        }
+        // Schedule the primary task on a new queue
+        task->UnsetStarted();
+        task->UnsetMarked();
+        task->SetScheduled();
+        MultiQueue *real_queue = LABSTOR_CLIENT->GetQueue(QueueId(task->task_state_), false);
+        real_queue->Emplace(task->lane_hash_, p, false);
+        queue->Emplace(lane_id, p, true);
+        continue;
+      } else if (!CheckTaskGroup(task, exec, task->task_node_)) {
+        // This task is not on a primary queue and is not ready to run
+        queue->Emplace(lane_id, p);
+        continue;
+      }
+      // Disperse or execute task
+      bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
       if (is_remote) {
         auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
         LABSTOR_REMOTE_QUEUE->Disperse(task, exec, ids);
         task->DisableRun();
-      } else if (!task->IsComplete()) {
+      } else {
         exec->Run(queue, task->method_, task);
       }
     }
     // Cleanup on task completion
     if (task->IsModuleComplete()) {
-      HILOG(kDebug, "(node {}) Ending task: task_node={} task_state={}",
-            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_);
-      RemoveTaskGroup();
-      if (task->IsFireAndForget()) {
-        if (!task->IsScheduled()) {
+      HILOG(kDebug, "(node {}) Ending task: task_node={} task_state={} lane={} queue={}",
+            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, lane_id, queue->id_);
+      RemoveTaskGroup(task, exec);
+      if (!task->IsScheduled() || queue->flags_.Any(QUEUE_PRIMARY)) {
+        if (task->IsFireAndForget()) {
           LABSTOR_CLIENT->DelTask(task);
-        } else if (queue->flags_.Any(QUEUE_PRIMARY)) {
-          LABSTOR_CLIENT->DelTask(task);
+        } else {
+          task->SetComplete();
         }
       }
-      task->SetComplete();
     } else {
       queue->Emplace(lane_id, p);
     }
