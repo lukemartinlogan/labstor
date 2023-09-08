@@ -52,7 +52,11 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
     if (!exec) {
       HELOG(kFatal, "(node {}) Could not find the task state: {}",
             LABSTOR_CLIENT->node_id_, task->task_state_);
-      task->SetModuleComplete();
+      task->SetComplete();
+      if (task->IsFireAndForget()) {
+        LABSTOR_CLIENT->DelTask(task);
+      }
+      continue;
     }
     if (!task->IsMarked() && !task->IsPrimary()) {
       HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={}",
@@ -64,7 +68,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
     if (!task->IsModuleComplete() && !task->IsRunDisabled()) {
       if (queue->flags_.Any(QUEUE_PRIMARY)) {
         // Check if intermediate task is ready to run
-        if (task->IsPrimary() || !CheckTaskGroup(task, exec, task->task_node_)) {
+        if (!BeginPrimaryTask(task, exec, task->task_node_)) {
           queue->Emplace(lane_id, p, true);
           continue;
         }

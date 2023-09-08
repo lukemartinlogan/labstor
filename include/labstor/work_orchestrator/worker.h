@@ -228,6 +228,14 @@ class Worker {
   void Run();
 
   HSHM_ALWAYS_INLINE
+  bool BeginPrimaryTask(Task *task, TaskState *exec, const TaskNode &node) {
+    if (task->IsPrimary()) {
+      return false;
+    }
+    return CheckTaskGroup(task, exec, node);
+  }
+
+  HSHM_ALWAYS_INLINE
   bool CheckTaskGroup(Task *task, TaskState *exec, TaskNode node) {
     int ret = exec->GetGroup(task->method_, task, group_);
     if (ret == TASK_UNORDERED || task->IsUnordered()) {
@@ -279,11 +287,12 @@ class Worker {
 
     TaskNode &node = group_map_[group_];
     if (node.node_depth_ == 0) {
-      HELOG(kFatal, "Group {} depth is already 0", ss.str());
+      HELOG(kFatal, "(node {}) Group {} depth is already 0 (task_node={})",
+            LABSTOR_CLIENT->node_id_, ss.str(), task->task_node_);
     }
     node.node_depth_ -= 1;
-    HILOG(kDebug, "(node {}) Decreasing depth of group {} to {}",
-          LABSTOR_CLIENT->node_id_, ss.str(), node.node_depth_);
+    HILOG(kDebug, "(node {}) Decreasing depth of group {} to {} (task_node={})",
+          LABSTOR_CLIENT->node_id_, ss.str(), node.node_depth_, task->task_node_);
     if (node.node_depth_ == 0) {
       group_map_.erase(group_);
     }
