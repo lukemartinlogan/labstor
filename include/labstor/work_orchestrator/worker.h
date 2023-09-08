@@ -232,7 +232,6 @@ class Worker {
     int ret = exec->GetGroup(task->method_, task, group_);
     if (ret == TASK_UNORDERED || task->IsUnordered()) {
       group_.resize(0);
-      task->SetStarted();
       return true;
     }
     if (task->IsStarted()) {
@@ -249,7 +248,6 @@ class Worker {
     if (it == group_map_.end()) {
       node.node_depth_ = 1;
       group_map_.emplace(group_, node);
-      task->SetStarted();
       HILOG(kDebug, "(node {}) Increasing (1) depth of group {} to {}",
             LABSTOR_CLIENT->node_id_, ss.str(), node.node_depth_);
       return true;
@@ -257,7 +255,6 @@ class Worker {
     TaskNode &node_cmp = it->second;
     if (node_cmp.root_ == node.root_) {
       node_cmp.node_depth_ += 1;
-      task->SetStarted();
       HILOG(kDebug, "(node {}) Increasing (2) depth of group {} to {}",
             LABSTOR_CLIENT->node_id_, ss.str(), node_cmp.node_depth_);
       return true;

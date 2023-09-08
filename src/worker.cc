@@ -69,7 +69,6 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
           continue;
         }
         // Schedule the primary task on a new local queue
-        task->UnsetStarted();
         task->UnsetMarked();
         task->SetPrimary();
         task->task_node_.node_depth_ += 1;
@@ -90,6 +89,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
           LABSTOR_REMOTE_QUEUE->Disperse(task, exec, ids);
           task->DisableRun();
         } else {
+          task->SetStarted();
           exec->Run(queue, task->method_, task);
         }
       }
@@ -100,7 +100,6 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
             LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, lane_id, queue->id_);
       RemoveTaskGroup(task, exec);
       if (!task->IsPrimary() || queue->flags_.Any(QUEUE_PRIMARY)) {
-
         if (task->IsFireAndForget()) {
           LABSTOR_CLIENT->DelTask(task);
         } else {
