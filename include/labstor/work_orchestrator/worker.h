@@ -252,14 +252,14 @@ class Worker {
     if (it == group_map_.end()) {
       node.node_depth_ = 1;
       group_map_.emplace(group_, node);
-      HILOG(kDebug, "(node {}) Increasing (1) depth of group {} to {} worker={}",
+      HILOG(kDebug, "(node {}) Increasing depth of group {} to {} worker={}",
             LABSTOR_CLIENT->node_id_, ss.str(), node.node_depth_, id_);
       return true;
     }
     TaskNode &node_cmp = it->second;
     if (node_cmp.root_ == node.root_) {
       node_cmp.node_depth_ += 1;
-      HILOG(kDebug, "(node {}) Increasing (2) depth of group {} to {} worker={}",
+      HILOG(kDebug, "(node {}) Increasing depth of group {} to {} worker={}",
             LABSTOR_CLIENT->node_id_, ss.str(), node_cmp.node_depth_, id_);
       return true;
     }
