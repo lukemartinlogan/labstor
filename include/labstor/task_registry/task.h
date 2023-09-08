@@ -325,7 +325,12 @@ struct Task : public hipc::ShmContainer {
     task_flags_.SetBits(TASK_SCHEDULED);
   }
 
-  /** Check if task is marked */
+  /** Unset this task as scheduled */
+  HSHM_ALWAYS_INLINE void UnsetScheduled() {
+    task_flags_.UnsetBits(TASK_SCHEDULED);
+  }
+
+  /** Check if task is scheduled */
   HSHM_ALWAYS_INLINE bool IsScheduled() {
     return task_flags_.Any(TASK_SCHEDULED);
   }

@@ -63,17 +63,12 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
     // Attempt to run the task if it's ready and runnable
     if (!task->IsModuleComplete() && !task->IsRunDisabled()) {
       if (queue->flags_.Any(QUEUE_PRIMARY)) {
-        // Check if task is already running
-        if (task->IsScheduled()) {
+        // Check if intermediate task is ready to run
+        if (task->IsScheduled() || !CheckTaskGroup(task, exec, task->task_node_)) {
           queue->Emplace(lane_id, p, true);
           continue;
         }
-        // Check if the primary task is ready to run
-        if (!CheckTaskGroup(task, exec, task->task_node_)) {
-          queue->Emplace(lane_id, p, true);
-          continue;
-        }
-        // Schedule the primary task on a new queue
+        // Schedule the primary task on a new local queue
         task->UnsetStarted();
         task->UnsetMarked();
         task->SetScheduled();
@@ -81,19 +76,21 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
         real_queue->Emplace(task->lane_hash_, p, false);
         queue->Emplace(lane_id, p, true);
         continue;
-      } else if (!CheckTaskGroup(task, exec, task->task_node_)) {
-        // This task is not on a primary queue and is not ready to run
-        queue->Emplace(lane_id, p);
-        continue;
-      }
-      // Disperse or execute task
-      bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
-      if (is_remote) {
-        auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
-        LABSTOR_REMOTE_QUEUE->Disperse(task, exec, ids);
-        task->DisableRun();
       } else {
-        exec->Run(queue, task->method_, task);
+        // Check if intermediate task is ready to run
+        if (!CheckTaskGroup(task, exec, task->task_node_)) {
+          queue->Emplace(lane_id, p, true);
+          continue;
+        }
+        bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
+        // Execute or schedule task
+        if (is_remote) {
+          auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
+          LABSTOR_REMOTE_QUEUE->Disperse(task, exec, ids);
+          task->DisableRun();
+        } else {
+          exec->Run(queue, task->method_, task);
+        }
       }
     }
     // Cleanup on task completion
