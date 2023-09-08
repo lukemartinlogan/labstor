@@ -44,7 +44,7 @@ namespace labstor {
 /** This task is marked */
 #define TASK_MARKED BIT_OPT(u32, 15)
 /** This task as scheduled. This is used for primary queue reordering. */
-#define TASK_SCHEDULED BIT_OPT(u32, 16)
+#define TASK_PRIMARY BIT_OPT(u32, 16)
 
 /** Used to define task methods */
 #define TASK_METHOD_T static inline const u32
@@ -321,18 +321,18 @@ struct Task : public hipc::ShmContainer {
   }
 
   /** Set this task as started */
-  HSHM_ALWAYS_INLINE void SetScheduled() {
-    task_flags_.SetBits(TASK_SCHEDULED);
+  HSHM_ALWAYS_INLINE void SetPrimary() {
+    task_flags_.SetBits(TASK_PRIMARY);
   }
 
   /** Unset this task as scheduled */
-  HSHM_ALWAYS_INLINE void UnsetScheduled() {
-    task_flags_.UnsetBits(TASK_SCHEDULED);
+  HSHM_ALWAYS_INLINE void UnsetPrimary() {
+    task_flags_.UnsetBits(TASK_PRIMARY);
   }
 
   /** Check if task is scheduled */
-  HSHM_ALWAYS_INLINE bool IsScheduled() {
-    return task_flags_.Any(TASK_SCHEDULED);
+  HSHM_ALWAYS_INLINE bool IsPrimary() {
+    return task_flags_.Any(TASK_PRIMARY);
   }
 
   /** Wait for task to complete */

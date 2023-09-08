@@ -54,7 +54,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
             LABSTOR_CLIENT->node_id_, task->task_state_);
       task->SetModuleComplete();
     }
-    if (!task->IsMarked() && !task->IsScheduled()) {
+    if (!task->IsMarked() && !task->IsPrimary()) {
       HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={}",
             LABSTOR_CLIENT->node_id_, task->task_node_,
             task->task_state_, exec->name_, lane_id, queue->id_);
@@ -64,14 +64,14 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
     if (!task->IsModuleComplete() && !task->IsRunDisabled()) {
       if (queue->flags_.Any(QUEUE_PRIMARY)) {
         // Check if intermediate task is ready to run
-        if (task->IsScheduled() || !CheckTaskGroup(task, exec, task->task_node_)) {
+        if (task->IsPrimary() || !CheckTaskGroup(task, exec, task->task_node_)) {
           queue->Emplace(lane_id, p, true);
           continue;
         }
         // Schedule the primary task on a new local queue
         task->UnsetStarted();
         task->UnsetMarked();
-        task->SetScheduled();
+        task->SetPrimary();
         task->task_node_.node_depth_ += 1;
         MultiQueue *real_queue = LABSTOR_CLIENT->GetQueue(QueueId(task->task_state_), false);
         real_queue->Emplace(task->lane_hash_, p, false);
@@ -99,7 +99,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
       HILOG(kDebug, "(node {}) Ending task: task_node={} task_state={} lane={} queue={}",
             LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, lane_id, queue->id_);
       RemoveTaskGroup(task, exec);
-      if (!task->IsScheduled() || queue->flags_.Any(QUEUE_PRIMARY)) {
+      if (!task->IsPrimary() || queue->flags_.Any(QUEUE_PRIMARY)) {
 
         if (task->IsFireAndForget()) {
           LABSTOR_CLIENT->DelTask(task);
