@@ -52,7 +52,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
     if (!exec) {
       HELOG(kFatal, "(node {}) Could not find the task state: {}",
             LABSTOR_CLIENT->node_id_, task->task_state_);
-      task->SetComplete();
+      task->SetModuleComplete();
     }
     if (!task->IsMarked() && !task->IsScheduled()) {
       HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={}",
@@ -72,6 +72,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
         task->UnsetStarted();
         task->UnsetMarked();
         task->SetScheduled();
+        task->task_node_.node_depth_ += 1;
         MultiQueue *real_queue = LABSTOR_CLIENT->GetQueue(QueueId(task->task_state_), false);
         real_queue->Emplace(task->lane_hash_, p, false);
         queue->Emplace(lane_id, p, true);
@@ -99,6 +100,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
             LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, lane_id, queue->id_);
       RemoveTaskGroup(task, exec);
       if (!task->IsScheduled() || queue->flags_.Any(QUEUE_PRIMARY)) {
+
         if (task->IsFireAndForget()) {
           LABSTOR_CLIENT->DelTask(task);
         } else {
@@ -107,101 +109,6 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
       }
     } else {
       queue->Emplace(lane_id, p);
-    }
-  }
-}
-
-void Worker::PollUnordered(u32 lane_id, MultiQueue *queue) {
-  Task *task;
-  hipc::Pointer p;
-  // Unordered queue
-  // TODO(llogan): make popping more fair
-  for (int i = 0; i < 20; ++i) {
-    if (!queue->Pop(lane_id, task, p)) {
-      break;
-    }
-//    if (!task->task_flags_.Any(TASK_LONG_RUNNING)) {
-//      HILOG(kInfo, "(node {}) Popping task: task_node={} task_state={}",
-//            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_);
-//    }
-    TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
-    if (!exec) {
-      HELOG(kFatal, "(node {}) Could not find the task state: {}",
-            LABSTOR_CLIENT->node_id_, task->task_state_);
-      task->SetModuleComplete();
-    }
-    // Disperse or execute task
-    bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
-    if (!task->IsRunDisabled()) {
-      if (is_remote) {
-        // flags_.Any(kGlobal | kSet) || (flags_.Any(kNode) && id_ != this_node)
-        HILOG(kDebug, "Dispersing task task_state={} task_node={} is_global={} is_set={} is_node={} dom_id={} this_node={}",
-              task->task_state_, task->task_node_,
-              task->domain_id_.flags_.Any(DomainId::kGlobal),
-              task->domain_id_.flags_.Any(DomainId::kSet),
-              task->domain_id_.flags_.Any(DomainId::kNode),
-              task->domain_id_.id_,
-              LABSTOR_CLIENT->node_id_);
-        auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
-        LABSTOR_REMOTE_QUEUE->Disperse(task, exec, ids);
-        task->DisableRun();
-      } else if (!task->IsComplete()) {
-        exec->Run(queue, task->method_, task);
-      }
-    }
-    // Cleanup on task completion
-    if (task->IsModuleComplete()) {
-      task->SetModuleComplete();
-    }
-    if (task->IsComplete()) {
-      if (task->IsFireAndForget()) {
-        LABSTOR_CLIENT->DelTask(task);
-      }
-    } else {
-      queue->Emplace(lane_id, p);
-    }
-  }
-}
-
-void Worker::PollOrdered(u32 lane_id, MultiQueue *queue) {
-  Task *task;
-  hipc::Pointer p;
-  // TODO(llogan): Consider popping the entire queue and storing a dependency graph
-  // TODO(llogan): Consider implementing look-ahead
-  for (int i = 0; i < 1; ++i) {
-    if (!queue->Peek(lane_id, task, p, i)) {
-      break;
-    }
-//    if (!task->task_flags_.Any(TASK_LONG_RUNNING)) {
-//      HILOG(kInfo, "(node {}) Popping task: task_node={} task_state={}",
-//            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_);
-//    }
-    TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
-    if (!exec) {
-      HELOG(kFatal, "(node {}) Could not find the task state: {}",
-            LABSTOR_CLIENT->node_id_, task->task_state_);
-      task->SetModuleComplete();
-    }
-    // Disperse or execute task
-    bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
-    if (!task->IsRunDisabled()) {
-      if (is_remote) {
-        auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
-        LABSTOR_REMOTE_QUEUE->Disperse(task, exec, ids);
-        task->DisableRun();
-      } else if (!task->IsComplete()) {
-        exec->Run(queue, task->method_, task);
-      }
-    }
-    // Cleanup on task completion
-    if (task->IsModuleComplete()) {
-      task->SetModuleComplete();
-    }
-    if (task->IsComplete()) {
-      queue->Pop(lane_id, task, p);
-      if (task->IsFireAndForget()) {
-        LABSTOR_CLIENT->DelTask(task);
-      }
     }
   }
 }

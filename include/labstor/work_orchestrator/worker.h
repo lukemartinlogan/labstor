@@ -293,8 +293,6 @@ class Worker {
   }
 
   void PollGrouped(u32 lane_id, MultiQueue *queue);
-  void PollUnordered(u32 lane_id, MultiQueue *queue);
-  void PollOrdered(u32 lane_id, MultiQueue *queue);
 };
 
 }  // namespace labstor
