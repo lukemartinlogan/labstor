@@ -134,6 +134,12 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
   /** Sets this list as empty */
   void SetNull() {}
 
+  /** Check if this queue is primary */
+  HSHM_ALWAYS_INLINE
+  bool IsPrimary() {
+    return flags_.Any(QUEUE_PRIMARY);
+  }
+
   /**====================================
    * Helpers
    * ===================================*/
@@ -152,7 +158,7 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
     if (task->task_state_.IsNull()) {
       HILOG(kFatal, "Task state is null");
     }*/
-    if (flags_.Any(QUEUE_PRIMARY) && !in_worker) {
+    if (IsPrimary() && !in_worker) {
       hshm::NodeThreadId tid;
       key = tid.bits_.tid_ + tid.bits_.pid_;
     }
