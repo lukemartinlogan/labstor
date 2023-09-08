@@ -59,9 +59,9 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
       continue;
     }
     if (!task->IsMarked() && !task->IsPrimary()) {
-      HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={}",
+      HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={} worker={}",
             LABSTOR_CLIENT->node_id_, task->task_node_,
-            task->task_state_, exec->name_, lane_id, queue->id_);
+            task->task_state_, exec->name_, lane_id, queue->id_, id_);
       task->SetMarked();
     }
     // Attempt to run the task if it's ready and runnable
@@ -100,8 +100,8 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
     }
     // Cleanup on task completion
     if (task->IsModuleComplete()) {
-      HILOG(kDebug, "(node {}) Ending task: task_node={} task_state={} lane={} queue={}",
-            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, lane_id, queue->id_);
+      HILOG(kDebug, "(node {}) Ending task: task_node={} task_state={} lane={} queue={} worker={}",
+            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, lane_id, queue->id_, id_);
       RemoveTaskGroup(task, exec);
       if (!task->IsPrimary() || queue->flags_.Any(QUEUE_PRIMARY)) {
         if (task->IsFireAndForget()) {

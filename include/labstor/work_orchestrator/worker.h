@@ -252,15 +252,15 @@ class Worker {
     if (it == group_map_.end()) {
       node.node_depth_ = 1;
       group_map_.emplace(group_, node);
-      HILOG(kDebug, "(node {}) Increasing (1) depth of group {} to {}",
-            LABSTOR_CLIENT->node_id_, ss.str(), node.node_depth_);
+      HILOG(kDebug, "(node {}) Increasing (1) depth of group {} to {} worker={}",
+            LABSTOR_CLIENT->node_id_, ss.str(), node.node_depth_, id_);
       return true;
     }
     TaskNode &node_cmp = it->second;
     if (node_cmp.root_ == node.root_) {
       node_cmp.node_depth_ += 1;
-      HILOG(kDebug, "(node {}) Increasing (2) depth of group {} to {}",
-            LABSTOR_CLIENT->node_id_, ss.str(), node_cmp.node_depth_);
+      HILOG(kDebug, "(node {}) Increasing (2) depth of group {} to {} worker={}",
+            LABSTOR_CLIENT->node_id_, ss.str(), node_cmp.node_depth_, id_);
       return true;
     }
 //    HILOG(kDebug, "(node {}) Task {} is waiting for node {} on group {} with depth {}",
@@ -283,12 +283,12 @@ class Worker {
 
     TaskNode &node_cmp = group_map_[group_];
     if (node_cmp.node_depth_ == 0) {
-      HELOG(kFatal, "(node {}) Group {} depth is already 0 (task_node={})",
-            LABSTOR_CLIENT->node_id_, ss.str(), task->task_node_);
+      HELOG(kFatal, "(node {}) Group {} depth is already 0 (task_node={} worker={})",
+            LABSTOR_CLIENT->node_id_, ss.str(), task->task_node_, id_);
     }
     node_cmp.node_depth_ -= 1;
-    HILOG(kDebug, "(node {}) Decreasing depth of group {} to {} (task_node={})",
-          LABSTOR_CLIENT->node_id_, ss.str(), node_cmp.node_depth_, task->task_node_);
+    HILOG(kDebug, "(node {}) Decreasing depth of group {} to {} (task_node={} worker={})",
+          LABSTOR_CLIENT->node_id_, ss.str(), node_cmp.node_depth_, task->task_node_, id_);
     if (node_cmp.node_depth_ == 0) {
       group_map_.erase(group_);
     }
