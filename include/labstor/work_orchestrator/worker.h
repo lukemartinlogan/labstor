@@ -275,7 +275,7 @@ class Worker {
   HSHM_ALWAYS_INLINE
   void RemoveTaskGroup(Task *task, TaskState *exec) {
     int ret = exec->GetGroup(task->method_, task, group_);
-    if (group_.size() == 0) {
+    if (ret == TASK_UNORDERED || task->IsUnordered()) {
       return;
     }
 
