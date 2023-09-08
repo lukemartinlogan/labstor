@@ -9,6 +9,10 @@
 #include "labstor/task_registry/task.h"
 #include <sstream>
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/list.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/unordered_set.hpp>
 
 namespace labstor {
 

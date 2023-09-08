@@ -129,7 +129,7 @@ class Server : public TaskLib {
               task->orig_task_->task_node_,
               task->orig_task_->task_state_,
               task->orig_task_->method_,
-              LABSTOR_QM_CLIENT->node_id_,
+              LABSTOR_CLIENT->node_id_,
               domain_id.id_);
         std::string ret = LABSTOR_THALLIUM->SyncCall<std::string>(domain_id.id_,
                                                                   "RpcPushSmall",
@@ -174,7 +174,7 @@ class Server : public TaskLib {
               task->orig_task_->task_node_,
               task->orig_task_->task_state_,
               task->orig_task_->method_,
-              LABSTOR_QM_CLIENT->node_id_,
+              LABSTOR_CLIENT->node_id_,
               domain_id.id_,
               static_cast<int>(io_type));
         std::string ret = LABSTOR_THALLIUM->SyncIoCall<std::string>(domain_id.id_,
@@ -294,13 +294,13 @@ class Server : public TaskLib {
     // Process the message
     if (io_type == IoType::kWrite) {
       LABSTOR_THALLIUM->IoCallServer(req, bulk, io_type, data.data(), data_size);
-      HILOG(kDebug, "(node {}) Write blob integer: {}", LABSTOR_QM_CLIENT->node_id_, (int)data[0])
+      HILOG(kDebug, "(node {}) Write blob integer: {}", LABSTOR_CLIENT->node_id_, (int)data[0])
     }
     TaskState *exec;
     Task *orig_task;
     RpcExec(req, state_id, method, xfer, orig_task, exec);
     if (io_type == IoType::kRead) {
-      HILOG(kDebug, "(node {}) Read blob integer: {}", LABSTOR_QM_CLIENT->node_id_, (int)data[0])
+      HILOG(kDebug, "(node {}) Read blob integer: {}", LABSTOR_CLIENT->node_id_, (int)data[0])
       LABSTOR_THALLIUM->IoCallServer(req, bulk, io_type, data.data(), data_size);
     }
 
@@ -321,21 +321,21 @@ class Server : public TaskLib {
     exec = LABSTOR_TASK_REGISTRY->GetTaskState(state_id);
     if (exec == nullptr) {
       HELOG(kFatal, "(node {}) Could not find the task state {}",
-            LABSTOR_QM_CLIENT->node_id_, state_id);
+            LABSTOR_CLIENT->node_id_, state_id);
       req.respond(std::string());
       return;
     } else {
       HILOG(kDebug, "(node {}) Found task state {}",
-            LABSTOR_QM_CLIENT->node_id_,
+            LABSTOR_CLIENT->node_id_,
             state_id);
     }
     TaskPointer task_ptr = exec->LoadStart(method, ar);
     orig_task = task_ptr.task_;
     hipc::Pointer &p = task_ptr.p_;
-    orig_task->domain_id_ = DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_);
+    orig_task->domain_id_ = DomainId::GetNode(LABSTOR_CLIENT->node_id_);
 
     // Execute task
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(QueueId(state_id));
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(QueueId(state_id), false);
     orig_task->UnsetFireAndForget();
     orig_task->UnsetStarted();
     orig_task->UnsetMarked();
@@ -343,7 +343,7 @@ class Server : public TaskLib {
     queue->Emplace(orig_task->lane_hash_, p);
     HILOG(kDebug,
           "(node {}) Executing task (task_node={}, task_state={}/{}, state_name={}, method={}, size={}, lane_hash={})",
-          LABSTOR_QM_CLIENT->node_id_,
+          LABSTOR_CLIENT->node_id_,
           orig_task->task_node_,
           orig_task->task_state_,
           state_id,
@@ -357,11 +357,11 @@ class Server : public TaskLib {
   void RpcComplete(const tl::request &req,
                    u32 method, Task *orig_task,
                    TaskState *exec, TaskStateId state_id) {
-    BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
+    BinaryOutputArchive<false> ar(DomainId::GetNode(LABSTOR_CLIENT->node_id_));
     std::vector<DataTransfer> out_xfer = exec->SaveEnd(method, ar, orig_task);
     LABSTOR_CLIENT->DelTask(orig_task);
     HILOG(kDebug, "(node {}) Returning {} bytes of data (task_node={}, task_state={}/{}, method={})",
-          LABSTOR_QM_CLIENT->node_id_,
+          LABSTOR_CLIENT->node_id_,
           out_xfer[0].data_size_,
           orig_task->task_node_,
           orig_task->task_state_,

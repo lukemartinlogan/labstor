@@ -54,8 +54,9 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
     lanes_->reserve(max_lanes_);
     for (u32 lane_id = 0; lane_id < num_lanes; ++lane_id) {
       lanes_->emplace_back(depth);
+      Lane &lane = lanes_->back();
+      lane.flags_ = flags;
     }
-    hipc::vector<Lane> *lanes = lanes_.get();
     SetNull();
   }
 

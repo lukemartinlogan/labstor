@@ -10,13 +10,15 @@
 #include <vector>
 
 /** This queue contains only latency-sensitive tasks */
-#define QUEUE_LOW_LATENCY (1 << 0)
+#define QUEUE_LOW_LATENCY BIT_OPT(u32, 0)
 /** This queue is currently being resized */
-#define QUEUE_RESIZE (1 << 1)
+#define QUEUE_RESIZE BIT_OPT(u32, 1)
 /** This queue is currently processing updates */
-#define QUEUE_UPDATE (1 << 2)
+#define QUEUE_UPDATE BIT_OPT(u32, 2)
 /** Requests in this queue can be processed in any order */
-#define QUEUE_UNORDERED (1 << 3)
+#define QUEUE_UNORDERED BIT_OPT(u32, 3)
+/** This queue is a primary queue (stores root tasks) */
+#define QUEUE_PRIMARY BIT_OPT(u32, 4)
 
 namespace labstor {
 

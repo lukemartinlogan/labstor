@@ -75,7 +75,7 @@ class Client {
   GetOrCreateBlobIdTask* AsyncGetOrCreateBlobId(const TaskNode &task_node,
                                                 TagId tag_id, const hshm::charbuf &blob_name) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = std::hash<hshm::charbuf>{}(blob_name);
     auto *task = LABSTOR_CLIENT->NewTask<GetOrCreateBlobIdTask>(
         p,
@@ -113,10 +113,11 @@ class Client {
       TagId tag_id, const hshm::charbuf &blob_name,
       BlobId &blob_id, size_t blob_off, size_t blob_size,
       const hipc::Pointer &blob, float score,
-      bitfield32_t flags) {
+      bitfield32_t flags,
+      bitfield32_t task_flags = bitfield32_t(TASK_FIRE_AND_FORGET | TASK_OWNS_DATA)) {
     HILOG(kDebug, "Beginning PUT (task_node={})", task_node);
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<PutBlobTask>(
         p,
@@ -124,6 +125,7 @@ class Client {
         tag_id, blob_name, blob_id,
         blob_off, blob_size,
         blob, score, flags);
+    task->task_flags_.SetBits(task_flags.bits_);
     queue->Emplace(hash, p);
     return task;
   }
@@ -131,27 +133,30 @@ class Client {
 
   /** Get a blob's data */
   GetBlobTask* AsyncGetBlob(const TaskNode &task_node,
-                            BlobId blob_id,
+                            const TagId &tag_id,
+                            const BlobId &blob_id,
                             size_t off,
                             ssize_t data_size,
                             hipc::Pointer &data) {
     HILOG(kDebug, "Beginning GET (task_node={})", task_node);
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<GetBlobTask>(
         p,
         task_node, DomainId::GetNode(blob_id.node_id_), id_,
-        blob_id, off, data_size, data);
+        tag_id, blob_id, off, data_size, data);
     queue->Emplace(hash, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncGetBlob);
   size_t GetBlob(const TaskNode &task_node,
-                 BlobId blob_id, size_t off,
+                 const TagId &tag_id,
+                 const BlobId &blob_id,
+                 size_t off,
                  ssize_t data_size,
                  hipc::Pointer &data) {
-    GetBlobTask *task = AsyncGetBlob(task_node, blob_id, off, data_size, data);
+    GetBlobTask *task = AsyncGetBlob(task_node, tag_id, blob_id, off, data_size, data);
     task->Wait();
     data = task->data_;
     size_t true_size = task->data_size_;
@@ -168,16 +173,18 @@ class Client {
    * @param node_id the node to reorganize the blob to
    * */
   ReorganizeBlobTask* AsyncReorganizeBlob(const TaskNode &task_node,
-                                          BlobId blob_id, float score,
+                                          const TagId &tag_id,
+                                          const BlobId &blob_id,
+                                          float score,
                                           u32 node_id) {
     HILOG(kDebug, "Beginning REORGANIZE (task_node={})", task_node);
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<ReorganizeBlobTask>(
         p,
         task_node, DomainId::GetNode(blob_id.node_id_), id_,
-        blob_id, score, node_id);
+        tag_id, blob_id, score, node_id);
     queue->Emplace(hash, p);
     return task;
   }
@@ -190,21 +197,25 @@ class Client {
    * @param tag_name tag name
    * */
   TagBlobTask* AsyncTagBlob(const TaskNode &task_node,
-                            BlobId blob_id, TagId tag_id) {
+                            const TagId &tag_id,
+                            const BlobId &blob_id,
+                            const TagId &tag) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<TagBlobTask>(
         p,
         task_node, DomainId::GetNode(blob_id.node_id_), id_,
-        blob_id, tag_id);
+        tag_id, blob_id, tag);
     queue->Emplace(hash, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncTagBlob);
   void TagBlob(const TaskNode &task_node,
-               BlobId blob_id, TagId tag_id) {
-    TagBlobTask *task = AsyncTagBlob(task_node, blob_id, tag_id);
+               const TagId &tag_id,
+               const BlobId &blob_id,
+               const TagId &tag) {
+    TagBlobTask *task = AsyncTagBlob(task_node, tag_id, blob_id, tag);
     task->Wait();
     LABSTOR_CLIENT->DelTask(task);
   }
@@ -214,21 +225,25 @@ class Client {
    * Check if blob has a tag
    * */
   BlobHasTagTask* AsyncBlobHasTag(const TaskNode &task_node,
-                                  BlobId blob_id, TagId tag_id) {
+                                  const TagId &tag_id,
+                                  const BlobId &blob_id,
+                                  const TagId &tag) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<BlobHasTagTask>(
         p,
         task_node, DomainId::GetNode(blob_id.node_id_), id_,
-        blob_id, tag_id);
+        tag_id, blob_id, tag);
     queue->Emplace(hash, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncBlobHasTag);
   bool BlobHasTag(const TaskNode &task_node,
-                  BlobId blob_id, TagId tag_id) {
-    BlobHasTagTask *task = AsyncBlobHasTag(task_node, blob_id, tag_id);
+                  const TagId &tag_id,
+                  const BlobId &blob_id,
+                  const TagId &tag) {
+    BlobHasTagTask *task = AsyncBlobHasTag(task_node, tag_id, blob_id, tag);
     task->Wait();
     bool has_tag = task->has_tag_;
     LABSTOR_CLIENT->DelTask(task);
@@ -240,9 +255,10 @@ class Client {
    * Get \a blob_name BLOB from \a bkt_id bucket
    * */
   GetBlobIdTask* AsyncGetBlobId(const TaskNode &task_node,
-                                TagId tag_id, const hshm::charbuf &blob_name) {
+                                const TagId &tag_id,
+                                const hshm::charbuf &blob_name) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = std::hash<hshm::charbuf>{}(blob_name);
     auto *task = LABSTOR_CLIENT->NewTask<GetBlobIdTask>(
         p,
@@ -253,7 +269,8 @@ class Client {
   }
   LABSTOR_TASK_NODE_ROOT(AsyncGetBlobId);
   BlobId GetBlobId(const TaskNode &task_node,
-                   TagId tag_id, const hshm::charbuf &blob_name) {
+                   const TagId &tag_id,
+                   const hshm::charbuf &blob_name) {
     GetBlobIdTask *task = AsyncGetBlobId(task_node, tag_id, blob_name);
     task->Wait();
     BlobId blob_id = task->blob_id_;
@@ -266,21 +283,23 @@ class Client {
    * Get \a blob_name BLOB name from \a blob_id BLOB id
    * */
   GetBlobNameTask* AsyncGetBlobName(const TaskNode &task_node,
-                                    BlobId blob_id) {
+                                    const TagId &tag_id,
+                                    const BlobId &blob_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<GetBlobNameTask>(
         p,
         task_node, DomainId::GetNode(blob_id.node_id_), id_,
-        blob_id);
+        tag_id, blob_id);
     queue->Emplace(hash, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncGetBlobName);
   std::string GetBlobName(const TaskNode &task_node,
-                          BlobId blob_id) {
-    GetBlobNameTask *task = AsyncGetBlobName(task_node, blob_id);
+                          const TagId &tag_id,
+                          const BlobId &blob_id) {
+    GetBlobNameTask *task = AsyncGetBlobName(task_node, tag_id, blob_id);
     task->Wait();
     std::string blob_name = task->blob_name_->str();
     LABSTOR_CLIENT->DelTask(task);
@@ -292,22 +311,24 @@ class Client {
    * Get \a size from \a blob_id BLOB id
    * */
   GetBlobSizeTask* AsyncGetBlobSize(const TaskNode &task_node,
-                                    BlobId blob_id) {
+                                    const TagId &tag_id,
+                                    const BlobId &blob_id) {
     HILOG(kDebug, "Getting blob size {}", task_node);
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<GetBlobSizeTask>(
         p,
         task_node, DomainId::GetNode(blob_id.node_id_), id_,
-        blob_id);
+        tag_id, blob_id);
     queue->Emplace(hash, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncGetBlobSize);
   size_t GetBlobSize(const TaskNode &task_node,
-                     BlobId blob_id) {
-    GetBlobSizeTask *task = AsyncGetBlobSize(task_node, blob_id);
+                     const TagId &tag_id,
+                     const BlobId &blob_id) {
+    GetBlobSizeTask *task = AsyncGetBlobSize(task_node, tag_id, blob_id);
     task->Wait();
     size_t size = task->size_;
     LABSTOR_CLIENT->DelTask(task);
@@ -319,21 +340,23 @@ class Client {
    * Get \a score from \a blob_id BLOB id
    * */
   GetBlobScoreTask* AsyncGetBlobScore(const TaskNode &task_node,
-                     BlobId blob_id) {
+                                      const TagId &tag_id,
+                                      const BlobId &blob_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<GetBlobScoreTask>(
         p,
         task_node, DomainId::GetNode(blob_id.node_id_), id_,
-        blob_id);
+        tag_id, blob_id);
     queue->Emplace(hash, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncGetBlobScore);
   float GetBlobScore(const TaskNode &task_node,
-                     BlobId blob_id) {
-    GetBlobScoreTask *task = AsyncGetBlobScore(task_node, blob_id);
+                     const TagId &tag_id,
+                     const BlobId &blob_id) {
+    GetBlobScoreTask *task = AsyncGetBlobScore(task_node, tag_id, blob_id);
     task->Wait();
     float score = task->score_;
     LABSTOR_CLIENT->DelTask(task);
@@ -345,14 +368,15 @@ class Client {
    * Get \a blob_id blob's buffers
    * */
   std::vector<BufferInfo> GetBlobBuffers(const TaskNode &task_node,
-                                         BlobId blob_id) {
+                                         const TagId &tag_id,
+                                         const BlobId &blob_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<GetBlobBuffersTask>(
         p,
         task_node, DomainId::GetNode(blob_id.node_id_), id_,
-        blob_id);
+        tag_id, blob_id);
     queue->Emplace(hash, p);
     task->Wait();
     std::vector<BufferInfo> buffers =
@@ -367,21 +391,25 @@ class Client {
    * in \a bkt_id bucket.
    * */
   RenameBlobTask* AsyncRenameBlob(const TaskNode &task_node,
-                                  BlobId blob_id, const hshm::charbuf &new_blob_name) {
+                                  const TagId &tag_id,
+                                  const BlobId &blob_id,
+                                  const hshm::charbuf &new_blob_name) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<RenameBlobTask>(
         p,
         task_node, DomainId::GetNode(blob_id.node_id_), id_,
-        blob_id, new_blob_name);
+        tag_id, blob_id, new_blob_name);
     queue->Emplace(hash, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncRenameBlob);
   void RenameBlob(const TaskNode &task_node,
-                  BlobId blob_id, const hshm::charbuf &new_blob_name) {
-    RenameBlobTask *task = AsyncRenameBlob(task_node, blob_id, new_blob_name);
+                  const TagId &tag_id,
+                  const BlobId &blob_id,
+                  const hshm::charbuf &new_blob_name) {
+    RenameBlobTask *task = AsyncRenameBlob(task_node, tag_id, blob_id, new_blob_name);
     task->Wait();
     LABSTOR_CLIENT->DelTask(task);
   }
@@ -391,21 +419,25 @@ class Client {
    * Truncate a blob to a new size
    * */
   TruncateBlobTask* AsyncTruncateBlob(const TaskNode &task_node,
-                                      BlobId blob_id, size_t new_size) {
+                                      const TagId &tag_id,
+                                      const BlobId &blob_id,
+                                      size_t new_size) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<TruncateBlobTask>(
         p,
         task_node, DomainId::GetNode(blob_id.node_id_), id_,
-        blob_id, new_size);
+        tag_id, blob_id, new_size);
     queue->Emplace(hash, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncTruncateBlob);
   void TruncateBlob(const TaskNode &task_node,
-                    BlobId blob_id, size_t new_size) {
-    TruncateBlobTask *task = AsyncTruncateBlob(task_node, blob_id, new_size);
+                    const TagId &tag_id,
+                    const BlobId &blob_id,
+                    size_t new_size) {
+    TruncateBlobTask *task = AsyncTruncateBlob(task_node, tag_id, blob_id, new_size);
     task->Wait();
     LABSTOR_CLIENT->DelTask(task);
   }
@@ -415,21 +447,23 @@ class Client {
    * Destroy \a blob_id blob in \a bkt_id bucket
    * */
   DestroyBlobTask* AsyncDestroyBlob(const TaskNode &task_node,
-                                    BlobId blob_id) {
+                                    const TagId &tag_id,
+                                    const BlobId &blob_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<DestroyBlobTask>(
         p,
         task_node, DomainId::GetNode(blob_id.node_id_), id_,
-        blob_id);
+        tag_id, blob_id);
     queue->Emplace(hash, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncDestroyBlob);
   void DestroyBlob(const TaskNode &task_node,
-                   BlobId blob_id) {
-    DestroyBlobTask *task = AsyncDestroyBlob(task_node, blob_id);
+                   const TagId &tag_id,
+                   const BlobId &blob_id) {
+    DestroyBlobTask *task = AsyncDestroyBlob(task_node, tag_id, blob_id);
     task->Wait();
     LABSTOR_CLIENT->DelTask(task);
   }

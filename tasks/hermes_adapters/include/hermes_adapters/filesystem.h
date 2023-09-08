@@ -56,7 +56,7 @@ class Filesystem {
         std::string blob_name(p.CreateBlobName().str());
         bkt.PartialPut(blob_name, page, p.blob_off_, ctx);
       } else {
-        bkt.Append(page, ctx);
+        bkt.Append(page, ctx.page_size_, ctx);
       }
       data_offset += p.blob_size_;
     }

@@ -176,7 +176,7 @@ class Bucket {
    * @return The Status of the operation
    * */
   std::string GetBlobName(const BlobId &blob_id) {
-    return blob_mdm_->GetBlobNameRoot(blob_id);
+    return blob_mdm_->GetBlobNameRoot(id_, blob_id);
   }
 
 
@@ -187,7 +187,7 @@ class Bucket {
    * @return The Status of the operation
    * */
   float GetBlobScore(const BlobId &blob_id) {
-    return blob_mdm_->GetBlobScoreRoot(blob_id);
+    return blob_mdm_->GetBlobScoreRoot(id_, blob_id);
   }
 
   /**
@@ -202,7 +202,7 @@ class Bucket {
   /**
    * Put \a blob_name Blob into the bucket
    * */
-  template<bool PARTIAL, bool APPEND>
+  template<bool PARTIAL>
   HSHM_ALWAYS_INLINE
   BlobId BasePut(const std::string &blob_name,
                  const Blob &blob,
@@ -238,7 +238,7 @@ class Bucket {
   BlobId Put(const std::string &blob_name,
              const Blob &blob,
              Context &ctx) {
-    return BasePut<false, false>(blob_name, blob, 0, BlobId::GetNull(), ctx);
+    return BasePut<false>(blob_name, blob, 0, BlobId::GetNull(), ctx);
   }
 
   /**
@@ -247,7 +247,7 @@ class Bucket {
   BlobId Put(const BlobId &blob_id,
              const Blob &blob,
              Context &ctx) {
-    return BasePut<false, false>("", blob, 0, blob_id, ctx);
+    return BasePut<false>("", blob, 0, blob_id, ctx);
   }
 
   /**
@@ -257,7 +257,7 @@ class Bucket {
                     const Blob &blob,
                     size_t blob_off,
                     Context &ctx) {
-    return BasePut<true, false>(blob_name, blob, blob_off, BlobId::GetNull(), ctx);
+    return BasePut<true>(blob_name, blob, blob_off, BlobId::GetNull(), ctx);
   }
 
   /**
@@ -267,7 +267,18 @@ class Bucket {
                     const Blob &blob,
                     size_t blob_off,
                     Context &ctx) {
-    return BasePut<true, false>("", blob, blob_off, blob_id, ctx);
+    return BasePut<true>("", blob, blob_off, blob_id, ctx);
+  }
+
+  /**
+   * Append \a blob_name Blob into the bucket
+   * */
+  Status Append(const Blob &blob, size_t page_size, Context &ctx) {
+    hipc::Pointer p = LABSTOR_CLIENT->AllocateBuffer(blob.size());
+    char *data = LABSTOR_CLIENT->GetPrivatePointer(p);
+    memcpy(data, blob.data(), blob.size());
+    bkt_mdm_->AppendBlobRoot(id_, blob.size(), p, page_size, ctx.blob_score_, ctx.node_id_);
+    return Status();
   }
 
   /**
@@ -277,23 +288,14 @@ class Bucket {
                       float score,
                       u32 node_id,
                       Context &ctx) {
-    blob_mdm_->AsyncReorganizeBlobRoot(blob_id, score, node_id);
-  }
-
-  /**
-   * Append \a blob_name Blob into the bucket
-   * */
-  Status Append(const Blob &blob, Context &ctx) {
-    return Status();
-//    BlobId blob_id(BlobId::GetNull());
-//    return Put<false, true>(blob_name, blob, blob_id, ctx);
+    blob_mdm_->AsyncReorganizeBlobRoot(id_, blob_id, score, node_id);
   }
 
   /**
    * Get the current size of the blob in the bucket
    * */
   size_t GetBlobSize(const BlobId &blob_id) {
-    return blob_mdm_->GetBlobSizeRoot(blob_id);
+    return blob_mdm_->GetBlobSizeRoot(id_, blob_id);
   }
 
   /**
@@ -318,7 +320,7 @@ class Bucket {
       data_size = GetBlobSize(blob_id);
     }
     hipc::Pointer data_p = LABSTOR_CLIENT->AllocateBuffer(data_size);
-    data_size = blob_mdm_->GetBlobRoot(blob_id, blob_off, data_size, data_p);
+    data_size = blob_mdm_->GetBlobRoot(id_, blob_id, blob_off, data_size, data_p);
     char *data = LABSTOR_CLIENT->GetPrivatePointer(data_p);
     // Copy data to blob
     // TODO(llogan): intercept mmap to avoid copy
@@ -378,7 +380,7 @@ class Bucket {
    * Rename \a blob_id blob to \a new_blob_name new name
    * */
   void RenameBlob(const BlobId &blob_id, std::string new_blob_name, Context &ctx) {
-    blob_mdm_->RenameBlobRoot(blob_id, hshm::to_charbuf(new_blob_name));
+    blob_mdm_->RenameBlobRoot(id_, blob_id, hshm::to_charbuf(new_blob_name));
   }
 
   /**
@@ -386,7 +388,7 @@ class Bucket {
    * */
   void DestroyBlob(const BlobId &blob_id, Context &ctx) {
     // TODO(llogan): Make apart of bkt_mdm_ instead
-    blob_mdm_->DestroyBlobRoot(blob_id);
+    blob_mdm_->DestroyBlobRoot(id_, blob_id);
   }
 
   /**

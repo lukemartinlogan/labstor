@@ -22,6 +22,12 @@ class Client {
   /** Destructor */
   ~Client() = default;
 
+  /** Init from existing ID */
+  void Init(const TaskStateId &id) {
+    id_ = id;
+    queue_id_ = QueueId(id_);
+  }
+
   /** Create a hermes_bucket_mdm */
   HSHM_ALWAYS_INLINE
   void Create(const TaskNode &task_node,
@@ -50,22 +56,58 @@ class Client {
    * Tag Operations
    * ===================================*/
 
-  /** Put blob (fire & forget) */
+  /** Update statistics after blob PUT (fire & forget) */
   HSHM_ALWAYS_INLINE
   void PutBlob(const TaskNode &task_node,
                TagId tag_id, const BlobId &blob_id,
                size_t blob_off, size_t blob_size,
                bitfield32_t flags) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
-    u32 hash = tag_id.node_id_;
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
+    u32 hash = tag_id.unique_;
     LABSTOR_CLIENT->NewTask<PutBlobTask>(
-        p, task_node, DomainId::GetNode(HASH_TO_NODE_ID(hash)), id_,
+        p, task_node, DomainId::GetNode(tag_id.node_id_), id_,
         tag_id, blob_id,
         blob_off, blob_size, flags);
     queue->Emplace(hash, p);
   }
   LABSTOR_TASK_NODE_ROOT(PutBlob);
+
+  /** Append data to the bucket (fire & forget) */
+  HSHM_ALWAYS_INLINE
+  AppendBlobSchemaTask* AsyncAppendBlobSchema(const TaskNode &task_node,
+                                              TagId tag_id,
+                                              size_t data_size,
+                                              size_t page_size) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
+    u32 hash = tag_id.unique_;
+    auto *task = LABSTOR_CLIENT->NewTask<AppendBlobSchemaTask>(
+        p, task_node, DomainId::GetNode(tag_id.node_id_), id_,
+        tag_id, data_size, page_size);
+    queue->Emplace(hash, p);
+    return task;
+  }
+  LABSTOR_TASK_NODE_ROOT(AsyncAppendBlobSchema);
+
+  /** Append data to the bucket (fire & forget) */
+  HSHM_ALWAYS_INLINE
+  void AppendBlob(const TaskNode &task_node,
+                  TagId tag_id,
+                  size_t data_size,
+                  const hipc::Pointer &data,
+                  size_t page_size,
+                  float score,
+                  u32 node_id) {
+    hipc::Pointer p;
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
+    u32 hash = tag_id.unique_;
+    LABSTOR_CLIENT->NewTask<AppendBlobTask>(
+        p, task_node, DomainId::GetNode(tag_id.node_id_), id_,
+        tag_id, data_size, data, page_size, score, node_id);
+    queue->Emplace(hash, p);
+  }
+  LABSTOR_TASK_NODE_ROOT(AppendBlob);
 
   /** Create a tag or get the ID of existing tag */
   HSHM_ALWAYS_INLINE
@@ -75,7 +117,7 @@ class Client {
                        const std::vector<TraitId> &traits,
                        size_t backend_size) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     HILOG(kDebug, "Creating a tag {}", tag_name.str());
     u32 hash = std::hash<hshm::charbuf>{}(tag_name);
     auto *task = LABSTOR_CLIENT->NewTask<GetOrCreateTagTask>(
@@ -93,7 +135,7 @@ class Client {
   TagId GetTagId(const TaskNode &task_node,
                  const hshm::charbuf &tag_name) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = std::hash<hshm::charbuf>{}(tag_name);
     auto *task = LABSTOR_CLIENT->NewTask<GetTagIdTask>(
         p,
@@ -111,7 +153,7 @@ class Client {
   hshm::string GetTagName(const TaskNode &task_node,
                           const TagId &tag_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = tag_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<GetTagNameTask>(
         p,
@@ -129,7 +171,7 @@ class Client {
   void RenameTag(const TaskNode &task_node,
                  const TagId &tag_id, const hshm::charbuf &new_tag_name) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = tag_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<RenameTagTask>(
         p,
@@ -145,7 +187,7 @@ class Client {
   void DestroyTag(const TaskNode &task_node,
                   const TagId &tag_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = tag_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<DestroyTagTask>(
         p,
@@ -161,7 +203,7 @@ class Client {
   void TagAddBlob(const TaskNode &task_node,
                   const TagId &tag_id, const BlobId &blob_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = tag_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<TagAddBlobTask>(
         p,
@@ -177,7 +219,7 @@ class Client {
   void TagRemoveBlob(const TaskNode &task_node,
                      const TagId &tag_id, const BlobId &blob_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = tag_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<TagRemoveBlobTask>(
         p,
@@ -193,7 +235,7 @@ class Client {
   void TagClearBlobs(const TaskNode &task_node,
                      const TagId &tag_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsNull());
     u32 hash = tag_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<TagClearBlobsTask>(
         p,

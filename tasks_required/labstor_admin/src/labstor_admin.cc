@@ -77,12 +77,12 @@ class Server : public TaskLib {
         std::string lib_name = task->lib_name_->str();
         std::string state_name = task->state_name_->str();
         HILOG(kInfo, "(node {}) Creating task state {} with id {} (task_node={})",
-              LABSTOR_QM_CLIENT->node_id_, state_name, task->id_, task->task_node_);
+              LABSTOR_CLIENT->node_id_, state_name, task->id_, task->task_node_);
 
         // Verify the state isn't NULL
         if (task->id_.IsNull()) {
           HELOG(kError, "(node {}) The task state {} with id {} is NULL.",
-                LABSTOR_QM_CLIENT->node_id_, state_name, task->id_);
+                LABSTOR_CLIENT->node_id_, state_name, task->id_);
           task->SetModuleComplete();
           return;
         }
@@ -90,7 +90,7 @@ class Server : public TaskLib {
         // Verify the state doesn't exist
         if (LABSTOR_TASK_REGISTRY->TaskStateExists(task->id_)) {
           HILOG(kInfo, "(node {}) The task state {} with id {} exists",
-                LABSTOR_QM_CLIENT->node_id_, state_name, task->id_);
+                LABSTOR_CLIENT->node_id_, state_name, task->id_);
           task->SetModuleComplete();
           return;
         }
@@ -120,7 +120,7 @@ class Server : public TaskLib {
           return;
         }
         HILOG(kInfo, "(node {}) Allocated task state {} with id {}",
-              LABSTOR_QM_CLIENT->node_id_, state_name, task->task_state_);
+              LABSTOR_CLIENT->node_id_, state_name, task->task_state_);
       }
     }
   }

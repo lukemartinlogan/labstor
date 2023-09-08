@@ -16,13 +16,13 @@ TEST_CASE("TestGetQueue") {
   LABSTOR_ADMIN->CreateQueueRoot(labstor::DomainId::GetLocal(), qid,
                                  16, 16, 256,
                                  hshm::bitfield32_t(0));
-  LABSTOR_QM_CLIENT->GetQueue(qid);
+  LABSTOR_CLIENT->GetQueue(qid);
 
   hshm::Timer t;
   t.Resume();
   size_t ops = (1 << 20);
   for (size_t i = 0; i < ops; ++i) {
-    labstor::MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(qid);
+    labstor::MultiQueue *queue = LABSTOR_CLIENT->GetQueue(qid);
     REQUIRE(queue->id_ == qid);
   }
   t.Pause();

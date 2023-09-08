@@ -55,7 +55,7 @@ class QueueManagerRuntime : public QueueManager {
   void CreateQueue(const QueueId &id,
                    u32 max_lanes, u32 num_lanes,
                    u32 depth, bitfield32_t flags) {
-    MultiQueue *queue = GetQueue(id);
+    MultiQueue *queue = GetQueue(id, false);
     if (id.IsNull()) {
       HILOG(kDebug, "Cannot create null queue {}", id);
       return;

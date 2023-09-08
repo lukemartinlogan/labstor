@@ -48,6 +48,14 @@ void Run(MultiQueue *queue, u32 method, Task *task) override {
       PutBlob(queue, reinterpret_cast<PutBlobTask *>(task));
       break;
     }
+    case Method::kAppendBlobSchema: {
+      AppendBlobSchema(queue, reinterpret_cast<AppendBlobSchemaTask *>(task));
+      break;
+    }
+    case Method::kAppendBlob: {
+      AppendBlob(queue, reinterpret_cast<AppendBlobTask *>(task));
+      break;
+    }
   }
 }
 /** Ensure there is space to store replicated outputs */
@@ -95,6 +103,14 @@ void ReplicateStart(u32 method, u32 count, Task *task) override {
     }
     case Method::kPutBlob: {
       labstor::CALL_REPLICA_START(count, reinterpret_cast<PutBlobTask*>(task));
+      break;
+    }
+    case Method::kAppendBlobSchema: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<AppendBlobSchemaTask*>(task));
+      break;
+    }
+    case Method::kAppendBlob: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<AppendBlobTask*>(task));
       break;
     }
   }
@@ -146,6 +162,14 @@ void ReplicateEnd(u32 method, Task *task) override {
       labstor::CALL_REPLICA_END(reinterpret_cast<PutBlobTask*>(task));
       break;
     }
+    case Method::kAppendBlobSchema: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<AppendBlobSchemaTask*>(task));
+      break;
+    }
+    case Method::kAppendBlob: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<AppendBlobTask*>(task));
+      break;
+    }
   }
 }
 /** Serialize a task when initially pushing into remote */
@@ -193,6 +217,14 @@ std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, T
     }
     case Method::kPutBlob: {
       ar << *reinterpret_cast<PutBlobTask*>(task);
+      break;
+    }
+    case Method::kAppendBlobSchema: {
+      ar << *reinterpret_cast<AppendBlobSchemaTask*>(task);
+      break;
+    }
+    case Method::kAppendBlob: {
+      ar << *reinterpret_cast<AppendBlobTask*>(task);
       break;
     }
   }
@@ -257,6 +289,16 @@ TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) override {
       ar >> *reinterpret_cast<PutBlobTask*>(task_ptr.task_);
       break;
     }
+    case Method::kAppendBlobSchema: {
+      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<AppendBlobSchemaTask>(task_ptr.p_);
+      ar >> *reinterpret_cast<AppendBlobSchemaTask*>(task_ptr.task_);
+      break;
+    }
+    case Method::kAppendBlob: {
+      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<AppendBlobTask>(task_ptr.p_);
+      ar >> *reinterpret_cast<AppendBlobTask*>(task_ptr.task_);
+      break;
+    }
   }
   return task_ptr;
 }
@@ -305,6 +347,14 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
     }
     case Method::kPutBlob: {
       ar << *reinterpret_cast<PutBlobTask*>(task);
+      break;
+    }
+    case Method::kAppendBlobSchema: {
+      ar << *reinterpret_cast<AppendBlobSchemaTask*>(task);
+      break;
+    }
+    case Method::kAppendBlob: {
+      ar << *reinterpret_cast<AppendBlobTask*>(task);
       break;
     }
   }
@@ -357,6 +407,14 @@ void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task)
       ar.Deserialize(replica, *reinterpret_cast<PutBlobTask*>(task));
       break;
     }
+    case Method::kAppendBlobSchema: {
+      ar.Deserialize(replica, *reinterpret_cast<AppendBlobSchemaTask*>(task));
+      break;
+    }
+    case Method::kAppendBlob: {
+      ar.Deserialize(replica, *reinterpret_cast<AppendBlobTask*>(task));
+      break;
+    }
   }
 }
 /** Get the grouping of the task */
@@ -394,6 +452,12 @@ int GetGroup(u32 method, Task *task, hshm::charbuf &group) override {
     }
     case Method::kPutBlob: {
       return reinterpret_cast<PutBlobTask*>(task)->GetGroup(group);
+    }
+    case Method::kAppendBlobSchema: {
+      return reinterpret_cast<AppendBlobSchemaTask*>(task)->GetGroup(group);
+    }
+    case Method::kAppendBlob: {
+      return reinterpret_cast<AppendBlobTask*>(task)->GetGroup(group);
     }
   }
   return -1;

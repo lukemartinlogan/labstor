@@ -74,12 +74,12 @@ class Client {
                 TaskState *exec,
                 std::vector<DomainId> &domain_ids) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, false);
 
     // Serialize task + create the wait task
     HILOG(kDebug, "Beginning dispersion for (task_node={}, task_state={}, method={})",
           orig_task->task_node_, orig_task->task_state_, orig_task->method_)
-    BinaryOutputArchive<true> ar(DomainId::GetNode(LABSTOR_QM_CLIENT->node_id_));
+    BinaryOutputArchive<true> ar(DomainId::GetNode(LABSTOR_CLIENT->node_id_));
     auto xfer = exec->SaveStart(orig_task->method_, ar, orig_task);
 
     // Create subtasks
@@ -95,7 +95,7 @@ class Client {
 //  HSHM_ALWAYS_INLINE
 //  AcceptTask* AsyncAcceptThread() {
 //    hipc::Pointer p;
-//    MultiQueue *queue = LABSTOR_QM_CLIENT->GetQueue(queue_id_);
+//    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, false);
 //    auto *task = LABSTOR_CLIENT->NewTask<AcceptTask>(
 //        p, TaskNode::GetNull(), DomainId::GetLocal(), id_);
 //    queue->Emplace(0, p);

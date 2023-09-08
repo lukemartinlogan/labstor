@@ -20,6 +20,7 @@ class Client : public ConfigurationManager {
   int data_;
   QueueManagerClient queue_manager_;
   std::atomic<u64> *unique_;
+  u32 node_id_;
 
  public:
   /** Default constructor */
@@ -71,6 +72,7 @@ class Client : public ConfigurationManager {
     main_alloc_ = mem_mngr->GetAllocator(main_alloc_id_);
     header_ = main_alloc_->GetCustomHeader<LabstorShm>();
     unique_ = &header_->unique_;
+    node_id_ = header_->node_id_;
   }
 
   /** Finalize Hermes explicitly */
@@ -121,6 +123,12 @@ class Client : public ConfigurationManager {
   HSHM_ALWAYS_INLINE
   void DelTask(TaskT *task) {
     main_alloc_->DelObj<TaskT>(task);
+  }
+
+  /** Get a queue by its ID */
+  HSHM_ALWAYS_INLINE
+  MultiQueue* GetQueue(QueueId queue_id, bool is_root_task) {
+    return queue_manager_.GetQueue(queue_id, is_root_task);
   }
 
   /** Detect if a task is local or remote */

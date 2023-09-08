@@ -198,7 +198,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     lane_hash_ = blob_id_.unique_;
     task_state_ = state_id;
     method_ = Method::kPutBlob;
-    task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET | TASK_OWNS_DATA);
+    task_flags_.SetBits(TASK_LOW_LATENCY);
     domain_id_ = domain_id;
 
     // Custom params
@@ -249,8 +249,8 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
-    srl << blob_id_.unique_;
-    srl << blob_id_.node_id_;
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
@@ -264,6 +264,7 @@ class GetBlobPhase {
 
 /** A task to get data from a blob */
 struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
+  IN TagId tag_id_;
   IN BlobId blob_id_;
   IN size_t blob_off_;
   IN hipc::Pointer data_;
@@ -281,6 +282,7 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
               const TaskNode &task_node,
               const DomainId &domain_id,
               const TaskStateId &state_id,
+              const TagId &tag_id,
               const BlobId &blob_id,
               size_t off,
               ssize_t data_size,
@@ -294,6 +296,7 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     domain_id_ = domain_id;
 
     // Custom params
+    tag_id_ = tag_id;
     blob_id_ = blob_id;
     blob_off_ = off;
     data_size_ = data_size;
@@ -309,7 +312,7 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
                       data_size_, domain_id_);
     task_serialize<Ar>(ar);
     ar & xfer;
-    ar(blob_id_, blob_off_, data_size_);
+    ar(tag_id_, blob_id_, blob_off_, data_size_);
   }
 
   /** Deserialize message call */
@@ -319,7 +322,7 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     task_serialize<Ar>(ar);
     ar & xfer;
     data_ = HERMES_MEMORY_MANAGER->Convert<void, hipc::Pointer>(xfer.data_);
-    ar(blob_id_, blob_off_, data_size_);
+    ar(tag_id_, blob_id_, blob_off_, data_size_);
   }
 
   /** (De)serialize message return */
@@ -330,14 +333,15 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
-    srl << blob_id_.unique_;
-    srl << blob_id_.node_id_;
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
 
 /** A task to tag a blob */
 struct TagBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN TagId tag_id_;
   IN BlobId blob_id_;
   IN TagId tag_;
 
@@ -351,6 +355,7 @@ struct TagBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
               const TaskNode &task_node,
               const DomainId &domain_id,
               const TaskStateId &state_id,
+              const TagId &tag_id,
               const BlobId &blob_id,
               const TagId &tag) : Task(alloc) {
     // Initialize task
@@ -362,6 +367,7 @@ struct TagBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     domain_id_ = domain_id;
 
     // Custom
+    tag_id_ = tag_id;
     blob_id_ = blob_id;
     tag_ = tag;
   }
@@ -382,8 +388,8 @@ struct TagBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
-    srl << blob_id_.unique_;
-    srl << blob_id_.node_id_;
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
@@ -392,6 +398,7 @@ struct TagBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
  * Check if blob has a tag
  * */
 struct BlobHasTagTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN TagId tag_id_;
   IN BlobId blob_id_;
   IN TagId tag_;
   OUT bool has_tag_;
@@ -406,6 +413,7 @@ struct BlobHasTagTask : public Task, TaskFlags<TF_SRL_SYM> {
                  const TaskNode &task_node,
                  const DomainId &domain_id,
                  const TaskStateId &state_id,
+                 const TagId &tag_id,
                  const BlobId &blob_id,
                  const TagId &tag) : Task(alloc) {
     // Initialize task
@@ -418,6 +426,7 @@ struct BlobHasTagTask : public Task, TaskFlags<TF_SRL_SYM> {
     domain_id_ = domain_id;
 
     // Custom
+    tag_id_ = tag_id;
     blob_id_ = blob_id;
     tag_ = tag;
   }
@@ -426,7 +435,7 @@ struct BlobHasTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar(blob_id_, tag_);
+    ar(tag_id_, blob_id_, tag_);
   }
 
   /** (De)serialize message return */
@@ -439,8 +448,8 @@ struct BlobHasTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
-    srl << blob_id_.unique_;
-    srl << blob_id_.node_id_;
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
@@ -499,7 +508,10 @@ struct GetBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** Create group */
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
-    return TASK_UNORDERED;
+    labstor::LocalSerialize srl(group);
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
+    return 0;
   }
 };
 
@@ -507,6 +519,7 @@ struct GetBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
  * Get \a blob_name BLOB name from \a blob_id BLOB id
  * */
 struct GetBlobNameTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN TagId tag_id_;
   IN BlobId blob_id_;
   OUT hipc::ShmArchive<hipc::string> blob_name_;
 
@@ -520,6 +533,7 @@ struct GetBlobNameTask : public Task, TaskFlags<TF_SRL_SYM> {
                   const TaskNode &task_node,
                   const DomainId &domain_id,
                   const TaskStateId &state_id,
+                  const TagId &tag_id,
                   const BlobId &blob_id) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
@@ -530,6 +544,7 @@ struct GetBlobNameTask : public Task, TaskFlags<TF_SRL_SYM> {
     domain_id_ = domain_id;
 
     // Custom
+    tag_id_ = tag_id;
     blob_id_ = blob_id;
     HSHM_MAKE_AR0(blob_name_, LABSTOR_CLIENT->main_alloc_)
   }
@@ -543,7 +558,7 @@ struct GetBlobNameTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar(blob_id_);
+    ar(tag_id_, blob_id_);
   }
 
   /** (De)serialize message return */
@@ -556,14 +571,15 @@ struct GetBlobNameTask : public Task, TaskFlags<TF_SRL_SYM> {
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
-    srl << blob_id_.unique_;
-    srl << blob_id_.node_id_;
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
 
 /** Get \a score from \a blob_id BLOB id */
 struct GetBlobSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN TagId tag_id_;
   IN BlobId blob_id_;
   OUT size_t size_;
 
@@ -574,10 +590,11 @@ struct GetBlobSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
   GetBlobSizeTask(hipc::Allocator *alloc,
-                   const TaskNode &task_node,
-                   const DomainId &domain_id,
-                   const TaskStateId &state_id,
-                   const BlobId &blob_id) : Task(alloc) {
+                  const TaskNode &task_node,
+                  const DomainId &domain_id,
+                  const TaskStateId &state_id,
+                  const TagId &tag_id,
+                  const BlobId &blob_id) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
@@ -587,6 +604,7 @@ struct GetBlobSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
     domain_id_ = domain_id;
 
     // Custom
+    tag_id_ = tag_id;
     blob_id_ = blob_id;
   }
 
@@ -594,7 +612,7 @@ struct GetBlobSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar(blob_id_);
+    ar(tag_id_, blob_id_);
   }
 
   /** (De)serialize message return */
@@ -607,14 +625,15 @@ struct GetBlobSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
-    srl << blob_id_.unique_;
-    srl << blob_id_.node_id_;
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
 
 /** Get \a score from \a blob_id BLOB id */
 struct GetBlobScoreTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN TagId tag_id_;
   IN BlobId blob_id_;
   OUT float score_;
 
@@ -628,6 +647,7 @@ struct GetBlobScoreTask : public Task, TaskFlags<TF_SRL_SYM> {
                    const TaskNode &task_node,
                    const DomainId &domain_id,
                    const TaskStateId &state_id,
+                   const TagId &tag_id,
                    const BlobId &blob_id) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
@@ -638,6 +658,7 @@ struct GetBlobScoreTask : public Task, TaskFlags<TF_SRL_SYM> {
     domain_id_ = domain_id;
 
     // Custom
+    tag_id_ = tag_id;
     blob_id_ = blob_id;
   }
 
@@ -645,7 +666,7 @@ struct GetBlobScoreTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar(blob_id_);
+    ar(tag_id_, blob_id_);
   }
 
   /** (De)serialize message return */
@@ -658,14 +679,15 @@ struct GetBlobScoreTask : public Task, TaskFlags<TF_SRL_SYM> {
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
-    srl << blob_id_.unique_;
-    srl << blob_id_.node_id_;
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
 
 /** Get \a blob_id blob's buffers */
 struct GetBlobBuffersTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN TagId tag_id_;
   IN BlobId blob_id_;
   OUT hipc::ShmArchive<hipc::vector<BufferInfo>> buffers_;
 
@@ -679,6 +701,7 @@ struct GetBlobBuffersTask : public Task, TaskFlags<TF_SRL_SYM> {
                      const TaskNode &task_node,
                      const DomainId &domain_id,
                      const TaskStateId &state_id,
+                     const TagId &tag_id,
                      const BlobId &blob_id) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
@@ -689,6 +712,7 @@ struct GetBlobBuffersTask : public Task, TaskFlags<TF_SRL_SYM> {
     domain_id_ = domain_id;
 
     // Custom
+    tag_id_ = tag_id;
     blob_id_ = blob_id;
     HSHM_MAKE_AR0(buffers_, LABSTOR_CLIENT->main_alloc_)
   }
@@ -702,7 +726,7 @@ struct GetBlobBuffersTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar(blob_id_);
+    ar(tag_id_, blob_id_);
   }
 
   /** (De)serialize message return */
@@ -715,8 +739,8 @@ struct GetBlobBuffersTask : public Task, TaskFlags<TF_SRL_SYM> {
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
-    srl << blob_id_.unique_;
-    srl << blob_id_.node_id_;
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
@@ -726,6 +750,7 @@ struct GetBlobBuffersTask : public Task, TaskFlags<TF_SRL_SYM> {
  * in \a bkt_id bucket.
  * */
 struct RenameBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN TagId tag_id_;
   IN BlobId blob_id_;
   IN hipc::ShmArchive<hipc::charbuf> new_blob_name_;
 
@@ -739,6 +764,7 @@ struct RenameBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
                  const TaskNode &task_node,
                  const DomainId &domain_id,
                  const TaskStateId &state_id,
+                 const TagId &tag_id,
                  const BlobId &blob_id,
                  const hshm::charbuf &new_blob_name) : Task(alloc) {
     // Initialize task
@@ -750,6 +776,7 @@ struct RenameBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     domain_id_ = domain_id;
 
     // Custom
+    tag_id_ = tag_id;
     blob_id_ = blob_id;
     HSHM_MAKE_AR(new_blob_name_, LABSTOR_CLIENT->main_alloc_, new_blob_name)
   }
@@ -763,7 +790,7 @@ struct RenameBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar(blob_id_);
+    ar(tag_id_, blob_id_);
   }
 
   /** (De)serialize message return */
@@ -776,14 +803,15 @@ struct RenameBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
-    srl << blob_id_.unique_;
-    srl << blob_id_.node_id_;
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
 
 /** A task to truncate a blob */
 struct TruncateBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN TagId tag_id_;
   IN BlobId blob_id_;
   IN u64 size_;
 
@@ -797,6 +825,7 @@ struct TruncateBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
                    const TaskNode &task_node,
                    const DomainId &domain_id,
                    const TaskStateId &state_id,
+                   const TagId &tag_id,
                    const BlobId &blob_id,
                    u64 size) : Task(alloc) {
     // Initialize task
@@ -808,6 +837,7 @@ struct TruncateBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     domain_id_ = domain_id;
 
     // Custom params
+    tag_id_ = tag_id;
     blob_id_ = blob_id;
     size_ = size;
   }
@@ -816,7 +846,7 @@ struct TruncateBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar(blob_id_, size_);
+    ar(tag_id_, blob_id_, size_);
   }
 
   /** (De)serialize message return */
@@ -828,8 +858,8 @@ struct TruncateBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
-    srl << blob_id_.unique_;
-    srl << blob_id_.node_id_;
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
@@ -842,6 +872,7 @@ struct DestroyBlobPhase {
 
 /** A task to destroy a blob */
 struct DestroyBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN TagId tag_id_;
   IN BlobId blob_id_;
   TEMP int phase_ = DestroyBlobPhase::kFreeBuffers;
   TEMP hipc::ShmArchive<std::vector<bdev::FreeTask *>> free_tasks_;
@@ -856,6 +887,7 @@ struct DestroyBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
                   const TaskNode &task_node,
                   const DomainId &domain_id,
                   const TaskStateId &state_id,
+                  const TagId &tag_id,
                   const BlobId &blob_id) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
@@ -866,6 +898,7 @@ struct DestroyBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     domain_id_ = domain_id;
 
     // Custom params
+    tag_id_ = tag_id;
     blob_id_ = blob_id;
   }
 
@@ -873,7 +906,7 @@ struct DestroyBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar(blob_id_);
+    ar(tag_id_, blob_id_);
   }
 
   /** (De)serialize message return */
@@ -885,8 +918,8 @@ struct DestroyBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
-    srl << blob_id_.unique_;
-    srl << blob_id_.node_id_;
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };
@@ -920,6 +953,7 @@ struct ReorganizeBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
                      const TaskNode &task_node,
                      const DomainId &domain_id,
                      const TaskStateId &state_id,
+                     const TagId &tag_id,
                      const BlobId &blob_id,
                      float score,
                      u32 node_id) : Task(alloc) {
@@ -932,6 +966,7 @@ struct ReorganizeBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     domain_id_ = domain_id;
 
     // Custom params
+    tag_id_ = tag_id;
     blob_id_ = blob_id;
     score_ = score;
     node_id_ = node_id;
@@ -941,7 +976,7 @@ struct ReorganizeBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar(blob_id_, score_, node_id_);
+    ar(tag_id_, blob_id_, score_, node_id_);
   }
 
   /** (De)serialize message return */
@@ -953,8 +988,8 @@ struct ReorganizeBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   HSHM_ALWAYS_INLINE
   int GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
-    srl << blob_id_.unique_;
-    srl << blob_id_.node_id_;
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
     return 0;
   }
 };

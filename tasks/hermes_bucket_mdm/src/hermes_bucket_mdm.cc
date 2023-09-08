@@ -21,6 +21,7 @@ class Server : public TaskLib {
   TAG_MAP_T tag_map_;
   u32 node_id_;
   std::atomic<u64> id_alloc_;
+  Client bkt_mdm_;
   blob_mdm::Client blob_mdm_;
   blob_mdm::ConstructTask *blob_mdm_task_;
 
@@ -31,7 +32,7 @@ class Server : public TaskLib {
     switch (task->phase_) {
       case ConstructTaskPhase::kInit: {
         id_alloc_ = 0;
-        node_id_ = LABSTOR_QM_CLIENT->node_id_;
+        node_id_ = LABSTOR_CLIENT->node_id_;
         blob_mdm_task_ = blob_mdm_.AsyncCreateRoot(
             DomainId::GetGlobal(), "hermes_blob_mdm");
         task->phase_ = ConstructTaskPhase::kWait;
@@ -40,6 +41,7 @@ class Server : public TaskLib {
         if (blob_mdm_task_->IsComplete()) {
           HILOG(kDebug, "Bucket MDM created")
           blob_mdm_.AsyncCreateComplete(blob_mdm_task_);
+          bkt_mdm_.Init(id_);
           task->SetModuleComplete();
           return;
         }
@@ -59,8 +61,108 @@ class Server : public TaskLib {
     task->SetModuleComplete();
   }
 
-  /** Destroy a blob */
-  // TODO(llogan)
+  /**
+   * Create the PartialPuts for append operations.
+   * */
+  void AppendBlobSchema(MultiQueue *queue, AppendBlobSchemaTask *task) {
+    switch (task->phase_) {
+      case AppendBlobPhase::kGetBlobIds: {
+        TagInfo &tag_info = tag_map_[task->tag_id_];
+        size_t bucket_size = tag_info.internal_size_;
+        size_t cur_page = bucket_size / task->page_size_;
+        size_t cur_page_off = bucket_size % task->page_size_;
+        size_t update_size = task->page_size_ - cur_page_off;
+        size_t max_pages = task->data_size_ / task->page_size_ + 1;
+        size_t cur_size = 0;
+        HSHM_MAKE_AR0(task->blob_id_tasks_, nullptr);
+        std::vector<AppendInfo> &blob_id_tasks = *task->blob_id_tasks_;
+        blob_id_tasks.reserve(max_pages);
+        while (cur_size < task->data_size_) {
+          if (update_size > task->data_size_) {
+            update_size = task->data_size_;
+          }
+          blob_id_tasks.emplace_back();
+          AppendInfo &append = blob_id_tasks.back();
+          append.blob_name_ = hshm::charbuf(std::to_string(cur_page));
+          append.data_size_ = update_size;
+          append.blob_off_ = cur_page_off;
+          append.blob_id_task_ = blob_mdm_.AsyncGetOrCreateBlobId(task->task_node_ + 1,
+                                                                  task->tag_id_,
+                                                                  append.blob_name_);
+          tag_info.internal_size_ += update_size;
+          cur_size += update_size;
+          cur_page_off = 0;
+          ++cur_page;
+          update_size = task->page_size_;
+        }
+        task->phase_ = AppendBlobPhase::kWaitBlobIds;
+      }
+      case AppendBlobPhase::kWaitBlobIds: {
+        std::vector<AppendInfo> &blob_id_tasks = *task->blob_id_tasks_;
+        for (AppendInfo &append : blob_id_tasks) {
+          if (!append.blob_id_task_->IsComplete()) {
+            return;
+          }
+          LABSTOR_CLIENT->DelTask(append.blob_id_task_);
+        }
+        task->SetModuleComplete();
+      }
+    }
+  }
+
+  /**
+   * Append data to a bucket. Assumes that the blobs in the bucket
+   * are named 0 ... N. Each blob is assumed to have a certain
+   * fixed page size.
+   * */
+  void AppendBlob(MultiQueue *queue, AppendBlobTask *task) {
+    switch (task->phase_) {
+      case AppendBlobPhase::kGetBlobIds: {
+        HILOG(kDebug, "Appending {} bytes to bucket {}", task->data_size_, task->tag_id_);
+        task->schema_ = bkt_mdm_.AsyncAppendBlobSchema(task->task_node_ + 1,
+                                                       task->tag_id_,
+                                                       task->data_size_,
+                                                       task->page_size_);
+        task->phase_ = AppendBlobPhase::kWaitBlobIds;
+      }
+      case AppendBlobPhase::kWaitBlobIds: {
+        if (!task->schema_->IsComplete()) {
+          return;
+        }
+        std::vector<AppendInfo> &blob_id_tasks = *task->schema_->blob_id_tasks_;
+        size_t buf_off = 0;
+        for (AppendInfo &append : blob_id_tasks) {
+          if (!append.blob_id_task_->IsComplete()) {
+            return;
+          }
+          append.put_task_ = blob_mdm_.AsyncPutBlob(task->task_node_ + 1,
+                                                    task->tag_id_,
+                                                    append.blob_name_,
+                                                    append.blob_id_task_->blob_id_,
+                                                    append.blob_off_,
+                                                    append.data_size_,
+                                                    task->data_ + buf_off,
+                                                    task->score_,
+                                                    bitfield32_t(0),
+                                                    bitfield32_t(0));
+          buf_off += append.data_size_;
+        }
+        LABSTOR_CLIENT->DelTask(task->schema_);
+        task->phase_ = AppendBlobPhase::kWaitPutBlobs;
+      }
+      case AppendBlobPhase::kWaitPutBlobs: {
+        std::vector<AppendInfo> &blob_id_tasks = *task->schema_->blob_id_tasks_;
+        for (AppendInfo &append : blob_id_tasks) {
+          if (!append.put_task_->IsComplete()) {
+            return;
+          }
+          LABSTOR_CLIENT->DelTask(append.put_task_);
+        }
+        HSHM_DESTROY_AR(task->schema_->blob_id_tasks_);
+        task->SetModuleComplete();
+      }
+    }
+  }
 
   /** Get or create a tag */
   void GetOrCreateTag(MultiQueue *queue, GetOrCreateTagTask *task) {
@@ -148,7 +250,7 @@ class Server : public TaskLib {
         blob_tasks.reserve(tag.blobs_.size());
         for (BlobId &blob_id : tag.blobs_) {
           blob_mdm::DestroyBlobTask *blob_task =
-              blob_mdm_.AsyncDestroyBlob(task->task_node_ + 1, blob_id);
+              blob_mdm_.AsyncDestroyBlob(task->task_node_ + 1, task->tag_id_, blob_id);
           blob_tasks.emplace_back(blob_task);
         }
         task->phase_ = DestroyTagPhase::kWaitDestroyBlobs;

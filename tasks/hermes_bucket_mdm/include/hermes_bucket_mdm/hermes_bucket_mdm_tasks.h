@@ -152,6 +152,149 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   }
 };
 
+/** Phases for the append task */
+class AppendBlobPhase {
+ public:
+  TASK_METHOD_T kGetBlobIds = 0;
+  TASK_METHOD_T kWaitBlobIds = 1;
+  TASK_METHOD_T kWaitPutBlobs = 2;
+};
+
+/** A struct to store the  */
+struct AppendInfo {
+  size_t blob_off_;
+  size_t data_size_;
+  hshm::charbuf blob_name_;
+  blob_mdm::GetOrCreateBlobIdTask *blob_id_task_;
+  blob_mdm::PutBlobTask *put_task_;
+
+  template<typename Ar>
+  void serialize(Ar &ar) {
+    ar(blob_off_, data_size_, blob_name_);
+  }
+};
+
+/** A task to append data to a bucket */
+struct AppendBlobSchemaTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN TagId tag_id_;
+  IN size_t data_size_;
+  IN size_t page_size_;
+  TEMP int phase_ = AppendBlobPhase::kGetBlobIds;
+  TEMP hipc::ShmArchive<std::vector<AppendInfo>> blob_id_tasks_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  AppendBlobSchemaTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
+  AppendBlobSchemaTask(hipc::Allocator *alloc,
+                       const TaskNode &task_node,
+                       const DomainId &domain_id,
+                       const TaskStateId &state_id,
+                       const TagId &tag_id,
+                       size_t data_size,
+                       size_t page_size) : Task(alloc) {
+    // Initialize task
+    task_node_ = task_node;
+    lane_hash_ = tag_id.unique_;
+    task_state_ = state_id;
+    method_ = Method::kAppendBlobSchema;
+    task_flags_.SetBits(TASK_LOW_LATENCY);
+    domain_id_ = domain_id;
+
+    // Custom params
+    tag_id_ = tag_id;
+    data_size_ = data_size;
+    page_size_ = page_size;
+  }
+
+  /** Destructor */
+  ~AppendBlobSchemaTask() {}
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    ar(tag_id_, data_size_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(u32 replica, Ar &ar) {
+    ar(blob_id_tasks_);
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    labstor::LocalSerialize srl(group);
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
+    return 0;
+  }
+};
+
+/** A task to append data to a bucket */
+struct AppendBlobTask : public Task, TaskFlags<TF_LOCAL> {
+  IN TagId tag_id_;
+  IN size_t data_size_;
+  IN hipc::Pointer data_;
+  IN size_t page_size_;
+  IN u32 node_id_;
+  IN float score_;
+  TEMP int phase_ = AppendBlobPhase::kGetBlobIds;
+  TEMP AppendBlobSchemaTask *schema_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  AppendBlobTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
+  AppendBlobTask(hipc::Allocator *alloc,
+                 const TaskNode &task_node,
+                 const DomainId &domain_id,
+                 const TaskStateId &state_id,
+                 const TagId &tag_id,
+                 size_t data_size,
+                 const hipc::Pointer &data,
+                 size_t page_size,
+                 float score,
+                 u32 node_id) : Task(alloc) {
+    // Initialize task
+    task_node_ = task_node;
+    lane_hash_ = tag_id.unique_;
+    task_state_ = state_id;
+    method_ = Method::kAppendBlob;
+    task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET | TASK_OWNS_DATA);
+    domain_id_ = domain_id;
+
+    // Custom params
+    tag_id_ = tag_id;
+    data_size_ = data_size;
+    data_ = data;
+    score_ = score;
+    page_size_ = page_size;
+    node_id_ = node_id;
+  }
+
+  /** Destructor */
+  ~AppendBlobTask() {
+    if (IsDataOwner()) {
+      LABSTOR_CLIENT->FreeBuffer(data_);
+    }
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  int GetGroup(hshm::charbuf &group) {
+    labstor::LocalSerialize srl(group);
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
+    return 0;
+  }
+};
+
 /** A task to get or create a tag */
 struct GetOrCreateTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN hipc::ShmArchive<hipc::string> tag_name_;

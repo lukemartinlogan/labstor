@@ -49,7 +49,7 @@ class Server : public TaskLib {
 
   void Construct(MultiQueue *queue, ConstructTask *task) {
     id_alloc_ = 0;
-    node_id_ = LABSTOR_QM_CLIENT->node_id_;
+    node_id_ = LABSTOR_CLIENT->node_id_;
     switch (task->phase_) {
       case ConstructTaskPhase::kCreateTaskStates: {
         target_tasks_.reserve(HERMES->server_config_.devices_.size());
@@ -558,6 +558,7 @@ class Server : public TaskLib {
         task->data_ = LABSTOR_CLIENT->AllocateBuffer(blob_info.blob_size_);
         task->data_size_ = blob_info.blob_size_;
         task->get_task_ = blob_mdm_.AsyncGetBlob(task->task_node_ + 1,
+                                                 task->tag_id_,
                                                  task->blob_id_,
                                                  0,
                                                  task->data_size_,

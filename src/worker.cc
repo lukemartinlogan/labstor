@@ -51,12 +51,12 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
     TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
     if (!exec) {
       HELOG(kFatal, "(node {}) Could not find the task state: {}",
-            LABSTOR_QM_CLIENT->node_id_, task->task_state_);
+            LABSTOR_CLIENT->node_id_, task->task_state_);
       task->SetModuleComplete();
     }
     if (!task->IsMarked()) {
       HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={}",
-            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_, exec->name_);
+            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, exec->name_);
       task->SetMarked();
     }
     // Check if the task can execute
@@ -64,8 +64,16 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
       queue->Emplace(lane_id, p);
       continue;
     }
+    // Check if this task is in a primary queue and needs to be moved
+    if (queue->flags_.Any(QUEUE_PRIMARY) && !task->IsScheduled()) {
+      task->SetScheduled();
+      MultiQueue *real_queue = LABSTOR_CLIENT->GetQueue(QueueId(task->task_state_), false);
+      real_queue->Emplace(task->lane_hash_, p);
+      queue->Emplace(lane_id, p);
+      continue;
+    }
     // Disperse or execute task
-    bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_QM_CLIENT->node_id_);
+    bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
     if (!task->IsRunDisabled()) {
       if (is_remote) {
         auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
@@ -78,10 +86,14 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
     // Cleanup on task completion
     if (task->IsModuleComplete()) {
       HILOG(kDebug, "(node {}) Ending task: task_node={} task_state={}",
-            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_);
+            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_);
       RemoveTaskGroup();
       if (task->IsFireAndForget()) {
-        LABSTOR_CLIENT->DelTask(task);
+        if (!task->IsScheduled()) {
+          LABSTOR_CLIENT->DelTask(task);
+        } else if (queue->flags_.Any(QUEUE_PRIMARY)) {
+          LABSTOR_CLIENT->DelTask(task);
+        }
       }
       task->SetComplete();
     } else {
@@ -101,16 +113,16 @@ void Worker::PollUnordered(u32 lane_id, MultiQueue *queue) {
     }
 //    if (!task->task_flags_.Any(TASK_LONG_RUNNING)) {
 //      HILOG(kInfo, "(node {}) Popping task: task_node={} task_state={}",
-//            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_);
+//            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_);
 //    }
     TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
     if (!exec) {
       HELOG(kFatal, "(node {}) Could not find the task state: {}",
-            LABSTOR_QM_CLIENT->node_id_, task->task_state_);
+            LABSTOR_CLIENT->node_id_, task->task_state_);
       task->SetModuleComplete();
     }
     // Disperse or execute task
-    bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_QM_CLIENT->node_id_);
+    bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
     if (!task->IsRunDisabled()) {
       if (is_remote) {
         // flags_.Any(kGlobal | kSet) || (flags_.Any(kNode) && id_ != this_node)
@@ -120,7 +132,7 @@ void Worker::PollUnordered(u32 lane_id, MultiQueue *queue) {
               task->domain_id_.flags_.Any(DomainId::kSet),
               task->domain_id_.flags_.Any(DomainId::kNode),
               task->domain_id_.id_,
-              LABSTOR_QM_CLIENT->node_id_);
+              LABSTOR_CLIENT->node_id_);
         auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
         LABSTOR_REMOTE_QUEUE->Disperse(task, exec, ids);
         task->DisableRun();
@@ -153,16 +165,16 @@ void Worker::PollOrdered(u32 lane_id, MultiQueue *queue) {
     }
 //    if (!task->task_flags_.Any(TASK_LONG_RUNNING)) {
 //      HILOG(kInfo, "(node {}) Popping task: task_node={} task_state={}",
-//            LABSTOR_QM_CLIENT->node_id_, task->task_node_, task->task_state_);
+//            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_);
 //    }
     TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
     if (!exec) {
       HELOG(kFatal, "(node {}) Could not find the task state: {}",
-            LABSTOR_QM_CLIENT->node_id_, task->task_state_);
+            LABSTOR_CLIENT->node_id_, task->task_state_);
       task->SetModuleComplete();
     }
     // Disperse or execute task
-    bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_QM_CLIENT->node_id_);
+    bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
     if (!task->IsRunDisabled()) {
       if (is_remote) {
         auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);

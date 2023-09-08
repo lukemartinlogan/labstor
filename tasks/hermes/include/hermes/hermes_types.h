@@ -106,9 +106,13 @@ struct Context {
   /** Page size to use for FS reads / writes*/
   size_t page_size_;
 
+  /** The node id the blob will be accessed from */
+  u32 node_id_;
+
   Context()
   : dpe_(PlacementPolicy::kNone),
-    blob_score_(1) {}
+    blob_score_(1),
+    node_id_(0) {}
 };
 
 /**
