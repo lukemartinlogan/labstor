@@ -268,8 +268,6 @@ class Worker {
             LABSTOR_CLIENT->node_id_, ss.str(), node_cmp.node_depth_, id_);
       return true;
     }
-//    HILOG(kDebug, "(node {}) Task {} is waiting for node {} on group {} with depth {}",
-//          LABSTOR_CLIENT->node_id_, task->task_node_, node_cmp, ss.str(), node_cmp.node_depth_);
     return false;
   }
 
@@ -301,6 +299,7 @@ class Worker {
     }
   }
 
+  void PollPrimary(u32 lane_id, MultiQueue *queue);
   void PollGrouped(u32 lane_id, MultiQueue *queue);
 };
 
