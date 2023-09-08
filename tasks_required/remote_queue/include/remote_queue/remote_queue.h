@@ -78,14 +78,14 @@ class Client {
 
     // Serialize task + create the wait task
     HILOG(kDebug, "Beginning dispersion for (task_node={}, task_state={}, method={})",
-          orig_task->task_node_, orig_task->task_state_, orig_task->method_)
+          orig_task->task_node_ + 1, orig_task->task_state_, orig_task->method_)
     BinaryOutputArchive<true> ar(DomainId::GetNode(LABSTOR_CLIENT->node_id_));
     auto xfer = exec->SaveStart(orig_task->method_, ar, orig_task);
 
     // Create subtasks
     exec->ReplicateStart(orig_task->method_, domain_ids.size(), orig_task);
     LABSTOR_CLIENT->NewTask<PushTask>(
-        p, orig_task->task_node_, DomainId::GetLocal(), id_,
+        p, orig_task->task_node_ + 1, DomainId::GetLocal(), id_,
         domain_ids, orig_task, exec, orig_task->method_, xfer);
     queue->Emplace(orig_task->lane_hash_, p);
   }
