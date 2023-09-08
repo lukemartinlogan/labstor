@@ -58,12 +58,6 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
       }
       continue;
     }
-    if (!task->IsMarked() || (!task->IsPrimary() && queue->IsPrimary())) {
-      HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={} worker={}",
-            LABSTOR_CLIENT->node_id_, task->task_node_,
-            task->task_state_, exec->name_, lane_id, queue->id_, id_);
-      task->SetMarked();
-    }
     // Attempt to run the task if it's ready and runnable
     if (!task->IsModuleComplete() && !task->IsRunDisabled()) {
       if (queue->IsPrimary()) {
@@ -72,6 +66,9 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
           queue->Emplace(lane_id, p, true);
           continue;
         }
+        HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={} worker={} primary=true",
+              LABSTOR_CLIENT->node_id_, task->task_node_,
+              task->task_state_, exec->name_, lane_id, queue->id_, id_);
         // Schedule the primary task on a new local queue
         task->UnsetMarked();
         task->SetPrimary();
@@ -85,6 +82,12 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
         if (!CheckTaskGroup(task, exec, task->task_node_)) {
           queue->Emplace(lane_id, p, false);
           continue;
+        }
+        if (!task->IsMarked()) {
+          HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={} worker={} primary=false",
+                LABSTOR_CLIENT->node_id_, task->task_node_,
+                task->task_state_, exec->name_, lane_id, queue->id_, id_);
+          task->SetMarked();
         }
         bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
         // Execute or schedule task

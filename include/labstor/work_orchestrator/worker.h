@@ -238,7 +238,12 @@ class Worker {
   HSHM_ALWAYS_INLINE
   bool CheckTaskGroup(Task *task, TaskState *exec, TaskNode node) {
     int ret = exec->GetGroup(task->method_, task, group_);
-    if (ret == TASK_UNORDERED || task->IsUnordered() || task->IsStarted()) {
+    if (task->IsStarted()) {
+      return true;
+    }
+    if (ret == TASK_UNORDERED || task->IsUnordered()) {
+      HILOG(kDebug, "(node {}) Task {} is unordered, so count remains 0 worker={}",
+            LABSTOR_CLIENT->node_id_, id_);
       return true;
     }
 
@@ -272,6 +277,8 @@ class Worker {
   void RemoveTaskGroup(Task *task, TaskState *exec) {
     int ret = exec->GetGroup(task->method_, task, group_);
     if (ret == TASK_UNORDERED || task->IsUnordered() || task->method_ < 2) {
+      HILOG(kDebug, "(node {}) Decreasing depth of group remains 0 (task_node={} worker={})",
+            LABSTOR_CLIENT->node_id_, task->task_node_, id_);
       return;
     }
 
