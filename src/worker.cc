@@ -74,13 +74,13 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
         task->SetPrimary();
         task->task_node_.node_depth_ += 1;
         MultiQueue *real_queue = LABSTOR_CLIENT->GetQueue(QueueId(task->task_state_), false);
-        real_queue->Emplace(task->lane_hash_, p);
+        real_queue->Emplace(task->lane_hash_, p, true);
         queue->Emplace(lane_id, p, true);
         continue;
       } else {
         // Check if intermediate task is ready to run
         if (!CheckTaskGroup(task, exec, task->task_node_)) {
-          queue->Emplace(lane_id, p);
+          queue->Emplace(lane_id, p, true);
           continue;
         }
         if (!task->IsMarked()) {
@@ -114,7 +114,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
         }
       }
     } else {
-      queue->Emplace(lane_id, p);
+      queue->Emplace(lane_id, p, true);
     }
   }
 }
