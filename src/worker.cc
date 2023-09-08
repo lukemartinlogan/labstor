@@ -54,7 +54,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
             LABSTOR_CLIENT->node_id_, task->task_state_);
       task->SetComplete();
     }
-    if (!task->IsMarked()) {
+    if (!task->IsMarked() && !task->IsScheduled()) {
       HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={}",
             LABSTOR_CLIENT->node_id_, task->task_node_,
             task->task_state_, exec->name_, lane_id, queue->id_);
@@ -79,7 +79,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
       } else {
         // Check if intermediate task is ready to run
         if (!CheckTaskGroup(task, exec, task->task_node_)) {
-          queue->Emplace(lane_id, p, true);
+          queue->Emplace(lane_id, p, false);
           continue;
         }
         bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
