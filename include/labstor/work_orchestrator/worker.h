@@ -243,7 +243,7 @@ class Worker {
     }
     if (ret == TASK_UNORDERED || task->IsUnordered()) {
       HILOG(kDebug, "(node {}) Task {} is unordered, so count remains 0 worker={}",
-            LABSTOR_CLIENT->node_id_, id_);
+            LABSTOR_CLIENT->node_id_, task->task_node_, id_);
       return true;
     }
 
