@@ -67,7 +67,7 @@ struct RegisterTaskLibTaskTempl : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     return TASK_UNORDERED;
   }
 };
@@ -134,7 +134,7 @@ struct GetOrCreateTaskStateIdTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     return TASK_UNORDERED;
   }
 };
@@ -207,7 +207,7 @@ struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     return TASK_UNORDERED;
   }
 };
@@ -260,7 +260,7 @@ struct GetTaskStateIdTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     return TASK_UNORDERED;
   }
 };
@@ -305,7 +305,7 @@ struct DestroyTaskStateTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     return TASK_UNORDERED;
   }
 };
@@ -342,7 +342,7 @@ struct StopRuntimeTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     return TASK_UNORDERED;
   }
 };
@@ -393,7 +393,7 @@ struct SetWorkOrchestratorPolicyTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     return TASK_UNORDERED;
   }
 };

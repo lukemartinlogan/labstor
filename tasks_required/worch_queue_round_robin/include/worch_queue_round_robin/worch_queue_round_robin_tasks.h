@@ -45,7 +45,7 @@ struct ConstructTask : public CreateTaskStateTask {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     return TASK_UNORDERED;
   }
 };
@@ -67,7 +67,7 @@ struct DestructTask : public DestroyTaskStateTask {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     return TASK_UNORDERED;
   }
 };

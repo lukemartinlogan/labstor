@@ -110,8 +110,8 @@ class Runtime : public ConfigurationManager {
 
     // Create the remote queue library
     task_registry_.RegisterTaskLib("remote_queue");
-    remote_queue_.Create(TaskNode::GetNull(), DomainId::GetLocal(), "remote_queue",
-                         LABSTOR_CLIENT->MakeTaskStateId());
+    remote_queue_.CreateRoot(DomainId::GetLocal(), "remote_queue",
+                             LABSTOR_CLIENT->MakeTaskStateId());
 
     // Set the work orchestrator queue scheduler
     LABSTOR_ADMIN->SetWorkOrchestratorQueuePolicyRoot(labstor::DomainId::GetLocal(), queue_sched_id);

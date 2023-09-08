@@ -238,11 +238,7 @@ class Worker {
   HSHM_ALWAYS_INLINE
   bool CheckTaskGroup(Task *task, TaskState *exec, TaskNode node) {
     int ret = exec->GetGroup(task->method_, task, group_);
-    if (ret == TASK_UNORDERED || task->IsUnordered()) {
-      group_.resize(0);
-      return true;
-    }
-    if (task->IsStarted()) {
+    if (ret == TASK_UNORDERED || task->IsUnordered() || task->IsStarted()) {
       return true;
     }
 
@@ -275,7 +271,7 @@ class Worker {
   HSHM_ALWAYS_INLINE
   void RemoveTaskGroup(Task *task, TaskState *exec) {
     int ret = exec->GetGroup(task->method_, task, group_);
-    if (ret == TASK_UNORDERED || task->IsUnordered()) {
+    if (ret == TASK_UNORDERED || task->IsUnordered() || task->method_ < 2) {
       return;
     }
 
@@ -285,15 +281,15 @@ class Worker {
       ss << std::to_string((int)group_[i]);
     }
 
-    TaskNode &node = group_map_[group_];
-    if (node.node_depth_ == 0) {
+    TaskNode &node_cmp = group_map_[group_];
+    if (node_cmp.node_depth_ == 0) {
       HELOG(kFatal, "(node {}) Group {} depth is already 0 (task_node={})",
             LABSTOR_CLIENT->node_id_, ss.str(), task->task_node_);
     }
-    node.node_depth_ -= 1;
+    node_cmp.node_depth_ -= 1;
     HILOG(kDebug, "(node {}) Decreasing depth of group {} to {} (task_node={})",
-          LABSTOR_CLIENT->node_id_, ss.str(), node.node_depth_, task->task_node_);
-    if (node.node_depth_ == 0) {
+          LABSTOR_CLIENT->node_id_, ss.str(), node_cmp.node_depth_, task->task_node_);
+    if (node_cmp.node_depth_ == 0) {
       group_map_.erase(group_);
     }
   }

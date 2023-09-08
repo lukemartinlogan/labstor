@@ -52,7 +52,7 @@ struct ConstructTask : public CreateTaskStateTask {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     return TASK_UNORDERED;
   }
 };
@@ -74,7 +74,7 @@ struct DestructTask : public DestroyTaskStateTask {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     return TASK_UNORDERED;
   }
 };
@@ -144,7 +144,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -226,7 +226,7 @@ struct AppendBlobSchemaTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -287,7 +287,7 @@ struct AppendBlobTask : public Task, TaskFlags<TF_LOCAL> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -353,7 +353,7 @@ struct GetOrCreateTagTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     group.resize(tag_name_->size());
     memcpy(group.data(), tag_name_->data(), tag_name_->size());
     return 0;
@@ -408,7 +408,7 @@ struct GetTagIdTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     group.resize(tag_name_->size());
     memcpy(group.data(), tag_name_->data(), tag_name_->size());
     return 0;
@@ -463,7 +463,7 @@ struct GetTagNameTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -521,7 +521,7 @@ struct RenameTagTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -577,7 +577,7 @@ struct DestroyTagTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -628,7 +628,7 @@ struct TagAddBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -679,7 +679,7 @@ struct TagRemoveBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -736,7 +736,7 @@ struct TagClearBlobsTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;

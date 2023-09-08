@@ -106,7 +106,7 @@ struct MdTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     return TASK_UNORDERED;
   }
 };
@@ -166,7 +166,7 @@ struct IoTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
 
   /** Create group */
   HSHM_ALWAYS_INLINE
-  int GetGroup(hshm::charbuf &group) {
+  u32 GetGroup(hshm::charbuf &group) {
     return TASK_UNORDERED;
   }
 };
