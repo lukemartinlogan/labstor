@@ -43,8 +43,6 @@ namespace labstor {
 #define TASK_OWNS_DATA BIT_OPT(u32, 14)
 /** This task is marked */
 #define TASK_MARKED BIT_OPT(u32, 15)
-/** This task as scheduled. This is used for primary queue reordering. */
-#define TASK_PRIMARY BIT_OPT(u32, 16)
 
 /** Used to define task methods */
 #define TASK_METHOD_T static inline const u32
@@ -225,11 +223,6 @@ struct Task : public hipc::ShmContainer {
    * Task Helpers
    * ===================================*/
 
-  /** Check if task is complete */
-  HSHM_ALWAYS_INLINE bool IsComplete() {
-    return task_flags_.Any(TASK_COMPLETE);
-  }
-
   /** Set task as externally complete */
   HSHM_ALWAYS_INLINE void SetModuleComplete() {
     task_flags_.SetBits(TASK_MODULE_COMPLETE);
@@ -263,6 +256,11 @@ struct Task : public hipc::ShmContainer {
   /** Set task as complete */
   HSHM_ALWAYS_INLINE void SetComplete() {
     task_flags_.SetBits(TASK_MODULE_COMPLETE | TASK_COMPLETE);
+  }
+
+  /** Check if task is complete */
+  HSHM_ALWAYS_INLINE bool IsComplete() {
+    return task_flags_.Any(TASK_COMPLETE);
   }
 
   /** Disable the running of a task */
@@ -318,21 +316,6 @@ struct Task : public hipc::ShmContainer {
   /** Check if task is marked */
   HSHM_ALWAYS_INLINE bool IsMarked() {
     return task_flags_.Any(TASK_MARKED);
-  }
-
-  /** Set this task as started */
-  HSHM_ALWAYS_INLINE void SetPrimary() {
-    task_flags_.SetBits(TASK_PRIMARY);
-  }
-
-  /** Unset this task as scheduled */
-  HSHM_ALWAYS_INLINE void UnsetPrimary() {
-    task_flags_.UnsetBits(TASK_PRIMARY);
-  }
-
-  /** Check if task is scheduled */
-  HSHM_ALWAYS_INLINE bool IsPrimary() {
-    return task_flags_.Any(TASK_PRIMARY);
   }
 
   /** Wait for task to complete */

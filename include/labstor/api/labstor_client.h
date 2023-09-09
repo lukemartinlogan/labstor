@@ -125,6 +125,17 @@ class Client : public ConfigurationManager {
     main_alloc_->DelObj<TaskT>(task);
   }
 
+  /** Push into the process queue */
+  void PushProcessQeueue(const TaskNode &task_node,
+                         const DomainId &domain_id,
+                         const hipc::Pointer &subtask) {
+    MultiQueue *queue = GetQueue(QueueId(1, 1), task_node.IsRoot());
+    auto *task = NewTask<PushTask>(subtask, task_node, domain_id, QueueId(1, 1), subtask);
+    queue->Emplace(task->lane_hash_, subtask);
+    task->Wait();
+    DelTask(task);
+  }
+
   /** Get a queue by its ID */
   HSHM_ALWAYS_INLINE
   MultiQueue* GetQueue(QueueId queue_id, bool is_root_task) {

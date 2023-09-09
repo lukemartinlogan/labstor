@@ -258,13 +258,19 @@ class Client {
                                 const TagId &tag_id,
                                 const hshm::charbuf &blob_name) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
     u32 hash = std::hash<hshm::charbuf>{}(blob_name);
     auto *task = LABSTOR_CLIENT->NewTask<GetBlobIdTask>(
         p,
         task_node, DomainId::GetNode(HASH_TO_NODE_ID(hash)), id_,
         tag_id, blob_name);
-    queue->Emplace(hash, p);
+    if (task_node.IsRoot()) {
+      LABSTOR_CLIENT->PushProcessQueue(p);
+      MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->process_queue_, task_node.IsRoot());
+
+    } else {
+      MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+      queue->Emplace(hash, p);
+    }
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncGetBlobId);

@@ -228,14 +228,6 @@ class Worker {
   void Run();
 
   HSHM_ALWAYS_INLINE
-  bool BeginPrimaryTask(Task *task, TaskState *exec, const TaskNode &node) {
-    if (task->IsPrimary()) {
-      return false;
-    }
-    return CheckTaskGroup(task, exec, node);
-  }
-
-  HSHM_ALWAYS_INLINE
   bool CheckTaskGroup(Task *task, TaskState *exec, TaskNode node) {
     int ret = exec->GetGroup(task->method_, task, group_);
     if (task->IsStarted()) {
@@ -299,7 +291,6 @@ class Worker {
     }
   }
 
-  void PollPrimary(u32 lane_id, MultiQueue *queue);
   void PollGrouped(u32 lane_id, MultiQueue *queue);
 };
 

@@ -17,8 +17,6 @@
 #define QUEUE_UPDATE BIT_OPT(u32, 2)
 /** Requests in this queue can be processed in any order */
 #define QUEUE_UNORDERED BIT_OPT(u32, 3)
-/** This queue is a primary queue (stores root tasks) */
-#define QUEUE_PRIMARY BIT_OPT(u32, 4)
 
 namespace labstor {
 

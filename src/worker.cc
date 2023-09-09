@@ -30,73 +30,17 @@ void Worker::Run() {
     _RelinquishQueues();
   }
   for (auto &[lane_id, queue] : work_queue_) {
-    if (!queue->IsPrimary()) {
-      PollGrouped(lane_id, queue);
-    } else {
-      PollPrimary(lane_id, queue);
-    }
-  }
-}
-
-void Worker::PollPrimary(u32 lane_id, MultiQueue *queue) {
-  Task *task;
-  hipc::Pointer p;
-  for (int i = 0; i < 1024; ++i) {
-    // Get the task message
-    if (!queue->Pop(lane_id, task, p)) {
-      break;
-    }
-    // Get the task state
-    TaskState *exec = LABSTOR_TASK_REGISTRY->GetTaskState(task->task_state_);
-    if (!exec) {
-      HELOG(kFatal, "(node {}) Could not find the task state: {}",
-            LABSTOR_CLIENT->node_id_, task->task_state_);
-      task->SetComplete();
-      if (task->IsFireAndForget()) {
-        LABSTOR_CLIENT->DelTask(task);
-      }
-      continue;
-    }
-    // Schedule the primary task on a new queue if it's ready
-    // Ensure the task group is acquired
-    if (BeginPrimaryTask(task, exec, task->task_node_)) {
-      HILOG(kDebug,
-            "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={} worker={} primary=true",
-            LABSTOR_CLIENT->node_id_,
-            task->task_node_,
-            task->task_state_,
-            exec->name_,
-            lane_id,
-            queue->id_,
-            id_);
-      task->UnsetMarked();
-      task->SetPrimary();
-      task->task_node_.node_depth_ += 1;
-      MultiQueue *real_queue = LABSTOR_CLIENT->GetQueue(QueueId(task->task_state_), false);
-      real_queue->Emplace(task->lane_hash_, p, true);
-    }
-    // Cleanup on task completion
-    if (task->IsModuleComplete()) {
-      HILOG(kDebug, "(node {}) Ending task: task_node={} task_state={} lane={} queue={} worker={}",
-            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, lane_id, queue->id_, id_);
-      RemoveTaskGroup(task, exec);
-      if (task->IsFireAndForget()) {
-        LABSTOR_CLIENT->DelTask(task);
-      } else {
-        task->SetComplete();
-      }
-    } else {
-      queue->Emplace(lane_id, p, true);
-    }
+    PollGrouped(lane_id, queue);
   }
 }
 
 void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
   Task *task;
   hipc::Pointer p;
+  int head = 0;
   for (int i = 0; i < 1024; ++i) {
     // Get the task message
-    if (!queue->Pop(lane_id, task, p)) {
+    if (!queue->Peek(lane_id, task, p, i)) {
       break;
     }
     // Get the task state
@@ -134,15 +78,15 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
       HILOG(kDebug, "(node {}) Ending task: task_node={} task_state={} lane={} queue={} worker={}",
             LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, lane_id, queue->id_, id_);
       RemoveTaskGroup(task, exec);
-      if (!task->IsPrimary()) {
-        if (task->IsFireAndForget()) {
-          LABSTOR_CLIENT->DelTask(task);
-        } else {
-          task->SetComplete();
-        }
+      if (task->IsFireAndForget()) {
+        LABSTOR_CLIENT->DelTask(task);
+      } else {
+        task->SetComplete();
       }
-    } else {
-      queue->Emplace(lane_id, p);
+      if (i == head) {
+        queue->Pop(lane_id, task, p);
+        ++head;
+      }
     }
   }
 }

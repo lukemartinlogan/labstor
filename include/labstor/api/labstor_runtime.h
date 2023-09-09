@@ -84,11 +84,12 @@ class Runtime : public ConfigurationManager {
 
     // Create the process queue
     LABSTOR_CLIENT->MakeTaskStateId();
-    LABSTOR_QM_RUNTIME->CreateQueue(LABSTOR_QM_CLIENT->process_queue_,
-                                    server_config_.queue_manager_.max_lanes_,
-                                    server_config_.queue_manager_.max_lanes_,
-                                    server_config_.queue_manager_.queue_depth_,
-                                    bitfield32_t(QUEUE_PRIMARY));
+    task_registry_.RegisterTaskLib("proc_queue");
+    task_registry_.CreateTaskState(
+        "proc_queue",
+        "proc_queue",
+        LABSTOR_QM_CLIENT->process_queue_,
+        admin_task.get());
 
     // Create the work orchestrator queue scheduling library
     TaskStateId queue_sched_id = LABSTOR_CLIENT->MakeTaskStateId();
