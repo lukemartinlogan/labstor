@@ -75,7 +75,7 @@ class Client {
   GetOrCreateBlobIdTask* AsyncGetOrCreateBlobId(const TaskNode &task_node,
                                                 TagId tag_id, const hshm::charbuf &blob_name) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     u32 hash = std::hash<hshm::charbuf>{}(blob_name);
     auto *task = LABSTOR_CLIENT->NewTask<GetOrCreateBlobIdTask>(
         p,
@@ -117,7 +117,7 @@ class Client {
       bitfield32_t task_flags = bitfield32_t(TASK_FIRE_AND_FORGET | TASK_OWNS_DATA)) {
     HILOG(kDebug, "Beginning PUT (task_node={})", task_node);
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<PutBlobTask>(
         p,
@@ -140,7 +140,7 @@ class Client {
                             hipc::Pointer &data) {
     HILOG(kDebug, "Beginning GET (task_node={})", task_node);
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<GetBlobTask>(
         p,
@@ -179,7 +179,7 @@ class Client {
                                           u32 node_id) {
     HILOG(kDebug, "Beginning REORGANIZE (task_node={})", task_node);
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<ReorganizeBlobTask>(
         p,
@@ -201,7 +201,7 @@ class Client {
                             const BlobId &blob_id,
                             const TagId &tag) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<TagBlobTask>(
         p,
@@ -229,7 +229,7 @@ class Client {
                                   const BlobId &blob_id,
                                   const TagId &tag) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<BlobHasTagTask>(
         p,
@@ -263,14 +263,8 @@ class Client {
         p,
         task_node, DomainId::GetNode(HASH_TO_NODE_ID(hash)), id_,
         tag_id, blob_name);
-    if (task_node.IsRoot()) {
-      LABSTOR_CLIENT->PushProcessQueue(p);
-      MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->process_queue_, task_node.IsRoot());
-
-    } else {
-      MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
-      queue->Emplace(hash, p);
-    }
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
+    queue->Emplace(hash, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncGetBlobId);
@@ -292,7 +286,7 @@ class Client {
                                     const TagId &tag_id,
                                     const BlobId &blob_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<GetBlobNameTask>(
         p,
@@ -321,7 +315,7 @@ class Client {
                                     const BlobId &blob_id) {
     HILOG(kDebug, "Getting blob size {}", task_node);
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<GetBlobSizeTask>(
         p,
@@ -349,7 +343,7 @@ class Client {
                                       const TagId &tag_id,
                                       const BlobId &blob_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<GetBlobScoreTask>(
         p,
@@ -377,7 +371,7 @@ class Client {
                                          const TagId &tag_id,
                                          const BlobId &blob_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<GetBlobBuffersTask>(
         p,
@@ -401,7 +395,7 @@ class Client {
                                   const BlobId &blob_id,
                                   const hshm::charbuf &new_blob_name) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<RenameBlobTask>(
         p,
@@ -429,7 +423,7 @@ class Client {
                                       const BlobId &blob_id,
                                       size_t new_size) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<TruncateBlobTask>(
         p,
@@ -456,7 +450,7 @@ class Client {
                                     const TagId &tag_id,
                                     const BlobId &blob_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     u32 hash = blob_id.unique_;
     auto *task = LABSTOR_CLIENT->NewTask<DestroyBlobTask>(
         p,

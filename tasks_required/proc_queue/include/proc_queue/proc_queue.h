@@ -17,7 +17,10 @@ class Client {
 
  public:
   /** Default constructor */
-  Client() = default;
+  Client() {
+    id_ = TaskStateId(LABSTOR_QM_CLIENT->process_queue_);
+    queue_id_ = LABSTOR_QM_CLIENT->process_queue_;
+  }
 
   /** Destructor */
   ~Client() = default;
@@ -62,7 +65,7 @@ class Client {
             const DomainId &domain_id,
             const hipc::Pointer &subtask) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<PushTask>(
         p, task_node, domain_id, id_, subtask);
     queue->Emplace(task->lane_hash_, p);
@@ -72,5 +75,8 @@ class Client {
 };
 
 }  // namespace labstor
+
+#define LABSTOR_PROCESS_QUEUE \
+  hshm::EasySingleton<labstor::proc_queue::Client>::GetInstance()
 
 #endif  // LABSTOR_proc_queue_H_

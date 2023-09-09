@@ -39,12 +39,8 @@ class QueueManager {
    *
    * TODO(llogan): Maybe make a local hashtable to map id -> ticket?
    * */
-  HSHM_ALWAYS_INLINE MultiQueue* GetQueue(const QueueId &id, bool is_root_task) {
-    if (!is_root_task) {
-      return &(*queue_map_)[id.unique_];
-    } else {
-      return &(*queue_map_)[process_queue_.unique_];
-    }
+  HSHM_ALWAYS_INLINE MultiQueue* GetQueue(const QueueId &id) {
+    return &(*queue_map_)[id.unique_];
   }
 };
 

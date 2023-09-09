@@ -63,7 +63,7 @@ class Client {
 
   template<typename ...Args>
   HSHM_ALWAYS_INLINE
-  void Create(TaskNode task_node, Args&& ...args) {
+  void Create(const TaskNode &task_node, Args&& ...args) {
     auto *task = AsyncCreate(task_node, std::forward<Args>(args)...);
     task->Wait();
     AsyncCreateComplete(task);
@@ -85,7 +85,7 @@ class Client {
   void Monitor(const TaskNode &task_node,
                size_t freq_ms) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     monitor_task_ = LABSTOR_CLIENT->NewTask<MonitorTask>(
         p, task_node, domain_id_, id_, freq_ms, max_cap_);
     queue->Emplace(0, p);
@@ -96,7 +96,7 @@ class Client {
   void UpdateCapacity(const TaskNode &task_node,
                       ssize_t size) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     LABSTOR_CLIENT->NewTask<UpdateCapacityTask>(
         p,
         task_node, domain_id_, id_, size);
@@ -117,7 +117,7 @@ class Client {
                            size_t size,
                            std::vector<BufferInfo> &buffers) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<AllocTask>(
         p,
         task_node, domain_id_, id_, size, &buffers);
@@ -132,7 +132,7 @@ class Client {
                       const std::vector<BufferInfo> &buffers,
                       bool fire_and_forget) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<FreeTask>(
         p,
         task_node, domain_id_, id_, buffers, fire_and_forget);
@@ -146,7 +146,7 @@ class Client {
   WriteTask* AsyncWrite(const TaskNode &task_node,
                         const char *data, size_t off, size_t size) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<WriteTask>(
         p,
         task_node, domain_id_, id_, data, off, size);
@@ -160,7 +160,7 @@ class Client {
   ReadTask* AsyncRead(const TaskNode &task_node,
                       char *data, size_t off, size_t size) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_, task_node.IsRoot());
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<ReadTask>(
         p,
         task_node, domain_id_, id_, data, off, size);

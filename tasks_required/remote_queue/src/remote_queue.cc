@@ -335,7 +335,7 @@ class Server : public TaskLib {
     orig_task->domain_id_ = DomainId::GetNode(LABSTOR_CLIENT->node_id_);
 
     // Execute task
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(QueueId(state_id), false);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(QueueId(state_id));
     orig_task->UnsetFireAndForget();
     orig_task->UnsetStarted();
     orig_task->UnsetMarked();

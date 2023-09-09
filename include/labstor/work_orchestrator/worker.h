@@ -291,6 +291,20 @@ class Worker {
     }
   }
 
+  HSHM_ALWAYS_INLINE
+  void EndTask(u32 lane_id, MultiQueue *queue,
+               Task *task, TaskState *exec, int i, int head) {
+    hipc::Pointer p;
+    task->SetComplete();
+    if (i == head) {
+      queue->Pop(lane_id, task, p);
+      ++head;
+    }
+    if (task->IsFireAndForget()) {
+      LABSTOR_CLIENT->DelTask(task);
+    }
+  }
+
   void PollGrouped(u32 lane_id, MultiQueue *queue);
 };
 

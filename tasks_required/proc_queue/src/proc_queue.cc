@@ -23,7 +23,7 @@ class Server : public TaskLib {
   void Push(MultiQueue *queue, PushTask *task) {
     switch (task->phase_) {
       case PushTaskPhase::kSchedule: {
-        MultiQueue *real_queue = LABSTOR_CLIENT->GetQueue(QueueId(task->task_state_), false);
+        MultiQueue *real_queue = LABSTOR_CLIENT->GetQueue(QueueId(task->task_state_));
         real_queue->Emplace(task->subtask_ptr_->lane_hash_, task->subtask_);
         task->phase_ = PushTaskPhase::kWaitSchedule;
       }

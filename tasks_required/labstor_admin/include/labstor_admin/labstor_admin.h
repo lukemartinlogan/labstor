@@ -24,7 +24,7 @@ class Client {
                            const DomainId &domain_id,
                            const std::string &lib_name) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_, false);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
     auto *task = LABSTOR_CLIENT->NewTask<RegisterTaskLibTask>(
         p, task_node, domain_id, lib_name);
     queue->Emplace(0, p);
@@ -39,7 +39,7 @@ class Client {
                           const DomainId &domain_id,
                           const std::string &lib_name) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_, false);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
     auto *task = LABSTOR_CLIENT->NewTask<DestroyTaskLibTask>(
         p, task_node, domain_id, lib_name);
     queue->Emplace(0, p);
@@ -54,7 +54,7 @@ class Client {
   CreateTaskStateT* AsyncCreateTaskState(const TaskNode &task_node,
                                          Args&& ...args) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_, false);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
     auto *task = LABSTOR_CLIENT->NewTask<CreateTaskStateT>(p, task_node, std::forward<Args>(args)...);
     queue->Emplace(0, p);
     return task;
@@ -82,7 +82,7 @@ class Client {
                                                   const DomainId &domain_id,
                                                   const std::string &state_name) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_, false);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
     auto *task = LABSTOR_CLIENT->NewTask<GetOrCreateTaskStateIdTask>(
         p, task_node, domain_id, state_name);
     queue->Emplace(0, p);
@@ -105,7 +105,7 @@ class Client {
                                           const DomainId &domain_id,
                                           const std::string &state_name) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_, false);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
     auto *task = LABSTOR_CLIENT->NewTask<GetTaskStateIdTask>(
         p, task_node, domain_id, state_name);
     queue->Emplace(0, p);
@@ -129,7 +129,7 @@ class Client {
                         const DomainId &domain_id,
                         const TaskStateId &id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_, false);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
     auto *task = LABSTOR_CLIENT->NewTask<DestroyTaskStateTask>(
         p, task_node, domain_id, id);
     queue->Emplace(0, p);
@@ -142,7 +142,7 @@ class Client {
   void StopRuntime(const TaskNode &task_node,
                    const DomainId &domain_id) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_, false);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
     LABSTOR_CLIENT->NewTask<StopRuntimeTask>(
         p, task_node, domain_id);
     queue->Emplace(0, p);
@@ -154,7 +154,7 @@ class Client {
                                       const DomainId &domain_id,
                                       const TaskStateId &policy) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_, false);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
     auto *task = LABSTOR_CLIENT->NewTask<SetWorkOrchestratorQueuePolicyTask>(
         p, task_node, domain_id, policy);
     queue->Emplace(0, p);
@@ -168,7 +168,7 @@ class Client {
                                         const DomainId &domain_id,
                                         const TaskStateId &policy) {
     hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_, false);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(LABSTOR_QM_CLIENT->admin_queue_);
     auto *task = LABSTOR_CLIENT->NewTask<SetWorkOrchestratorProcessPolicyTask>(
         p, task_node, domain_id, policy);
     queue->Emplace(0, p);
