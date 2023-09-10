@@ -12,10 +12,8 @@ namespace hermes::bdev {
 /**
  * BDEV Client API
  * */
-class Client {
+class Client : public TaskLibClient {
  public:
-  TaskStateId id_;
-  QueueId queue_id_;
   DomainId domain_id_;
   MonitorTask *monitor_task_;
   size_t max_cap_;      /**< maximum capacity of the target */

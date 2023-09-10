@@ -15,10 +15,7 @@ namespace labstor::remote_queue {
  * This is ONLY used in the Hermes runtime, and
  * should never be called in client programs!!!
  * */
-class Client {
- public:
-  TaskStateId id_;
-  QueueId queue_id_;
+class Client : public TaskLibClient {
 
  public:
   /** Default constructor */

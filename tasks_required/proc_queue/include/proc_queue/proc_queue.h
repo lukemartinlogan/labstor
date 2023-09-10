@@ -10,10 +10,7 @@
 namespace labstor::proc_queue {
 
 /** Create proc_queue requests */
-class Client {
- public:
-  TaskStateId id_;
-  QueueId queue_id_;
+class Client : public TaskLibClient {
 
  public:
   /** Default constructor */

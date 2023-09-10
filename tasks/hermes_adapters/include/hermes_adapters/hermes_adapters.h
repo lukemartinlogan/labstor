@@ -75,10 +75,7 @@ struct CustomTask : public Task {
 };
 
 /** Create hermes_adapters requests */
-class Client {
- public:
-  TaskStateId id_;
-  QueueId queue_id_;
+class Client : public TaskLibClient {
 
  public:
   /** Default constructor */

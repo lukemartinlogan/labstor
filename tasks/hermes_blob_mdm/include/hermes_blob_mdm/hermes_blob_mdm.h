@@ -10,10 +10,7 @@
 namespace hermes::blob_mdm {
 
 /** Create hermes_blob_mdm requests */
-class Client {
- public:
-  TaskStateId id_;
-  QueueId queue_id_;
+class Client : public TaskLibClient {
 
  public:
   /** Default constructor */
