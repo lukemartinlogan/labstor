@@ -2,38 +2,38 @@
 #define LABSTOR_BDEV_LIB_EXEC_H_
 
 /** Execute a task */
-void Run(MultiQueue *queue, u32 method, Task *task) override {
+void Run(u32 method, Task *task) override {
   switch (method) {
     case Method::kConstruct: {
-      Construct(queue, reinterpret_cast<ConstructTask *>(task));
+      Construct(reinterpret_cast<ConstructTask *>(task));
       break;
     }
     case Method::kDestruct: {
-      Destruct(queue, reinterpret_cast<DestructTask *>(task));
+      Destruct(reinterpret_cast<DestructTask *>(task));
       break;
     }
     case Method::kWrite: {
-      Write(queue, reinterpret_cast<WriteTask *>(task));
+      Write(reinterpret_cast<WriteTask *>(task));
       break;
     }
     case Method::kRead: {
-      Read(queue, reinterpret_cast<ReadTask *>(task));
+      Read(reinterpret_cast<ReadTask *>(task));
       break;
     }
     case Method::kAlloc: {
-      Alloc(queue, reinterpret_cast<AllocTask *>(task));
+      Alloc(reinterpret_cast<AllocTask *>(task));
       break;
     }
     case Method::kFree: {
-      Free(queue, reinterpret_cast<FreeTask *>(task));
+      Free(reinterpret_cast<FreeTask *>(task));
       break;
     }
     case Method::kMonitor: {
-      Monitor(queue, reinterpret_cast<MonitorTask *>(task));
+      Monitor(reinterpret_cast<MonitorTask *>(task));
       break;
     }
     case Method::kUpdateCapacity: {
-      UpdateCapacity(queue, reinterpret_cast<UpdateCapacityTask *>(task));
+      UpdateCapacity(reinterpret_cast<UpdateCapacityTask *>(task));
       break;
     }
   }

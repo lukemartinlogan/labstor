@@ -13,20 +13,20 @@ class Server : public TaskLib {
   int count_ = 0;
 
  public:
-  void Construct(MultiQueue *queue, ConstructTask *task) {
+  void Construct(ConstructTask *task) {
     task->SetModuleComplete();
   }
 
-  void Destruct(MultiQueue *queue, DestructTask *task) {
+  void Destruct(DestructTask *task) {
     task->SetModuleComplete();
   }
 
-  void Md(MultiQueue *queue, MdTask *task) {
+  void Md(MdTask *task) {
     task->ret_[0] = 1;
     task->SetModuleComplete();
   }
 
-  void Io(MultiQueue *queue, IoTask *task) {
+  void Io(IoTask *task) {
     task->ret_ = 1;
     for (int i = 0; i < 256; ++i) {
       if (task->data_[i] != 10) {

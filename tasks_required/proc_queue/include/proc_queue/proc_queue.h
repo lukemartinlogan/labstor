@@ -23,9 +23,9 @@ class Client : public TaskLibClient {
 
   /** Async create a task state */
   HSHM_ALWAYS_INLINE
-  ConstructTask* AsyncCreate(const TaskNode &task_node,
-                             const DomainId &domain_id,
-                             const std::string &state_name) {
+      ConstructTask* AsyncCreate(const TaskNode &task_node,
+                                 const DomainId &domain_id,
+                                 const std::string &state_name) {
     id_ = TaskStateId::GetNull();
     return LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
         task_node, domain_id, state_name, id_,
@@ -63,14 +63,15 @@ class Client : public TaskLibClient {
   }
   template<typename TaskT>
   HSHM_ALWAYS_INLINE
-  LPointer<labpq::TypedPushTask<TaskT>> AsyncPush(const TaskNode &task_node,
-                                           const DomainId &domain_id,
-                                           const hipc::Pointer &subtask) {
-    LPointer<labpq::TypedPushTask<TaskT>> task = LABSTOR_CLIENT->AllocTask<labpq::TypedPushTask<TaskT>>();
-    AsyncPushConstruct(task.ptr_, task_node, domain_id, subtask);
+      LPointer<labpq::TypedPushTask<TaskT>> AsyncPush(const TaskNode &task_node,
+                                                      const DomainId &domain_id,
+                                                      const hipc::Pointer &subtask) {
+    LPointer<labpq::TypedPushTask<TaskT>> push_task =
+        LABSTOR_CLIENT->AllocTask<labpq::TypedPushTask<TaskT>>();
+    AsyncPushConstruct(push_task.ptr_, task_node, domain_id, subtask);
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    queue->Emplace(task.ptr_->lane_hash_, task.shm_);
-    return task;
+    queue->Emplace(push_task->lane_hash_, push_task.shm_);
+    return push_task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncPush);
 };

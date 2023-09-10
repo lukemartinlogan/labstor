@@ -170,11 +170,11 @@ class Server {
   ssize_t rem_cap_;
 
  public:
-  void UpdateCapacity(MultiQueue *queue, UpdateCapacityTask *task) {
+  void UpdateCapacity(UpdateCapacityTask *task) {
     rem_cap_ += task->diff_;
   }
 
-  void Monitor(MultiQueue *queue, MonitorTask *task) {
+  void Monitor(MonitorTask *task) {
     task->rem_cap_ = rem_cap_;
   }
 };

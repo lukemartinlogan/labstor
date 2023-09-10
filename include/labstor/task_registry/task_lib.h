@@ -60,14 +60,16 @@ struct TaskPointer {
 class TaskLib {
  public:
   TaskStateId id_;    /**< The unique name of a task state */
+  QueueId queue_id_;  /**< The queue id of a task state */
   std::string name_; /**< The unique semantic name of a task state */
 
   /** Default constructor */
   TaskLib() : id_(TaskStateId::GetNull()) {}
 
   /** Emplace Constructor */
-  void Init(TaskStateId id, const std::string &name) {
+  void Init(const TaskStateId &id, const std::string &name) {
     id_ = id;
+    queue_id_ = QueueId(id);
     name_ = name;
   }
 
@@ -75,7 +77,7 @@ class TaskLib {
   virtual ~TaskLib() = default;
 
   /** Run a method of the task */
-  virtual void Run(MultiQueue *queue, u32 method, Task *task) = 0;
+  virtual void Run(u32 method, Task *task) = 0;
 
   /** Allow task to store replicas of completion */
   virtual void ReplicateStart(u32 method, u32 count, Task *task) = 0;
@@ -111,7 +113,7 @@ class TaskLibClient {
 
 extern "C" {
 /** The two methods provided by all tasks */
-typedef TaskState* (*create_state_t)(Task *task);
+typedef TaskState* (*create_state_t)(Task *task, const char *state_name);
 /** Get the name of a task */
 typedef const char* (*get_task_lib_name_t)(void);
 }  // extern c
@@ -119,11 +121,11 @@ typedef const char* (*get_task_lib_name_t)(void);
 /** Used internally by task source file */
 #define LABSTOR_TASK_CC(TRAIT_CLASS, TASK_NAME) \
     extern "C" {                              \
-        void* create_state(labstor::Admin::CreateTaskStateTask *task) { \
+        void* create_state(labstor::Admin::CreateTaskStateTask *task, const char *state_name) { \
           labstor::TaskState *exec = reinterpret_cast<labstor::TaskState*>( \
             new TYPE_UNWRAP(TRAIT_CLASS)()); \
-          exec->id_ = task->id_; \
-          exec->Run(nullptr, labstor::TaskMethod::kConstruct, task); \
+          exec->Init(task->id_, state_name); \
+          exec->Run(labstor::TaskMethod::kConstruct, task); \
           return exec; \
         } \
         const char* get_task_lib_name(void) { return TASK_NAME; } \

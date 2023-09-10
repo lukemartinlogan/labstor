@@ -16,25 +16,25 @@ class Server : public TaskLib {
  public:
   Server() : queue_sched_(nullptr), proc_sched_(nullptr) {}
 
-  void RegisterTaskLib(MultiQueue *queue, RegisterTaskLibTask *task) {
+  void RegisterTaskLib(RegisterTaskLibTask *task) {
     std::string lib_name = task->lib_name_->str();
     LABSTOR_TASK_REGISTRY->RegisterTaskLib(lib_name);
     task->SetModuleComplete();
   }
 
-  void DestroyTaskLib(MultiQueue *queue, DestroyTaskLibTask *task) {
+  void DestroyTaskLib(DestroyTaskLibTask *task) {
     std::string lib_name = task->lib_name_->str();
     LABSTOR_TASK_REGISTRY->DestroyTaskLib(lib_name);
     task->SetModuleComplete();
   }
 
-  void GetOrCreateTaskStateId(MultiQueue *queue, GetOrCreateTaskStateIdTask *task) {
+  void GetOrCreateTaskStateId(GetOrCreateTaskStateIdTask *task) {
     std::string state_name = task->state_name_->str();
     task->id_ = LABSTOR_TASK_REGISTRY->GetOrCreateTaskStateId(state_name);
     task->SetModuleComplete();
   }
 
-  void CreateTaskState(MultiQueue *queue, CreateTaskStateTask *task) {
+  void CreateTaskState(CreateTaskStateTask *task) {
     switch (task->phase_) {
       case CreateTaskStatePhase::kIdAllocStart: {
         std::string lib_name = task->lib_name_->str();
@@ -125,25 +125,25 @@ class Server : public TaskLib {
     }
   }
 
-  void GetTaskStateId(MultiQueue *queue, GetTaskStateIdTask *task) {
+  void GetTaskStateId(GetTaskStateIdTask *task) {
     std::string state_name = task->state_name_->str();
     task->id_ = LABSTOR_TASK_REGISTRY->GetTaskStateId(state_name);
     task->SetModuleComplete();
   }
 
-  void DestroyTaskState(MultiQueue *queue, DestroyTaskStateTask *task) {
+  void DestroyTaskState(DestroyTaskStateTask *task) {
     LABSTOR_TASK_REGISTRY->DestroyTaskState(task->id_);
     task->SetModuleComplete();
   }
 
-  void StopRuntime(MultiQueue *queue, StopRuntimeTask *task) {
+  void StopRuntime(StopRuntimeTask *task) {
     HILOG(kInfo, "Stopping (server mode)");
     LABSTOR_WORK_ORCHESTRATOR->FinalizeRuntime();
     LABSTOR_THALLIUM->StopThisDaemon();
     task->SetModuleComplete();
   }
 
-  void SetWorkOrchQueuePolicy(MultiQueue *queue, SetWorkOrchQueuePolicyTask *task) {
+  void SetWorkOrchQueuePolicy(SetWorkOrchQueuePolicyTask *task) {
     if (queue_sched_) {
       queue_sched_->SetModuleComplete();
     }
@@ -153,11 +153,12 @@ class Server : public TaskLib {
     hipc::Pointer p;
     queue_sched_ = LABSTOR_CLIENT->NewTask<ScheduleTask>(
         p, task->task_node_, DomainId::GetLocal(), task->policy_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     queue->Emplace(0, p);
     task->SetModuleComplete();
   }
 
-  void SetWorkOrchProcPolicy(MultiQueue *queue, SetWorkOrchProcPolicyTask *task) {
+  void SetWorkOrchProcPolicy(SetWorkOrchProcPolicyTask *task) {
     if (proc_sched_) {
       proc_sched_->SetModuleComplete();
     }
@@ -167,6 +168,7 @@ class Server : public TaskLib {
     hipc::Pointer p;
     proc_sched_ = LABSTOR_CLIENT->NewTask<ScheduleTask>(
         p, task->task_node_, DomainId::GetLocal(), task->policy_id_);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     queue->Emplace(0, p);
     task->SetModuleComplete();
   }

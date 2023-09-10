@@ -47,7 +47,7 @@ class Server : public TaskLib {
  public:
   Server() = default;
 
-  void Construct(MultiQueue *queue, ConstructTask *task) {
+  void Construct(ConstructTask *task) {
     id_alloc_ = 0;
     node_id_ = LABSTOR_CLIENT->node_id_;
     switch (task->phase_) {
@@ -95,7 +95,7 @@ class Server : public TaskLib {
     task->SetModuleComplete();
   }
 
-  void Destruct(MultiQueue *queue, DestructTask *task) {
+  void Destruct(DestructTask *task) {
     task->SetModuleComplete();
   }
 
@@ -114,7 +114,7 @@ class Server : public TaskLib {
   /**
    * Create a blob's metadata
    * */
-  void PutBlob(MultiQueue *queue, PutBlobTask *task) {
+  void PutBlob(PutBlobTask *task) {
     if (task->phase_ == PutBlobPhase::kCreate) {
       PutBlobCreatePhase(task);
     }
@@ -300,7 +300,7 @@ class Server : public TaskLib {
   }
 
   /** Get a blob's data */
-  void GetBlob(MultiQueue *queue, GetBlobTask *task) {
+  void GetBlob(GetBlobTask *task) {
     switch (task->phase_) {
       case GetBlobPhase::kStart: {
         HILOG(kDebug, "GetBlobTask start");
@@ -354,7 +354,7 @@ class Server : public TaskLib {
   /**
    * Tag a blob
    * */
-  void TagBlob(MultiQueue *queue, TagBlobTask *task) {
+  void TagBlob(TagBlobTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
       task->SetModuleComplete();
@@ -368,7 +368,7 @@ class Server : public TaskLib {
   /**
    * Check if blob has a tag
    * */
-  void BlobHasTag(MultiQueue *queue, BlobHasTagTask *task) {
+  void BlobHasTag(BlobHasTagTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
       task->SetModuleComplete();
@@ -384,7 +384,7 @@ class Server : public TaskLib {
   /**
    * Create \a blob_id BLOB ID
    * */
-  void GetOrCreateBlobId(MultiQueue *queue, GetOrCreateBlobIdTask *task) {
+  void GetOrCreateBlobId(GetOrCreateBlobIdTask *task) {
     hshm::charbuf blob_name = hshm::to_charbuf(*task->blob_name_);
     hshm::charbuf blob_name_unique = GetBlobNameWithBucket(task->tag_id_, blob_name);
     auto it = blob_id_map_.find(blob_name_unique);
@@ -401,7 +401,7 @@ class Server : public TaskLib {
   /**
    * Get \a blob_name BLOB from \a bkt_id bucket
    * */
-  void GetBlobId(MultiQueue *queue, GetBlobIdTask *task) {
+  void GetBlobId(GetBlobIdTask *task) {
     hshm::charbuf blob_name = hshm::to_charbuf(*task->blob_name_);
     hshm::charbuf blob_name_unique = GetBlobNameWithBucket(task->tag_id_, blob_name);
     auto it = blob_id_map_.find(blob_name_unique);
@@ -419,7 +419,7 @@ class Server : public TaskLib {
   /**
    * Get \a blob_name BLOB name from \a blob_id BLOB id
    * */
-  void GetBlobName(MultiQueue *queue, GetBlobNameTask *task) {
+  void GetBlobName(GetBlobNameTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
       task->SetModuleComplete();
@@ -433,7 +433,7 @@ class Server : public TaskLib {
   /**
    * Get \a score from \a blob_id BLOB id
    * */
-  void GetBlobSize(MultiQueue *queue, GetBlobSizeTask *task) {
+  void GetBlobSize(GetBlobSizeTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
       task->SetModuleComplete();
@@ -447,7 +447,7 @@ class Server : public TaskLib {
   /**
    * Get \a score from \a blob_id BLOB id
    * */
-  void GetBlobScore(MultiQueue *queue, GetBlobScoreTask *task) {
+  void GetBlobScore(GetBlobScoreTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
       task->SetModuleComplete();
@@ -461,7 +461,7 @@ class Server : public TaskLib {
   /**
    * Get \a blob_id blob's buffers
    * */
-  void GetBlobBuffers(MultiQueue *queue, GetBlobBuffersTask *task) {
+  void GetBlobBuffers(GetBlobBuffersTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
       task->SetModuleComplete();
@@ -476,7 +476,7 @@ class Server : public TaskLib {
    * Rename \a blob_id blob to \a new_blob_name new blob name
    * in \a bkt_id bucket.
    * */
-  void RenameBlob(MultiQueue *queue, RenameBlobTask *task) {
+  void RenameBlob(RenameBlobTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
       task->SetModuleComplete();
@@ -492,7 +492,7 @@ class Server : public TaskLib {
   /**
    * Truncate a blob to a new size
    * */
-  void TruncateBlob(MultiQueue *queue, TruncateBlobTask *task) {
+  void TruncateBlob(TruncateBlobTask *task) {
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
       task->SetModuleComplete();
@@ -506,7 +506,7 @@ class Server : public TaskLib {
   /**
    * Destroy \a blob_id blob in \a bkt_id bucket
    * */
-  void DestroyBlob(MultiQueue *queue, DestroyBlobTask *task) {
+  void DestroyBlob(DestroyBlobTask *task) {
     switch (task->phase_) {
       case DestroyBlobPhase::kFreeBuffers: {
         auto it = blob_map_.find(task->blob_id_);
@@ -546,7 +546,7 @@ class Server : public TaskLib {
   /**
    * Reorganize \a blob_id blob in \a bkt_id bucket
    * */
-  void ReorganizeBlob(MultiQueue *queue, ReorganizeBlobTask *task) {
+  void ReorganizeBlob(ReorganizeBlobTask *task) {
     switch (task->phase_) {
       case ReorganizeBlobPhase::kGet: {
         auto it = blob_map_.find(task->blob_id_);

@@ -99,14 +99,14 @@ TEST_CASE("TestHshmQueueEmplacePop") {
   size_t ops = (1 << 20);
   auto queue = hipc::make_uptr<labstor::MultiQueue>(
       qid, 16, 16, ops, hshm::bitfield32_t(0));
-  hipc::Pointer p;
-  auto *task = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>(p);
+  labstor::LaneData entry;
+  auto *task = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>(entry.p_);
 
   hshm::Timer t;
   t.Resume();
   for (size_t i = 0; i < ops; ++i) {
-    queue->Emplace(0, p);
-    queue->Pop(0, task, p);
+    queue->Emplace(0, entry);
+    queue->Pop(0, entry);
   }
   t.Pause();
 
@@ -141,10 +141,10 @@ TEST_CASE("TestHshmQueueAllocateEmplacePop") {
   size_t ops = (1 << 20);
   t.Resume();
   for (size_t i = 0; i < ops; ++i) {
-    hipc::Pointer p;
-    auto *task = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>(p);
-    queue->Emplace(0, p);
-    queue->Pop(0, task, p);
+    labstor::LaneData entry;
+    auto *task = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>(entry.p_);
+    queue->Emplace(0, entry);
+    queue->Pop(0, entry);
     LABSTOR_CLIENT->DelTask(task);
   }
   t.Pause();

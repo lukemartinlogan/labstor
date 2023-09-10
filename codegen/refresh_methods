@@ -53,13 +53,13 @@ lines += [f'#ifndef {LIB_EXEC_MACRO}',
           '']
 ## Create the Run method
 lines += ['/** Execute a task */',
-          'void Run(MultiQueue *queue, u32 method, Task *task) override {',
+          'void Run(u32 method, Task *task) override {',
           '  switch (method) {']
 for method_enum_name, method_off in methods:
     method_name = method_enum_name.replace('k', '', 1)
     task_name = method_name + "Task"
     lines += [f'    case Method::{method_enum_name}: {{',
-              f'      {method_name}(queue, reinterpret_cast<{task_name} *>(task));',
+              f'      {method_name}(reinterpret_cast<{task_name} *>(task));',
               f'      break;',
               f'    }}']
 lines += ['  }']

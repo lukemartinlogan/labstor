@@ -28,7 +28,7 @@ class Server : public TaskLib {
  public:
   Server() = default;
 
-  void Construct(MultiQueue *queue, ConstructTask *task) {
+  void Construct(ConstructTask *task) {
     switch (task->phase_) {
       case ConstructTaskPhase::kInit: {
         id_alloc_ = 0;
@@ -49,12 +49,12 @@ class Server : public TaskLib {
     }
   }
 
-  void Destruct(MultiQueue *queue, DestructTask *task) {
+  void Destruct(DestructTask *task) {
     task->SetModuleComplete();
   }
 
   /** Put a blob */
-  void PutBlob(MultiQueue *queue, PutBlobTask *task) {
+  void PutBlob(PutBlobTask *task) {
     TagInfo &tag_info = tag_map_[task->tag_id_];
     tag_info.internal_size_ = std::max(task->blob_off_ + task->data_size_,
                                        tag_info.internal_size_);
@@ -64,7 +64,7 @@ class Server : public TaskLib {
   /**
    * Create the PartialPuts for append operations.
    * */
-  void AppendBlobSchema(MultiQueue *queue, AppendBlobSchemaTask *task) {
+  void AppendBlobSchema(AppendBlobSchemaTask *task) {
     switch (task->phase_) {
       case AppendBlobPhase::kGetBlobIds: {
         TagInfo &tag_info = tag_map_[task->tag_id_];
@@ -115,7 +115,7 @@ class Server : public TaskLib {
    * are named 0 ... N. Each blob is assumed to have a certain
    * fixed page size.
    * */
-  void AppendBlob(MultiQueue *queue, AppendBlobTask *task) {
+  void AppendBlob(AppendBlobTask *task) {
     switch (task->phase_) {
       case AppendBlobPhase::kGetBlobIds: {
         HILOG(kDebug, "Appending {} bytes to bucket {}", task->data_size_, task->tag_id_);
@@ -165,7 +165,7 @@ class Server : public TaskLib {
   }
 
   /** Get or create a tag */
-  void GetOrCreateTag(MultiQueue *queue, GetOrCreateTagTask *task) {
+  void GetOrCreateTag(GetOrCreateTagTask *task) {
     TagId tag_id;
     HILOG(kDebug, "Creating a tag")
 
@@ -205,7 +205,7 @@ class Server : public TaskLib {
   }
 
   /** Get tag ID */
-  void GetTagId(MultiQueue *queue, GetTagIdTask *task) {
+  void GetTagId(GetTagIdTask *task) {
     hshm::charbuf tag_name = hshm::to_charbuf(*task->tag_name_);
     auto it = tag_id_map_.find(tag_name);
     if (it == tag_id_map_.end()) {
@@ -218,7 +218,7 @@ class Server : public TaskLib {
   }
 
   /** Get tag name */
-  void GetTagName(MultiQueue *queue, GetTagNameTask *task) {
+  void GetTagName(GetTagNameTask *task) {
     auto it = tag_map_.find(task->tag_id_);
     if (it == tag_map_.end()) {
       task->SetModuleComplete();
@@ -229,7 +229,7 @@ class Server : public TaskLib {
   }
 
   /** Rename tag */
-  void RenameTag(MultiQueue *queue, RenameTagTask *task) {
+  void RenameTag(RenameTagTask *task) {
     auto it = tag_map_.find(task->tag_id_);
     if (it == tag_map_.end()) {
       task->SetModuleComplete();
@@ -240,7 +240,7 @@ class Server : public TaskLib {
   }
 
   /** Destroy tag */
-  void DestroyTag(MultiQueue *queue, DestroyTagTask *task) {
+  void DestroyTag(DestroyTagTask *task) {
     switch (task->phase_) {
       case DestroyTagPhase::kDestroyBlobs: {
         TagInfo &tag = tag_map_[task->tag_id_];
@@ -274,7 +274,7 @@ class Server : public TaskLib {
   }
 
   /** Add a blob to a tag */
-  void TagAddBlob(MultiQueue *queue, TagAddBlobTask *task) {
+  void TagAddBlob(TagAddBlobTask *task) {
     auto it = tag_map_.find(task->tag_id_);
     if (it == tag_map_.end()) {
       task->SetModuleComplete();
@@ -285,7 +285,7 @@ class Server : public TaskLib {
   }
 
   /** Remove a blob from a tag */
-  void TagRemoveBlob(MultiQueue *queue, TagRemoveBlobTask *task) {
+  void TagRemoveBlob(TagRemoveBlobTask *task) {
     auto it = tag_map_.find(task->tag_id_);
     if (it == tag_map_.end()) {
       task->SetModuleComplete();
@@ -298,7 +298,7 @@ class Server : public TaskLib {
   }
 
   /** Clear blobs from a tag */
-  void TagClearBlobs(MultiQueue *queue, TagClearBlobsTask *task) {
+  void TagClearBlobs(TagClearBlobsTask *task) {
     auto it = tag_map_.find(task->tag_id_);
     if (it == tag_map_.end()) {
       task->SetModuleComplete();

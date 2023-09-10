@@ -21,7 +21,7 @@ class Server : public TaskLib {
  public:
   Server() = default;
 
-  void Construct(MultiQueue *queue, ConstructTask *task) {
+  void Construct(ConstructTask *task) {
     HILOG(kDebug, "ConstructTaskPhase::kLoadConfig")
     std::string config_path = task->server_config_path_->str();
     HERMES->LoadServerConfig(config_path);
@@ -30,7 +30,7 @@ class Server : public TaskLib {
     task->SetModuleComplete();
   }
 
-  void Destruct(MultiQueue *queue, DestructTask *task) {
+  void Destruct(DestructTask *task) {
     task->SetModuleComplete();
   }
 

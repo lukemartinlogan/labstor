@@ -2,58 +2,58 @@
 #define LABSTOR_HERMES_BUCKET_MDM_LIB_EXEC_H_
 
 /** Execute a task */
-void Run(MultiQueue *queue, u32 method, Task *task) override {
+void Run(u32 method, Task *task) override {
   switch (method) {
     case Method::kConstruct: {
-      Construct(queue, reinterpret_cast<ConstructTask *>(task));
+      Construct(reinterpret_cast<ConstructTask *>(task));
       break;
     }
     case Method::kDestruct: {
-      Destruct(queue, reinterpret_cast<DestructTask *>(task));
+      Destruct(reinterpret_cast<DestructTask *>(task));
       break;
     }
     case Method::kGetOrCreateTag: {
-      GetOrCreateTag(queue, reinterpret_cast<GetOrCreateTagTask *>(task));
+      GetOrCreateTag(reinterpret_cast<GetOrCreateTagTask *>(task));
       break;
     }
     case Method::kGetTagId: {
-      GetTagId(queue, reinterpret_cast<GetTagIdTask *>(task));
+      GetTagId(reinterpret_cast<GetTagIdTask *>(task));
       break;
     }
     case Method::kGetTagName: {
-      GetTagName(queue, reinterpret_cast<GetTagNameTask *>(task));
+      GetTagName(reinterpret_cast<GetTagNameTask *>(task));
       break;
     }
     case Method::kRenameTag: {
-      RenameTag(queue, reinterpret_cast<RenameTagTask *>(task));
+      RenameTag(reinterpret_cast<RenameTagTask *>(task));
       break;
     }
     case Method::kDestroyTag: {
-      DestroyTag(queue, reinterpret_cast<DestroyTagTask *>(task));
+      DestroyTag(reinterpret_cast<DestroyTagTask *>(task));
       break;
     }
     case Method::kTagAddBlob: {
-      TagAddBlob(queue, reinterpret_cast<TagAddBlobTask *>(task));
+      TagAddBlob(reinterpret_cast<TagAddBlobTask *>(task));
       break;
     }
     case Method::kTagRemoveBlob: {
-      TagRemoveBlob(queue, reinterpret_cast<TagRemoveBlobTask *>(task));
+      TagRemoveBlob(reinterpret_cast<TagRemoveBlobTask *>(task));
       break;
     }
     case Method::kTagClearBlobs: {
-      TagClearBlobs(queue, reinterpret_cast<TagClearBlobsTask *>(task));
+      TagClearBlobs(reinterpret_cast<TagClearBlobsTask *>(task));
       break;
     }
     case Method::kPutBlob: {
-      PutBlob(queue, reinterpret_cast<PutBlobTask *>(task));
+      PutBlob(reinterpret_cast<PutBlobTask *>(task));
       break;
     }
     case Method::kAppendBlobSchema: {
-      AppendBlobSchema(queue, reinterpret_cast<AppendBlobSchemaTask *>(task));
+      AppendBlobSchema(reinterpret_cast<AppendBlobSchemaTask *>(task));
       break;
     }
     case Method::kAppendBlob: {
-      AppendBlob(queue, reinterpret_cast<AppendBlobTask *>(task));
+      AppendBlob(reinterpret_cast<AppendBlobTask *>(task));
       break;
     }
   }

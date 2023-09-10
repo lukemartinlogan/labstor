@@ -2,22 +2,22 @@
 #define LABSTOR_SMALL_MESSAGE_LIB_EXEC_H_
 
 /** Execute a task */
-void Run(MultiQueue *queue, u32 method, Task *task) override {
+void Run(u32 method, Task *task) override {
   switch (method) {
     case Method::kConstruct: {
-      Construct(queue, reinterpret_cast<ConstructTask *>(task));
+      Construct(reinterpret_cast<ConstructTask *>(task));
       break;
     }
     case Method::kDestruct: {
-      Destruct(queue, reinterpret_cast<DestructTask *>(task));
+      Destruct(reinterpret_cast<DestructTask *>(task));
       break;
     }
     case Method::kMd: {
-      Md(queue, reinterpret_cast<MdTask *>(task));
+      Md(reinterpret_cast<MdTask *>(task));
       break;
     }
     case Method::kIo: {
-      Io(queue, reinterpret_cast<IoTask *>(task));
+      Io(reinterpret_cast<IoTask *>(task));
       break;
     }
   }

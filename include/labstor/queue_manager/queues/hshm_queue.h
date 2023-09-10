@@ -9,8 +9,20 @@
 
 namespace labstor {
 
+struct LaneData {
+  hipc::Pointer p_;
+  bool complete_;
+
+  LaneData() = default;
+
+  LaneData(hipc::Pointer &p, bool complete) {
+    p_ = p;
+    complete_ = complete;
+  }
+};
+
 /** Represents a lane tasks can be stored */
-typedef hipc::mpsc_queue<hipc::Pointer> Lane;
+typedef hipc::mpsc_queue<LaneData> Lane;
 
 /** Represents the HSHM queue type */
 class Hshm {};
@@ -149,40 +161,33 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
   }
 
   /** Emplace a SHM pointer to a task */
-  bool Emplace(u32 key, hipc::Pointer &p) {
+  bool Emplace(u32 key, hipc::Pointer &p, bool complete = false) {
+    return Emplace(key, LaneData(p, complete));
+  }
+
+  /** Emplace a SHM pointer to a task */
+  bool Emplace(u32 key, const LaneData &data) {
     if (IsEmplacePlugged()) {
       WaitForEmplacePlug();
     }
-    /* Task *task = HERMES_MEMORY_MANAGER->Convert<Task>(p);
-    if (task->task_state_.IsNull()) {
-      HILOG(kFatal, "Task state is null");
-    }*/
     u32 lane_id = key % num_lanes_;
     Lane &lane = GetLane(lane_id);
-    hshm::qtok_t ret = lane.emplace(p);
+    hshm::qtok_t ret = lane.emplace(data);
     return !ret.IsNull();
   }
 
   /** Pop a regular pointer to a task */
-  bool Pop(u32 lane_id, Task *&task, hipc::Pointer &p) {
+  bool Pop(u32 lane_id, LaneData &data) {
     Lane &lane = GetLane(lane_id);
-    hshm::qtok_t ret = lane.pop(p);
-    if (ret.IsNull()) {
-      return false;
-    }
-    task = HERMES_MEMORY_MANAGER->Convert<Task>(p);
-    return true;
+    hshm::qtok_t ret = lane.pop(data);
+    return !ret.IsNull();
   }
 
   /** Peek a pointer to a task */
-  bool Peek(u32 lane_id, Task *&task, hipc::Pointer &p, int off = 0) {
+  bool Peek(u32 lane_id, LaneData *&entry, int off = 0) {
     Lane &lane = GetLane(lane_id);
-    hshm::qtok_t ret = lane.peek(p, off);
-    if (ret.IsNull()) {
-      return false;
-    }
-    task = HERMES_MEMORY_MANAGER->Convert<Task>(p);
-    return true;
+    hshm::qtok_t ret = lane.peek(entry, off);
+    return !ret.IsNull();
   }
 
   /**

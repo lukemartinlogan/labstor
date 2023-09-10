@@ -21,7 +21,5 @@
         LABSTOR_PROCESS_QUEUE->AsyncPush<CUSTOM##Task>(task_node + 1,
                                                  DomainId::GetLocal(),
                                                  task.shm_);
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    queue->Emplace(task.ptr_->lane_hash_, task.shm_);
     return push_task;
   }

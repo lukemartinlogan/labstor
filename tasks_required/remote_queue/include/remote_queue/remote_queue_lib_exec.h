@@ -2,18 +2,18 @@
 #define LABSTOR_REMOTE_QUEUE_LIB_EXEC_H_
 
 /** Execute a task */
-void Run(MultiQueue *queue, u32 method, Task *task) override {
+void Run(u32 method, Task *task) override {
   switch (method) {
     case Method::kConstruct: {
-      Construct(queue, reinterpret_cast<ConstructTask *>(task));
+      Construct(reinterpret_cast<ConstructTask *>(task));
       break;
     }
     case Method::kDestruct: {
-      Destruct(queue, reinterpret_cast<DestructTask *>(task));
+      Destruct(reinterpret_cast<DestructTask *>(task));
       break;
     }
     case Method::kPush: {
-      Push(queue, reinterpret_cast<PushTask *>(task));
+      Push(reinterpret_cast<PushTask *>(task));
       break;
     }
   }

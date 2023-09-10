@@ -12,15 +12,15 @@ class Server : public TaskLib {
  public:
   Server() = default;
 
-  void Construct(MultiQueue *queue, ConstructTask *task) {
+  void Construct(ConstructTask *task) {
     task->SetModuleComplete();
   }
 
-  void Destruct(MultiQueue *queue, DestructTask *task) {
+  void Destruct(DestructTask *task) {
     task->SetModuleComplete();
   }
 
-  void Custom(MultiQueue *queue, CustomTask *task) {
+  void Custom(CustomTask *task) {
     task->SetModuleComplete();
   }
 

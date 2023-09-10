@@ -12,18 +12,17 @@ class Server : public TaskLib {
  public:
   Server() = default;
 
-  void Construct(MultiQueue *queue, ConstructTask *task) {
+  void Construct(ConstructTask *task) {
     task->SetModuleComplete();
   }
 
-  void Destruct(MultiQueue *queue, DestructTask *task) {
+  void Destruct(DestructTask *task) {
     task->SetModuleComplete();
   }
 
-  void Push(MultiQueue *queue, PushTask *task) {
+  void Push(PushTask *task) {
     switch (task->phase_) {
       case PushTaskPhase::kSchedule: {
-        MultiQueue *real_queue = LABSTOR_CLIENT->GetQueue(QueueId(task->task_state_));
         task->ptr_ = LABSTOR_CLIENT->GetPrivatePointer<Task>(task->subtask_);
         task->phase_ = PushTaskPhase::kWaitSchedule;
         if (task->ptr_->IsFireAndForget()) {
@@ -33,6 +32,7 @@ class Server : public TaskLib {
             task->phase_ = -1;
           }
         }
+        MultiQueue *real_queue = LABSTOR_CLIENT->GetQueue(QueueId(task->ptr_->task_state_));
         real_queue->Emplace(task->ptr_->lane_hash_, task->subtask_);
         if (task->phase_ < 0) {
           task->SetModuleComplete();

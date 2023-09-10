@@ -222,7 +222,7 @@ class TaskRegistry {
     // Create the state instance
     task->id_ = state_id;
     TaskLibInfo &info = it->second;
-    TaskState *task_state = info.create_state_(task);
+    TaskState *task_state = info.create_state_(task, state_name);
     if (!task_state) {
       HELOG(kError, "Could not create the task state: {}", state_name);
       task->SetModuleComplete();
