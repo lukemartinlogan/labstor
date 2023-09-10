@@ -54,7 +54,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
     // Attempt to run the task if it's ready and runnable
     if (!task->IsModuleComplete() && !task->IsRunDisabled() && CheckTaskGroup(task, exec, task->task_node_)) {
       if (!task->IsMarked()) {
-        HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={} worker={} primary=false",
+        HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={} worker={}",
               LABSTOR_CLIENT->node_id_, task->task_node_,
               task->task_state_, exec->name_, lane_id, queue->id_, id_);
         task->SetMarked();

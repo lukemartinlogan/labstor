@@ -264,7 +264,7 @@ TEST_CASE("TestHermesBucketAppend") {
 
   // Create a bucket
   hermes::Context ctx;
-  hermes::Bucket bkt("hello");
+  hermes::Bucket bkt("append_test");
 
   // Put a few blobs in the bucket
   size_t page_size = KILOBYTES(4);
