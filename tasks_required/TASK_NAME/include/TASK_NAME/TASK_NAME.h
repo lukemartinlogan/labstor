@@ -52,19 +52,16 @@ class Client : public TaskLibClient {
 
   /** Call a custom method */
   HSHM_ALWAYS_INLINE
-  CustomTask* AsyncCustom(const TaskNode &task_node,
-                          const DomainId &domain_id) {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<CustomTask>(
-        p, task_node, domain_id, id_);
-    queue->Emplace(0, p);
-    return task;
+  void AsyncCustomConstruct(CustomTask *task,
+                            const TaskNode &task_node,
+                            const DomainId &domain_id) {
+    LABSTOR_CLIENT->ConstructTask<CustomTask>(
+        task, task_node, domain_id, id_);
   }
   HSHM_ALWAYS_INLINE
   void CustomRoot(const DomainId &domain_id) {
-    TypedPushTask<CustomTask> *task = AsyncCustomRoot(domain_id);
-    task->Wait();
+    LPointer<TypedPushTask<CustomTask>> task = AsyncCustomRoot(domain_id);
+    task.ptr_->Wait();
   }
   LABSTOR_TASK_NODE_PUSH_ROOT(Custom);
 };

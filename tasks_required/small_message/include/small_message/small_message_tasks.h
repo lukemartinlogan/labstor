@@ -9,12 +9,14 @@
 #include "labstor/task_registry/task_lib.h"
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/queue_manager/queue_manager_client.h"
-#include "small_message_methods.h"
-#include "labstor/labstor_namespace.h"
+#include "proc_queue/proc_queue.h"
 
 namespace labstor::small_message {
 
-#include "small_message_tasks.h"
+#include "small_message_methods.h"
+#include "labstor/labstor_namespace.h"
+using labstor::proc_queue::PushTask;
+using labstor::proc_queue::TypedPushTask;
 
 /**
  * A task to create small_message
@@ -131,7 +133,7 @@ struct IoTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
          TaskStateId &state_id) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
-    lane_hash_ = 0;
+    lane_hash_ = 3;
     task_state_ = state_id;
     method_ = Method::kIo;
     task_flags_.SetBits(0);

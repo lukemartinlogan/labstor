@@ -62,24 +62,20 @@ class Client : public TaskLibClient {
   }
 
   /** Io task */
-  IoTask* AsyncIo(const TaskNode &task_node,
-                  const DomainId &domain_id) {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<IoTask>(
-        p,
-        task_node, domain_id, id_);
-    queue->Emplace(3, p);
-    return task;
+  void AsyncIoConstruct(IoTask *task, const TaskNode &task_node,
+                        const DomainId &domain_id) {
+    LABSTOR_CLIENT->ConstructTask<IoTask>(
+        task, task_node, domain_id, id_);
   }
-  LABSTOR_TASK_NODE_ROOT(AsyncIo);
   int IoRoot(const DomainId &domain_id) {
-    IoTask *task = AsyncIoRoot(domain_id);
-    task->Wait();
+    LPointer<TypedPushTask<IoTask>> push_task = AsyncIoRoot(domain_id);
+    push_task.ptr_->Wait();
+    IoTask *task = push_task.ptr_->subtask_ptr_;
     int ret = task->ret_;
     LABSTOR_CLIENT->DelTask(task);
     return ret;
   }
+  LABSTOR_TASK_NODE_PUSH_ROOT(Io)
 };
 
 }  // namespace labstor

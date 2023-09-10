@@ -43,10 +43,12 @@ namespace labstor {
 
 using hshm::RwLock;
 using hshm::Mutex;
+using hshm::bitfield;
 using hshm::bitfield32_t;
+typedef hshm::bitfield<uint64_t> bitfield64_t;
 using hshm::ScopedRwReadLock;
 using hshm::ScopedRwWriteLock;
-typedef hshm::bitfield<uint64_t> bitfield64_t;
+using hipc::LPointer;
 
 /** Determine the mode that LabStor is initialized for */
 enum class LabstorMode {

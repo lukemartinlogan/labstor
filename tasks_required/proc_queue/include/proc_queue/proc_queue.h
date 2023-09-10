@@ -55,14 +55,22 @@ class Client : public TaskLibClient {
   /** Call a custom method */
   template<typename TaskT>
   HSHM_ALWAYS_INLINE
-  TypedPushTask<TaskT>* AsyncPush(const TaskNode &task_node,
-                             const DomainId &domain_id,
-                             const hipc::Pointer &subtask) {
-    hipc::Pointer p;
+  void AsyncPushConstruct(TypedPushTask<TaskT> *task,
+                          const TaskNode &task_node,
+                          const DomainId &domain_id,
+                          const hipc::Pointer &subtask) {
+    LABSTOR_CLIENT->ConstructTask(
+        task, task_node, domain_id, id_, subtask);
+  }
+  template<typename TaskT>
+  HSHM_ALWAYS_INLINE
+  LPointer<TypedPushTask<TaskT>> AsyncPush(const TaskNode &task_node,
+                                           const DomainId &domain_id,
+                                           const hipc::Pointer &subtask) {
+    LPointer<TypedPushTask<TaskT>> task = LABSTOR_CLIENT->AllocTask<TypedPushTask<TaskT>>();
+    AsyncPushConstruct(task.ptr_, task_node, domain_id, subtask);
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<TypedPushTask<TaskT>>(
-        p, task_node, domain_id, id_, subtask);
-    queue->Emplace(task->lane_hash_, p);
+    queue->Emplace(task.ptr_->lane_hash_, task.shm_);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncPush);

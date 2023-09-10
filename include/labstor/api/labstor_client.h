@@ -98,15 +98,15 @@ class Client : public ConfigurationManager {
   /** Allocate task */
   template<typename TaskT, typename ...Args>
   HSHM_ALWAYS_INLINE
-  TaskT* AllocTask(hipc::Pointer &p) {
-    return main_alloc_->Allocate<TaskT>(p);
+  LPointer<TaskT> AllocTask() {
+    return main_alloc_->AllocateLocalPtr<TaskT>(sizeof(TaskT));
   }
 
   /** Construct task */
   template<typename TaskT, typename ...Args>
   HSHM_ALWAYS_INLINE
   void ConstructTask(TaskT *task, Args&& ...args) {
-    return hipc::Allocator::ConstructObj<TaskT>(*task, std::forward<Args>(args)...);
+    return hipc::Allocator::ConstructObj<TaskT>(*task, main_alloc_, std::forward<Args>(args)...);
   }
 
   /** Create a task */
@@ -192,18 +192,33 @@ class Client : public ConfigurationManager {
 /** The default asynchronous method behavior */
 #define LABSTOR_TASK_NODE_PUSH_ROOT(CUSTOM)\
   template<typename ...Args>\
-  HSHM_ALWAYS_INLINE\
-  TypedPushTask<CUSTOM##Task>* Async##CUSTOM##Root(const DomainId &domain_id,\
-                                              Args&& ...args) {\
-    TaskNode task_node = LABSTOR_CLIENT->MakeTaskNodeId();\
-    hipc::Pointer p, push_p;\
+  LPointer<CUSTOM##Task> Async##CUSTOM##Alloc(const TaskNode &task_node,\
+                                Args&& ...args) {\
+    LPointer<CUSTOM##Task> task = LABSTOR_CLIENT->AllocTask<CUSTOM##Task>();\
+    Async##CUSTOM##Construct(task.ptr_, task_node, std::forward<Args>(args)...);\
+    return task;\
+  }\
+  template<typename ...Args>\
+  LPointer<CUSTOM##Task> Async##CUSTOM(const TaskNode &task_node,\
+                           Args&& ...args) {\
+    LPointer<CUSTOM##Task> task = Async##CUSTOM##Alloc(task_node, std::forward<Args>(args)...);\
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);\
-    auto *task = Async##Custom(task_node + 1, domain_id, std::forward<Args>(args)...);\
-    auto *push_task = LABSTOR_CLIENT->NewTask<TypedPushTask<CUSTOM##Task>>(\
-        p, task_node, domain_id, id_, push_p);\
-    queue->Emplace(push_task->lane_hash_, push_p);\
+    queue->Emplace(task.ptr_->lane_hash_, task.shm_);\
+    return task;\
+  }\
+  template<typename ...Args>\
+  LPointer<TypedPushTask<CUSTOM##Task>> Async##CUSTOM##Root(Args&& ...args) {\
+    TaskNode task_node = LABSTOR_CLIENT->MakeTaskNodeId();\
+    LPointer<CUSTOM##Task> task = Async##CUSTOM##Alloc(task_node, std::forward<Args>(args)...);\
+    LPointer<TypedPushTask<CUSTOM##Task>> push_task =\
+        LABSTOR_PROCESS_QUEUE->AsyncPush<CUSTOM##Task>(task_node + 1,\
+                                                 DomainId::GetLocal(),\
+                                                 task.shm_);\
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);\
+    queue->Emplace(task.ptr_->lane_hash_, task.shm_);\
     return push_task;\
   }
+
 
 }  // namespace labstor
 
