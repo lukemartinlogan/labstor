@@ -37,10 +37,10 @@ void Worker::Run() {
 void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
   Task *task;
   hipc::Pointer p;
-  int head = 0;
+  int off = 0;
   for (int i = 0; i < 1024; ++i) {
     // Get the task message
-    if (!queue->Peek(lane_id, task, p, i)) {
+    if (!queue->Peek(lane_id, task, p, off)) {
       break;
     }
     // Get the task state
@@ -48,7 +48,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
     if (!exec) {
       HELOG(kFatal, "(node {}) Could not find the task state: {}",
             LABSTOR_CLIENT->node_id_, task->task_state_);
-      EndTask(lane_id, queue, task, exec, i, head);
+      EndTask(lane_id, queue, task, off);
       continue;
     }
     // Attempt to run the task if it's ready and runnable
@@ -75,10 +75,12 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
       HILOG(kDebug, "(node {}) Ending task: task_node={} task_state={} lane={} queue={} worker={}",
             LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, lane_id, queue->id_, id_);
       RemoveTaskGroup(task, exec);
-      EndTask(lane_id, queue, task, exec, i, head);
-    } else if (task->IsUnordered()) {
+      EndTask(lane_id, queue, task, off);
+    } else if (task->IsUnordered() || queue->IsUnordered()) {
       queue->Pop(lane_id, task, p);
       queue->Emplace(lane_id, p);
+    } else {
+      off += 1;
     }
   }
 }

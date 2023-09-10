@@ -138,6 +138,11 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
    * Helpers
    * ===================================*/
 
+  /** Check if queue is unordered */
+  HSHM_ALWAYS_INLINE bool IsUnordered() {
+    return flags_.Any(QUEUE_UNORDERED);
+  }
+
   /** Get a lane of the queue */
   HSHM_ALWAYS_INLINE Lane& GetLane(u32 lane_id) {
     return (*lanes_)[lane_id];

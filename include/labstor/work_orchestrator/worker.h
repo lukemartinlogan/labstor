@@ -292,13 +292,13 @@ class Worker {
   }
 
   HSHM_ALWAYS_INLINE
-  void EndTask(u32 lane_id, MultiQueue *queue,
-               Task *task, TaskState *exec, int i, int head) {
+  void EndTask(u32 lane_id, MultiQueue *queue, Task *task, int &off) {
     hipc::Pointer p;
     task->SetComplete();
-    if (i == head) {
+    if (off == 0) {
       queue->Pop(lane_id, task, p);
-      ++head;
+    } else {
+      off += 1;
     }
     if (task->IsFireAndForget()) {
       LABSTOR_CLIENT->DelTask(task);
