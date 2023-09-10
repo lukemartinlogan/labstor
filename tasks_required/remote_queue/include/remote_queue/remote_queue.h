@@ -62,11 +62,9 @@ class Client {
 
   /** Destroy task state + queue */
   HSHM_ALWAYS_INLINE
-  void Destroy(const TaskNode &task_node,
-               const DomainId &domain_id) {
-    LABSTOR_ADMIN->DestroyTaskState(task_node, domain_id, id_);
+  void DestroyRoot(const DomainId &domain_id) {
+    LABSTOR_ADMIN->DestroyTaskStateRoot(domain_id, id_);
   }
-  LABSTOR_TASK_NODE_ROOT(Destroy);
 
   /** Call a custom method */
   HSHM_ALWAYS_INLINE

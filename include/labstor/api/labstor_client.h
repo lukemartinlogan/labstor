@@ -88,11 +88,25 @@ class Client : public ConfigurationManager {
     return TaskStateId(header_->node_id_, unique_->fetch_add(1));
   }
 
-  /** Create a task */
+  /** Create a default-constructed task */
   template<typename TaskT, typename ...Args>
   HSHM_ALWAYS_INLINE
   TaskT* NewEmptyTask(hipc::Pointer &p) {
     return main_alloc_->NewObj<TaskT>(p, main_alloc_);
+  }
+
+  /** Allocate task */
+  template<typename TaskT, typename ...Args>
+  HSHM_ALWAYS_INLINE
+  TaskT* AllocTask(hipc::Pointer &p) {
+    return main_alloc_->Allocate<TaskT>(p);
+  }
+
+  /** Construct task */
+  template<typename TaskT, typename ...Args>
+  HSHM_ALWAYS_INLINE
+  void ConstructTask(TaskT *task, Args&& ...args) {
+    return hipc::Allocator::ConstructObj<TaskT>(*task, std::forward<Args>(args)...);
   }
 
   /** Create a task */
@@ -173,6 +187,22 @@ class Client : public ConfigurationManager {
   decltype(auto) FUN_NAME##Root(Args&& ...args) { \
     TaskNode task_node = LABSTOR_CLIENT->MakeTaskNodeId(); \
     return FUN_NAME(task_node, std::forward<Args>(args)...); \
+  }
+
+/** The default asynchronous method behavior */
+#define LABSTOR_TASK_NODE_PUSH_ROOT(CUSTOM)\
+  template<typename ...Args>\
+  HSHM_ALWAYS_INLINE\
+  TypedPushTask<CUSTOM##Task>* Async##CUSTOM##Root(const DomainId &domain_id,\
+                                              Args&& ...args) {\
+    TaskNode task_node = LABSTOR_CLIENT->MakeTaskNodeId();\
+    hipc::Pointer p, push_p;\
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);\
+    auto *task = Async##Custom(task_node + 1, domain_id, std::forward<Args>(args)...);\
+    auto *push_task = LABSTOR_CLIENT->NewTask<TypedPushTask<CUSTOM##Task>>(\
+        p, task_node, domain_id, id_, push_p);\
+    queue->Emplace(push_task->lane_hash_, push_p);\
+    return push_task;\
   }
 
 }  // namespace labstor

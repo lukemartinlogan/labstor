@@ -115,8 +115,8 @@ class Runtime : public ConfigurationManager {
                              LABSTOR_CLIENT->MakeTaskStateId());
 
     // Set the work orchestrator queue scheduler
-    LABSTOR_ADMIN->SetWorkOrchestratorQueuePolicyRoot(labstor::DomainId::GetLocal(), queue_sched_id);
-    LABSTOR_ADMIN->SetWorkOrchestratorProcessPolicyRoot(labstor::DomainId::GetLocal(), proc_sched_id);
+    LABSTOR_ADMIN->SetWorkOrchQueuePolicyRoot(labstor::DomainId::GetLocal(), queue_sched_id);
+    LABSTOR_ADMIN->SetWorkOrchProcPolicyRoot(labstor::DomainId::GetLocal(), proc_sched_id);
   }
 
  public:

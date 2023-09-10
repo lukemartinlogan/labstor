@@ -9,12 +9,11 @@
 #include "labstor/task_registry/task_lib.h"
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/queue_manager/queue_manager_client.h"
-#include "proc_queue_methods.h"
-#include "labstor/labstor_namespace.h"
 
 namespace labstor::proc_queue {
 
-#include "proc_queue_tasks.h"
+#include "labstor/labstor_namespace.h"
+#include "proc_queue_methods.h"
 
 /**
  * A task to create proc_queue
@@ -85,22 +84,23 @@ class PushTaskPhase {
 /**
  * Push a task into the per-process queue
  * */
-struct PushTask : public Task, TaskFlags<TF_LOCAL> {
+template<typename TaskT>
+struct TypedPushTask : public Task, TaskFlags<TF_LOCAL> {
   IN hipc::Pointer subtask_;
-  TEMP Task *subtask_ptr_;
+  TEMP TaskT *subtask_ptr_;
   TEMP int phase_ = PushTaskPhase::kSchedule;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
-  PushTask(hipc::Allocator *alloc) : Task(alloc) {}
+  TypedPushTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
-  PushTask(hipc::Allocator *alloc,
-           const TaskNode &task_node,
-           const DomainId &domain_id,
-           const TaskStateId &state_id,
-           const hipc::Pointer &subtask) : Task(alloc) {
+  TypedPushTask(hipc::Allocator *alloc,
+                const TaskNode &task_node,
+                const DomainId &domain_id,
+                const TaskStateId &state_id,
+                const hipc::Pointer &subtask) : Task(alloc) {
     // Initialize task
     hshm::NodeThreadId tid;
     task_node_ = task_node;
@@ -112,7 +112,7 @@ struct PushTask : public Task, TaskFlags<TF_LOCAL> {
 
     // Custom params
     subtask_ = subtask;
-    subtask_ptr_ = (Task*)LABSTOR_CLIENT->GetPrivatePointer(subtask_);
+    subtask_ptr_ = (TaskT*)LABSTOR_CLIENT->GetPrivatePointer(subtask_);
   }
 
   /** Create group */
@@ -123,6 +123,8 @@ struct PushTask : public Task, TaskFlags<TF_LOCAL> {
     return 0;
   }
 };
+
+using PushTask = TypedPushTask<Task>;
 
 }  // namespace labstor::proc_queue
 

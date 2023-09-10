@@ -63,38 +63,36 @@ class Client {
 
   template<typename ...Args>
   HSHM_ALWAYS_INLINE
-  void Create(const TaskNode &task_node, Args&& ...args) {
-    auto *task = AsyncCreate(task_node, std::forward<Args>(args)...);
+  void CreateRoot(Args&& ...args) {
+    auto *task = AsyncCreateRoot(std::forward<Args>(args)...);
     task->Wait();
+    TaskNode task_node = task->task_node_;
     AsyncCreateComplete(task);
-    Monitor(task_node, 100);
+    AsyncMonitor(task_node, 100);
   }
-  LABSTOR_TASK_NODE_ROOT(Create);
 
   /** Destroy task state + queue */
   HSHM_ALWAYS_INLINE
-  void Destroy(const TaskNode &task_node,
-               const std::string &state_name) {
-    LABSTOR_ADMIN->DestroyTaskState(task_node, domain_id_, id_);
+  void DestroyRoot(const std::string &state_name) {
+    LABSTOR_ADMIN->DestroyTaskStateRoot(domain_id_, id_);
     monitor_task_->SetModuleComplete();
   }
-  LABSTOR_TASK_NODE_ROOT(Destroy);
 
   /** BDEV monitoring task */
   HSHM_ALWAYS_INLINE
-  void Monitor(const TaskNode &task_node,
-               size_t freq_ms) {
+  void AsyncMonitor(const TaskNode &task_node,
+                    size_t freq_ms) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     monitor_task_ = LABSTOR_CLIENT->NewTask<MonitorTask>(
         p, task_node, domain_id_, id_, freq_ms, max_cap_);
     queue->Emplace(0, p);
   }
-  LABSTOR_TASK_NODE_ROOT(Monitor);
+  LABSTOR_TASK_NODE_ROOT(AsyncMonitor);
 
   /** Update bdev capacity */
-  void UpdateCapacity(const TaskNode &task_node,
-                      ssize_t size) {
+  void AsyncUpdateCapacity(const TaskNode &task_node,
+                           ssize_t size) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     LABSTOR_CLIENT->NewTask<UpdateCapacityTask>(
@@ -102,14 +100,13 @@ class Client {
         task_node, domain_id_, id_, size);
     queue->Emplace(0, p);
   }
-  LABSTOR_TASK_NODE_ROOT(UpdateCapacity);
+  LABSTOR_TASK_NODE_ROOT(AsyncUpdateCapacity);
 
   /** Get bdev remaining capacity */
   HSHM_ALWAYS_INLINE
   size_t GetRemCap() const {
     return monitor_task_->rem_cap_;
   }
-  LABSTOR_TASK_NODE_ROOT(GetRemCap);
 
   /** Allocate buffers from the bdev */
   HSHM_ALWAYS_INLINE

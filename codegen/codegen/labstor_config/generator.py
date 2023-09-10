@@ -1,5 +1,12 @@
 import sys, os
 
+def print_macro(path, macro_name):
+    with open(path) as fp:
+        lines = fp.read().splitlines()
+    macro_def = f'#define {macro_name}\\\n'
+    macro_body = '\\\n'.join(lines)
+    print(f'{macro_def}{macro_body}')
+
 def create_config(path, var_name, config_path, macro_name):
     with open(path) as fp:
         yaml_config_lines = fp.read().splitlines()

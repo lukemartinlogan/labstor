@@ -24,12 +24,11 @@ class Client {
 
   /** Create a small_message */
   HSHM_ALWAYS_INLINE
-  void Create(const TaskNode &task_node,
-              const DomainId &domain_id,
-              const std::string &state_name) {
+  void CreateRoot(const DomainId &domain_id,
+                  const std::string &state_name) {
     id_ = TaskStateId::GetNull();
-    id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
-        task_node, domain_id, state_name, id_,
+    id_ = LABSTOR_ADMIN->CreateTaskStateRoot<ConstructTask>(
+        domain_id, state_name, id_,
         LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
         LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
         LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
@@ -38,47 +37,52 @@ class Client {
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     HILOG(kDebug, "Created small_message queue {}", queue->num_lanes_);
   }
-  LABSTOR_TASK_NODE_ROOT(Create);
 
   /** Destroy state + queue */
   HSHM_ALWAYS_INLINE
-  void Destroy(const TaskNode &task_node,
-               const DomainId &domain_id) {
-    LABSTOR_ADMIN->DestroyTaskState(task_node, domain_id, id_);
+  void DestroyRoot(const DomainId &domain_id) {
+    LABSTOR_ADMIN->DestroyTaskStateRoot(domain_id, id_);
   }
-  LABSTOR_TASK_NODE_ROOT(Destroy);
 
   /** Metadata task */
-  int Md(const TaskNode &task_node,
-         const DomainId &domain_id) {
+  MdTask* AsyncMd(const TaskNode &task_node,
+                  const DomainId &domain_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<MdTask>(
         p,
         task_node, domain_id, id_);
     queue->Emplace(3, p);
+    return task;
+  }
+  LABSTOR_TASK_NODE_ROOT(AsyncMd);
+  int MdRoot(const DomainId &domain_id) {
+    auto *task = AsyncMdRoot(domain_id);
     task->Wait();
     int ret = task->ret_[0];
     LABSTOR_CLIENT->DelTask(task);
     return ret;
   }
-  LABSTOR_TASK_NODE_ROOT(Md);
 
   /** Io task */
-  int Io(const TaskNode &task_node,
-         const DomainId &domain_id) {
+  IoTask* AsyncIo(const TaskNode &task_node,
+                  const DomainId &domain_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<IoTask>(
         p,
         task_node, domain_id, id_);
     queue->Emplace(3, p);
+    return task;
+  }
+  LABSTOR_TASK_NODE_ROOT(AsyncIo);
+  int IoRoot(const DomainId &domain_id) {
+    IoTask *task = AsyncIoRoot(domain_id);
     task->Wait();
     int ret = task->ret_;
     LABSTOR_CLIENT->DelTask(task);
     return ret;
   }
-  LABSTOR_TASK_NODE_ROOT(Io);
 };
 
 }  // namespace labstor

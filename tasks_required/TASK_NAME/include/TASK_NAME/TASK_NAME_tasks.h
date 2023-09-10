@@ -8,13 +8,15 @@
 #include "labstor/api/labstor_client.h"
 #include "labstor/task_registry/task_lib.h"
 #include "labstor_admin/labstor_admin.h"
+#include "proc_queue/proc_queue.h"
 #include "labstor/queue_manager/queue_manager_client.h"
-#include "TASK_NAME_methods.h"
-#include "labstor/labstor_namespace.h"
 
 namespace labstor::TASK_NAME {
 
-#include "TASK_NAME_tasks.h"
+#include "TASK_NAME_methods.h"
+#include "labstor/labstor_namespace.h"
+using labstor::proc_queue::TypedPushTask;
+using labstor::proc_queue::PushTask;
 
 /**
  * A task to create TASK_NAME

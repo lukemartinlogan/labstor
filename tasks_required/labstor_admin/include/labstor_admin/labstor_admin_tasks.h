@@ -368,9 +368,9 @@ struct SetWorkOrchestratorPolicyTask : public Task, TaskFlags<TF_SRL_SYM> {
     task_state_ = LABSTOR_QM_CLIENT->admin_task_state_;
     if constexpr(method == 0)
     {
-      method_ = Method::kSetWorkOrchestratorQueuePolicy;
+      method_ = Method::kSetWorkOrchQueuePolicy;
     } else {
-      method_ = Method::kSetWorkOrchestratorProcessPolicy;
+      method_ = Method::kSetWorkOrchProcPolicy;
     }
     task_flags_.SetBits(0);
     domain_id_ = domain_id;
@@ -397,8 +397,8 @@ struct SetWorkOrchestratorPolicyTask : public Task, TaskFlags<TF_SRL_SYM> {
     return TASK_UNORDERED;
   }
 };
-using SetWorkOrchestratorQueuePolicyTask = SetWorkOrchestratorPolicyTask<0>;
-using SetWorkOrchestratorProcessPolicyTask = SetWorkOrchestratorPolicyTask<1>;
+using SetWorkOrchQueuePolicyTask = SetWorkOrchestratorPolicyTask<0>;
+using SetWorkOrchProcPolicyTask = SetWorkOrchestratorPolicyTask<1>;
 
 }  // namespace labstor::Admin
 

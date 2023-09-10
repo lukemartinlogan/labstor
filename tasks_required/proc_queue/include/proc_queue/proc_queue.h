@@ -38,40 +38,37 @@ class Client {
         LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
         bitfield32_t(0));
   }
-
-  /** Create a proc_queue */
+  LABSTOR_TASK_NODE_ROOT(AsyncCreate);
   template<typename ...Args>
   HSHM_ALWAYS_INLINE
-  void Create(Args&& ...args) {
-    auto *task = AsyncCreate(std::forward<Args>(args)...);
+  void CreateRoot(Args&& ...args) {
+    auto *task = AsyncCreateRoot(std::forward<Args>(args)...);
     task->Wait();
     id_ = task->id_;
     queue_id_ = QueueId(id_);
     LABSTOR_CLIENT->DelTask(task);
   }
-  LABSTOR_TASK_NODE_ROOT(Create);
 
   /** Destroy task state + queue */
   HSHM_ALWAYS_INLINE
-  void Destroy(const TaskNode &task_node,
-               const DomainId &domain_id) {
-    LABSTOR_ADMIN->DestroyTaskState(task_node, domain_id, id_);
+  void DestroyRoot(const DomainId &domain_id) {
+    LABSTOR_ADMIN->DestroyTaskStateRoot(domain_id, id_);
   }
-  LABSTOR_TASK_NODE_ROOT(Destroy);
 
   /** Call a custom method */
+  template<typename TaskT>
   HSHM_ALWAYS_INLINE
-  void Push(const TaskNode &task_node,
-            const DomainId &domain_id,
-            const hipc::Pointer &subtask) {
+  TypedPushTask<TaskT>* AsyncPush(const TaskNode &task_node,
+                             const DomainId &domain_id,
+                             const hipc::Pointer &subtask) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<PushTask>(
+    auto *task = LABSTOR_CLIENT->NewTask<TypedPushTask<TaskT>>(
         p, task_node, domain_id, id_, subtask);
     queue->Emplace(task->lane_hash_, p);
-    task->Wait();
+    return task;
   }
-  LABSTOR_TASK_NODE_ROOT(Push);
+  LABSTOR_TASK_NODE_ROOT(AsyncPush);
 };
 
 }  // namespace labstor

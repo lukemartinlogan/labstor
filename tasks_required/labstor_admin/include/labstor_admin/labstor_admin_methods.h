@@ -10,8 +10,8 @@ struct Method : public TaskMethod {
   TASK_METHOD_T kGetOrCreateTaskStateId = kLast + 4;
   TASK_METHOD_T kGetTaskStateId = kLast + 5;
   TASK_METHOD_T kStopRuntime = kLast + 6;
-  TASK_METHOD_T kSetWorkOrchestratorQueuePolicy = kLast + 7;
-  TASK_METHOD_T kSetWorkOrchestratorProcessPolicy = kLast + 8;
+  TASK_METHOD_T kSetWorkOrchQueuePolicy = kLast + 7;
+  TASK_METHOD_T kSetWorkOrchProcPolicy = kLast + 8;
 };
 
 #endif  // LABSTOR_LABSTOR_ADMIN_METHODS_H_

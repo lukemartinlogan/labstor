@@ -143,7 +143,7 @@ class Server : public TaskLib {
     task->SetModuleComplete();
   }
 
-  void SetWorkOrchestratorQueuePolicy(MultiQueue *queue, SetWorkOrchestratorQueuePolicyTask *task) {
+  void SetWorkOrchQueuePolicy(MultiQueue *queue, SetWorkOrchQueuePolicyTask *task) {
     if (queue_sched_) {
       queue_sched_->SetModuleComplete();
     }
@@ -157,7 +157,7 @@ class Server : public TaskLib {
     task->SetModuleComplete();
   }
 
-  void SetWorkOrchestratorProcessPolicy(MultiQueue *queue, SetWorkOrchestratorProcessPolicyTask *task) {
+  void SetWorkOrchProcPolicy(MultiQueue *queue, SetWorkOrchProcPolicyTask *task) {
     if (proc_sched_) {
       proc_sched_->SetModuleComplete();
     }

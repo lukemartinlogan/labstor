@@ -5,5 +5,5 @@ kDestroyTaskLib: 3
 kGetOrCreateTaskStateId: 4
 kGetTaskStateId: 5
 kStopRuntime: 6
-kSetWorkOrchestratorQueuePolicy: 7
-kSetWorkOrchestratorProcessPolicy: 8
+kSetWorkOrchQueuePolicy: 7
+kSetWorkOrchProcPolicy: 8

@@ -39,35 +39,37 @@ class Client {
   /** Create a TASK_NAME */
   template<typename ...Args>
   HSHM_ALWAYS_INLINE
-  void Create(Args&& ...args) {
-    auto *task = AsyncCreate(std::forward<Args>(args)...);
+  void CreateRoot(Args&& ...args) {
+    auto *task = AsyncCreateRoot(std::forward<Args>(args)...);
     task->Wait();
     id_ = task->id_;
     queue_id_ = QueueId(id_);
     LABSTOR_CLIENT->DelTask(task);
   }
-  LABSTOR_TASK_NODE_ROOT(Create);
 
   /** Destroy task state + queue */
   HSHM_ALWAYS_INLINE
-  void Destroy(const TaskNode &task_node,
-               const DomainId &domain_id) {
-    LABSTOR_ADMIN->DestroyTaskState(task_node, domain_id, id_);
+  void DestroyRoot(const DomainId &domain_id) {
+    LABSTOR_ADMIN->DestroyTaskStateRoot(domain_id, id_);
   }
-  LABSTOR_TASK_NODE_ROOT(Destroy);
 
   /** Call a custom method */
   HSHM_ALWAYS_INLINE
-  void Custom(const TaskNode &task_node,
-              const DomainId &domain_id) {
+  CustomTask* AsyncCustom(const TaskNode &task_node,
+                          const DomainId &domain_id) {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<CustomTask>(
         p, task_node, domain_id, id_);
     queue->Emplace(0, p);
+    return task;
+  }
+  HSHM_ALWAYS_INLINE
+  void CustomRoot(const DomainId &domain_id) {
+    TypedPushTask<CustomTask> *task = AsyncCustomRoot(domain_id);
     task->Wait();
   }
-  LABSTOR_TASK_NODE_ROOT(Custom);
+  LABSTOR_TASK_NODE_PUSH_ROOT(Custom);
 };
 
 }  // namespace labstor

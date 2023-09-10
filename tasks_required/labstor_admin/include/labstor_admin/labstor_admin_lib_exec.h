@@ -32,12 +32,12 @@ void Run(MultiQueue *queue, u32 method, Task *task) override {
       StopRuntime(queue, reinterpret_cast<StopRuntimeTask *>(task));
       break;
     }
-    case Method::kSetWorkOrchestratorQueuePolicy: {
-      SetWorkOrchestratorQueuePolicy(queue, reinterpret_cast<SetWorkOrchestratorQueuePolicyTask *>(task));
+    case Method::kSetWorkOrchQueuePolicy: {
+      SetWorkOrchQueuePolicy(queue, reinterpret_cast<SetWorkOrchQueuePolicyTask *>(task));
       break;
     }
-    case Method::kSetWorkOrchestratorProcessPolicy: {
-      SetWorkOrchestratorProcessPolicy(queue, reinterpret_cast<SetWorkOrchestratorProcessPolicyTask *>(task));
+    case Method::kSetWorkOrchProcPolicy: {
+      SetWorkOrchProcPolicy(queue, reinterpret_cast<SetWorkOrchProcPolicyTask *>(task));
       break;
     }
   }
@@ -73,12 +73,12 @@ void ReplicateStart(u32 method, u32 count, Task *task) override {
       labstor::CALL_REPLICA_START(count, reinterpret_cast<StopRuntimeTask*>(task));
       break;
     }
-    case Method::kSetWorkOrchestratorQueuePolicy: {
-      labstor::CALL_REPLICA_START(count, reinterpret_cast<SetWorkOrchestratorQueuePolicyTask*>(task));
+    case Method::kSetWorkOrchQueuePolicy: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<SetWorkOrchQueuePolicyTask*>(task));
       break;
     }
-    case Method::kSetWorkOrchestratorProcessPolicy: {
-      labstor::CALL_REPLICA_START(count, reinterpret_cast<SetWorkOrchestratorProcessPolicyTask*>(task));
+    case Method::kSetWorkOrchProcPolicy: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<SetWorkOrchProcPolicyTask*>(task));
       break;
     }
   }
@@ -114,12 +114,12 @@ void ReplicateEnd(u32 method, Task *task) override {
       labstor::CALL_REPLICA_END(reinterpret_cast<StopRuntimeTask*>(task));
       break;
     }
-    case Method::kSetWorkOrchestratorQueuePolicy: {
-      labstor::CALL_REPLICA_END(reinterpret_cast<SetWorkOrchestratorQueuePolicyTask*>(task));
+    case Method::kSetWorkOrchQueuePolicy: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<SetWorkOrchQueuePolicyTask*>(task));
       break;
     }
-    case Method::kSetWorkOrchestratorProcessPolicy: {
-      labstor::CALL_REPLICA_END(reinterpret_cast<SetWorkOrchestratorProcessPolicyTask*>(task));
+    case Method::kSetWorkOrchProcPolicy: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<SetWorkOrchProcPolicyTask*>(task));
       break;
     }
   }
@@ -155,12 +155,12 @@ std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, T
       ar << *reinterpret_cast<StopRuntimeTask*>(task);
       break;
     }
-    case Method::kSetWorkOrchestratorQueuePolicy: {
-      ar << *reinterpret_cast<SetWorkOrchestratorQueuePolicyTask*>(task);
+    case Method::kSetWorkOrchQueuePolicy: {
+      ar << *reinterpret_cast<SetWorkOrchQueuePolicyTask*>(task);
       break;
     }
-    case Method::kSetWorkOrchestratorProcessPolicy: {
-      ar << *reinterpret_cast<SetWorkOrchestratorProcessPolicyTask*>(task);
+    case Method::kSetWorkOrchProcPolicy: {
+      ar << *reinterpret_cast<SetWorkOrchProcPolicyTask*>(task);
       break;
     }
   }
@@ -205,14 +205,14 @@ TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) override {
       ar >> *reinterpret_cast<StopRuntimeTask*>(task_ptr.task_);
       break;
     }
-    case Method::kSetWorkOrchestratorQueuePolicy: {
-      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<SetWorkOrchestratorQueuePolicyTask>(task_ptr.p_);
-      ar >> *reinterpret_cast<SetWorkOrchestratorQueuePolicyTask*>(task_ptr.task_);
+    case Method::kSetWorkOrchQueuePolicy: {
+      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<SetWorkOrchQueuePolicyTask>(task_ptr.p_);
+      ar >> *reinterpret_cast<SetWorkOrchQueuePolicyTask*>(task_ptr.task_);
       break;
     }
-    case Method::kSetWorkOrchestratorProcessPolicy: {
-      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<SetWorkOrchestratorProcessPolicyTask>(task_ptr.p_);
-      ar >> *reinterpret_cast<SetWorkOrchestratorProcessPolicyTask*>(task_ptr.task_);
+    case Method::kSetWorkOrchProcPolicy: {
+      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<SetWorkOrchProcPolicyTask>(task_ptr.p_);
+      ar >> *reinterpret_cast<SetWorkOrchProcPolicyTask*>(task_ptr.task_);
       break;
     }
   }
@@ -249,12 +249,12 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
       ar << *reinterpret_cast<StopRuntimeTask*>(task);
       break;
     }
-    case Method::kSetWorkOrchestratorQueuePolicy: {
-      ar << *reinterpret_cast<SetWorkOrchestratorQueuePolicyTask*>(task);
+    case Method::kSetWorkOrchQueuePolicy: {
+      ar << *reinterpret_cast<SetWorkOrchQueuePolicyTask*>(task);
       break;
     }
-    case Method::kSetWorkOrchestratorProcessPolicy: {
-      ar << *reinterpret_cast<SetWorkOrchestratorProcessPolicyTask*>(task);
+    case Method::kSetWorkOrchProcPolicy: {
+      ar << *reinterpret_cast<SetWorkOrchProcPolicyTask*>(task);
       break;
     }
   }
@@ -291,12 +291,12 @@ void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task)
       ar.Deserialize(replica, *reinterpret_cast<StopRuntimeTask*>(task));
       break;
     }
-    case Method::kSetWorkOrchestratorQueuePolicy: {
-      ar.Deserialize(replica, *reinterpret_cast<SetWorkOrchestratorQueuePolicyTask*>(task));
+    case Method::kSetWorkOrchQueuePolicy: {
+      ar.Deserialize(replica, *reinterpret_cast<SetWorkOrchQueuePolicyTask*>(task));
       break;
     }
-    case Method::kSetWorkOrchestratorProcessPolicy: {
-      ar.Deserialize(replica, *reinterpret_cast<SetWorkOrchestratorProcessPolicyTask*>(task));
+    case Method::kSetWorkOrchProcPolicy: {
+      ar.Deserialize(replica, *reinterpret_cast<SetWorkOrchProcPolicyTask*>(task));
       break;
     }
   }
@@ -325,11 +325,11 @@ u32 GetGroup(u32 method, Task *task, hshm::charbuf &group) override {
     case Method::kStopRuntime: {
       return reinterpret_cast<StopRuntimeTask*>(task)->GetGroup(group);
     }
-    case Method::kSetWorkOrchestratorQueuePolicy: {
-      return reinterpret_cast<SetWorkOrchestratorQueuePolicyTask*>(task)->GetGroup(group);
+    case Method::kSetWorkOrchQueuePolicy: {
+      return reinterpret_cast<SetWorkOrchQueuePolicyTask*>(task)->GetGroup(group);
     }
-    case Method::kSetWorkOrchestratorProcessPolicy: {
-      return reinterpret_cast<SetWorkOrchestratorProcessPolicyTask*>(task)->GetGroup(group);
+    case Method::kSetWorkOrchProcPolicy: {
+      return reinterpret_cast<SetWorkOrchProcPolicyTask*>(task)->GetGroup(group);
     }
   }
   return -1;

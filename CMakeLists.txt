@@ -118,6 +118,7 @@ include_directories(${CMAKE_SOURCE_DIR}/tasks_required/small_message/include)
 include_directories(${CMAKE_SOURCE_DIR}/tasks_required/remote_queue/include)
 include_directories(${CMAKE_SOURCE_DIR}/tasks_required/worch_proc_round_robin/include)
 include_directories(${CMAKE_SOURCE_DIR}/tasks_required/worch_queue_round_robin/include)
+include_directories(${CMAKE_SOURCE_DIR}/tasks_required/proc_queue/include)
 
 include_directories(${CMAKE_SOURCE_DIR}/tasks)
 include_directories(${CMAKE_SOURCE_DIR}/tasks/hermes/include)

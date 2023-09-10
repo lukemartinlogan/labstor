@@ -24,23 +24,19 @@ class Client {
 
   /** Create a worch_queue_round_robin */
   HSHM_ALWAYS_INLINE
-  void Create(const TaskNode &task_node,
-              const DomainId &domain_id,
-              const std::string &state_name) {
+  void CreateRoot(const DomainId &domain_id,
+                  const std::string &state_name) {
     id_ = TaskStateId::GetNull();
-    id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
-        task_node, domain_id, state_name, id_,
+    id_ = LABSTOR_ADMIN->CreateTaskStateRoot<ConstructTask>(
+        domain_id, state_name, id_,
         1, 1, 4, bitfield32_t(0));
   }
-  LABSTOR_TASK_NODE_ROOT(Create);
 
   /** Destroy task state */
   HSHM_ALWAYS_INLINE
-  void Destroy(const TaskNode &task_node,
-               const DomainId &domain_id) {
-    LABSTOR_ADMIN->DestroyTaskState(task_node, domain_id, id_);
+  void DestroyRoot(const DomainId &domain_id) {
+    LABSTOR_ADMIN->DestroyTaskStateRoot(domain_id, id_);
   }
-  LABSTOR_TASK_NODE_ROOT(Destroy);
 };
 
 }  // namespace labstor

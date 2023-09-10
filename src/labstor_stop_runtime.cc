@@ -6,5 +6,5 @@
 
 int main() {
   TRANSPARENT_LABSTOR
-  LABSTOR_ADMIN->StopRuntimeRoot(labstor::DomainId::GetLocal());
+  LABSTOR_ADMIN->AsyncStopRuntimeRoot(labstor::DomainId::GetLocal());
 }

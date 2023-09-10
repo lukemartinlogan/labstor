@@ -102,6 +102,13 @@ class TaskLib {
 /** Represents a TaskLib in action */
 typedef TaskLib TaskState;
 
+/** Represents the TaskLib client-side */
+class TaskLibClient {
+ public:
+  TaskStateId id_;
+  QueueId queue_id_;
+};
+
 extern "C" {
 /** The two methods provided by all tasks */
 typedef TaskState* (*create_state_t)(Task *task);

@@ -24,25 +24,21 @@ class Client {
 
   /** Create a hermes_mdm */
   HSHM_ALWAYS_INLINE
-  void Create(const TaskNode &task_node,
-              const DomainId &domain_id,
-              const std::string &state_name) {
+  void CreateRoot(const DomainId &domain_id,
+                  const std::string &state_name) {
     id_ = TaskStateId::GetNull();
-    id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
-        task_node, domain_id, state_name, id_,
+    id_ = LABSTOR_ADMIN->CreateTaskStateRoot<ConstructTask>(
+        domain_id, state_name, id_,
         1, 1, 1,
         bitfield32_t(0));
     queue_id_ = QueueId(id_);
   }
-  LABSTOR_TASK_NODE_ROOT(Create);
 
   /** Destroy task state + queue */
   HSHM_ALWAYS_INLINE
-  void Destroy(const TaskNode &task_node,
-               const DomainId &domain_id) {
-    LABSTOR_ADMIN->DestroyTaskState(task_node, domain_id, id_);
+  void DestroyRoot(const DomainId &domain_id) {
+    LABSTOR_ADMIN->DestroyTaskStateRoot(domain_id, id_);
   }
-  LABSTOR_TASK_NODE_ROOT(Destroy);
 };
 
 }  // namespace labstor
