@@ -72,7 +72,12 @@ class Client {
     queue->Emplace(0, p);
     return task;
   }
-  LABSTOR_TASK_NODE_ROOT(AsyncCreateTaskState);
+  template<typename CreateTaskStateT, typename ...Args>
+  HSHM_ALWAYS_INLINE
+  CreateTaskStateT* AsyncCreateTaskStateRoot(Args&& ...args) {
+    TaskNode new_task_node = LABSTOR_CLIENT->MakeTaskNodeId();
+    return AsyncCreateTaskState<CreateTaskStateT>(new_task_node, std::forward<Args>(args)...);
+  }
   template<typename CreateTaskStateT, typename ...Args>
   HSHM_ALWAYS_INLINE
   TaskStateId CreateTaskStateRoot(Args&& ...args) {
