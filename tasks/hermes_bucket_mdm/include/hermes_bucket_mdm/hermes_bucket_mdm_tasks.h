@@ -14,10 +14,12 @@
 #include "hermes_blob_mdm/hermes_blob_mdm.h"
 #include "labstor/api/labstor_client.h"
 #include "labstor/labstor_namespace.h"
+#include "proc_queue/proc_queue.h"
 
 namespace hermes::bucket_mdm {
 
 #include "hermes_bucket_mdm_methods.h"
+#include "labstor/labstor_namespace.h"
 
 /** Phases of the construct task */
 using labstor::Admin::CreateTaskStatePhase;
@@ -266,7 +268,7 @@ struct AppendBlobTask : public Task, TaskFlags<TF_LOCAL> {
     lane_hash_ = tag_id.unique_;
     task_state_ = state_id;
     method_ = Method::kAppendBlob;
-    task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET | TASK_OWNS_DATA);
+    task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET | TASK_DATA_OWNER);
     domain_id_ = domain_id;
 
     // Custom params

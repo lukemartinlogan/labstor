@@ -20,4 +20,13 @@ using labstor::DataTransfer;
 using labstor::TaskLib;
 using labstor::TaskLibClient;
 
+using hshm::RwLock;
+using hshm::Mutex;
+using hshm::bitfield;
+using hshm::bitfield32_t;
+typedef hshm::bitfield<uint64_t> bitfield64_t;
+using hshm::ScopedRwReadLock;
+using hshm::ScopedRwWriteLock;
+using hipc::LPointer;
+
 #endif  // LABSTOR_INCLUDE_LABSTOR_LABSTOR_NAMESPACE_H_

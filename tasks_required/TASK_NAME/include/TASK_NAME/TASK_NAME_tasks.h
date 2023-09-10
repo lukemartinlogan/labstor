@@ -8,8 +8,8 @@
 #include "labstor/api/labstor_client.h"
 #include "labstor/task_registry/task_lib.h"
 #include "labstor_admin/labstor_admin.h"
-#include "proc_queue/proc_queue.h"
 #include "labstor/queue_manager/queue_manager_client.h"
+#include "proc_queue/proc_queue.h"
 
 namespace labstor::TASK_NAME {
 

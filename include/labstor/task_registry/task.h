@@ -40,7 +40,7 @@ namespace labstor {
 /** This task should not be run at this time */
 #define TASK_DISABLE_RUN BIT_OPT(u32, 13)
 /** This task owns the data in the task */
-#define TASK_OWNS_DATA BIT_OPT(u32, 14)
+#define TASK_DATA_OWNER BIT_OPT(u32, 14)
 /** This task is marked */
 #define TASK_MARKED BIT_OPT(u32, 15)
 
@@ -275,17 +275,17 @@ struct Task : public hipc::ShmContainer {
 
   /** Set task as data owner */
   HSHM_ALWAYS_INLINE void SetDataOwner() {
-    task_flags_.SetBits(TASK_OWNS_DATA);
+    task_flags_.SetBits(TASK_DATA_OWNER);
   }
 
   /** Check if task is data owner */
   HSHM_ALWAYS_INLINE bool IsDataOwner() {
-    return task_flags_.Any(TASK_OWNS_DATA);
+    return task_flags_.Any(TASK_DATA_OWNER);
   }
 
   /** Unset task as data owner */
   HSHM_ALWAYS_INLINE void UnsetDataOwner() {
-    task_flags_.UnsetBits(TASK_OWNS_DATA);
+    task_flags_.UnsetBits(TASK_DATA_OWNER);
   }
 
   /** Set this task as started */

@@ -88,7 +88,7 @@ class Server : public TaskLib {
           append.blob_off_ = cur_page_off;
           append.blob_id_task_ = blob_mdm_.AsyncGetOrCreateBlobId(task->task_node_ + 1,
                                                                   task->tag_id_,
-                                                                  append.blob_name_);
+                                                                  append.blob_name_).ptr_;
           tag_info.internal_size_ += update_size;
           cur_size += update_size;
           cur_page_off = 0;
@@ -122,7 +122,7 @@ class Server : public TaskLib {
         task->schema_ = bkt_mdm_.AsyncAppendBlobSchema(task->task_node_ + 1,
                                                        task->tag_id_,
                                                        task->data_size_,
-                                                       task->page_size_);
+                                                       task->page_size_).ptr_;
         task->phase_ = AppendBlobPhase::kWaitBlobIds;
       }
       case AppendBlobPhase::kWaitBlobIds: {
@@ -144,7 +144,7 @@ class Server : public TaskLib {
                                                     task->data_ + buf_off,
                                                     task->score_,
                                                     bitfield32_t(0),
-                                                    bitfield32_t(0));
+                                                    bitfield32_t(0)).ptr_;
           buf_off += append.data_size_;
         }
         LABSTOR_CLIENT->DelTask(task->schema_);
@@ -250,7 +250,7 @@ class Server : public TaskLib {
         blob_tasks.reserve(tag.blobs_.size());
         for (BlobId &blob_id : tag.blobs_) {
           blob_mdm::DestroyBlobTask *blob_task =
-              blob_mdm_.AsyncDestroyBlob(task->task_node_ + 1, task->tag_id_, blob_id);
+              blob_mdm_.AsyncDestroyBlob(task->task_node_ + 1, task->tag_id_, blob_id).ptr_;
           blob_tasks.emplace_back(blob_task);
         }
         task->phase_ = DestroyTagPhase::kWaitDestroyBlobs;

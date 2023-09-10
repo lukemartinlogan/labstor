@@ -60,7 +60,7 @@ class Client : public TaskLibClient {
   }
   HSHM_ALWAYS_INLINE
   void CustomRoot(const DomainId &domain_id) {
-    LPointer<TypedPushTask<CustomTask>> task = AsyncCustomRoot(domain_id);
+    LPointer<labpq::TypedPushTask<CustomTask>> task = AsyncCustomRoot(domain_id);
     task.ptr_->Wait();
   }
   LABSTOR_TASK_NODE_PUSH_ROOT(Custom);

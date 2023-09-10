@@ -49,6 +49,11 @@ class QueueManagerRuntime : public QueueManager {
                 1,
                 qm_conf.queue_depth_,
                 bitfield32_t(QUEUE_UNORDERED));
+    CreateQueue(process_queue_,
+                qm_conf.max_lanes_,
+                qm_conf.max_lanes_,
+                qm_conf.queue_depth_,
+                bitfield32_t(QUEUE_UNORDERED));
   }
 
   /** Create a new queue (with pre-allocated ID) in the map */

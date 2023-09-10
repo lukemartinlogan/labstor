@@ -68,11 +68,11 @@ class Client : public TaskLibClient {
         task, task_node, domain_id, id_);
   }
   int IoRoot(const DomainId &domain_id) {
-    LPointer<TypedPushTask<IoTask>> push_task = AsyncIoRoot(domain_id);
+    LPointer<labpq::TypedPushTask<IoTask>> push_task = AsyncIoRoot(domain_id);
     push_task.ptr_->Wait();
     IoTask *task = push_task.ptr_->subtask_ptr_;
     int ret = task->ret_;
-    LABSTOR_CLIENT->DelTask(task);
+    LABSTOR_CLIENT->DelTask(push_task);
     return ret;
   }
   LABSTOR_TASK_NODE_PUSH_ROOT(Io)

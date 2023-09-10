@@ -11,7 +11,6 @@ namespace labstor::proc_queue {
 
 /** Create proc_queue requests */
 class Client : public TaskLibClient {
-
  public:
   /** Default constructor */
   Client() {
@@ -55,7 +54,7 @@ class Client : public TaskLibClient {
   /** Call a custom method */
   template<typename TaskT>
   HSHM_ALWAYS_INLINE
-  void AsyncPushConstruct(TypedPushTask<TaskT> *task,
+  void AsyncPushConstruct(labpq::TypedPushTask<TaskT> *task,
                           const TaskNode &task_node,
                           const DomainId &domain_id,
                           const hipc::Pointer &subtask) {
@@ -64,10 +63,10 @@ class Client : public TaskLibClient {
   }
   template<typename TaskT>
   HSHM_ALWAYS_INLINE
-  LPointer<TypedPushTask<TaskT>> AsyncPush(const TaskNode &task_node,
+  LPointer<labpq::TypedPushTask<TaskT>> AsyncPush(const TaskNode &task_node,
                                            const DomainId &domain_id,
                                            const hipc::Pointer &subtask) {
-    LPointer<TypedPushTask<TaskT>> task = LABSTOR_CLIENT->AllocTask<TypedPushTask<TaskT>>();
+    LPointer<labpq::TypedPushTask<TaskT>> task = LABSTOR_CLIENT->AllocTask<labpq::TypedPushTask<TaskT>>();
     AsyncPushConstruct(task.ptr_, task_node, domain_id, subtask);
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     queue->Emplace(task.ptr_->lane_hash_, task.shm_);

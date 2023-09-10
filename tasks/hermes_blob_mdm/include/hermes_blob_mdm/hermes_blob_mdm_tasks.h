@@ -12,11 +12,12 @@
 #include "hermes/hermes_types.h"
 #include "bdev/bdev.h"
 #include "labstor/api/labstor_client.h"
-#include "labstor/labstor_namespace.h"
+#include "proc_queue/proc_queue.h"
 
 namespace hermes::blob_mdm {
 
 #include "hermes_blob_mdm_methods.h"
+#include "labstor/labstor_namespace.h"
 
 using labstor::Task;
 using labstor::TaskFlags;

@@ -7,6 +7,7 @@
 
 #include "bdev_tasks.h"
 #include "bdev.h"
+#include "labstor/labstor_namespace.h"
 
 /** The set of methods in the admin task */
 using ::hermes::bdev::Method;

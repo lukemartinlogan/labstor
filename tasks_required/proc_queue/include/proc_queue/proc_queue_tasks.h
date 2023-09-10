@@ -86,8 +86,9 @@ class PushTaskPhase {
  * */
 template<typename TaskT>
 struct TypedPushTask : public Task, TaskFlags<TF_LOCAL> {
-  IN hipc::Pointer subtask_;
-  TEMP TaskT *subtask_ptr_;
+  IN hipc::Pointer subtask_;  //< SHM pointer to the subtask
+  TEMP TaskT *subtask_ptr_;  //< Pointer to the subtask (client)
+  TEMP TaskT *ptr_;  //< Pointer to the subtask (server)
   TEMP int phase_ = PushTaskPhase::kSchedule;
 
   /** SHM default constructor */
@@ -107,7 +108,7 @@ struct TypedPushTask : public Task, TaskFlags<TF_LOCAL> {
     lane_hash_ = tid.bits_.tid_ + tid.bits_.pid_;
     task_state_ = state_id;
     method_ = Method::kPush;
-    task_flags_.SetBits(0);
+    task_flags_.SetBits(TASK_DATA_OWNER);
     domain_id_ = domain_id;
 
     // Custom params
@@ -122,10 +123,18 @@ struct TypedPushTask : public Task, TaskFlags<TF_LOCAL> {
     memcpy(group.data(), &lane_hash_, sizeof(u32));
     return 0;
   }
+
+  /** Get the task address */
+  HSHM_ALWAYS_INLINE
+  TaskT* get() {
+    return subtask_ptr_;
+  }
 };
 
-using PushTask = TypedPushTask<Task>;
+using PushTask = labstor::proc_queue::TypedPushTask<Task>;
 
 }  // namespace labstor::proc_queue
+
+namespace labpq = labstor::proc_queue;
 
 #endif  // LABSTOR_TASKS_TASK_TEMPL_INCLUDE_proc_queue_proc_queue_TASKS_H_

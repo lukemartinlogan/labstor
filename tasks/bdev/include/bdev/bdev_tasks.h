@@ -11,11 +11,12 @@
 #include "labstor/queue_manager/queue_manager_client.h"
 #include "hermes/hermes_types.h"
 #include "hermes/config_server.h"
-#include "labstor/labstor_namespace.h"
+#include "proc_queue/proc_queue.h"
 
 namespace hermes::bdev {
 
 #include "bdev_methods.h"
+#include "labstor/labstor_namespace.h"
 
 /**
  * A task to create hermes_mdm

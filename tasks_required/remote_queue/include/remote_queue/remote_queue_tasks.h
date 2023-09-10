@@ -9,6 +9,7 @@
 #include "labstor/task_registry/task_lib.h"
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/queue_manager/queue_manager_client.h"
+#include "proc_queue/proc_queue.h"
 
 #include <thallium.hpp>
 #include <thallium/serialization/stl/pair.hpp>

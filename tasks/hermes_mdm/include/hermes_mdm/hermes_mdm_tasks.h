@@ -11,11 +11,12 @@
 #include "labstor/queue_manager/queue_manager_client.h"
 #include "hermes/hermes_types.h"
 #include "bdev/bdev.h"
-#include "labstor/labstor_namespace.h"
+#include "proc_queue/proc_queue.h"
 
 namespace hermes::mdm {
 
 #include "hermes_mdm_methods.h"
+#include "labstor/labstor_namespace.h"
 
 /** Phases of the construct task */
 using labstor::Admin::CreateTaskStatePhase;

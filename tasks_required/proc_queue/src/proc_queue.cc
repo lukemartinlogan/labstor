@@ -24,13 +24,26 @@ class Server : public TaskLib {
     switch (task->phase_) {
       case PushTaskPhase::kSchedule: {
         MultiQueue *real_queue = LABSTOR_CLIENT->GetQueue(QueueId(task->task_state_));
-        real_queue->Emplace(task->subtask_ptr_->lane_hash_, task->subtask_);
+        task->ptr_ = LABSTOR_CLIENT->GetPrivatePointer<Task>(task->subtask_);
         task->phase_ = PushTaskPhase::kWaitSchedule;
-      }
-      case PushTaskPhase::kWaitSchedule: {
-        if (!task->subtask_ptr_->IsComplete()) {
+        if (task->ptr_->IsFireAndForget()) {
+          if (!task->ptr_->IsUnordered()) {
+            task->UnsetFireAndForget();
+          } else {
+            task->phase_ = -1;
+          }
+        }
+        real_queue->Emplace(task->ptr_->lane_hash_, task->subtask_);
+        if (task->phase_ < 0) {
+          task->SetModuleComplete();
           return;
         }
+      }
+      case PushTaskPhase::kWaitSchedule: {
+        if (!task->ptr_->IsComplete()) {
+          return;
+        }
+        LABSTOR_CLIENT->DelTask(task->ptr_);
         task->SetModuleComplete();
       }
     }

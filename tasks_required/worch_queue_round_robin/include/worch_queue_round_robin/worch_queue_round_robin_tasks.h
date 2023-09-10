@@ -10,8 +10,11 @@
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/work_orchestrator/scheduler.h"
 #include "labstor/queue_manager/queue_manager_client.h"
+#include "proc_queue/proc_queue.h"
 
 namespace labstor::worch_queue_round_robin {
+
+#include "labstor/labstor_namespace.h"
 
 /** The set of methods in the worch task */
 typedef SchedulerMethod Method;

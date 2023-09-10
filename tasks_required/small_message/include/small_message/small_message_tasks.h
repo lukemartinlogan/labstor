@@ -15,8 +15,6 @@ namespace labstor::small_message {
 
 #include "small_message_methods.h"
 #include "labstor/labstor_namespace.h"
-using labstor::proc_queue::PushTask;
-using labstor::proc_queue::TypedPushTask;
 
 /**
  * A task to create small_message

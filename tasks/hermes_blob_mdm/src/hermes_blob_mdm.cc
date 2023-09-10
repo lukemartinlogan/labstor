@@ -562,7 +562,7 @@ class Server : public TaskLib {
                                                  task->blob_id_,
                                                  0,
                                                  task->data_size_,
-                                                 task->data_);
+                                                 task->data_).ptr_;
         task->tag_id_ = blob_info.tag_id_;
         task->phase_ = ReorganizeBlobPhase::kWaitGet;
       }
@@ -580,7 +580,7 @@ class Server : public TaskLib {
                                                  task->data_size_,
                                                  task->data_,
                                                  task->score_,
-                                                 bitfield32_t(HERMES_BLOB_REPLACE));
+                                                 bitfield32_t(HERMES_BLOB_REPLACE)).ptr_;
         task->SetModuleComplete();
       }
     }
