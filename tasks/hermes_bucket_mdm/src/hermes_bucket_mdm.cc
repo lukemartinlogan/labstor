@@ -109,6 +109,7 @@ class Server : public TaskLib {
         HILOG(kDebug, "(node {}) Finished blob IDs for tag {} (task_node={})",
               LABSTOR_CLIENT->node_id_, task->tag_id_, task->task_node_)
         for (AppendInfo &append : append_info) {
+          append.blob_id_ = append.blob_id_task_->blob_id_;
           LABSTOR_CLIENT->DelTask(append.blob_id_task_);
         }
         task->SetModuleComplete();
@@ -147,7 +148,7 @@ class Server : public TaskLib {
           append.put_task_ = blob_mdm_.AsyncPutBlob(task->task_node_ + 1,
                                                     task->tag_id_,
                                                     append.blob_name_,
-                                                    append.blob_id_task_->blob_id_,
+                                                    append.blob_id_,
                                                     append.blob_off_,
                                                     append.data_size_,
                                                     task->data_ + buf_off,

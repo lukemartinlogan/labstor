@@ -166,12 +166,13 @@ struct AppendInfo {
   size_t blob_off_;
   size_t data_size_;
   hshm::charbuf blob_name_;
+  BlobId blob_id_;
   blob_mdm::GetOrCreateBlobIdTask *blob_id_task_;
   blob_mdm::PutBlobTask *put_task_;
 
   template<typename Ar>
   void serialize(Ar &ar) {
-    ar(blob_off_, data_size_, blob_name_);
+    ar(blob_off_, data_size_, blob_name_, blob_id_);
   }
 };
 
