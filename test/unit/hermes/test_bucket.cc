@@ -58,14 +58,13 @@ TEST_CASE("TestHermesPut") {
 
   size_t count_per_proc = 16;
   size_t off = rank * count_per_proc;
-  size_t max_blobs = 4;
   size_t proc_count = off + count_per_proc;
   for (size_t i = off; i < proc_count; ++i) {
     HILOG(kInfo, "Iteration: {}", i);
     // Put a blob
     hermes::Blob blob(KILOBYTES(4));
     memset(blob.data(), i % 256, blob.size());
-    hermes::BlobId blob_id = bkt.Put(std::to_string(i % max_blobs), blob, ctx);
+    hermes::BlobId blob_id = bkt.Put(std::to_string(i), blob, ctx);
 
     // Get a blob
     HILOG(kInfo, "Put {} returned successfully", i);
