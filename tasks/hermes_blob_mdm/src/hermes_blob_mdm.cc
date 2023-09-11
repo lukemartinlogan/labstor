@@ -103,10 +103,10 @@ class Server : public TaskLib {
   /** Get the globally unique blob name */
   const hshm::charbuf GetBlobNameWithBucket(TagId tag_id, const hshm::charbuf &blob_name) {
     hshm::charbuf new_name(sizeof(TagId) + blob_name.size());
-    size_t off = 0;
-    memcpy(new_name.data() + off, &tag_id, sizeof(TagId));
-    off += sizeof(TagId);
-    memcpy(new_name.data() + off, blob_name.data(), blob_name.size());
+    labstor::LocalSerialize srl(new_name);
+    srl << tag_id.node_id_;
+    srl << tag_id.unique_;
+    srl << blob_name;
     return new_name;
   }
 

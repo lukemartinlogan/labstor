@@ -27,6 +27,11 @@ class LocalSerialize {
       size_t off = data_.size();
       data_.resize(off + size);
       memcpy(data_.data() + off, &obj, size);
+    } else if constexpr (std::is_same<T, std::string>::value || std::is_same<T, hshm::charbuf>::value) {
+      size_t size = obj.size();
+      size_t off = data_.size();
+      data_.resize(off + size);
+      memcpy(data_.data() + off, obj.data(), size);
     } else {
       throw std::runtime_error("Cannot serialize object");
     }
