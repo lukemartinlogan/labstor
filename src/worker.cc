@@ -72,6 +72,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
         auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
         LABSTOR_REMOTE_QUEUE->Disperse(task, exec, ids);
         task->DisableRun();
+        task->SetUnordered();
       } else {
         task->SetStarted();
         exec->Run(task->method_, task);

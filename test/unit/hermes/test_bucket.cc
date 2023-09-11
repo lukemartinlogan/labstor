@@ -267,7 +267,7 @@ TEST_CASE("TestHermesBucketAppend") {
 
   // Put a few blobs in the bucket
   size_t page_size = KILOBYTES(4);
-  size_t count_per_proc = 1;
+  size_t count_per_proc = 16;
   size_t off = rank * count_per_proc;
   size_t proc_count = off + count_per_proc;
   for (size_t i = off; i < proc_count; ++i) {
@@ -281,8 +281,10 @@ TEST_CASE("TestHermesBucketAppend") {
   for (size_t i = off; i < proc_count; ++i) {
     HILOG(kInfo, "ContainsBlob Iteration: {}", i);
     REQUIRE(bkt.ContainsBlob(std::to_string(i)));
+    HILOG(kInfo, "ContainsBlob Iteration: {} SUCCESS", i);
   }
   // REQUIRE(bkt.GetSize() == count_per_proc * nprocs * page_size);
+  MPI_Barrier(MPI_COMM_WORLD);
 }
 
 TEST_CASE("TestHermesBucketAppend1n") {
