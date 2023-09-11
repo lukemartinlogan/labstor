@@ -29,7 +29,7 @@ class Server : public TaskLib {
         task->phase_ = PushTaskPhase::kWaitSchedule;
         if (task->ptr_->IsFireAndForget()) {
           if (!task->ptr_->IsUnordered()) {
-            task->UnsetFireAndForget();
+            task->ptr_->UnsetFireAndForget();
           } else {
             task->phase_ = -1;
           }

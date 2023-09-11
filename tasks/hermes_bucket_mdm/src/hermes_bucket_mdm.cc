@@ -158,7 +158,6 @@ class Server : public TaskLib {
           if (!append.put_task_->IsComplete()) {
             return;
           }
-          LABSTOR_CLIENT->DelTask(append.put_task_);
         }
         for (AppendInfo &append : append_info) {
           LABSTOR_CLIENT->DelTask(append.put_task_);
