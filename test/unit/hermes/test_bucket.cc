@@ -292,7 +292,7 @@ TEST_CASE("TestHermesBucketAppend") {
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
-TEST_CASE("TestHermesBucketAppend") {
+TEST_CASE("TestHermesBucketAppend1n") {
   // TODO(llogan): need to inform bucket when a blob has been placed in it
   int rank, nprocs;
   MPI_Barrier(MPI_COMM_WORLD);
