@@ -401,6 +401,7 @@ class Server : public TaskLib {
   /**
    * Get \a blob_name BLOB from \a bkt_id bucket
    * */
+  HSHM_ALWAYS_INLINE
   void GetBlobId(GetBlobIdTask *task) {
     hshm::charbuf blob_name = hshm::to_charbuf(*task->blob_name_);
     hshm::charbuf blob_name_unique = GetBlobNameWithBucket(task->tag_id_, blob_name);
@@ -408,11 +409,11 @@ class Server : public TaskLib {
     if (it == blob_id_map_.end()) {
       task->blob_id_ = BlobId::GetNull();
       task->SetModuleComplete();
-      HILOG(kInfo, "Failed to find blob {} in {}", blob_name.str(), task->tag_id_);
+      HILOG(kDebug, "Failed to find blob {} in {}", blob_name.str(), task->tag_id_);
       return;
     }
     task->blob_id_ = it->second;
-    HILOG(kInfo, "Found blob {} / {} in {}", task->blob_id_, blob_name.str(), task->tag_id_);
+    HILOG(kDebug, "Found blob {} / {} in {}", task->blob_id_, blob_name.str(), task->tag_id_);
     task->SetModuleComplete();
   }
 

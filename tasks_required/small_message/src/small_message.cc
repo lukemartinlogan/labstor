@@ -26,6 +26,11 @@ class Server : public TaskLib {
     task->SetModuleComplete();
   }
 
+  void MdPush(MdPushTask *task) {
+    task->ret_[0] = 1;
+    task->SetModuleComplete();
+  }
+
   void Io(IoTask *task) {
     task->ret_ = 1;
     for (int i = 0; i < 256; ++i) {

@@ -42,7 +42,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
   for (int i = 0; i < 1024; ++i) {
     // Get the task message
     if (!queue->Peek(lane_id, entry, off)) {
-      break;
+      return;
     }
     if (entry->complete_) {
       PopTask(queue, lane_id, off);
@@ -59,12 +59,12 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
       continue;
     }
     // Attempt to run the task if it's ready and runnable
-    if (!task->IsMarked()) {
-      HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={} worker={}",
-            LABSTOR_CLIENT->node_id_, task->task_node_,
-            task->task_state_, exec->name_, lane_id, queue->id_, id_);
-      task->SetMarked();
-    }
+//    if (!task->IsMarked()) {
+//      HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={} worker={}",
+//            LABSTOR_CLIENT->node_id_, task->task_node_,
+//            task->task_state_, exec->name_, lane_id, queue->id_, id_);
+//      task->SetMarked();
+//    }
     bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
     if (!task->IsRunDisabled() && CheckTaskGroup(task, exec, task->task_node_, is_remote)) {
       // Execute or schedule task
@@ -80,8 +80,8 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
     }
     // Cleanup on task completion
     if (task->IsModuleComplete()) {
-      HILOG(kDebug, "(node {}) Ending task: task_node={} task_state={} lane={} queue={} worker={}",
-            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, lane_id, queue->id_, id_);
+//      HILOG(kDebug, "(node {}) Ending task: task_node={} task_state={} lane={} queue={} worker={}",
+//            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, lane_id, queue->id_, id_);
       entry->complete_ = true;
       RemoveTaskGroup(task, exec, is_remote);
       EndTask(queue, lane_id, task, off);

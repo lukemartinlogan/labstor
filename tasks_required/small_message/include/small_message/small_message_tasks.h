@@ -114,6 +114,61 @@ struct MdTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
 /**
  * A custom task in small_message
  * */
+struct MdPushTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
+  OUT hipc::pod_array<int, 1> ret_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  MdPushTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
+  MdPushTask(hipc::Allocator *alloc,
+             const TaskNode &task_node,
+             const DomainId &domain_id,
+             TaskStateId &state_id) : Task(alloc) {
+    // Initialize task
+    task_node_ = task_node;
+    lane_hash_ = 0;
+    task_state_ = state_id;
+    method_ = Method::kMd;
+    task_flags_.SetBits(0);
+    domain_id_ = domain_id;
+
+    // Custom params
+    ret_.construct(alloc, 1);
+  }
+
+  /** Begin replication */
+  void ReplicateStart(u32 count) {
+    ret_.resize(count);
+  }
+
+  /** Finalize replication */
+  void ReplicateEnd() {}
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(u32 replica, Ar &ar) {
+    ar(ret_[replica]);
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  u32 GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
+};
+
+/**
+ * A custom task in small_message
+ * */
 struct IoTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
   static inline int const DATA_SIZE = 4096;
   IN char data_[DATA_SIZE];

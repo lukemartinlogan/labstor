@@ -20,6 +20,10 @@ void Run(u32 method, Task *task) override {
       Io(reinterpret_cast<IoTask *>(task));
       break;
     }
+    case Method::kMdPush: {
+      MdPush(reinterpret_cast<MdPushTask *>(task));
+      break;
+    }
   }
 }
 /** Ensure there is space to store replicated outputs */
@@ -39,6 +43,10 @@ void ReplicateStart(u32 method, u32 count, Task *task) override {
     }
     case Method::kIo: {
       labstor::CALL_REPLICA_START(count, reinterpret_cast<IoTask*>(task));
+      break;
+    }
+    case Method::kMdPush: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<MdPushTask*>(task));
       break;
     }
   }
@@ -62,6 +70,10 @@ void ReplicateEnd(u32 method, Task *task) override {
       labstor::CALL_REPLICA_END(reinterpret_cast<IoTask*>(task));
       break;
     }
+    case Method::kMdPush: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<MdPushTask*>(task));
+      break;
+    }
   }
 }
 /** Serialize a task when initially pushing into remote */
@@ -81,6 +93,10 @@ std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, T
     }
     case Method::kIo: {
       ar << *reinterpret_cast<IoTask*>(task);
+      break;
+    }
+    case Method::kMdPush: {
+      ar << *reinterpret_cast<MdPushTask*>(task);
       break;
     }
   }
@@ -110,6 +126,11 @@ TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) override {
       ar >> *reinterpret_cast<IoTask*>(task_ptr.task_);
       break;
     }
+    case Method::kMdPush: {
+      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<MdPushTask>(task_ptr.p_);
+      ar >> *reinterpret_cast<MdPushTask*>(task_ptr.task_);
+      break;
+    }
   }
   return task_ptr;
 }
@@ -130,6 +151,10 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
     }
     case Method::kIo: {
       ar << *reinterpret_cast<IoTask*>(task);
+      break;
+    }
+    case Method::kMdPush: {
+      ar << *reinterpret_cast<MdPushTask*>(task);
       break;
     }
   }
@@ -154,6 +179,10 @@ void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task)
       ar.Deserialize(replica, *reinterpret_cast<IoTask*>(task));
       break;
     }
+    case Method::kMdPush: {
+      ar.Deserialize(replica, *reinterpret_cast<MdPushTask*>(task));
+      break;
+    }
   }
 }
 /** Get the grouping of the task */
@@ -170,6 +199,9 @@ u32 GetGroup(u32 method, Task *task, hshm::charbuf &group) override {
     }
     case Method::kIo: {
       return reinterpret_cast<IoTask*>(task)->GetGroup(group);
+    }
+    case Method::kMdPush: {
+      return reinterpret_cast<MdPushTask*>(task)->GetGroup(group);
     }
   }
   return -1;

@@ -229,10 +229,7 @@ class Worker {
 
   HSHM_ALWAYS_INLINE
   bool CheckTaskGroup(Task *task, TaskState *exec, TaskNode node, const bool &is_remote) {
-    if (is_remote) {
-      return true;
-    }
-    if (task->IsStarted()) {
+    if (is_remote || task->IsStarted()) {
       return true;
     }
     int ret = exec->GetGroup(task->method_, task, group_);
@@ -242,25 +239,27 @@ class Worker {
       return true;
     }
 
+#ifdef DEBUG
     // TODO(llogan): remove
     std::stringstream ss;
     for (int i = 0; i < group_.size(); ++i) {
       ss << std::to_string((int)group_[i]);
     }
+#endif
 
     auto it = group_map_.find(group_);
     if (it == group_map_.end()) {
       node.node_depth_ = 1;
       group_map_.emplace(group_, node);
-      HILOG(kDebug, "(node {}) Increasing depth of group {} to {} worker={}",
-            LABSTOR_CLIENT->node_id_, ss.str(), node.node_depth_, id_);
+      HILOG(kDebug, "(node {}) Increasing depth of group to {} worker={}",
+            LABSTOR_CLIENT->node_id_, node.node_depth_, id_);
       return true;
     }
     TaskNode &node_cmp = it->second;
     if (node_cmp.root_ == node.root_) {
       node_cmp.node_depth_ += 1;
-      HILOG(kDebug, "(node {}) Increasing depth of group {} to {} worker={}",
-            LABSTOR_CLIENT->node_id_, ss.str(), node_cmp.node_depth_, id_);
+      HILOG(kDebug, "(node {}) Increasing depth of group to {} worker={}",
+            LABSTOR_CLIENT->node_id_, node_cmp.node_depth_, id_);
       return true;
     }
     return false;
@@ -278,20 +277,22 @@ class Worker {
       return;
     }
 
+#ifdef DEBUG
     // TODO(llogan): remove
     std::stringstream ss;
     for (int i = 0; i < group_.size(); ++i) {
       ss << std::to_string((int)group_[i]);
     }
+#endif
 
     TaskNode &node_cmp = group_map_[group_];
     if (node_cmp.node_depth_ == 0) {
       HELOG(kFatal, "(node {}) Group {} depth is already 0 (task_node={} worker={})",
-            LABSTOR_CLIENT->node_id_, ss.str(), task->task_node_, id_);
+            LABSTOR_CLIENT->node_id_, task->task_node_, id_);
     }
     node_cmp.node_depth_ -= 1;
-    HILOG(kDebug, "(node {}) Decreasing depth of group {} to {} (task_node={} worker={})",
-          LABSTOR_CLIENT->node_id_, ss.str(), node_cmp.node_depth_, task->task_node_, id_);
+    HILOG(kDebug, "(node {}) Decreasing depth of to {} (task_node={} worker={})",
+          LABSTOR_CLIENT->node_id_, node_cmp.node_depth_, task->task_node_, id_);
     if (node_cmp.node_depth_ == 0) {
       group_map_.erase(group_);
     }

@@ -61,6 +61,24 @@ class Client : public TaskLibClient {
     return ret;
   }
 
+  /** Metadata PUSH task */
+  void AsyncMdPushConstruct(MdPushTask *task,
+                            const TaskNode &task_node,
+                            const DomainId &domain_id) {
+    LABSTOR_CLIENT->ConstructTask<MdPushTask>(
+        task, task_node, domain_id, id_);
+  }
+  int MdPushRoot(const DomainId &domain_id) {
+    LPointer<labpq::TypedPushTask<MdPushTask>> push_task =
+        AsyncMdPushRoot(domain_id);
+    push_task->Wait();
+    MdPushTask *task = push_task.ptr_->subtask_ptr_;
+    int ret = task->ret_[0];
+    LABSTOR_CLIENT->DelTask(task);
+    return ret;
+  }
+  LABSTOR_TASK_NODE_PUSH_ROOT(MdPush);
+
   /** Io task */
   void AsyncIoConstruct(IoTask *task, const TaskNode &task_node,
                         const DomainId &domain_id) {
