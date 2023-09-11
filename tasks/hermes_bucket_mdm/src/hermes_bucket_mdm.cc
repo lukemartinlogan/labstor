@@ -122,7 +122,7 @@ class Server : public TaskLib {
     switch (task->phase_) {
       case AppendBlobPhase::kGetBlobIds: {
         HILOG(kDebug, "Appending {} bytes to bucket {}", task->data_size_, task->tag_id_);
-        task->schema_ = bkt_mdm_.AsyncAppendBlobSchema(task->task_node_ + 21,
+        task->schema_ = bkt_mdm_.AsyncAppendBlobSchema(task->task_node_ + 1,
                                                        task->tag_id_,
                                                        task->data_size_,
                                                        task->page_size_).ptr_;
