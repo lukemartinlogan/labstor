@@ -204,6 +204,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
 
     // Custom params
     tag_id_ = tag_id;
+    HILOG(kDebug, "Setting blob name {}", blob_name.str());
     HSHM_MAKE_AR(blob_name_, LABSTOR_CLIENT->main_alloc_, blob_name);
     blob_id_ = blob_id;
     blob_off_ = blob_off;
@@ -211,6 +212,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     data_ = data;
     score_ = score;
     flags_ = flags;
+    HILOG(kDebug, "Finished setting blob name {}", blob_name.str());
   }
 
   /** Destructor */
