@@ -82,7 +82,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
       HILOG(kDebug, "(node {}) Ending task: task_node={} task_state={} lane={} queue={} worker={}",
             LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, lane_id, queue->id_, id_);
       entry->complete_ = true;
-      RemoveTaskGroup(task, exec);
+      RemoveTaskGroup(task, exec, is_remote);
       EndTask(queue, lane_id, task, off);
     } else if ((task->IsUnordered() || queue->IsUnordered()) && off == 0) {
       LaneData data;

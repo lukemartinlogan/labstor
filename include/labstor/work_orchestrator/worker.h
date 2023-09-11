@@ -264,7 +264,10 @@ class Worker {
   }
 
   HSHM_ALWAYS_INLINE
-  void RemoveTaskGroup(Task *task, TaskState *exec) {
+  void RemoveTaskGroup(Task *task, TaskState *exec, const bool &is_remote) {
+    if (is_remote) {
+      return;
+    }
     int ret = exec->GetGroup(task->method_, task, group_);
     if (ret == TASK_UNORDERED || task->IsUnordered() || task->method_ < 2) {
       HILOG(kDebug, "(node {}) Decreasing depth of group remains 0 (task_node={} worker={})",
