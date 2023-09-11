@@ -67,6 +67,7 @@ class Server : public TaskLib {
   void AppendBlobSchema(AppendBlobSchemaTask *task) {
     switch (task->phase_) {
       case AppendBlobPhase::kGetBlobIds: {
+        HILOG(kDebug, "Creating blob schema for tag {}", task->tag_id_)
         TagInfo &tag_info = tag_map_[task->tag_id_];
         size_t bucket_size = tag_info.internal_size_;
         size_t cur_page = bucket_size / task->page_size_;
@@ -74,15 +75,15 @@ class Server : public TaskLib {
         size_t update_size = task->page_size_ - cur_page_off;
         size_t max_pages = task->data_size_ / task->page_size_ + 1;
         size_t cur_size = 0;
-        HSHM_MAKE_AR0(task->blob_id_tasks_, nullptr);
-        std::vector<AppendInfo> &blob_id_tasks = *task->blob_id_tasks_;
-        blob_id_tasks.reserve(max_pages);
+        HSHM_MAKE_AR0(task->append_info_, nullptr);
+        std::vector<AppendInfo> &append_info = *task->append_info_;
+        append_info.reserve(max_pages);
         while (cur_size < task->data_size_) {
           if (update_size > task->data_size_) {
             update_size = task->data_size_;
           }
-          blob_id_tasks.emplace_back();
-          AppendInfo &append = blob_id_tasks.back();
+          append_info.emplace_back();
+          AppendInfo &append = append_info.back();
           append.blob_name_ = hshm::charbuf(std::to_string(cur_page));
           append.data_size_ = update_size;
           append.blob_off_ = cur_page_off;
@@ -98,11 +99,13 @@ class Server : public TaskLib {
         task->phase_ = AppendBlobPhase::kWaitBlobIds;
       }
       case AppendBlobPhase::kWaitBlobIds: {
-        std::vector<AppendInfo> &blob_id_tasks = *task->blob_id_tasks_;
-        for (AppendInfo &append : blob_id_tasks) {
+        std::vector<AppendInfo> &append_info = *task->append_info_;
+        for (AppendInfo &append : append_info) {
           if (!append.blob_id_task_->IsComplete()) {
             return;
           }
+        }
+        for (AppendInfo &append : append_info) {
           LABSTOR_CLIENT->DelTask(append.blob_id_task_);
         }
         task->SetModuleComplete();
@@ -119,7 +122,7 @@ class Server : public TaskLib {
     switch (task->phase_) {
       case AppendBlobPhase::kGetBlobIds: {
         HILOG(kDebug, "Appending {} bytes to bucket {}", task->data_size_, task->tag_id_);
-        task->schema_ = bkt_mdm_.AsyncAppendBlobSchema(task->task_node_ + 1,
+        task->schema_ = bkt_mdm_.AsyncAppendBlobSchema(task->task_node_ + 21,
                                                        task->tag_id_,
                                                        task->data_size_,
                                                        task->page_size_).ptr_;
@@ -129,9 +132,9 @@ class Server : public TaskLib {
         if (!task->schema_->IsComplete()) {
           return;
         }
-        std::vector<AppendInfo> &blob_id_tasks = *task->schema_->blob_id_tasks_;
+        std::vector<AppendInfo> &append_info = *task->schema_->append_info_;
         size_t buf_off = 0;
-        for (AppendInfo &append : blob_id_tasks) {
+        for (AppendInfo &append : append_info) {
           if (!append.blob_id_task_->IsComplete()) {
             return;
           }
@@ -147,18 +150,21 @@ class Server : public TaskLib {
                                                     bitfield32_t(0)).ptr_;
           buf_off += append.data_size_;
         }
-        LABSTOR_CLIENT->DelTask(task->schema_);
         task->phase_ = AppendBlobPhase::kWaitPutBlobs;
       }
       case AppendBlobPhase::kWaitPutBlobs: {
-        std::vector<AppendInfo> &blob_id_tasks = *task->schema_->blob_id_tasks_;
-        for (AppendInfo &append : blob_id_tasks) {
+        std::vector<AppendInfo> &append_info = *task->schema_->append_info_;
+        for (AppendInfo &append : append_info) {
           if (!append.put_task_->IsComplete()) {
             return;
           }
           LABSTOR_CLIENT->DelTask(append.put_task_);
         }
-        HSHM_DESTROY_AR(task->schema_->blob_id_tasks_);
+        for (AppendInfo &append : append_info) {
+          LABSTOR_CLIENT->DelTask(append.put_task_);
+        }
+        HSHM_DESTROY_AR(task->schema_->append_info_);
+        LABSTOR_CLIENT->DelTask(task->schema_);
         task->SetModuleComplete();
       }
     }
@@ -281,7 +287,7 @@ class Server : public TaskLib {
       return;
     }
     TagInfo &tag = it->second;
-    return task->SetModuleComplete();
+    task->SetModuleComplete();
   }
 
   /** Remove a blob from a tag */
@@ -294,7 +300,7 @@ class Server : public TaskLib {
     TagInfo &tag = it->second;
     auto blob_it = std::find(tag.blobs_.begin(), tag.blobs_.end(), task->blob_id_);
     tag.blobs_.erase(blob_it);
-    return task->SetModuleComplete();
+    task->SetModuleComplete();
   }
 
   /** Clear blobs from a tag */
@@ -306,7 +312,7 @@ class Server : public TaskLib {
     }
     TagInfo &tag = it->second;
     tag.blobs_.clear();
-    return task->SetModuleComplete();
+    task->SetModuleComplete();
   }
 
  public:

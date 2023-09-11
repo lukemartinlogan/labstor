@@ -28,15 +28,6 @@ class Server : public TaskLib {
       if (queue.id_.IsNull()) {
         continue;
       }
-      if (count_ == 0) {
-        // Admin queue is scheduled on the first worker
-        HILOG(kDebug, "Scheduling the queue {}", queue.id_);
-        Worker &worker = LABSTOR_WORK_ORCHESTRATOR->workers_[0];
-        worker.PollQueues({WorkEntry(0, &queue)});
-        queue.num_scheduled_ = 1;
-        count_ += 1;
-        continue;
-      }
       for (u32 lane_id = queue.num_scheduled_; lane_id < queue.num_lanes_; ++lane_id) {
         // NOTE(llogan): Assumes a minimum of two workers
         HILOG(kDebug, "Scheduling the queue {} (lane {})", queue.id_, lane_id);

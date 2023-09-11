@@ -24,6 +24,8 @@ class Server : public TaskLib {
     switch (task->phase_) {
       case PushTaskPhase::kSchedule: {
         task->ptr_ = LABSTOR_CLIENT->GetPrivatePointer<Task>(task->subtask_);
+        HILOG(kDebug, "Scheduling task {} on state {} tid {}",
+              task->ptr_->task_node_, task->ptr_->task_state_, gettid());
         task->phase_ = PushTaskPhase::kWaitSchedule;
         if (task->ptr_->IsFireAndForget()) {
           if (!task->ptr_->IsUnordered()) {

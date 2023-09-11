@@ -51,16 +51,16 @@ class WorkOrchestrator {
     stop_runtime_ = false;
     kill_requested_ = false;
 
-    // Initially round-robin admin queue across workers
+    // Schedule admin queue on worker 0
     u32 count = 0;
-    for (MultiQueue &queue : *qm.queue_map_) {
-      for (u32 lane_id = 0; lane_id < queue.num_lanes_; ++lane_id) {
-        u32 worker_id = count % workers_.size();
-        Worker &worker = workers_[worker_id];
-        worker.PollQueues({WorkEntry(lane_id, &queue)});
-        count += 1;
-      }
+    MultiQueue *admin_queue = qm.GetQueue(qm.admin_queue_);
+    for (u32 lane_id = 0; lane_id < admin_queue->num_lanes_; ++lane_id) {
+      u32 worker_id = count % workers_.size();
+      Worker &worker = workers_[worker_id];
+      worker.PollQueues({WorkEntry(lane_id, admin_queue)});
+      count += 1;
     }
+    admin_queue->num_scheduled_ = admin_queue->num_lanes_;
 
     HILOG(kInfo, "Started {} workers", num_workers);
   }

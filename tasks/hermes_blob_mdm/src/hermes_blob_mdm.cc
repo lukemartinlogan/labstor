@@ -362,7 +362,7 @@ class Server : public TaskLib {
     }
     BlobInfo &blob = it->second;
     blob.tags_.push_back(task->tag_);
-    return task->SetModuleComplete();
+    task->SetModuleComplete();
   }
 
   /**
@@ -378,7 +378,7 @@ class Server : public TaskLib {
     task->has_tag_ = std::find(blob.tags_.begin(),
                                blob.tags_.end(),
                                task->tag_) != blob.tags_.end();
-    return task->SetModuleComplete();
+    task->SetModuleComplete();
   }
 
   /**
@@ -395,7 +395,7 @@ class Server : public TaskLib {
       return;
     }
     task->blob_id_ = it->second;
-    return task->SetModuleComplete();
+    task->SetModuleComplete();
   }
 
   /**
@@ -413,7 +413,7 @@ class Server : public TaskLib {
     }
     task->blob_id_ = it->second;
     HILOG(kInfo, "Found blob {} / {} in {}", task->blob_id_, blob_name.str(), task->tag_id_);
-    return task->SetModuleComplete();
+    task->SetModuleComplete();
   }
 
   /**
@@ -427,7 +427,7 @@ class Server : public TaskLib {
     }
     BlobInfo &blob = it->second;
     (*task->blob_name_) = blob.name_;
-    return task->SetModuleComplete();
+    task->SetModuleComplete();
   }
 
   /**
@@ -455,7 +455,7 @@ class Server : public TaskLib {
     }
     BlobInfo &blob = it->second;
     task->score_ = blob.score_;
-    return task->SetModuleComplete();
+    task->SetModuleComplete();
   }
 
   /**
@@ -469,7 +469,7 @@ class Server : public TaskLib {
     }
     BlobInfo &blob = it->second;
     (*task->buffers_) = blob.buffers_;
-    return task->SetModuleComplete();
+    task->SetModuleComplete();
   }
 
   /**
@@ -486,7 +486,7 @@ class Server : public TaskLib {
     blob_id_map_.erase(blob.name_);
     blob_id_map_[blob.name_] = task->blob_id_;
     blob.name_ = hshm::to_charbuf(*task->new_blob_name_);
-    return task->SetModuleComplete();
+    task->SetModuleComplete();
   }
 
   /**
@@ -500,7 +500,7 @@ class Server : public TaskLib {
     }
     BlobInfo &blob_info = it->second;
     // TODO(llogan): truncate blob
-    return task->SetModuleComplete();
+    task->SetModuleComplete();
   }
 
   /**

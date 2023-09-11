@@ -18,12 +18,6 @@ class Client : public TaskLibClient {
   /** Destructor */
   ~Client() = default;
 
-  /** Init from existing ID */
-  void Init(const TaskStateId &id) {
-    id_ = id;
-    queue_id_ = QueueId(id_);
-  }
-
   /** Create a hermes_bucket_mdm */
   HSHM_ALWAYS_INLINE
   void CreateRoot(const DomainId &domain_id,
@@ -73,7 +67,32 @@ class Client : public TaskLibClient {
         task, task_node, DomainId::GetNode(tag_id.node_id_), id_,
         tag_id, data_size, page_size);
   }
-  LABSTOR_TASK_NODE_PUSH_ROOT(AppendBlobSchema);
+  template<typename ...Args>\
+  hipc::LPointer<AppendBlobSchemaTask> AsyncAppendBlobSchemaAlloc(const TaskNode &task_node,\
+                                Args&& ...args) {\
+    hipc::LPointer<AppendBlobSchemaTask> task = LABSTOR_CLIENT->AllocTask<AppendBlobSchemaTask>();\
+    AsyncAppendBlobSchemaConstruct(task.ptr_, task_node, std::forward<Args>(args)...);\
+    return task;\
+  }\
+  template<typename ...Args>\
+  hipc::LPointer<AppendBlobSchemaTask> AsyncAppendBlobSchema(const TaskNode &task_node,\
+                           Args&& ...args) {\
+    hipc::LPointer<AppendBlobSchemaTask> task = AsyncAppendBlobSchemaAlloc(task_node, std::forward<Args>(args)...);\
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);\
+    queue->Emplace(task.ptr_->lane_hash_, task.shm_);\
+    return task;\
+  }\
+  template<typename ...Args>\
+  hipc::LPointer<labpq::TypedPushTask<AppendBlobSchemaTask>> AsyncAppendBlobSchemaRoot(Args&& ...args) {\
+    TaskNode task_node = LABSTOR_CLIENT->MakeTaskNodeId();\
+    hipc::LPointer<AppendBlobSchemaTask> task = AsyncAppendBlobSchemaAlloc(task_node + 1, std::forward<Args>(args)...);\
+    hipc::LPointer<labpq::TypedPushTask<AppendBlobSchemaTask>> push_task =\
+        LABSTOR_PROCESS_QUEUE->AsyncPush<AppendBlobSchemaTask>(task_node,\
+                                                 DomainId::GetLocal(),\
+                                                 task.shm_);\
+    return push_task;\
+  }
+  // LABSTOR_TASK_NODE_PUSH_ROOT(AppendBlobSchema);
 
   /** Append data to the bucket (fire & forget) */
   HSHM_ALWAYS_INLINE

@@ -109,6 +109,13 @@ class TaskLibClient {
  public:
   TaskStateId id_;
   QueueId queue_id_;
+
+ public:
+  /** Init from existing ID */
+  void Init(const TaskStateId &id) {
+    id_ = id;
+    queue_id_ = QueueId(id_);
+  }
 };
 
 extern "C" {

@@ -109,14 +109,14 @@ class Runtime : public ConfigurationManager {
         proc_sched_id,
         admin_task.get());
 
+    // Set the work orchestrator queue scheduler
+    LABSTOR_ADMIN->SetWorkOrchQueuePolicyRoot(labstor::DomainId::GetLocal(), queue_sched_id);
+    LABSTOR_ADMIN->SetWorkOrchProcPolicyRoot(labstor::DomainId::GetLocal(), proc_sched_id);
+
     // Create the remote queue library
     task_registry_.RegisterTaskLib("remote_queue");
     remote_queue_.CreateRoot(DomainId::GetLocal(), "remote_queue",
                              LABSTOR_CLIENT->MakeTaskStateId());
-
-    // Set the work orchestrator queue scheduler
-    LABSTOR_ADMIN->SetWorkOrchQueuePolicyRoot(labstor::DomainId::GetLocal(), queue_sched_id);
-    LABSTOR_ADMIN->SetWorkOrchProcPolicyRoot(labstor::DomainId::GetLocal(), proc_sched_id);
   }
 
  public:

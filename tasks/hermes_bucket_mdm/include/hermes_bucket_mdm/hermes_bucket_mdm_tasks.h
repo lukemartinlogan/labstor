@@ -182,7 +182,7 @@ struct AppendBlobSchemaTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN size_t data_size_;
   IN size_t page_size_;
   TEMP int phase_ = AppendBlobPhase::kGetBlobIds;
-  TEMP hipc::ShmArchive<std::vector<AppendInfo>> blob_id_tasks_;
+  TEMP hipc::ShmArchive<std::vector<AppendInfo>> append_info_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -223,7 +223,7 @@ struct AppendBlobSchemaTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message return */
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {
-    ar(blob_id_tasks_);
+    ar(append_info_);
   }
 
   /** Create group */

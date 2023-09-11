@@ -10,7 +10,8 @@ namespace labstor {
 
 void Worker::Loop() {
   pid_ = gettid();
-  while (LABSTOR_WORK_ORCHESTRATOR->IsAlive()) {
+  WorkOrchestrator *orchestrator = LABSTOR_WORK_ORCHESTRATOR;
+  while (orchestrator->IsAlive()) {
     try {
       Run();
     } catch (hshm::Error &e) {
@@ -57,13 +58,13 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
       continue;
     }
     // Attempt to run the task if it's ready and runnable
-    if (!task->IsModuleComplete() && !task->IsRunDisabled() && CheckTaskGroup(task, exec, task->task_node_)) {
-      if (!task->IsMarked()) {
-        HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={} worker={}",
-              LABSTOR_CLIENT->node_id_, task->task_node_,
-              task->task_state_, exec->name_, lane_id, queue->id_, id_);
-        task->SetMarked();
-      }
+    if (!task->IsMarked()) {
+      HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={} worker={}",
+            LABSTOR_CLIENT->node_id_, task->task_node_,
+            task->task_state_, exec->name_, lane_id, queue->id_, id_);
+      task->SetMarked();
+    }
+    if (!task->IsRunDisabled() && CheckTaskGroup(task, exec, task->task_node_)) {
       bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
       // Execute or schedule task
       if (is_remote) {
