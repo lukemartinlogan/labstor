@@ -89,24 +89,23 @@ TEST_CASE("TestHermesPutGet") {
   hermes::Bucket bkt("hello");
   HILOG(kInfo, "BUCKET LOADED!!!")
 
-  if (rank == 1) {
-    size_t count_per_proc = 4;
-    size_t off = rank * count_per_proc;
-    size_t proc_count = off + count_per_proc;
-    for (int rep = 0; rep < 4; ++rep) {
-      for (size_t i = off; i < proc_count; ++i) {
-        HILOG(kInfo, "Iteration: {} with blob name {}", i, std::to_string(i));
-        // Put a blob
-        hermes::Blob blob(KILOBYTES(4));
-        memset(blob.data(), i % 256, blob.size());
-        hermes::BlobId blob_id = bkt.Put(std::to_string(i), blob, ctx);
+  size_t count_per_proc = 4;
+  size_t off = rank * count_per_proc;
+  size_t proc_count = off + count_per_proc;
+  for (int rep = 0; rep < 4; ++rep) {
+    for (size_t i = off; i < proc_count; ++i) {
+      HILOG(kInfo, "Iteration: {} with blob name {}", i, std::to_string(i));
+      // Put a blob
+      hermes::Blob blob(KILOBYTES(4));
+      memset(blob.data(), i % 256, blob.size());
+      hermes::BlobId blob_id = bkt.Put(std::to_string(i), blob, ctx);
+      HILOG(kInfo, "(iteration {}) Using BlobID: {}", i, blob_id);
 
-        // Get a blob
-        hermes::Blob blob2;
-        bkt.Get(blob_id, blob2, ctx);
-        REQUIRE(blob.size() == blob2.size());
-        REQUIRE(blob == blob2);
-      }
+      // Get a blob
+      hermes::Blob blob2;
+      bkt.Get(blob_id, blob2, ctx);
+      REQUIRE(blob.size() == blob2.size());
+      REQUIRE(blob == blob2);
     }
   }
 }
