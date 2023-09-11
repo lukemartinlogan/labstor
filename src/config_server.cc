@@ -76,6 +76,9 @@ void ServerConfig::ParseRpcInfo(YAML::Node yaml_conf) {
   if (yaml_conf["port"]) {
     rpc_.port_ = yaml_conf["port"].as<int>();
   }
+  if (yaml_conf["num_threads"]) {
+    rpc_.num_threads_ = yaml_conf["port"].as<int>();
+  }
 }
 
 /** parse the YAML node */

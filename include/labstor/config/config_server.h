@@ -57,6 +57,8 @@ struct RpcInfo {
   std::string domain_;
   /** The RPC port number. */
   int port_;
+  /** Number of RPC threads */
+  int num_threads_;
 };
 
 /**

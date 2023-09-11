@@ -78,7 +78,7 @@ class RpcContext {
     port_ = config_->rpc_.port_;
     protocol_ = config_->rpc_.protocol_;
     domain_ = config_->rpc_.domain_;
-    num_threads_ = 4;  // TODO(llogan): Add to configuration
+    num_threads_ = config->rpc_.num_threads_;  // TODO(llogan): Add to configuration
     if (hosts_.size()) { return; }
     // Uses hosts produced by host_names
     auto &hosts = config_->rpc_.host_names_;
