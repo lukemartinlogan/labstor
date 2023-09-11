@@ -136,14 +136,11 @@ class Server : public TaskLib {
         if (!task->schema_->IsComplete()) {
           return;
         }
-        HILOG(kDebug, "(node {}) Got blob schema for tag {} (task_node={})",
-              LABSTOR_CLIENT->node_id_, task->tag_id_, task->task_node_)
         std::vector<AppendInfo> &append_info = *task->schema_->append_info_;
         size_t buf_off = 0;
+        HILOG(kDebug, "(node {}) Got blob schema of size {} for tag {} (task_node={})",
+              LABSTOR_CLIENT->node_id_, append_info.size(), task->tag_id_, task->task_node_)
         for (AppendInfo &append : append_info) {
-          if (!append.blob_id_task_->IsComplete()) {
-            return;
-          }
           append.put_task_ = blob_mdm_.AsyncPutBlob(task->task_node_ + 1,
                                                     task->tag_id_,
                                                     append.blob_name_,
