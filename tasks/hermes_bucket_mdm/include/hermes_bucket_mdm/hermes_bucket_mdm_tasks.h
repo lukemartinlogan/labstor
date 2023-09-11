@@ -144,10 +144,9 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     ar(blob_id_);
   }
 
-  /** Create group */
+ /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
-    hshm::NodeThreadId tid;
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -228,10 +227,9 @@ struct AppendBlobSchemaTask : public Task, TaskFlags<TF_SRL_SYM> {
     ar(append_info_);
   }
 
-  /** Create group */
+ /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
-    hshm::NodeThreadId tid;
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -291,10 +289,9 @@ struct AppendBlobTask : public Task, TaskFlags<TF_LOCAL> {
     }
   }
 
-  /** Create group */
+ /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
-    hshm::NodeThreadId tid;
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -469,10 +466,9 @@ struct GetTagNameTask : public Task, TaskFlags<TF_SRL_SYM> {
     ar(tag_name_);
   }
 
-  /** Create group */
+ /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
-    hshm::NodeThreadId tid;
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -529,10 +525,9 @@ struct RenameTagTask : public Task, TaskFlags<TF_SRL_SYM> {
     ar(tag_name_);
   }
 
-  /** Create group */
+ /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
-    hshm::NodeThreadId tid;
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -587,10 +582,9 @@ struct DestroyTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {}
 
-  /** Create group */
+ /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
-    hshm::NodeThreadId tid;
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -640,10 +634,9 @@ struct TagAddBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {}
 
-  /** Create group */
+ /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
-    hshm::NodeThreadId tid;
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -693,10 +686,9 @@ struct TagRemoveBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {}
 
-  /** Create group */
+ /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
-    hshm::NodeThreadId tid;
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
@@ -752,10 +744,9 @@ struct TagClearBlobsTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {}
 
-  /** Create group */
+ /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
-    hshm::NodeThreadId tid;
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
