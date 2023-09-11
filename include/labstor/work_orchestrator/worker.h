@@ -229,7 +229,10 @@ class Worker {
 
   HSHM_ALWAYS_INLINE
   bool CheckTaskGroup(Task *task, TaskState *exec, TaskNode node, const bool &is_remote) {
-    if (is_remote || task->IsStarted()) {
+    if (is_remote) {
+      return true;
+    }
+    if (task->IsStarted()) {
       return true;
     }
     int ret = exec->GetGroup(task->method_, task, group_);
