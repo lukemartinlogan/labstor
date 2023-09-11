@@ -95,7 +95,7 @@ TEST_CASE("TestHermesPutGet") {
   size_t proc_count = off + count_per_proc;
   for (int rep = 0; rep < 4; ++rep) {
     for (size_t i = off; i < proc_count; ++i) {
-      HILOG(kInfo, "Iteration: {}", i);
+      HILOG(kInfo, "Iteration: {} with blob name {}", i, std::to_string(i));
       // Put a blob
       hermes::Blob blob(KILOBYTES(4));
       memset(blob.data(), i % 256, blob.size());
