@@ -218,6 +218,7 @@ struct AppendBlobSchemaTask : public Task, TaskFlags<TF_SRL_SYM> {
   /** (De)serialize message call */
   template<typename Ar>
   void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
     ar(tag_id_, data_size_);
   }
 
