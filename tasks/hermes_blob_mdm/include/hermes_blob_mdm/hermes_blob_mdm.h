@@ -117,6 +117,7 @@ class Client : public TaskLibClient {
         tag_id, blob_name, blob_id,
         blob_off, blob_size,
         blob, score, flags);
+    task->task_flags_ = task_flags;
   }
   LABSTOR_TASK_NODE_PUSH_ROOT(PutBlob);
 
