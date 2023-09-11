@@ -67,7 +67,8 @@ class Server : public TaskLib {
   void AppendBlobSchema(AppendBlobSchemaTask *task) {
     switch (task->phase_) {
       case AppendBlobPhase::kGetBlobIds: {
-        HILOG(kDebug, "Creating blob schema for tag {}", task->tag_id_)
+        HILOG(kDebug, "(node {}) Getting blob IDs for tag {} (task_node={})",
+              LABSTOR_CLIENT->node_id_, task->tag_id_, task->task_node_)
         TagInfo &tag_info = tag_map_[task->tag_id_];
         size_t bucket_size = tag_info.internal_size_;
         size_t cur_page = bucket_size / task->page_size_;
@@ -105,6 +106,8 @@ class Server : public TaskLib {
             return;
           }
         }
+        HILOG(kDebug, "(node {}) Finished blob IDs for tag {} (task_node={})",
+              LABSTOR_CLIENT->node_id_, task->tag_id_, task->task_node_)
         for (AppendInfo &append : append_info) {
           LABSTOR_CLIENT->DelTask(append.blob_id_task_);
         }
@@ -121,7 +124,8 @@ class Server : public TaskLib {
   void AppendBlob(AppendBlobTask *task) {
     switch (task->phase_) {
       case AppendBlobPhase::kGetBlobIds: {
-        HILOG(kDebug, "Appending {} bytes to bucket {}", task->data_size_, task->tag_id_);
+        HILOG(kDebug, "(node {}) Appending {} bytes to bucket {} (task_node={})",
+              LABSTOR_CLIENT->node_id_, task->data_size_, task->tag_id_, task->task_node_);
         task->schema_ = bkt_mdm_.AsyncAppendBlobSchema(task->task_node_ + 1,
                                                        task->tag_id_,
                                                        task->data_size_,
@@ -132,6 +136,8 @@ class Server : public TaskLib {
         if (!task->schema_->IsComplete()) {
           return;
         }
+        HILOG(kDebug, "(node {}) Got blob schema for tag {} (task_node={})",
+              LABSTOR_CLIENT->node_id_, task->tag_id_, task->task_node_)
         std::vector<AppendInfo> &append_info = *task->schema_->append_info_;
         size_t buf_off = 0;
         for (AppendInfo &append : append_info) {
@@ -153,6 +159,8 @@ class Server : public TaskLib {
         task->phase_ = AppendBlobPhase::kWaitPutBlobs;
       }
       case AppendBlobPhase::kWaitPutBlobs: {
+        HILOG(kDebug, "(node {}) PUT blobs for tag {} (task_node={})",
+              LABSTOR_CLIENT->node_id_, task->tag_id_, task->task_node_)
         std::vector<AppendInfo> &append_info = *task->schema_->append_info_;
         for (AppendInfo &append : append_info) {
           if (!append.put_task_->IsComplete()) {
