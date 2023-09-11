@@ -118,6 +118,7 @@ class Client : public TaskLibClient {
         blob_off, blob_size,
         blob, score, flags);
     task->task_flags_ = task_flags;
+    HILOG(kDebug, "Constructed PUT (task_node={})", task_node);
   }
   LABSTOR_TASK_NODE_PUSH_ROOT(PutBlob);
 

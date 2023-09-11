@@ -141,6 +141,9 @@ class Server : public TaskLib {
         HILOG(kDebug, "(node {}) Got blob schema of size {} for tag {} (task_node={})",
               LABSTOR_CLIENT->node_id_, append_info.size(), task->tag_id_, task->task_node_)
         for (AppendInfo &append : append_info) {
+          HILOG(kDebug, "(node {}) Spawning blob {} of size {} for tag {} (task_node={} blob_mdm={})",
+                LABSTOR_CLIENT->node_id_, append.blob_name_.str(), append.data_size_,
+                task->tag_id_, task->task_node_, blob_mdm_.id_);
           append.put_task_ = blob_mdm_.AsyncPutBlob(task->task_node_ + 1,
                                                     task->tag_id_,
                                                     append.blob_name_,
@@ -151,8 +154,9 @@ class Server : public TaskLib {
                                                     task->score_,
                                                     bitfield32_t(0),
                                                     bitfield32_t(0)).ptr_;
-          HILOG(kDebug, "(node {}) Spawning blob {} for tag {} (task_node={})",
-                LABSTOR_CLIENT->node_id_, append.blob_name_.str(), task->tag_id_, task->task_node_)
+          HILOG(kDebug, "(node {}) Finished spawning blob {} of size {} for tag {} (task_node={} blob_mdm={})",
+                LABSTOR_CLIENT->node_id_, append.blob_name_.str(), append.data_size_,
+                task->tag_id_, task->task_node_, blob_mdm_.id_);
           buf_off += append.data_size_;
         }
         task->phase_ = AppendBlobPhase::kWaitPutBlobs;
