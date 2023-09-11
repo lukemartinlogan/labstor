@@ -268,7 +268,7 @@ struct AppendBlobTask : public Task, TaskFlags<TF_LOCAL> {
     lane_hash_ = tag_id.unique_;
     task_state_ = state_id;
     method_ = Method::kAppendBlob;
-    task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET | TASK_DATA_OWNER);
+    task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET | TASK_DATA_OWNER | TASK_UNORDERED);
     domain_id_ = domain_id;
 
     // Custom params
