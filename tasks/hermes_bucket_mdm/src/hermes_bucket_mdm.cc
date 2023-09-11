@@ -154,19 +154,21 @@ class Server : public TaskLib {
                                                     task->score_,
                                                     bitfield32_t(0),
                                                     bitfield32_t(0)).ptr_;
+          HILOG(kDebug, "(node {}) Spawning blob {} for tag {} (task_node={})",
+                LABSTOR_CLIENT->node_id_, append.blob_name_.str(), task->tag_id_, task->task_node_)
           buf_off += append.data_size_;
         }
         task->phase_ = AppendBlobPhase::kWaitPutBlobs;
       }
       case AppendBlobPhase::kWaitPutBlobs: {
-        HILOG(kDebug, "(node {}) PUT blobs for tag {} (task_node={})",
-              LABSTOR_CLIENT->node_id_, task->tag_id_, task->task_node_)
         std::vector<AppendInfo> &append_info = *task->schema_->append_info_;
         for (AppendInfo &append : append_info) {
           if (!append.put_task_->IsComplete()) {
             return;
           }
         }
+        HILOG(kDebug, "(node {}) PUT blobs for tag {} (task_node={})",
+              LABSTOR_CLIENT->node_id_, task->tag_id_, task->task_node_)
         for (AppendInfo &append : append_info) {
           LABSTOR_CLIENT->DelTask(append.put_task_);
         }
