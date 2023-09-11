@@ -195,6 +195,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
               float score,
               bitfield32_t flags) : Task(alloc) {
     // Initialize task
+    HILOG(kDebug, "Beginning PUT task constructor")
     task_node_ = task_node;
     lane_hash_ = blob_id_.unique_;
     task_state_ = state_id;
