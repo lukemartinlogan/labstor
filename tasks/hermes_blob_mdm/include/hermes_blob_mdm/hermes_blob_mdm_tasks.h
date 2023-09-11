@@ -246,13 +246,12 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {}
 
-  /** Create group */
+   /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
-    srl << task_node_.root_.node_id_;
     return 0;
   }
 };
@@ -331,13 +330,12 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   template<typename Ar>
   void SerializeEnd(u32 replica, Ar &ar) {}
 
-  /** Create group */
+   /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
-    srl << task_node_.root_.node_id_;
     return 0;
   }
 };
@@ -387,13 +385,12 @@ struct TagBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
   }
 
-  /** Create group */
+   /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
-    srl << task_node_.root_.node_id_;
     return 0;
   }
 };
@@ -448,13 +445,12 @@ struct BlobHasTagTask : public Task, TaskFlags<TF_SRL_SYM> {
     ar(has_tag_);
   }
 
-  /** Create group */
+   /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
-    srl << task_node_.root_.node_id_;
     return 0;
   }
 };
@@ -510,13 +506,12 @@ struct GetBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
     ar(blob_id_);
   }
 
-  /** Create group */
+   /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
-    srl << task_node_.root_.node_id_;
     return 0;
   }
 };
@@ -573,13 +568,12 @@ struct GetBlobNameTask : public Task, TaskFlags<TF_SRL_SYM> {
     ar(blob_name_);
   }
 
-  /** Create group */
+   /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
-    srl << task_node_.root_.node_id_;
     return 0;
   }
 };
@@ -628,13 +622,12 @@ struct GetBlobSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
     ar(size_);
   }
 
-  /** Create group */
+   /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
-    srl << task_node_.root_.node_id_;
     return 0;
   }
 };
@@ -683,13 +676,12 @@ struct GetBlobScoreTask : public Task, TaskFlags<TF_SRL_SYM> {
     ar(score_);
   }
 
-  /** Create group */
+   /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
-    srl << task_node_.root_.node_id_;
     return 0;
   }
 };
@@ -744,13 +736,12 @@ struct GetBlobBuffersTask : public Task, TaskFlags<TF_SRL_SYM> {
     ar(buffers_);
   }
 
-  /** Create group */
+   /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
-    srl << task_node_.root_.node_id_;
     return 0;
   }
 };
@@ -809,13 +800,12 @@ struct RenameBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     ar(new_blob_name_);
   }
 
-  /** Create group */
+   /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
-    srl << task_node_.root_.node_id_;
     return 0;
   }
 };
@@ -865,13 +855,12 @@ struct TruncateBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
   }
 
-  /** Create group */
+   /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
-    srl << task_node_.root_.node_id_;
     return 0;
   }
 };
@@ -926,13 +915,12 @@ struct DestroyBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
   }
 
-  /** Create group */
+   /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
-    srl << task_node_.root_.node_id_;
     return 0;
   }
 };
@@ -997,13 +985,12 @@ struct ReorganizeBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   void SerializeEnd(u32 replica, Ar &ar) {
   }
 
-  /** Create group */
+   /** Create group */
   HSHM_ALWAYS_INLINE
   u32 GetGroup(hshm::charbuf &group) {
     labstor::LocalSerialize srl(group);
     srl << tag_id_.unique_;
     srl << tag_id_.node_id_;
-    srl << task_node_.root_.node_id_;
     return 0;
   }
 };

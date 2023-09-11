@@ -228,11 +228,11 @@ class Worker {
   void Run();
 
   HSHM_ALWAYS_INLINE
-  bool CheckTaskGroup(Task *task, TaskState *exec, TaskNode node) {
-    int ret = exec->GetGroup(task->method_, task, group_);
-    if (task->IsStarted()) {
+  bool CheckTaskGroup(Task *task, TaskState *exec, TaskNode node, const bool &is_remote) {
+    if (is_remote || task->IsStarted()) {
       return true;
     }
+    int ret = exec->GetGroup(task->method_, task, group_);
     if (ret == TASK_UNORDERED || task->IsUnordered()) {
       HILOG(kDebug, "(node {}) Task {} is unordered, so count remains 0 worker={}",
             LABSTOR_CLIENT->node_id_, task->task_node_, id_);

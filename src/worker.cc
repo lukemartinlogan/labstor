@@ -65,8 +65,8 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
             task->task_state_, exec->name_, lane_id, queue->id_, id_);
       task->SetMarked();
     }
-    if (!task->IsRunDisabled() && CheckTaskGroup(task, exec, task->task_node_)) {
-      bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
+    bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
+    if (!task->IsRunDisabled() && CheckTaskGroup(task, exec, task->task_node_, is_remote)) {
       // Execute or schedule task
       if (is_remote) {
         auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
