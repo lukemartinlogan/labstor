@@ -81,7 +81,7 @@ class Client : public TaskLibClient {
       float score,
       u32 node_id) {
     LABSTOR_CLIENT->ConstructTask<AppendBlobTask>(
-        task, task_node, DomainId::GetNode(tag_id.node_id_), id_,
+        task, task_node, DomainId::GetLocal(), id_,
         tag_id, data_size, data, page_size, score, node_id);
   }
   HSHM_ALWAYS_INLINE
