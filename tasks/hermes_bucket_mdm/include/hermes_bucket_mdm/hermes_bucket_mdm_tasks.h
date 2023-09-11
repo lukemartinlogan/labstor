@@ -134,7 +134,6 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    // TODO(llogan): make it so data xfer doesn't happen here
     ar(tag_id_, blob_id_, blob_off_, data_size_, flags_);
   }
 
@@ -219,7 +218,7 @@ struct AppendBlobSchemaTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar(tag_id_, data_size_);
+    ar(tag_id_, data_size_, page_size_);
   }
 
   /** (De)serialize message return */
