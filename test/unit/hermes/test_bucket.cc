@@ -216,7 +216,6 @@ TEST_CASE("TestHermesBucketDestroy") {
 }
 
 TEST_CASE("TestHermesReorganizeBlob") {
-  // TODO(llogan): need to inform bucket when a blob has been placed in it
   int rank, nprocs;
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -254,7 +253,6 @@ TEST_CASE("TestHermesReorganizeBlob") {
 }
 
 TEST_CASE("TestHermesBucketAppend") {
-  // TODO(llogan): need to inform bucket when a blob has been placed in it
   int rank, nprocs;
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -288,7 +286,6 @@ TEST_CASE("TestHermesBucketAppend") {
 }
 
 TEST_CASE("TestHermesBucketAppend1n") {
-  // TODO(llogan): need to inform bucket when a blob has been placed in it
   int rank, nprocs;
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);

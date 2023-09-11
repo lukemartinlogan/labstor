@@ -54,6 +54,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
     if (!exec) {
       HELOG(kFatal, "(node {}) Could not find the task state: {}",
             LABSTOR_CLIENT->node_id_, task->task_state_);
+      entry->complete_ = true;
       EndTask(queue, lane_id, task, off);
       continue;
     }
