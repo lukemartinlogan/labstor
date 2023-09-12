@@ -18,7 +18,8 @@ namespace labstor {
 
 /** Uniquely identify a queue lane */
 struct WorkEntry {
-  u32 lane_;
+  u32 lane_id_;
+  Lane *lane_;
   MultiQueue *queue_;
 
   /** Default constructor */
@@ -27,13 +28,14 @@ struct WorkEntry {
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE
-  WorkEntry(u32 lane, MultiQueue *queue) : lane_(lane), queue_(queue) {}
+  WorkEntry(u32 lane_id, MultiQueue *queue)
+  : lane_id_(lane_id), queue_(queue) {}
 
   /** Copy constructor */
   HSHM_ALWAYS_INLINE
   WorkEntry(const WorkEntry &other) {
     queue_ = other.queue_;
-    lane_ = other.lane_;
+    lane_id_ = other.lane_id_;
   }
 
   /** Copy assignment */
@@ -43,7 +45,7 @@ struct WorkEntry {
   operator=(const WorkEntry &other) {
     if (this != &other) {
       queue_ = other.queue_;
-      lane_ = other.lane_;
+      lane_id_ = other.lane_id_;
     }
     return *this;
   }
@@ -52,7 +54,7 @@ struct WorkEntry {
   HSHM_ALWAYS_INLINE
   WorkEntry(WorkEntry &&other) noexcept {
     queue_ = other.queue_;
-    lane_ = other.lane_;
+    lane_id_ = other.lane_id_;
   }
 
   /** Move assignment */
@@ -62,7 +64,7 @@ struct WorkEntry {
   operator=(WorkEntry &&other) noexcept {
     if (this != &other) {
       queue_ = other.queue_;
-      lane_ = other.lane_;
+      lane_id_ = other.lane_id_;
     }
     return *this;
   }
@@ -76,7 +78,7 @@ struct WorkEntry {
   /** Equality operator */
   HSHM_ALWAYS_INLINE
   bool operator==(const WorkEntry &other) const {
-    return queue_ == other.queue_ && lane_ == other.lane_;
+    return queue_ == other.queue_ && lane_id_ == other.lane_id_;
   }
 };
 
@@ -140,6 +142,21 @@ class Worker {
     }*/
   }
 
+  /** Constructor without threading */
+  Worker(u32 id) {
+    poll_queues_.Resize(1024);
+    relinquish_queues_.Resize(1024);
+    id_ = id;
+    sleep_us_ = 0;
+    EnableContinuousPolling();
+    retries_ = 1;
+    pid_ = 0;
+    pthread_id_ = gettid();
+    // TODO(llogan): implement reserve for group
+    group_.resize(512);
+    group_.resize(0);
+  }
+
   /**
    * Tell worker to poll a set of queues
    * */
@@ -185,7 +202,6 @@ class Worker {
   /** The work loop */
   void Loop();
 
- private:
   /** Worker yields for a period of time */
   void Yield() {
     if (flags_.Any(WORKER_CONTINUOUS_POLLING)) {

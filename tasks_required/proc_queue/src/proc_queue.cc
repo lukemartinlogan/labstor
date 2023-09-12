@@ -26,12 +26,12 @@ class Server : public TaskLib {
         task->ptr_ = LABSTOR_CLIENT->GetPrivatePointer<Task>(task->subtask_);
         HILOG(kDebug, "Scheduling task {} on state {} tid {}",
               task->ptr_->task_node_, task->ptr_->task_state_, gettid());
-        task->phase_ = PushTaskPhase::kWaitSchedule;
         if (task->ptr_->IsFireAndForget()) {
           task->ptr_->UnsetFireAndForget();
         }
         MultiQueue *real_queue = LABSTOR_CLIENT->GetQueue(QueueId(task->ptr_->task_state_));
         real_queue->Emplace(task->ptr_->lane_hash_, task->subtask_);
+        task->phase_ = PushTaskPhase::kWaitSchedule;
       }
       case PushTaskPhase::kWaitSchedule: {
         if (!task->ptr_->IsComplete()) {

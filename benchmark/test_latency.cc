@@ -9,6 +9,10 @@
 #include "small_message/small_message.h"
 #include "hermes_shm/util/timer.h"
 #include "labstor/work_orchestrator/affinity.h"
+#include "hermes/hermes.h"
+#include "hermes_adapters/filesystem.h"
+#include "labstor/work_orchestrator/worker.h"
+#include "labstor/api/labstor_runtime.h"
 
 /** The performance of getting a queue */
 TEST_CASE("TestGetQueue") {
@@ -152,26 +156,6 @@ TEST_CASE("TestHshmQueueAllocateEmplacePop") {
   HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
 }
 
-/** Time to process a request */
-TEST_CASE("TestRoundTripLatency") {
-  labstor::small_message::Client client;
-  LABSTOR_ADMIN->RegisterTaskLibraryRoot(labstor::DomainId::GetLocal(), "small_message");
-  client.CreateRoot(labstor::DomainId::GetLocal(), "ipc_test");
-  hshm::Timer t;
-
-  int pid = getpid();
-  ProcessAffiner::SetCpuAffinity(pid, 8);
-
-  t.Resume();
-  size_t ops = (1 << 20);
-  for (size_t i = 0; i < ops; ++i) {
-    client.MdPushRoot(labstor::DomainId::GetLocal());
-  }
-  t.Pause();
-
-  HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
-}
-
 /** Time to spawn and join a thread */
 TEST_CASE("TestSpawnJoinThread") {
   hshm::Timer t;
@@ -210,8 +194,77 @@ TEST_CASE("TestSpawnJoinArgoThread") {
   HILOG(kInfo, "Latency: {} MOps", count / t.GetUsec());
 }
 
-#include "hermes/hermes.h"
-#include "hermes_adapters/filesystem.h"
+void TestWorkerIterationLatency(int num_queues, int num_lanes) {
+  LABSTOR_RUNTIME->Create();
+
+  labstor::Worker worker(0);
+  std::vector<hipc::uptr<labstor::MultiQueue>> queues;
+  for (u32 i = 0; i < num_queues; ++i) {
+    labstor::QueueId qid(0, i + 1);
+    auto queue = hipc::make_uptr<labstor::MultiQueue>(
+        qid, num_lanes, num_lanes, 256, hshm::bitfield32_t(0));
+    queues.emplace_back(std::move(queue));
+    for (u32 j = 0; j < num_lanes; ++j) {
+      worker.PollQueues({{j, queue.get()}});
+    }
+  }
+
+  labstor::small_message::Client client;
+  LABSTOR_ADMIN->RegisterTaskLibraryRoot(labstor::DomainId::GetLocal(), "small_message");\
+  client.CreateRoot(labstor::DomainId::GetLocal(), "ipc_test");
+
+  hshm::Timer t;
+  t.Resume();
+  // size_t ops = (1 << 20);
+  size_t ops = 256;
+  for (size_t i = 0; i < ops; ++i) {
+    hipc::LPointer<labstor::small_message::MdPushTask> task;
+    labstor::TaskNode task_node(labstor::TaskId((u32)0, (u64)i));
+    task = client.AsyncMdPushEmplace(queues[num_queues - 1].get(),
+                                     task_node,
+                                     labstor::DomainId::GetLocal());
+    worker.Run();
+    LABSTOR_CLIENT->DelTask(task);
+  }
+  t.Pause();
+
+  HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
+}
+
+/** Time for worker to process a request */
+TEST_CASE("TestWorkerLatency") {
+  TestWorkerIterationLatency(1, 16);
+  TestWorkerIterationLatency(5, 16);
+  TestWorkerIterationLatency(10, 16);
+  TestWorkerIterationLatency(15, 16);
+}
+
+/** Time to process a request */
+TEST_CASE("TestRoundTripLatency") {
+  HERMES->ClientInit();
+  labstor::small_message::Client client;
+  LABSTOR_ADMIN->RegisterTaskLibraryRoot(labstor::DomainId::GetLocal(), "small_message");
+//  int count = 25;
+//  for (int i = 0; i < count; ++i) {
+//    labstor::small_message::Client client2;
+//    client2.CreateRoot(labstor::DomainId::GetLocal(), "ipc_test" + std::to_string(i));
+//  }
+  client.CreateRoot(labstor::DomainId::GetLocal(), "ipc_test");
+  hshm::Timer t;
+
+  int pid = getpid();
+  ProcessAffiner::SetCpuAffinity(pid, 8);
+
+  t.Resume();
+  // size_t ops = (1 << 20);
+  size_t ops = 1024;
+  for (size_t i = 0; i < ops; ++i) {
+    client.MdPushRoot(labstor::DomainId::GetLocal());
+  }
+  t.Pause();
+
+  HILOG(kInfo, "Latency: {} MOps", ops / t.GetUsec());
+}
 
 /** Time to process a request */
 TEST_CASE("TestHermesGetBlobIdLatency") {

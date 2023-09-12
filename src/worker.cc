@@ -30,8 +30,12 @@ void Worker::Run() {
   if (relinquish_queues_.size() > 0) {
     _RelinquishQueues();
   }
-  for (auto &[lane_id, queue] : work_queue_) {
-    PollGrouped(lane_id, queue);
+  for (WorkEntry &entry : work_queue_) {
+    LaneData *tmp;
+    if (!entry.queue_->Peek(entry.lane_, tmp, 0)) {
+      continue;
+    }
+    PollGrouped(entry.lane_, entry.queue_);
   }
 }
 
@@ -85,10 +89,10 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
       entry->complete_ = true;
       RemoveTaskGroup(task, exec, is_remote);
       EndTask(queue, lane_id, task, off);
-    } else if ((task->IsUnordered() || queue->IsUnordered()) && off == 0) {
-      LaneData data;
-      queue->Pop(lane_id, data);
-      queue->Emplace(lane_id, data);
+//    } else if ((task->IsUnordered() || queue->IsUnordered()) && off == 0) {
+//      LaneData data;
+//      queue->Pop(lane_id, data);
+//      queue->Emplace(lane_id, data);
     } else {
       off += 1;
     }

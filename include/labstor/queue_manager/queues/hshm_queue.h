@@ -9,6 +9,7 @@
 
 namespace labstor {
 
+/** The data stored in a lane */
 struct LaneData {
   hipc::Pointer p_;
   bool complete_;
@@ -20,6 +21,8 @@ struct LaneData {
     complete_ = complete;
   }
 };
+
+/** Descriptive information about a lane */
 
 /** Represents a lane tasks can be stored */
 typedef hipc::mpsc_queue<LaneData> Lane;

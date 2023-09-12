@@ -46,7 +46,7 @@ class Runtime : public ConfigurationManager {
     }
     mode_ = LabstorMode::kServer;
     is_being_initialized_ = true;
-    InitServer(std::move(server_config_path));
+    ServerInit(std::move(server_config_path));
     is_initialized_ = true;
     is_being_initialized_ = false;
     return this;
@@ -54,7 +54,7 @@ class Runtime : public ConfigurationManager {
 
  private:
   /** Initialize */
-  void InitServer(std::string server_config_path) {
+  void ServerInit(std::string server_config_path) {
     LoadServerConfig(server_config_path);
     InitSharedMemory();
     rpc_.ServerInit(&server_config_);

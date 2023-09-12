@@ -33,7 +33,7 @@ class ConfigurationManager {
     LoadServerConfig(config_path);
     mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_mdm");
     blob_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_blob_mdm");
-    bkt_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_bkt_mdm");
+    // bkt_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_bkt_mdm");
   }
 
   void ServerInit() {

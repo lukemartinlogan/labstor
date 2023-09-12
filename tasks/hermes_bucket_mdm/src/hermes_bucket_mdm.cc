@@ -38,13 +38,14 @@ class Server : public TaskLib {
         task->phase_ = ConstructTaskPhase::kWait;
       }
       case ConstructTaskPhase::kWait: {
-        if (blob_mdm_task_->IsComplete()) {
-          HILOG(kDebug, "Bucket MDM created")
-          blob_mdm_.AsyncCreateComplete(blob_mdm_task_);
-          bkt_mdm_.Init(id_);
-          task->SetModuleComplete();
+        if (!blob_mdm_task_->IsComplete()) {
           return;
         }
+        HILOG(kDebug, "Bucket MDM created")
+        blob_mdm_.AsyncCreateComplete(blob_mdm_task_);
+        bkt_mdm_.Init(id_);
+        task->SetModuleComplete();
+        return;
       }
     }
   }

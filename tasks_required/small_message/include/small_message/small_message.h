@@ -72,9 +72,9 @@ class Client : public TaskLibClient {
     LPointer<labpq::TypedPushTask<MdPushTask>> push_task =
         AsyncMdPushRoot(domain_id);
     push_task->Wait();
-    MdPushTask *task = push_task.ptr_->subtask_ptr_;
+    MdPushTask *task = push_task->subtask_ptr_;
     int ret = task->ret_[0];
-    LABSTOR_CLIENT->DelTask(task);
+    LABSTOR_CLIENT->DelTask(push_task);
     return ret;
   }
   LABSTOR_TASK_NODE_PUSH_ROOT(MdPush);
