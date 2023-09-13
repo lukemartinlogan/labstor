@@ -546,10 +546,10 @@ struct GetBlobNameTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kGetBlobName;
     task_flags_.SetBits(TASK_LOW_LATENCY);
-    prio_ = TaskPrio::kLowLatency;
     domain_id_ = domain_id;
 
     // Custom
@@ -906,6 +906,7 @@ struct DestroyBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kDestroyBlob;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -974,6 +975,7 @@ struct ReorganizeBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kReorganizeBlob;
     task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET);

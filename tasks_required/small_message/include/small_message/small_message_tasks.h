@@ -187,6 +187,7 @@ struct IoTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 3;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kIo;
     task_flags_.SetBits(0);

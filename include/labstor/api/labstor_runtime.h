@@ -71,10 +71,11 @@ class Runtime : public ConfigurationManager {
     LABSTOR_CLIENT->Create(server_config_path, "", true);
     HERMES_THREAD_MODEL->SetThreadModel(hshm::ThreadType::kPthread);
     work_orchestrator_.ServerInit(&server_config_, queue_manager_);
-    auto admin_task = hipc::make_uptr<Admin::CreateTaskStateTask>();
+    hipc::mptr<Admin::CreateTaskStateTask> admin_task;
 
     // Create the admin library
     LABSTOR_CLIENT->MakeTaskStateId();
+    admin_task = hipc::make_mptr<Admin::CreateTaskStateTask>();
     task_registry_.RegisterTaskLib("labstor_admin");
     task_registry_.CreateTaskState(
         "labstor_admin",
@@ -84,6 +85,7 @@ class Runtime : public ConfigurationManager {
 
     // Create the process queue
     LABSTOR_CLIENT->MakeTaskStateId();
+    admin_task = hipc::make_mptr<Admin::CreateTaskStateTask>();
     task_registry_.RegisterTaskLib("proc_queue");
     task_registry_.CreateTaskState(
         "proc_queue",
@@ -93,6 +95,7 @@ class Runtime : public ConfigurationManager {
 
     // Create the work orchestrator queue scheduling library
     TaskStateId queue_sched_id = LABSTOR_CLIENT->MakeTaskStateId();
+    admin_task = hipc::make_mptr<Admin::CreateTaskStateTask>();
     task_registry_.RegisterTaskLib("worch_queue_round_robin");
     task_registry_.CreateTaskState(
         "worch_queue_round_robin",
@@ -102,6 +105,7 @@ class Runtime : public ConfigurationManager {
 
     // Create the work orchestrator process scheduling library
     TaskStateId proc_sched_id = LABSTOR_CLIENT->MakeTaskStateId();
+    admin_task = hipc::make_mptr<Admin::CreateTaskStateTask>();
     task_registry_.RegisterTaskLib("worch_proc_round_robin");
     task_registry_.CreateTaskState(
         "worch_proc_round_robin",

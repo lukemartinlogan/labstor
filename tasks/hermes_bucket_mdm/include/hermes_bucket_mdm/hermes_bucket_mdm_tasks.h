@@ -112,6 +112,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kPutBlob;
     task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET);
@@ -198,6 +199,7 @@ struct AppendBlobSchemaTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = tag_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kAppendBlobSchema;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -265,6 +267,7 @@ struct AppendBlobTask : public Task, TaskFlags<TF_LOCAL> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = tag_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kAppendBlob;
     task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET | TASK_DATA_OWNER | TASK_UNORDERED);
@@ -321,6 +324,7 @@ struct GetOrCreateTagTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = std::hash<hshm::charbuf>{}(tag_name);
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kGetOrCreateTag;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -380,6 +384,7 @@ struct GetTagIdTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = std::hash<hshm::charbuf>{}(tag_name);
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kGetTagId;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -435,6 +440,7 @@ struct GetTagNameTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = tag_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kGetTagName;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -492,6 +498,7 @@ struct RenameTagTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = tag_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kRenameTag;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -556,6 +563,7 @@ struct DestroyTagTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = tag_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kDestroyTag;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -606,6 +614,7 @@ struct TagAddBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = tag_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kTagAddBlob;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -657,6 +666,7 @@ struct TagRemoveBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = tag_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kTagRemoveBlob;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -715,6 +725,7 @@ struct TagClearBlobsTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = tag_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kTagClearBlobs;
     task_flags_.SetBits(TASK_LOW_LATENCY);

@@ -104,6 +104,7 @@ struct TypedPushTask : public Task, TaskFlags<TF_LOCAL> {
     hshm::NodeThreadId tid;
     task_node_ = task_node;
     lane_hash_ = tid.bits_.tid_ + tid.bits_.pid_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kPush;
     task_flags_.SetBits(TASK_DATA_OWNER);
