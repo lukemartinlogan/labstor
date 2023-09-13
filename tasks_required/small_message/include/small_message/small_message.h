@@ -27,8 +27,7 @@ class Client : public TaskLibClient {
     QueueManagerInfo &qm = LABSTOR_CLIENT->server_config_.queue_manager_;
     std::vector<PriorityInfo> queue_info = {
         {1, 1, qm.queue_depth_, 0},
-        {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_UNORDERED},
-        {1, qm.max_lanes_, qm.queue_depth_, QUEUE_LONG_RUNNING},
+        {1, 1, qm.queue_depth_, QUEUE_LONG_RUNNING},
         {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_LOW_LATENCY}
     };
     id_ = LABSTOR_ADMIN->CreateTaskStateRoot<ConstructTask>(
@@ -50,7 +49,7 @@ class Client : public TaskLibClient {
     auto *task = LABSTOR_CLIENT->NewTask<MdTask>(
         p,
         task_node, domain_id, id_);
-    queue->Emplace(TaskPrio::kUnordered, 3, p);
+    queue->Emplace(TaskPrio::kLowLatency, 3, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncMd);

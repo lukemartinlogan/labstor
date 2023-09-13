@@ -20,6 +20,7 @@ namespace labstor {
 struct WorkEntry {
   u32 prio_;
   u32 lane_id_;
+  u32 count_;
   Lane *lane_;
   LaneGroup *group_;
   MultiQueue *queue_;
@@ -34,6 +35,7 @@ struct WorkEntry {
   : prio_(prio), lane_id_(lane_id), queue_(queue) {
     group_ = &queue->GetGroup(prio);
     lane_ = &queue->GetLane(*group_, lane_id);
+    count_ = 0;
   }
 
   /** Copy constructor */
@@ -258,7 +260,9 @@ class Worker {
   void Run();
 
   HSHM_ALWAYS_INLINE
-  bool CheckTaskGroup(Task *task, TaskState *exec, TaskNode node, const bool &is_remote) {
+  bool CheckTaskGroup(Task *task, TaskState *exec,
+                      u32 lane_id,
+                      TaskNode node, const bool &is_remote) {
     if (is_remote || task->IsStarted()) {
       return true;
     }
@@ -276,6 +280,10 @@ class Worker {
       ss << std::to_string((int)group_[i]);
     }
 #endif
+
+    // Ensure that concurrent requests are not serialized
+    LocalSerialize srl(group_);
+    srl << lane_id;
 
     auto it = group_map_.find(group_);
     if (it == group_map_.end()) {
@@ -296,7 +304,8 @@ class Worker {
   }
 
   HSHM_ALWAYS_INLINE
-  void RemoveTaskGroup(Task *task, TaskState *exec, const bool &is_remote) {
+  void RemoveTaskGroup(Task *task, TaskState *exec,
+                       u32 lane_id, const bool &is_remote) {
     if (is_remote) {
       return;
     }
@@ -314,6 +323,9 @@ class Worker {
       ss << std::to_string((int)group_[i]);
     }
 #endif
+    // Ensure that concurrent requests are not serialized
+    LocalSerialize srl(group_);
+    srl << lane_id;
 
     TaskNode &node_cmp = group_map_[group_];
     if (node_cmp.node_depth_ == 0) {
@@ -347,7 +359,7 @@ class Worker {
     }
   }
 
-  void PollGrouped(Lane *lane);
+  void PollGrouped(WorkEntry &entry);
 };
 
 }  // namespace labstor

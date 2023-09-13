@@ -32,33 +32,46 @@ struct LaneGroup : public PriorityInfo {
   hipc::ShmArchive<hipc::vector<Lane>> lanes_;  /**< The lanes of the queue */
 
   /** Default constructor */
+  HSHM_ALWAYS_INLINE
   LaneGroup() = default;
 
   /** Set priority info */
+  HSHM_ALWAYS_INLINE
   LaneGroup(const PriorityInfo &priority) {
     max_lanes_ = priority.max_lanes_;
     num_lanes_ = priority.num_lanes_;
     num_scheduled_ = 0;
     depth_ = priority.depth_;
     flags_ = priority.flags_;
+    // prio_ is set externally
   }
 
   /** Copy constructor. Should never actually be called. */
+  HSHM_ALWAYS_INLINE
   LaneGroup(const LaneGroup &priority) {
     max_lanes_ = priority.max_lanes_;
     num_lanes_ = priority.num_lanes_;
     num_scheduled_ = priority.num_scheduled_;
     depth_ = priority.depth_;
     flags_ = priority.flags_;
+    // prio_ is set externally
   }
 
   /** Move constructor. Should never actually be called. */
+  HSHM_ALWAYS_INLINE
   LaneGroup(LaneGroup &&priority) noexcept {
-      max_lanes_ = priority.max_lanes_;
-      num_lanes_ = priority.num_lanes_;
-      num_scheduled_ = priority.num_scheduled_;
-      depth_ = priority.depth_;
-      flags_ = priority.flags_;
+    max_lanes_ = priority.max_lanes_;
+    num_lanes_ = priority.num_lanes_;
+    num_scheduled_ = priority.num_scheduled_;
+    depth_ = priority.depth_;
+    flags_ = priority.flags_;
+    // prio_ is set externally
+  }
+
+  /** Check if this group is long-running or ADMIN */
+  HSHM_ALWAYS_INLINE
+  bool IsLowPriority() {
+    return flags_.Any(QUEUE_LONG_RUNNING) || prio_ == 0;
   }
 };
 
@@ -177,11 +190,13 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
   }
 
   /** Check if the list is empty */
+  HSHM_ALWAYS_INLINE
   bool IsNull() const {
     return (*groups_).IsNull();
   }
 
   /** Sets this list as empty */
+  HSHM_ALWAYS_INLINE
   void SetNull() {}
 
   /**====================================

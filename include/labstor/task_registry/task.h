@@ -215,9 +215,8 @@ struct TaskFlags : public IsTask {
 class TaskPrio {
  public:
   TASK_PRIO_T kAdmin = 0;
-  TASK_PRIO_T kUnordered = 1;
-  TASK_PRIO_T kLongRunning = 2;
-  TASK_PRIO_T kLowLatency = 3;
+  TASK_PRIO_T kLongRunning = 1;
+  TASK_PRIO_T kLowLatency = 2;
 };
 
 /** A generic task base class */

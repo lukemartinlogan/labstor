@@ -118,10 +118,10 @@ struct PushTask : public Task, TaskFlags<TF_LOCAL> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
-    prio_ = TaskPrio::kAdmin;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kPush;
-    task_flags_.SetBits(0);
+    task_flags_.SetBits(TASK_LOW_LATENCY);
     domain_id_ = domain_id;
 
     // Custom params

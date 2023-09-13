@@ -97,7 +97,7 @@ struct AllocTask : public Task, TaskFlags<TF_LOCAL> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
-    prio_ = TaskPrio::kUnordered;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kAlloc;
     task_flags_.SetBits(TASK_UNORDERED);
@@ -136,7 +136,7 @@ struct FreeTask : public Task, TaskFlags<TF_LOCAL> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
-    prio_ = TaskPrio::kUnordered;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kFree;
     task_flags_.SetBits(0);
@@ -180,7 +180,7 @@ struct WriteTask : public Task, TaskFlags<TF_LOCAL> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
-    prio_ = TaskPrio::kUnordered;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kWrite;
     task_flags_.SetBits(TASK_UNORDERED);
@@ -223,7 +223,7 @@ struct ReadTask : public Task, TaskFlags<TF_LOCAL> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
-    prio_ = TaskPrio::kUnordered;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kRead;
     task_flags_.SetBits(TASK_UNORDERED);
@@ -297,7 +297,7 @@ struct UpdateCapacityTask : public Task, TaskFlags<TF_LOCAL> {
                      ssize_t diff) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
-    prio_ = TaskPrio::kUnordered;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kUpdateCapacity;
     task_flags_.SetBits(TASK_FIRE_AND_FORGET | TASK_UNORDERED);

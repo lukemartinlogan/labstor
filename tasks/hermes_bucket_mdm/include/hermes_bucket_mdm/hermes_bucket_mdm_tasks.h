@@ -333,8 +333,8 @@ struct GetOrCreateTagTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Custom params
     blob_owner_ = blob_owner;
     backend_size_ = backend_size;
-    HSHM_MAKE_AR(tag_name_, LABSTOR_CLIENT->main_alloc_, tag_name)
-    HSHM_MAKE_AR(traits_, LABSTOR_CLIENT->main_alloc_, traits)
+    HSHM_MAKE_AR(tag_name_, alloc, tag_name)
+    HSHM_MAKE_AR(traits_, alloc, traits)
   }
 
   /** Destructor */
@@ -391,7 +391,7 @@ struct GetTagIdTask : public Task, TaskFlags<TF_SRL_SYM> {
     domain_id_ = domain_id;
 
     // Custom params
-    HSHM_MAKE_AR(tag_name_, LABSTOR_CLIENT->main_alloc_, tag_name)
+    HSHM_MAKE_AR(tag_name_, alloc, tag_name)
   }
 
   /** Destructor */
@@ -506,7 +506,7 @@ struct RenameTagTask : public Task, TaskFlags<TF_SRL_SYM> {
 
     // Custom params
     tag_id_ = tag_id;
-    HSHM_MAKE_AR(tag_name_, LABSTOR_CLIENT->main_alloc_, tag_name)
+    HSHM_MAKE_AR(tag_name_, alloc, tag_name)
   }
 
   /** Destructor */

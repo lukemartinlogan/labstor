@@ -49,8 +49,7 @@ class QueueManagerRuntime : public QueueManager {
     });
     CreateQueue(process_queue_, {
         {1, 1, qm.queue_depth_, QUEUE_UNORDERED},
-        {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_UNORDERED},
-        {1, qm.max_lanes_, qm.queue_depth_, QUEUE_LONG_RUNNING},
+        {1, 1, qm.queue_depth_, QUEUE_LONG_RUNNING},
         {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_LOW_LATENCY}
     });
   }

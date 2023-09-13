@@ -30,12 +30,19 @@ void Worker::Run() {
   if (relinquish_queues_.size() > 0) {
     _RelinquishQueues();
   }
-  for (WorkEntry &entry : work_queue_) {
-    PollGrouped(entry.lane_);
+  for (WorkEntry &work_entry : work_queue_) {
+    if (!work_entry.lane_->flags_.Any(QUEUE_LOW_LATENCY)) {
+      work_entry.count_ += 1;
+      if (work_entry.count_ % 4096 != 0) {
+        continue;
+      }
+    }
+    PollGrouped(work_entry);
   }
 }
 
-void Worker::PollGrouped(Lane *lane) {
+void Worker::PollGrouped(WorkEntry &work_entry) {
+  Lane *lane = work_entry.lane_;
   Task *task;
   LaneData *entry;
   int off = 0;
@@ -59,14 +66,8 @@ void Worker::PollGrouped(Lane *lane) {
       continue;
     }
     // Attempt to run the task if it's ready and runnable
-//    if (!task->IsMarked()) {
-//      HILOG(kDebug, "(node {}) Popped task: task_node={} task_state={} state_name={} lane={} queue={} worker={}",
-//            LABSTOR_CLIENT->node_id_, task->task_node_,
-//            task->task_state_, exec->name_, lane_id, queue->id_, id_);
-//      task->SetMarked();
-//    }
     bool is_remote = task->domain_id_.IsRemote(LABSTOR_RPC->GetNumHosts(), LABSTOR_CLIENT->node_id_);
-    if (!task->IsRunDisabled() && CheckTaskGroup(task, exec, task->task_node_, is_remote)) {
+    if (!task->IsRunDisabled() && CheckTaskGroup(task, exec, work_entry.lane_id_, task->task_node_, is_remote)) {
       // Execute or schedule task
       if (is_remote) {
         auto ids = LABSTOR_RUNTIME->ResolveDomainId(task->domain_id_);
@@ -83,12 +84,8 @@ void Worker::PollGrouped(Lane *lane) {
 //      HILOG(kDebug, "(node {}) Ending task: task_node={} task_state={} lane={} queue={} worker={}",
 //            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, lane_id, queue->id_, id_);
       entry->complete_ = true;
-      RemoveTaskGroup(task, exec, is_remote);
+      RemoveTaskGroup(task, exec, work_entry.lane_id_, is_remote);
       EndTask(lane, task, off);
-//    } else if ((task->IsUnordered() || queue->IsUnordered()) && off == 0) {
-//      LaneData data;
-//      queue->Pop(lane_id, data);
-//      queue->Emplace(lane_id, data);
     } else {
       off += 1;
     }

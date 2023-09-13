@@ -116,7 +116,7 @@ struct GetOrCreateBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
 
     // Custom
     tag_id_ = tag_id;
-    HSHM_MAKE_AR(blob_name_, LABSTOR_CLIENT->main_alloc_, blob_name)
+    HSHM_MAKE_AR(blob_name_, alloc, blob_name)
   }
 
   /** Destructor */
@@ -206,7 +206,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     // Custom params
     tag_id_ = tag_id;
     HILOG(kDebug, "Setting blob name {}", blob_name.str());
-    HSHM_MAKE_AR(blob_name_, LABSTOR_CLIENT->main_alloc_, blob_name);
+    HSHM_MAKE_AR(blob_name_, alloc, blob_name);
     blob_id_ = blob_id;
     blob_off_ = blob_off;
     data_size_ = data_size;
@@ -492,7 +492,7 @@ struct GetBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
 
     // Custom
     tag_id_ = tag_id;
-    HSHM_MAKE_AR(blob_name_, LABSTOR_CLIENT->main_alloc_, blob_name)
+    HSHM_MAKE_AR(blob_name_, alloc, blob_name)
   }
 
   /** Destructor */
@@ -555,7 +555,7 @@ struct GetBlobNameTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Custom
     tag_id_ = tag_id;
     blob_id_ = blob_id;
-    HSHM_MAKE_AR0(blob_name_, LABSTOR_CLIENT->main_alloc_)
+    HSHM_MAKE_AR0(blob_name_, alloc)
   }
 
   /** Destructor */
@@ -726,7 +726,7 @@ struct GetBlobBuffersTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Custom
     tag_id_ = tag_id;
     blob_id_ = blob_id;
-    HSHM_MAKE_AR0(buffers_, LABSTOR_CLIENT->main_alloc_)
+    HSHM_MAKE_AR0(buffers_, alloc)
   }
 
   /** Destructor */
@@ -791,7 +791,7 @@ struct RenameBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Custom
     tag_id_ = tag_id;
     blob_id_ = blob_id;
-    HSHM_MAKE_AR(new_blob_name_, LABSTOR_CLIENT->main_alloc_, new_blob_name)
+    HSHM_MAKE_AR(new_blob_name_, alloc, new_blob_name)
   }
 
   /** Destructor */

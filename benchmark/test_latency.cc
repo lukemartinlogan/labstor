@@ -266,8 +266,8 @@ TEST_CASE("TestRoundTripLatency") {
   ProcessAffiner::SetCpuAffinity(pid, 8);
 
   t.Resume();
-  // size_t ops = (1 << 20);
-  size_t ops = 1024;
+  size_t ops = (1 << 20);
+  // size_t ops = 1024;
   for (size_t i = 0; i < ops; ++i) {
     client.MdPushRoot(labstor::DomainId::GetLocal());
   }
@@ -286,7 +286,7 @@ TEST_CASE("TestHermesGetBlobIdLatency") {
   hermes::Bucket bkt = HERMES_FILESYSTEM_API->Open("/home/lukemartinlogan/hi.txt");
 
   t.Resume();
-  size_t ops = 1024;
+  size_t ops = (1 << 20);
   hermes::Context ctx;
   std::string data(ctx.page_size_, 0);
   for (size_t i = 0; i < ops; ++i) {
