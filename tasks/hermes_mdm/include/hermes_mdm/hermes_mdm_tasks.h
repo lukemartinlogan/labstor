@@ -47,12 +47,10 @@ struct ConstructTask : public CreateTaskStateTask {
                 const DomainId &domain_id,
                 const std::string &state_name,
                 const TaskStateId &id,
-                u32 max_lanes, u32 num_lanes,
-                u32 depth, bitfield32_t flags,
+                const std::vector<PriorityInfo> &queue_info,
                 const std::string &server_config_path = "")
       : CreateTaskStateTask(alloc, task_node, domain_id, state_name,
-                            "hermes_mdm", id, max_lanes,
-                            num_lanes, depth, flags) {
+                            "hermes_mdm", id, queue_info) {
     // Custom params
     HSHM_MAKE_AR(server_config_path_, alloc, server_config_path);
   }

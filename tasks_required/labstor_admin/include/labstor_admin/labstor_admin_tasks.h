@@ -33,6 +33,7 @@ struct RegisterTaskLibTaskTempl : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
+    prio_ = TaskPrio::kAdmin;
     task_state_ = LABSTOR_QM_CLIENT->admin_task_state_;
     if constexpr(method == 0)
     {
@@ -106,6 +107,7 @@ struct GetOrCreateTaskStateIdTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
+    prio_ = TaskPrio::kAdmin;
     task_state_ = LABSTOR_QM_CLIENT->admin_task_state_;
     method_ = Method::kGetOrCreateTaskStateId;
     task_flags_.SetBits(0);
@@ -143,10 +145,7 @@ struct GetOrCreateTaskStateIdTask : public Task, TaskFlags<TF_SRL_SYM> {
 struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
   IN hipc::ShmArchive<hipc::string> lib_name_;
   IN hipc::ShmArchive<hipc::string> state_name_;
-  IN u32 queue_max_lanes_;
-  IN u32 queue_num_lanes_;
-  IN u32 queue_depth_;
-  IN bitfield32_t queue_flags_;
+  IN hipc::ShmArchive<hipc::vector<PriorityInfo>> queue_info_;
   INOUT TaskStateId id_;
   TEMP int phase_ = 0;
   TEMP GetOrCreateTaskStateIdTask *get_id_task_;
@@ -163,11 +162,11 @@ struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
                       const std::string &state_name,
                       const std::string &lib_name,
                       const TaskStateId &id,
-                      u32 max_lanes, u32 num_lanes,
-                      u32 depth, bitfield32_t flags) : Task(alloc) {
+                      const std::vector<PriorityInfo> &queue_info) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
+    prio_ = TaskPrio::kAdmin;
     task_state_ = LABSTOR_QM_CLIENT->admin_task_state_;
     method_ = Method::kCreateTaskState;
     task_flags_.SetBits(0);
@@ -176,11 +175,15 @@ struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
     // Initialize
     HSHM_MAKE_AR(state_name_, alloc, state_name);
     HSHM_MAKE_AR(lib_name_, alloc, lib_name);
+    HSHM_MAKE_AR(queue_info_, alloc, queue_info);
     id_ = id;
-    queue_max_lanes_ = max_lanes;
-    queue_num_lanes_ = num_lanes;
-    queue_depth_ = depth;
-    queue_flags_ = flags;
+  }
+
+  /** Destructor */
+  ~CreateTaskStateTask() {
+    HSHM_DESTROY_AR(state_name_);
+    HSHM_DESTROY_AR(lib_name_);
+    HSHM_DESTROY_AR(queue_info_);
   }
 
   /** Replication (does nothing) */
@@ -195,8 +198,7 @@ struct CreateTaskStateTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar(lib_name_, state_name_, id_, queue_max_lanes_, queue_num_lanes_,
-       queue_depth_, queue_flags_, phase_);
+    ar(lib_name_, state_name_, id_, queue_info_, phase_);
   }
 
   /** (De)serialize message return */
@@ -232,6 +234,7 @@ struct GetTaskStateIdTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
+    prio_ = TaskPrio::kAdmin;
     task_state_ = LABSTOR_QM_CLIENT->admin_task_state_;
     method_ = Method::kGetTaskStateId;
     task_flags_.SetBits(0);
@@ -282,6 +285,7 @@ struct DestroyTaskStateTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
+    prio_ = TaskPrio::kAdmin;
     task_state_ = LABSTOR_QM_CLIENT->admin_task_state_;
     method_ = Method::kDestroyTaskState;
     task_flags_.SetBits(0);
@@ -323,6 +327,7 @@ struct StopRuntimeTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
+    prio_ = TaskPrio::kAdmin;
     task_state_ = LABSTOR_QM_CLIENT->admin_task_state_;
     method_ = Method::kStopRuntime;
     task_flags_.SetBits(TASK_FIRE_AND_FORGET);
@@ -365,6 +370,7 @@ struct SetWorkOrchestratorPolicyTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
+    prio_ = TaskPrio::kAdmin;
     task_state_ = LABSTOR_QM_CLIENT->admin_task_state_;
     if constexpr(method == 0)
     {

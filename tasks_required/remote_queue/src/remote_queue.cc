@@ -340,7 +340,7 @@ class Server : public TaskLib {
     orig_task->UnsetStarted();
     orig_task->UnsetMarked();
     orig_task->UnsetDataOwner();
-    queue->Emplace(orig_task->lane_hash_, p);
+    queue->Emplace(orig_task->prio_, orig_task->lane_hash_, p);
     HILOG(kDebug,
           "(node {}) Executing task (task_node={}, task_state={}/{}, state_name={}, method={}, size={}, lane_hash={})",
           LABSTOR_CLIENT->node_id_,

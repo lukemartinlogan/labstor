@@ -32,9 +32,9 @@ class QueueManagerRuntime : public QueueManager {
   void ServerInit(hipc::Allocator *alloc, u32 node_id, ServerConfig *config, QueueManagerShm &shm) {
     config_ = config;
     Init(node_id);
-    auto &qm_conf = config_->queue_manager_;
+    QueueManagerInfo &qm = config_->queue_manager_;
     // Initialize ticket queue (ticket 0 is for admin queue)
-    max_queues_ = qm_conf.max_queues_;
+    max_queues_ = qm.max_queues_;
     HSHM_MAKE_AR(shm.tickets_, alloc, max_queues_)
     for (u64 i = 1; i <= max_queues_; ++i) {
       shm.tickets_->emplace(i);
@@ -44,22 +44,19 @@ class QueueManagerRuntime : public QueueManager {
     queue_map_ = shm.queue_map_.get();
     queue_map_->resize(max_queues_);
     // Create the admin queue
-    CreateQueue(admin_queue_,
-                1,
-                1,
-                qm_conf.queue_depth_,
-                bitfield32_t(QUEUE_UNORDERED));
-    CreateQueue(process_queue_,
-                qm_conf.max_lanes_,
-                qm_conf.max_lanes_,
-                qm_conf.queue_depth_,
-                bitfield32_t(0));
+    CreateQueue(admin_queue_, {
+      {1, 1, qm.queue_depth_, QUEUE_UNORDERED}
+    });
+    CreateQueue(process_queue_, {
+        {1, 1, qm.queue_depth_, QUEUE_UNORDERED},
+        {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_UNORDERED},
+        {1, qm.max_lanes_, qm.queue_depth_, QUEUE_LONG_RUNNING},
+        {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_LOW_LATENCY}
+    });
   }
 
   /** Create a new queue (with pre-allocated ID) in the map */
-  void CreateQueue(const QueueId &id,
-                   u32 max_lanes, u32 num_lanes,
-                   u32 depth, bitfield32_t flags) {
+  void CreateQueue(const QueueId &id, const std::vector<PriorityInfo> &queue_info) {
     MultiQueue *queue = GetQueue(id);
     if (id.IsNull()) {
       HILOG(kDebug, "Cannot create null queue {}", id);
@@ -69,9 +66,8 @@ class QueueManagerRuntime : public QueueManager {
       HILOG(kDebug, "Queue {} already exists", id);
       return;
     }
-    HILOG(kDebug, "Creating queue {} with {} lanes and flags {}", id, num_lanes, flags.bits_);
-    queue_map_->replace(queue_map_->begin() + id.unique_,
-                        id, max_lanes, num_lanes, depth, flags);
+    HILOG(kDebug, "Creating queue {}", id);
+    queue_map_->replace(queue_map_->begin() + id.unique_, id, queue_info);
   }
 
   /**

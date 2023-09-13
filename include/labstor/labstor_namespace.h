@@ -14,11 +14,14 @@ using labstor::BinaryInputArchive;
 using labstor::Task;
 using labstor::TaskPointer;
 using labstor::MultiQueue;
+using labstor::PriorityInfo;
 using labstor::Task;
 using labstor::TaskFlags;
 using labstor::DataTransfer;
 using labstor::TaskLib;
 using labstor::TaskLibClient;
+using labstor::config::QueueManagerInfo;
+using labstor::TaskPrio;
 
 using hshm::RwLock;
 using hshm::Mutex;

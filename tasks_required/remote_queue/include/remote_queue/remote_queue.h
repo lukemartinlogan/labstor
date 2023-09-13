@@ -31,12 +31,15 @@ class Client : public TaskLibClient {
                              const std::string &state_name,
                              const TaskStateId &state_id) {
     id_ = state_id;
+    QueueManagerInfo &qm = LABSTOR_CLIENT->server_config_.queue_manager_;
+    std::vector<PriorityInfo> queue_info = {
+        {1, 1, qm.queue_depth_, 0},
+        {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_UNORDERED},
+        {1, qm.max_lanes_, qm.queue_depth_, QUEUE_LONG_RUNNING},
+        {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_LOW_LATENCY}
+    };
     return LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
-        task_node, domain_id, state_name, id_,
-        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-        LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
-        bitfield32_t(QUEUE_UNORDERED));
+        task_node, domain_id, state_name, id_, queue_info);
   }
 
   /** Create a remote_queue */
@@ -82,7 +85,7 @@ class Client : public TaskLibClient {
     LABSTOR_CLIENT->NewTask<PushTask>(
         p, orig_task->task_node_ + 1, DomainId::GetLocal(), id_,
         domain_ids, orig_task, exec, orig_task->method_, xfer);
-    queue->Emplace(orig_task->lane_hash_, p);
+    queue->Emplace(orig_task->prio_, orig_task->lane_hash_, p);
   }
   LABSTOR_TASK_NODE_ROOT(Custom);
 
@@ -93,7 +96,7 @@ class Client : public TaskLibClient {
 //    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
 //    auto *task = LABSTOR_CLIENT->NewTask<AcceptTask>(
 //        p, TaskNode::GetNull(), DomainId::GetLocal(), id_);
-//    queue->Emplace(0, p);
+//    queue->Emplace(0, 0, p);
 //    return task;
 //  }
 };

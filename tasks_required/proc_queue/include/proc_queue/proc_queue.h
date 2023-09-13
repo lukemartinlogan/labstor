@@ -27,12 +27,15 @@ class Client : public TaskLibClient {
                                  const DomainId &domain_id,
                                  const std::string &state_name) {
     id_ = TaskStateId::GetNull();
+    QueueManagerInfo &qm = LABSTOR_CLIENT->server_config_.queue_manager_;
+    std::vector<PriorityInfo> queue_info = {
+        {1, 1, qm.queue_depth_, 0},
+        {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_UNORDERED},
+        {1, qm.max_lanes_, qm.queue_depth_, QUEUE_LONG_RUNNING},
+        {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_LOW_LATENCY}
+    };
     return LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
-        task_node, domain_id, state_name, id_,
-        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-        LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
-        bitfield32_t(0));
+        task_node, domain_id, state_name, id_, queue_info);
   }
   LABSTOR_TASK_NODE_ROOT(AsyncCreate);
   template<typename ...Args>
@@ -70,7 +73,7 @@ class Client : public TaskLibClient {
         LABSTOR_CLIENT->AllocTask<labpq::TypedPushTask<TaskT>>();
     AsyncPushConstruct(push_task.ptr_, task_node, domain_id, subtask);
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    queue->Emplace(push_task->lane_hash_, push_task.shm_);
+    queue->Emplace(push_task->prio_, push_task->lane_hash_, push_task.shm_);
     return push_task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncPush);

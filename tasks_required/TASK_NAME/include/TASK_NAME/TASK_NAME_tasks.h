@@ -35,11 +35,9 @@ struct ConstructTask : public CreateTaskStateTask {
                 const DomainId &domain_id,
                 const std::string &state_name,
                 const TaskStateId &id,
-                u32 max_lanes, u32 num_lanes,
-                u32 depth, bitfield32_t flags)
+                const std::vector<PriorityInfo> &queue_info)
       : CreateTaskStateTask(alloc, task_node, domain_id, state_name,
-                            "TASK_NAME", id, max_lanes,
-                            num_lanes, depth, flags) {
+                            "TASK_NAME", id, queue_info) {
     // Custom params
   }
 
@@ -95,6 +93,7 @@ struct CustomTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
+    prio_ = TaskPrio::kAdmin;
     task_state_ = state_id;
     method_ = Method::kCustom;
     task_flags_.SetBits(0);

@@ -101,11 +101,8 @@ class Server : public TaskLib {
 
         // Create the task queue for the state
         QueueId qid(task->id_);
-        if (task->queue_max_lanes_ > 0) {
-          LABSTOR_QM_RUNTIME->CreateQueue(
-              qid, task->queue_max_lanes_, task->queue_num_lanes_,
-              task->queue_depth_, task->queue_flags_);
-        }
+        LABSTOR_QM_RUNTIME->CreateQueue(
+            qid, task->queue_info_->vec());
 
         // Begin creating the task state
         task->phase_ = 0;
@@ -154,7 +151,7 @@ class Server : public TaskLib {
     queue_sched_ = LABSTOR_CLIENT->NewTask<ScheduleTask>(
         p, task->task_node_, DomainId::GetLocal(), task->policy_id_);
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
     task->SetModuleComplete();
   }
 
@@ -169,7 +166,7 @@ class Server : public TaskLib {
     proc_sched_ = LABSTOR_CLIENT->NewTask<ScheduleTask>(
         p, task->task_node_, DomainId::GetLocal(), task->policy_id_);
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
     task->SetModuleComplete();
   }
 

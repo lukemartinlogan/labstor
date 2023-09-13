@@ -47,11 +47,9 @@ struct ConstructTask : public CreateTaskStateTask {
                 const DomainId &domain_id,
                 const std::string &state_name,
                 const TaskStateId &id,
-                u32 max_lanes, u32 num_lanes,
-                u32 depth, bitfield32_t flags)
+                const std::vector<PriorityInfo> &queue_info)
       : CreateTaskStateTask(alloc, task_node, domain_id, state_name,
-                            "hermes_blob_mdm", id, max_lanes,
-                            num_lanes, depth, flags) {
+                            "hermes_blob_mdm", id, queue_info) {
   }
 
   /** Create group */
@@ -110,6 +108,7 @@ struct GetOrCreateBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = std::hash<hshm::charbuf>{}(blob_name);
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kGetOrCreateBlobId;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -198,6 +197,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     HILOG(kDebug, "Beginning PUT task constructor")
     task_node_ = task_node;
     lane_hash_ = blob_id_.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kPutBlob;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -294,6 +294,7 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kGetBlob;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -365,6 +366,7 @@ struct TagBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kTagBlob;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -424,6 +426,7 @@ struct BlobHasTagTask : public Task, TaskFlags<TF_SRL_SYM> {
     task_node_ = task_node;
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kBlobHasTag;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -481,6 +484,7 @@ struct GetBlobIdTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = std::hash<hshm::charbuf>{}(blob_name);
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kGetBlobId;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -545,6 +549,7 @@ struct GetBlobNameTask : public Task, TaskFlags<TF_SRL_SYM> {
     task_state_ = state_id;
     method_ = Method::kGetBlobName;
     task_flags_.SetBits(TASK_LOW_LATENCY);
+    prio_ = TaskPrio::kLowLatency;
     domain_id_ = domain_id;
 
     // Custom
@@ -602,6 +607,7 @@ struct GetBlobSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kGetBlobSize;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -656,6 +662,7 @@ struct GetBlobScoreTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kGetBlobScore;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -710,6 +717,7 @@ struct GetBlobBuffersTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kGetBlobBuffers;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -774,6 +782,7 @@ struct RenameBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kRenameBlob;
     task_flags_.SetBits(TASK_LOW_LATENCY);
@@ -835,6 +844,7 @@ struct TruncateBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kTruncateBlob;
     task_flags_.SetBits(TASK_LOW_LATENCY);

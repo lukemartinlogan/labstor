@@ -30,7 +30,7 @@ class Client : public TaskLibClient {
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<RegisterTaskLibTask>(
         p, task_node, domain_id, lib_name);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncRegisterTaskLibrary);
@@ -51,7 +51,7 @@ class Client : public TaskLibClient {
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<DestroyTaskLibTask>(
         p, task_node, domain_id, lib_name);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncDestroyTaskLibrary);
@@ -72,7 +72,7 @@ class Client : public TaskLibClient {
     hipc::Pointer p;
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<CreateTaskStateT>(p, task_node, std::forward<Args>(args)...);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
     return task;
   }
   template<typename CreateTaskStateT, typename ...Args>
@@ -102,7 +102,7 @@ class Client : public TaskLibClient {
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<GetOrCreateTaskStateIdTask>(
         p, task_node, domain_id, state_name);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncGetOrCreateTaskStateId);
@@ -123,7 +123,7 @@ class Client : public TaskLibClient {
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<GetTaskStateIdTask>(
         p, task_node, domain_id, state_name);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncGetTaskStateId);
@@ -145,7 +145,7 @@ class Client : public TaskLibClient {
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<DestroyTaskStateTask>(
         p, task_node, domain_id, id);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncDestroyTaskState);
@@ -164,7 +164,7 @@ class Client : public TaskLibClient {
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     LABSTOR_CLIENT->NewTask<StopRuntimeTask>(
         p, task_node, domain_id);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
   }
   LABSTOR_TASK_NODE_ROOT(AsyncStopRuntime);
 
@@ -177,7 +177,7 @@ class Client : public TaskLibClient {
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<SetWorkOrchQueuePolicyTask>(
         p, task_node, domain_id, policy);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncSetWorkOrchQueuePolicy);
@@ -197,7 +197,7 @@ class Client : public TaskLibClient {
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<SetWorkOrchProcPolicyTask>(
         p, task_node, domain_id, policy);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncSetWorkOrchProcPolicy);

@@ -30,7 +30,7 @@ class Server : public TaskLib {
           task->ptr_->UnsetFireAndForget();
         }
         MultiQueue *real_queue = LABSTOR_CLIENT->GetQueue(QueueId(task->ptr_->task_state_));
-        real_queue->Emplace(task->ptr_->lane_hash_, task->subtask_);
+        real_queue->Emplace(task->ptr_->prio_, task->ptr_->lane_hash_, task->subtask_);
         task->phase_ = PushTaskPhase::kWaitSchedule;
       }
       case PushTaskPhase::kWaitSchedule: {

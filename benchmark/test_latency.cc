@@ -36,11 +36,6 @@ TEST_CASE("TestGetQueue") {
 
 /** Single-thread performance of allocating + freeing tasks */
 TEST_CASE("TestHshmAllocateFree") {
-  labstor::QueueId qid(0, 3);
-  auto queue = hipc::make_uptr<labstor::MultiQueue>(
-      qid, 16, 16, 256, hshm::bitfield32_t(0));
-
-
   hshm::Timer t;
   t.Resume();
   size_t ops = (1 << 20);
@@ -100,17 +95,21 @@ TEST_CASE("TestPointerQueueVecEmplacePop") {
 /** Single-thread performance of getting, emplacing, and popping a queue */
 TEST_CASE("TestHshmQueueEmplacePop") {
   labstor::QueueId qid(0, 3);
-  size_t ops = (1 << 20);
+  u32 ops = (1 << 20);
+  std::vector<PriorityInfo> queue_info = {
+      {16, 16, ops, 0}
+  };
   auto queue = hipc::make_uptr<labstor::MultiQueue>(
-      qid, 16, 16, ops, hshm::bitfield32_t(0));
+      qid, queue_info);
   labstor::LaneData entry;
   auto *task = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>(entry.p_);
 
   hshm::Timer t;
   t.Resume();
+  labstor::Lane &lane = queue->GetLane(0, 0);
   for (size_t i = 0; i < ops; ++i) {
-    queue->Emplace(0, entry);
-    queue->Pop(0, entry);
+    queue->Emplace(0, 0, entry);
+    lane.pop();
   }
   t.Pause();
 
@@ -121,14 +120,18 @@ TEST_CASE("TestHshmQueueEmplacePop") {
 /** Single-thread performance of getting a lane from a queue */
 TEST_CASE("TestHshmQueueGetLane") {
   labstor::QueueId qid(0, 3);
+  std::vector<PriorityInfo> queue_info = {
+      {16, 16, 256, 0}
+  };
   auto queue = hipc::make_uptr<labstor::MultiQueue>(
-      qid, 16, 16, 256, hshm::bitfield32_t(0));
+      qid, queue_info);
+  labstor::LaneGroup group = queue->GetGroup(0);
 
   hshm::Timer t;
   size_t ops = (1 << 20);
   t.Resume();
   for (size_t i = 0; i < ops; ++i) {
-    queue->GetLane(i % queue->num_lanes_);
+    queue->GetLane(0, i % group.num_lanes_);
   }
   t.Pause();
 
@@ -138,8 +141,12 @@ TEST_CASE("TestHshmQueueGetLane") {
 /** Single-thread performance of getting, emplacing, and popping a queue */
 TEST_CASE("TestHshmQueueAllocateEmplacePop") {
   labstor::QueueId qid(0, 3);
+  std::vector<PriorityInfo> queue_info = {
+      {16, 16, 256, 0}
+  };
   auto queue = hipc::make_uptr<labstor::MultiQueue>(
-      qid, 16, 16, 256, hshm::bitfield32_t(0));
+      qid, queue_info);
+  labstor::Lane &lane = queue->GetLane(0, 0);
 
   hshm::Timer t;
   size_t ops = (1 << 20);
@@ -147,8 +154,8 @@ TEST_CASE("TestHshmQueueAllocateEmplacePop") {
   for (size_t i = 0; i < ops; ++i) {
     labstor::LaneData entry;
     auto *task = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>(entry.p_);
-    queue->Emplace(0, entry);
-    queue->Pop(0, entry);
+    queue->Emplace(0, 0, entry);
+    lane.pop();
     LABSTOR_CLIENT->DelTask(task);
   }
   t.Pause();
@@ -194,18 +201,21 @@ TEST_CASE("TestSpawnJoinArgoThread") {
   HILOG(kInfo, "Latency: {} MOps", count / t.GetUsec());
 }
 
-void TestWorkerIterationLatency(int num_queues, int num_lanes) {
+void TestWorkerIterationLatency(u32 num_queues, u32 num_lanes) {
   LABSTOR_RUNTIME->Create();
 
   labstor::Worker worker(0);
   std::vector<hipc::uptr<labstor::MultiQueue>> queues;
   for (u32 i = 0; i < num_queues; ++i) {
     labstor::QueueId qid(0, i + 1);
+    std::vector<PriorityInfo> queue_info = {
+        {num_lanes, num_lanes, 256, 0}
+    };
     auto queue = hipc::make_uptr<labstor::MultiQueue>(
-        qid, num_lanes, num_lanes, 256, hshm::bitfield32_t(0));
+        qid, queue_info);
     queues.emplace_back(std::move(queue));
     for (u32 j = 0; j < num_lanes; ++j) {
-      worker.PollQueues({{j, queue.get()}});
+      worker.PollQueues({{0, j, queue.get()}});
     }
   }
 

@@ -22,10 +22,45 @@ struct LaneData {
   }
 };
 
-/** Descriptive information about a lane */
-
 /** Represents a lane tasks can be stored */
 typedef hipc::mpsc_queue<LaneData> Lane;
+
+/** Prioritization of different lanes in the queue */
+struct LaneGroup : public PriorityInfo {
+  u32 prio_;            /**< The priority of the lane group */
+  u32 num_scheduled_;   /**< The number of lanes currently scheduled on workers */
+  hipc::ShmArchive<hipc::vector<Lane>> lanes_;  /**< The lanes of the queue */
+
+  /** Default constructor */
+  LaneGroup() = default;
+
+  /** Set priority info */
+  LaneGroup(const PriorityInfo &priority) {
+    max_lanes_ = priority.max_lanes_;
+    num_lanes_ = priority.num_lanes_;
+    num_scheduled_ = 0;
+    depth_ = priority.depth_;
+    flags_ = priority.flags_;
+  }
+
+  /** Copy constructor. Should never actually be called. */
+  LaneGroup(const LaneGroup &priority) {
+    max_lanes_ = priority.max_lanes_;
+    num_lanes_ = priority.num_lanes_;
+    num_scheduled_ = priority.num_scheduled_;
+    depth_ = priority.depth_;
+    flags_ = priority.flags_;
+  }
+
+  /** Move constructor. Should never actually be called. */
+  LaneGroup(LaneGroup &&priority) noexcept {
+      max_lanes_ = priority.max_lanes_;
+      num_lanes_ = priority.num_lanes_;
+      num_scheduled_ = priority.num_scheduled_;
+      depth_ = priority.depth_;
+      flags_ = priority.flags_;
+  }
+};
 
 /** Represents the HSHM queue type */
 class Hshm {};
@@ -37,12 +72,8 @@ template<>
 struct MultiQueueT<Hshm> : public hipc::ShmContainer {
   SHM_CONTAINER_TEMPLATE((MultiQueueT), (MultiQueueT))
   QueueId id_;          /**< Globally unique ID of this queue */
-  bitfield32_t flags_;  /**< Scheduling hints for the queue */
-  u32 max_lanes_;       /**< Maximum number of lanes in the queue */
-  u32 num_lanes_;       /**< Current number of lanes in use */
-  u32 num_scheduled_;   /**< The number of lanes currently scheduled on workers */
-  u32 depth_;           /**< The maximum depth of individual lanes */
-  hipc::ShmArchive<hipc::vector<Lane>> lanes_;  /**< The lanes of the queue */
+  hipc::ShmArchive<hipc::vector<LaneGroup>> groups_;  /**< Divide the lanes into groups */
+  bitfield32_t flags_;  /**< Flags for the queue */
 
  public:
   /**====================================
@@ -57,20 +88,24 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
 
   /** SHM constructor. */
   explicit MultiQueueT(hipc::Allocator *alloc, const QueueId &id,
-                       u32 max_lanes, u32 num_lanes,
-                       u32 depth, bitfield32_t flags) {
+                       const std::vector<PriorityInfo> &prios) {
     shm_init_container(alloc);
     id_ = id;
-    max_lanes_ = max_lanes;
-    num_lanes_ = num_lanes;
-    depth_ = depth;
-    flags_ = flags;
-    HSHM_MAKE_AR0(lanes_, GetAllocator());
-    lanes_->reserve(max_lanes_);
-    for (u32 lane_id = 0; lane_id < num_lanes; ++lane_id) {
-      lanes_->emplace_back(depth);
-      Lane &lane = lanes_->back();
-      lane.flags_ = flags;
+    HSHM_MAKE_AR0(groups_, GetAllocator());
+    groups_->reserve(prios.size());
+    for (u32 prio = 0; prio < prios.size(); ++prio) {
+      const PriorityInfo &prio_info = prios[prio];
+      groups_->emplace_back(prio_info);
+      LaneGroup &lane_group = (*groups_)[prio];
+      // Initialize lanes
+      HSHM_MAKE_AR0(lane_group.lanes_, GetAllocator());
+      lane_group.lanes_->reserve(prio_info.max_lanes_);
+      lane_group.prio_ = prio;
+      for (u32 lane_id = 0; lane_id < lane_group.num_lanes_; ++lane_id) {
+        lane_group.lanes_->emplace_back(lane_group.depth_);
+        Lane &lane = lane_group.lanes_->back();
+        lane.flags_ = prio_info.flags_;
+      }
     }
     SetNull();
   }
@@ -97,7 +132,7 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
 
   /** SHM copy constructor + operator main */
   void shm_strong_copy_construct_and_op(const MultiQueueT &other) {
-    (*lanes_) = (*other.lanes_);
+    (*groups_) = (*other.groups_);
   }
 
   /**====================================
@@ -109,7 +144,7 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
               MultiQueueT &&other) noexcept {
     shm_init_container(alloc);
     if (GetAllocator() == other.GetAllocator()) {
-      (*lanes_) = std::move(*other.lanes_);
+      (*groups_) = std::move(*other.groups_);
       other.SetNull();
     } else {
       shm_strong_copy_construct_and_op(other);
@@ -122,7 +157,7 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
     if (this != &other) {
       shm_destroy();
       if (GetAllocator() == other.GetAllocator()) {
-        (*lanes_) = std::move(*other.lanes_);
+        (*groups_) = std::move(*other.groups_);
         other.SetNull();
       } else {
         shm_strong_copy_construct_and_op(other);
@@ -138,12 +173,12 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
 
   /** SHM destructor.  */
   void shm_destroy_main() {
-    (*lanes_).shm_destroy();
+    (*groups_).shm_destroy();
   }
 
   /** Check if the list is empty */
   bool IsNull() const {
-    return (*lanes_).IsNull();
+    return (*groups_).IsNull();
   }
 
   /** Sets this list as empty */
@@ -153,43 +188,36 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
    * Helpers
    * ===================================*/
 
-  /** Check if queue is unordered */
-  HSHM_ALWAYS_INLINE bool IsUnordered() {
-    return flags_.Any(QUEUE_UNORDERED);
+  /** Get the priority struct */
+  HSHM_ALWAYS_INLINE LaneGroup& GetGroup(u32 prio) {
+    return (*groups_)[prio];
   }
 
   /** Get a lane of the queue */
-  HSHM_ALWAYS_INLINE Lane& GetLane(u32 lane_id) {
-    return (*lanes_)[lane_id];
+  HSHM_ALWAYS_INLINE Lane& GetLane(u32 prio, u32 lane_id) {
+    return (*(*groups_)[prio].lanes_)[lane_id];
+  }
+
+  /** Get a lane of the queue */
+  HSHM_ALWAYS_INLINE Lane& GetLane(LaneGroup &lane_group, u32 lane_id) {
+    return (*lane_group.lanes_)[lane_id];
   }
 
   /** Emplace a SHM pointer to a task */
-  bool Emplace(u32 key, hipc::Pointer &p, bool complete = false) {
-    return Emplace(key, LaneData(p, complete));
+  HSHM_ALWAYS_INLINE
+  bool Emplace(u32 prio, u32 lane_hash, hipc::Pointer &p, bool complete = false) {
+    return Emplace(prio, lane_hash, LaneData(p, complete));
   }
 
   /** Emplace a SHM pointer to a task */
-  bool Emplace(u32 key, const LaneData &data) {
+  bool Emplace(u32 prio, u32 lane_hash, const LaneData &data) {
     if (IsEmplacePlugged()) {
       WaitForEmplacePlug();
     }
-    u32 lane_id = key % num_lanes_;
-    Lane &lane = GetLane(lane_id);
+    LaneGroup &lane_group = GetGroup(prio);
+    u32 lane_id = lane_hash % lane_group.num_lanes_;
+    Lane &lane = GetLane(lane_group, lane_id);
     hshm::qtok_t ret = lane.emplace(data);
-    return !ret.IsNull();
-  }
-
-  /** Pop a regular pointer to a task */
-  bool Pop(u32 lane_id, LaneData &data) {
-    Lane &lane = GetLane(lane_id);
-    hshm::qtok_t ret = lane.pop(data);
-    return !ret.IsNull();
-  }
-
-  /** Peek a pointer to a task */
-  bool Peek(u32 lane_id, LaneData *&entry, int off = 0) {
-    Lane &lane = GetLane(lane_id);
-    hshm::qtok_t ret = lane.peek(entry, off);
     return !ret.IsNull();
   }
 
@@ -198,49 +226,15 @@ struct MultiQueueT<Hshm> : public hipc::ShmContainer {
    * This assumes that PlugForResize and UnplugForResize are called externally.
    * */
   void Resize(u32 num_lanes) {
-    hipc::vector<Lane> *lanes = lanes_.get();
-    if (num_lanes > max_lanes_) {
-      num_lanes = max_lanes_;
-    }
-    if (num_lanes < num_lanes_) {
-      // Remove lanes
-      for (u32 lane_id = num_lanes; lane_id < num_lanes_; ++lane_id) {
-        lanes->erase(lanes->begin() + lane_id);
-      }
-    } else if (num_lanes > num_lanes_) {
-      // Add lanes
-      for (u32 lane_id = num_lanes_; lane_id < num_lanes; ++lane_id) {
-        lanes->emplace_back(depth_);
-      }
-    }
-    num_lanes_ = num_lanes;
   }
 
   /** Begin plugging the queue for resize */
   HSHM_ALWAYS_INLINE bool PlugForResize() {
-    // Mark this queue as QUEUE_RESIZE
-    if (!flags_.Any(QUEUE_RESIZE)) {
-      flags_.SetBits(QUEUE_RESIZE);
-    }
-    // Check if all lanes have been marked QUEUE_RESIZE
-    for (Lane &lane : *lanes_) {
-      if (!lane.flags_.Any(QUEUE_RESIZE)) {
-        return false;
-      }
-    }
     return true;
   }
 
   /** Begin plugging the queue for update tasks */
   HSHM_ALWAYS_INLINE bool PlugForUpdateTask() {
-    // Mark this queue as QUEUE_UPDATE
-    flags_.SetBits(QUEUE_UPDATE);
-    // Check if all lanes have been marked QUEUE_UPDATE
-    for (Lane &lane : *lanes_) {
-      if (!lane.flags_.Any(QUEUE_UPDATE)) {
-        return false;
-      }
-    }
     return true;
   }
 

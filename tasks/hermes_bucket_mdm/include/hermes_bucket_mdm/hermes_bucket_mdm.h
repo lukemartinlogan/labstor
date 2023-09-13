@@ -23,12 +23,15 @@ class Client : public TaskLibClient {
   void CreateRoot(const DomainId &domain_id,
                   const std::string &state_name) {
     id_ = TaskStateId::GetNull();
+    QueueManagerInfo &qm = LABSTOR_CLIENT->server_config_.queue_manager_;
+    std::vector<PriorityInfo> queue_info = {
+        {1, 1, qm.queue_depth_, 0},
+        {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_UNORDERED},
+        {1, qm.max_lanes_, qm.queue_depth_, QUEUE_LONG_RUNNING},
+        {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_LOW_LATENCY}
+    };
     id_ = LABSTOR_ADMIN->CreateTaskStateRoot<ConstructTask>(
-        domain_id, state_name, id_,
-        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-        LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
-        bitfield32_t(0));
+        domain_id, state_name, id_, queue_info);
     queue_id_ = QueueId(id_);
   }
 

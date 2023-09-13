@@ -37,12 +37,10 @@ struct ConstructTask : public CreateTaskStateTask {
                 const std::string &state_name,
                 const std::string &lib_name,
                 const TaskStateId &id,
-                u32 max_lanes, u32 num_lanes,
-                u32 depth, bitfield32_t flags,
+                const std::vector<PriorityInfo> &queue_info,
                 DeviceInfo &info)
       : CreateTaskStateTask(alloc, task_node, domain_id, state_name,
-                            lib_name, id, max_lanes,
-                            num_lanes, depth, flags) {
+                            lib_name, id, queue_info) {
     // Custom params
     info_ = info;
   }
@@ -99,9 +97,10 @@ struct AllocTask : public Task, TaskFlags<TF_LOCAL> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
+    prio_ = TaskPrio::kUnordered;
     task_state_ = state_id;
     method_ = Method::kAlloc;
-    task_flags_.SetBits(0);
+    task_flags_.SetBits(TASK_UNORDERED);
     domain_id_ = domain_id;
 
     // Free params
@@ -137,11 +136,12 @@ struct FreeTask : public Task, TaskFlags<TF_LOCAL> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
+    prio_ = TaskPrio::kUnordered;
     task_state_ = state_id;
     method_ = Method::kFree;
     task_flags_.SetBits(0);
     if (fire_and_forget) {
-      task_flags_.SetBits(TASK_FIRE_AND_FORGET);
+      task_flags_.SetBits(TASK_FIRE_AND_FORGET | TASK_UNORDERED);
     }
     domain_id_ = domain_id;
 
@@ -180,9 +180,10 @@ struct WriteTask : public Task, TaskFlags<TF_LOCAL> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
+    prio_ = TaskPrio::kUnordered;
     task_state_ = state_id;
     method_ = Method::kWrite;
-    task_flags_.SetBits(0);
+    task_flags_.SetBits(TASK_UNORDERED);
     domain_id_ = domain_id;
 
     // Free params
@@ -222,9 +223,10 @@ struct ReadTask : public Task, TaskFlags<TF_LOCAL> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
+    prio_ = TaskPrio::kUnordered;
     task_state_ = state_id;
     method_ = Method::kRead;
-    task_flags_.SetBits(0);
+    task_flags_.SetBits(TASK_UNORDERED);
     domain_id_ = domain_id;
 
     // Free params
@@ -260,6 +262,7 @@ struct MonitorTask : public Task, TaskFlags<TF_LOCAL> {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
+    prio_ = TaskPrio::kLongRunning;
     task_state_ = state_id;
     method_ = Method::kMonitor;
     task_flags_.SetBits(TASK_LONG_RUNNING);
@@ -294,10 +297,10 @@ struct UpdateCapacityTask : public Task, TaskFlags<TF_LOCAL> {
                      ssize_t diff) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
-    lane_hash_ = 0;
+    prio_ = TaskPrio::kUnordered;
     task_state_ = state_id;
     method_ = Method::kUpdateCapacity;
-    task_flags_.SetBits(TASK_FIRE_AND_FORGET);
+    task_flags_.SetBits(TASK_FIRE_AND_FORGET | TASK_UNORDERED);
     domain_id_ = domain_id;
 
     // Custom

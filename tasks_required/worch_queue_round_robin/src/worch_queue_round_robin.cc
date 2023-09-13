@@ -28,15 +28,17 @@ class Server : public TaskLib {
       if (queue.id_.IsNull()) {
         continue;
       }
-      for (u32 lane_id = queue.num_scheduled_; lane_id < queue.num_lanes_; ++lane_id) {
-        // NOTE(llogan): Assumes a minimum of two workers
-        HILOG(kDebug, "Scheduling the queue {} (lane {})", queue.id_, lane_id);
-        u32 worker_id = (count_ % (LABSTOR_WORK_ORCHESTRATOR->workers_.size() - 1)) + 1;
-        Worker &worker = LABSTOR_WORK_ORCHESTRATOR->workers_[worker_id];
-        worker.PollQueues({WorkEntry(lane_id, &queue)});
-        count_ += 1;
+      for (LaneGroup &lane_group : *queue.groups_) {
+        for (u32 lane_id = lane_group.num_scheduled_; lane_id < lane_group.num_lanes_; ++lane_id) {
+          // NOTE(llogan): Assumes a minimum of two workers, admin on worker 0.
+          HILOG(kDebug, "Scheduling the queue {} (lane {})", queue.id_, lane_id);
+          u32 worker_id = (count_ % (LABSTOR_WORK_ORCHESTRATOR->workers_.size() - 1)) + 1;
+          Worker &worker = LABSTOR_WORK_ORCHESTRATOR->workers_[worker_id];
+          worker.PollQueues({WorkEntry(lane_group.prio_, lane_id, &queue)});
+          count_ += 1;
+        }
+        lane_group.num_scheduled_ = lane_group.num_lanes_;
       }
-      queue.num_scheduled_ = queue.num_lanes_;
     }
   }
 

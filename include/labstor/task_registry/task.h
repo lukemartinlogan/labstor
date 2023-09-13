@@ -198,7 +198,7 @@ constexpr inline void CALL_REPLICA_END(T *task) {
   }
 }
 
-/** A generic task base class */
+/** Compile-time flags indicating task methods and operation support */
 template<u32 FLAGS>
 struct TaskFlags : public IsTask {
  public:
@@ -208,6 +208,18 @@ struct TaskFlags : public IsTask {
   TASK_FLAG_T REPLICA = FLAGS & TF_REPLICA;
 };
 
+/** The type of a compile-time task flag */
+#define TASK_PRIO_T constexpr inline static int
+
+/** Prioritization of tasks */
+class TaskPrio {
+ public:
+  TASK_PRIO_T kAdmin = 0;
+  TASK_PRIO_T kUnordered = 1;
+  TASK_PRIO_T kLongRunning = 2;
+  TASK_PRIO_T kLowLatency = 3;
+};
+
 /** A generic task base class */
 struct Task : public hipc::ShmContainer {
  SHM_CONTAINER_TEMPLATE((Task), (Task))
@@ -215,6 +227,7 @@ struct Task : public hipc::ShmContainer {
   TaskStateId task_state_;     /**< The unique name of a task state */
   TaskNode task_node_;         /**< The unique ID of this task in the graph */
   DomainId domain_id_;         /**< The nodes that the task should run on */
+  u32 prio_;                   /**< An indication of the priority of the request */
   u32 lane_hash_;              /**< Determine the lane a task is keyed to */
   u32 method_;                 /**< The method to call in the state */
   bitfield32_t task_flags_;    /**< Properties of the task */
@@ -370,6 +383,7 @@ struct Task : public hipc::ShmContainer {
     shm_init_container(alloc);
     task_node_ = task_node;
     lane_hash_ = lane_hash;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = task_state;
     method_ = method;
     domain_id_ = domain_id;
@@ -418,7 +432,7 @@ struct Task : public hipc::ShmContainer {
   * ===================================*/
  template<typename Ar>
  void task_serialize(Ar &ar) {
-   ar(task_state_, task_node_, domain_id_, lane_hash_, method_, task_flags_);
+   ar(task_state_, task_node_, domain_id_, lane_hash_, prio_, method_, task_flags_);
  }
 
   /**====================================

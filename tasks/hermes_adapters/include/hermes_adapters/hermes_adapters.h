@@ -65,6 +65,7 @@ struct CustomTask : public Task {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = 0;
+    prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kCustom;
     task_flags_.SetBits(0);
@@ -90,12 +91,15 @@ class Client : public TaskLibClient {
               const DomainId &domain_id,
               const std::string &state_name) {
     id_ = TaskStateId::GetNull();
+    QueueManagerInfo &qm = LABSTOR_CLIENT->server_config_.queue_manager_;
+    std::vector<PriorityInfo> queue_info = {
+        {1, 1, qm.queue_depth_, 0},
+        {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_UNORDERED},
+        {1, qm.max_lanes_, qm.queue_depth_, QUEUE_LONG_RUNNING},
+        {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_LOW_LATENCY}
+    };
     id_ = LABSTOR_ADMIN->CreateTaskState<ConstructTask>(
-        task_node, domain_id, state_name, id_,
-        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-        LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
-        bitfield32_t(0));
+        task_node, domain_id, state_name, id_, queue_info);
     queue_id_ = QueueId(id_);
   }
 
@@ -114,7 +118,7 @@ class Client : public TaskLibClient {
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     auto *task = LABSTOR_CLIENT->NewTask<CustomTask>(
         p, task_node, domain_id, id_);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
     task->Wait();
   }
 };

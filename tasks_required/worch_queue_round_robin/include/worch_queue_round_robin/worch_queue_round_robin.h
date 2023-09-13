@@ -24,9 +24,11 @@ class Client : public TaskLibClient {
   void CreateRoot(const DomainId &domain_id,
                   const std::string &state_name) {
     id_ = TaskStateId::GetNull();
+    std::vector<PriorityInfo> queue_info = {
+        {1, 1, 4, 0},
+    };
     id_ = LABSTOR_ADMIN->CreateTaskStateRoot<ConstructTask>(
-        domain_id, state_name, id_,
-        1, 1, 4, bitfield32_t(0));
+        domain_id, state_name, id_, queue_info);
   }
 
   /** Destroy task state */

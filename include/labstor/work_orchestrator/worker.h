@@ -18,8 +18,10 @@ namespace labstor {
 
 /** Uniquely identify a queue lane */
 struct WorkEntry {
+  u32 prio_;
   u32 lane_id_;
   Lane *lane_;
+  LaneGroup *group_;
   MultiQueue *queue_;
 
   /** Default constructor */
@@ -28,24 +30,31 @@ struct WorkEntry {
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE
-  WorkEntry(u32 lane_id, MultiQueue *queue)
-  : lane_id_(lane_id), queue_(queue) {}
+  WorkEntry(u32 prio, u32 lane_id, MultiQueue *queue)
+  : prio_(prio), lane_id_(lane_id), queue_(queue) {
+    group_ = &queue->GetGroup(prio);
+    lane_ = &queue->GetLane(*group_, lane_id);
+  }
 
   /** Copy constructor */
   HSHM_ALWAYS_INLINE
   WorkEntry(const WorkEntry &other) {
-    queue_ = other.queue_;
+    prio_ = other.prio_;
     lane_id_ = other.lane_id_;
+    lane_ = other.lane_;
+    group_ = other.group_;
+    queue_ = other.queue_;
   }
 
   /** Copy assignment */
   HSHM_ALWAYS_INLINE
-      WorkEntry
-  &
-  operator=(const WorkEntry &other) {
+  WorkEntry& operator=(const WorkEntry &other) {
     if (this != &other) {
-      queue_ = other.queue_;
+      prio_ = other.prio_;
       lane_id_ = other.lane_id_;
+      lane_ = other.lane_;
+      group_ = other.group_;
+      queue_ = other.queue_;
     }
     return *this;
   }
@@ -53,18 +62,22 @@ struct WorkEntry {
   /** Move constructor */
   HSHM_ALWAYS_INLINE
   WorkEntry(WorkEntry &&other) noexcept {
-    queue_ = other.queue_;
+    prio_ = other.prio_;
     lane_id_ = other.lane_id_;
+    lane_ = other.lane_;
+    group_ = other.group_;
+    queue_ = other.queue_;
   }
 
   /** Move assignment */
   HSHM_ALWAYS_INLINE
-      WorkEntry
-  &
-  operator=(WorkEntry &&other) noexcept {
+  WorkEntry& operator=(WorkEntry &&other) noexcept {
     if (this != &other) {
-      queue_ = other.queue_;
+      prio_ = other.prio_;
       lane_id_ = other.lane_id_;
+      lane_ = other.lane_;
+      group_ = other.group_;
+      queue_ = other.queue_;
     }
     return *this;
   }
@@ -78,7 +91,8 @@ struct WorkEntry {
   /** Equality operator */
   HSHM_ALWAYS_INLINE
   bool operator==(const WorkEntry &other) const {
-    return queue_ == other.queue_ && lane_id_ == other.lane_id_;
+    return queue_ == other.queue_ && lane_id_ == other.lane_id_ &&
+        prio_ == other.prio_;
   }
 };
 
@@ -92,7 +106,7 @@ struct hash<labstor::WorkEntry> {
       std::size_t
   operator()(const labstor::WorkEntry &key) const {
     return std::hash<labstor::MultiQueue*>{}(key.queue_) +
-        std::hash<u32>{}(key.lane_);
+        std::hash<u32>{}(key.lane_id_) + std::hash<u64>{}(key.prio_);
   }
 };
 }  // namespace std
@@ -218,7 +232,7 @@ class Worker {
   void _PollQueues() {
     std::vector<WorkEntry> work_queue;
     while (!poll_queues_.pop(work_queue).IsNull()) {
-      for (auto &entry : work_queue) {
+      for (const WorkEntry &entry : work_queue) {
         // HILOG(kDebug, "Scheduled queue {} (lane {})", entry.queue_->id_, entry.lane_);
         work_queue_.emplace_back(entry);
       }
@@ -315,8 +329,8 @@ class Worker {
   }
 
   HSHM_ALWAYS_INLINE
-  void EndTask(MultiQueue *queue, u32 lane_id, Task *task, int &off) {
-    PopTask(queue, lane_id, off);
+  void EndTask(Lane *lane, Task *task, int &off) {
+    PopTask(lane, off);
     if (task->IsFireAndForget()) {
       LABSTOR_CLIENT->DelTask(task);
     } else {
@@ -325,16 +339,15 @@ class Worker {
   }
 
   HSHM_ALWAYS_INLINE
-  void PopTask(MultiQueue *queue, u32 lane_id, int &off) {
-    LaneData data;
+  void PopTask(Lane *lane, int &off) {
     if (off == 0) {
-      queue->Pop(lane_id, data);
+      lane->pop();
     } else {
       off += 1;
     }
   }
 
-  void PollGrouped(u32 lane_id, MultiQueue *queue);
+  void PollGrouped(Lane *lane);
 };
 
 }  // namespace labstor

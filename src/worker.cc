@@ -31,25 +31,21 @@ void Worker::Run() {
     _RelinquishQueues();
   }
   for (WorkEntry &entry : work_queue_) {
-    LaneData *tmp;
-    if (!entry.queue_->Peek(entry.lane_, tmp, 0)) {
-      continue;
-    }
-    PollGrouped(entry.lane_, entry.queue_);
+    PollGrouped(entry.lane_);
   }
 }
 
-void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
+void Worker::PollGrouped(Lane *lane) {
   Task *task;
   LaneData *entry;
   int off = 0;
   for (int i = 0; i < 1024; ++i) {
     // Get the task message
-    if (!queue->Peek(lane_id, entry, off)) {
+    if (lane->peek(entry, off).IsNull()) {
       return;
     }
     if (entry->complete_) {
-      PopTask(queue, lane_id, off);
+      PopTask(lane, off);
       continue;
     }
     task = LABSTOR_CLIENT->GetPrivatePointer<Task>(entry->p_);
@@ -59,7 +55,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
       HELOG(kFatal, "(node {}) Could not find the task state: {}",
             LABSTOR_CLIENT->node_id_, task->task_state_);
       entry->complete_ = true;
-      EndTask(queue, lane_id, task, off);
+      EndTask(lane, task, off);
       continue;
     }
     // Attempt to run the task if it's ready and runnable
@@ -88,7 +84,7 @@ void Worker::PollGrouped(u32 lane_id, MultiQueue *queue) {
 //            LABSTOR_CLIENT->node_id_, task->task_node_, task->task_state_, lane_id, queue->id_, id_);
       entry->complete_ = true;
       RemoveTaskGroup(task, exec, is_remote);
-      EndTask(queue, lane_id, task, off);
+      EndTask(lane, task, off);
 //    } else if ((task->IsUnordered() || queue->IsUnordered()) && off == 0) {
 //      LaneData data;
 //      queue->Pop(lane_id, data);

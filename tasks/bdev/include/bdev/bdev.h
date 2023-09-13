@@ -40,13 +40,16 @@ class Client : public TaskLibClient {
     domain_id_ = domain_id;
     id_ = TaskStateId::GetNull();
     CopyDevInfo(dev_info);
+    QueueManagerInfo &qm = LABSTOR_CLIENT->server_config_.queue_manager_;
+    std::vector<PriorityInfo> queue_info = {
+        {1, 1, qm.queue_depth_, 0},
+        {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_UNORDERED},
+        {1, qm.max_lanes_, qm.queue_depth_, QUEUE_LONG_RUNNING},
+        {qm.max_lanes_, qm.max_lanes_, qm.queue_depth_, QUEUE_LOW_LATENCY}
+    };
     return LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
         task_node, domain_id, state_name, lib_name, id_,
-        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-        LABSTOR_CLIENT->server_config_.queue_manager_.max_lanes_,
-        LABSTOR_CLIENT->server_config_.queue_manager_.queue_depth_,
-        bitfield32_t(QUEUE_UNORDERED),
-        dev_info);
+        queue_info, dev_info);
   }
   LABSTOR_TASK_NODE_ROOT(AsyncCreateTaskState);
 
@@ -84,7 +87,7 @@ class Client : public TaskLibClient {
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     monitor_task_ = LABSTOR_CLIENT->NewTask<MonitorTask>(
         p, task_node, domain_id_, id_, freq_ms, max_cap_);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
   }
   LABSTOR_TASK_NODE_ROOT(AsyncMonitor);
 
@@ -96,7 +99,7 @@ class Client : public TaskLibClient {
     LABSTOR_CLIENT->NewTask<UpdateCapacityTask>(
         p,
         task_node, domain_id_, id_, size);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
   }
   LABSTOR_TASK_NODE_ROOT(AsyncUpdateCapacity);
 
@@ -116,7 +119,7 @@ class Client : public TaskLibClient {
     auto *task = LABSTOR_CLIENT->NewTask<AllocTask>(
         p,
         task_node, domain_id_, id_, size, &buffers);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncAllocate);
@@ -131,7 +134,7 @@ class Client : public TaskLibClient {
     auto *task = LABSTOR_CLIENT->NewTask<FreeTask>(
         p,
         task_node, domain_id_, id_, buffers, fire_and_forget);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncFree);
@@ -145,7 +148,7 @@ class Client : public TaskLibClient {
     auto *task = LABSTOR_CLIENT->NewTask<WriteTask>(
         p,
         task_node, domain_id_, id_, data, off, size);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncWrite);
@@ -159,7 +162,7 @@ class Client : public TaskLibClient {
     auto *task = LABSTOR_CLIENT->NewTask<ReadTask>(
         p,
         task_node, domain_id_, id_, data, off, size);
-    queue->Emplace(0, p);
+    queue->Emplace(0, 0, p);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncRead);

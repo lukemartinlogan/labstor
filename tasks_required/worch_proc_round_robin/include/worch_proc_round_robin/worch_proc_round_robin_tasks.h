@@ -35,11 +35,9 @@ struct ConstructTask : public CreateTaskStateTask {
                 const DomainId &domain_id,
                 const std::string &state_name,
                 const TaskStateId &id,
-                u32 max_lanes, u32 num_lanes,
-                u32 depth, bitfield32_t flags)
+                const std::vector<PriorityInfo> &queue_info)
       : CreateTaskStateTask(alloc, task_node, domain_id, state_name,
-                            "worch_proc_round_robin", id, max_lanes,
-                            num_lanes, depth, flags) {
+                            "worch_proc_round_robin", id, queue_info) {
   }
 
   /** Create group */

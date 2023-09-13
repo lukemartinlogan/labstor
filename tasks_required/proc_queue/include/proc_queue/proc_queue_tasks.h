@@ -32,11 +32,9 @@ struct ConstructTask : public CreateTaskStateTask {
                 const DomainId &domain_id,
                 const std::string &state_name,
                 const TaskStateId &id,
-                u32 max_lanes, u32 num_lanes,
-                u32 depth, bitfield32_t flags)
+                const std::vector<PriorityInfo> &queue_info)
       : CreateTaskStateTask(alloc, task_node, domain_id, state_name,
-                            "proc_queue", id, max_lanes,
-                            num_lanes, depth, flags) {
+                            "proc_queue", id, queue_info) {
     // Custom params
   }
 

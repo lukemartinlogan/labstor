@@ -211,7 +211,7 @@ class Client : public ConfigurationManager {
                                              Args&& ...args) {\
     hipc::LPointer<CUSTOM##Task> task = Async##CUSTOM##Alloc(task_node, std::forward<Args>(args)...);\
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);\
-    queue->Emplace(task.ptr_->lane_hash_, task.shm_);\
+    queue->Emplace(task.ptr_->prio_, task.ptr_->lane_hash_, task.shm_);\
     return task;\
   }\
   template<typename ...Args>\
@@ -219,7 +219,7 @@ class Client : public ConfigurationManager {
                                                       const TaskNode &task_node,\
                                                       Args&& ...args) {\
     hipc::LPointer<CUSTOM##Task> task = Async##CUSTOM##Alloc(task_node, std::forward<Args>(args)...);\
-    queue->Emplace(task.ptr_->lane_hash_, task.shm_);\
+    queue->Emplace(task.ptr_->prio_, task.ptr_->lane_hash_, task.shm_);\
     return task;\
   }\
   template<typename ...Args>\
@@ -232,8 +232,6 @@ class Client : public ConfigurationManager {
                                                      task.shm_);\
       return push_task;\
   }
-
-
 
 }  // namespace labstor
 

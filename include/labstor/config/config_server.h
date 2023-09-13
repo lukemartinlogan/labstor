@@ -14,6 +14,7 @@
 #define LABSTOR_SRC_CONFIG_SERVER_H_
 
 #include "config.h"
+#include "labstor/labstor_types.h"
 
 namespace labstor::config {
 
@@ -30,11 +31,11 @@ struct WorkOrchestratorInfo {
  * */
 struct QueueManagerInfo {
   /** Maximum depth of IPC queues */
-  size_t queue_depth_;
+  u32 queue_depth_;
   /** Maximum number of lanes per IPC queue */
-  size_t max_lanes_;
+  u32 max_lanes_;
   /** Maximum number of allocatable IPC queues */
-  size_t max_queues_;
+  u32 max_queues_;
   /** Shared memory allocator */
   std::string shm_allocator_;
   /** Shared memory region name */
