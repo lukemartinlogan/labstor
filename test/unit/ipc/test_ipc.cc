@@ -18,7 +18,7 @@ TEST_CASE("TestIpc") {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
   labstor::small_message::Client client;
-  LABSTOR_ADMIN->RegisterTaskLibraryRoot(labstor::DomainId::GetGlobal(), "small_message");
+  LABSTOR_ADMIN->RegisterTaskLibRoot(labstor::DomainId::GetGlobal(), "small_message");
   client.CreateRoot(labstor::DomainId::GetGlobal(), "ipc_test");
   MPI_Barrier(MPI_COMM_WORLD);
   hshm::Timer t;
@@ -42,7 +42,7 @@ TEST_CASE("TestIpc") {
 
 void TestIpcMultithread(int nprocs) {
   labstor::small_message::Client client;
-  LABSTOR_ADMIN->RegisterTaskLibraryRoot(labstor::DomainId::GetGlobal(), "small_message");
+  LABSTOR_ADMIN->RegisterTaskLibRoot(labstor::DomainId::GetGlobal(), "small_message");
   client.CreateRoot(labstor::DomainId::GetGlobal(), "ipc_test");
 
 #pragma omp parallel shared(client, nprocs) num_threads(nprocs)
@@ -81,7 +81,7 @@ TEST_CASE("TestIO") {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
   labstor::small_message::Client client;
-  LABSTOR_ADMIN->RegisterTaskLibraryRoot(labstor::DomainId::GetGlobal(), "small_message");
+  LABSTOR_ADMIN->RegisterTaskLibRoot(labstor::DomainId::GetGlobal(), "small_message");
   client.CreateRoot(labstor::DomainId::GetGlobal(), "ipc_test");
   hshm::Timer t;
 

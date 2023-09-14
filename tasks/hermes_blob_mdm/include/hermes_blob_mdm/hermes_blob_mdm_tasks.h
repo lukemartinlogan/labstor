@@ -171,7 +171,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   TEMP int phase_ = PutBlobPhase::kCreate;
   TEMP int plcmnt_idx_ = 0;
   TEMP int sub_plcmnt_idx_ = 0;
-  TEMP hermes::bdev::AllocTask *cur_bdev_alloc_;
+  TEMP hermes::bdev::AllocateTask *cur_bdev_alloc_;
   TEMP hipc::ShmArchive<std::vector<PlacementSchema>> schema_;
   TEMP hipc::ShmArchive<std::vector<hermes::bdev::WriteTask*>> bdev_writes_;
 

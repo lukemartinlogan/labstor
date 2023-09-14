@@ -98,7 +98,7 @@ class Client : public ConfigurationManager {
   /** Allocate task */
   template<typename TaskT, typename ...Args>
   HSHM_ALWAYS_INLINE
-  hipc::LPointer<TaskT> AllocTask() {
+  hipc::LPointer<TaskT> AllocateTask() {
     return main_alloc_->AllocateLocalPtr<TaskT>(sizeof(TaskT));
   }
 
@@ -106,15 +106,17 @@ class Client : public ConfigurationManager {
   template<typename TaskT, typename ...Args>
   HSHM_ALWAYS_INLINE
   void ConstructTask(TaskT *task, Args&& ...args) {
-    return hipc::Allocator::ConstructObj<TaskT>(*task, main_alloc_, std::forward<Args>(args)...);
+    return hipc::Allocator::ConstructObj<TaskT>(
+        *task, main_alloc_, std::forward<Args>(args)...);
   }
 
   /** Create a task */
   template<typename TaskT, typename ...Args>
   HSHM_ALWAYS_INLINE
-  TaskT* NewTask(hipc::Pointer &p, const TaskNode &task_node, Args&& ...args) {
-    TaskT *ptr = main_alloc_->NewObj<TaskT>(p, main_alloc_, task_node, std::forward<Args>(args)...);
-    if (ptr == nullptr) {
+  LPointer<TaskT> NewTask(const TaskNode &task_node, Args&& ...args) {
+    LPointer<TaskT> ptr = main_alloc_->NewObjLocal<TaskT>(
+        main_alloc_, task_node, std::forward<Args>(args)...);
+    if (ptr.ptr_ == nullptr) {
       throw std::runtime_error("Could not allocate buffer");
     }
     return ptr;
@@ -123,10 +125,11 @@ class Client : public ConfigurationManager {
   /** Create a root task */
   template<typename TaskT, typename ...Args>
   HSHM_ALWAYS_INLINE
-  TaskT* NewTaskRoot(hipc::Pointer &p, Args&& ...args) {
+  LPointer<TaskT> NewTaskRoot(Args&& ...args) {
     TaskNode task_node = MakeTaskNodeId();
-    TaskT *ptr = main_alloc_->NewObj<TaskT>(p, main_alloc_, task_node, std::forward<Args>(args)...);
-    if (ptr == nullptr) {
+    LPointer<TaskT> ptr = main_alloc_->NewObjLocal<TaskT>(
+        main_alloc_, task_node, std::forward<Args>(args)...);
+    if (ptr.ptr_ == nullptr) {
       throw std::runtime_error("Could not allocate buffer");
     }
     return ptr;
@@ -143,7 +146,7 @@ class Client : public ConfigurationManager {
   template<typename TaskT>
   HSHM_ALWAYS_INLINE
   void DelTask(LPointer<TaskT> &task) {
-    DelTask<TaskT>(task.ptr_);
+    main_alloc_->DelObjLocal<TaskT>(task);
   }
 
   /** Get a queue by its ID */
@@ -188,13 +191,44 @@ class Client : public ConfigurationManager {
   }
 };
 
+/** A function which creates a new TaskNode value */
+#define LABSTOR_TASK_NODE_ROOT(CUSTOM)\
+  template<typename ...Args>\
+  auto CUSTOM##Root(Args&& ...args) {\
+    TaskNode task_node = LABSTOR_CLIENT->MakeTaskNodeId();\
+    return CUSTOM(task_node, std::forward<Args>(args)...);\
+  }
+
 /** Fill in common default parameters for task client wrapper function */
-#define LABSTOR_TASK_NODE_ROOT(FUN_NAME) \
-  template<typename ...Args> \
-  HSHM_ALWAYS_INLINE \
-  decltype(auto) FUN_NAME##Root(Args&& ...args) { \
-    TaskNode task_node = LABSTOR_CLIENT->MakeTaskNodeId(); \
-    return FUN_NAME(task_node, std::forward<Args>(args)...); \
+#define LABSTOR_TASK_NODE_ADMIN_ROOT(CUSTOM)\
+  template<typename ...Args>\
+  hipc::LPointer<CUSTOM##Task> Async##CUSTOM##Alloc(const TaskNode &task_node,\
+                                                    Args&& ...args) {\
+    hipc::LPointer<CUSTOM##Task> task = LABSTOR_CLIENT->AllocateTask<CUSTOM##Task>();\
+    Async##CUSTOM##Construct(task.ptr_, task_node, std::forward<Args>(args)...);\
+    return task;\
+  }\
+  template<typename ...Args>\
+  hipc::LPointer<CUSTOM##Task> Async##CUSTOM(const TaskNode &task_node, \
+                                             Args&& ...args) {\
+    hipc::LPointer<CUSTOM##Task> task = Async##CUSTOM##Alloc(task_node, std::forward<Args>(args)...);\
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);\
+    queue->Emplace(task.ptr_->prio_, task.ptr_->lane_hash_, task.shm_);\
+    return task;\
+  }\
+  template<typename ...Args>\
+  hipc::LPointer<CUSTOM##Task> Async##CUSTOM##Emplace(MultiQueue *queue,\
+                                                      const TaskNode &task_node,\
+                                                      Args&& ...args) {\
+    hipc::LPointer<CUSTOM##Task> task = Async##CUSTOM##Alloc(task_node, std::forward<Args>(args)...);\
+    queue->Emplace(task.ptr_->prio_, task.ptr_->lane_hash_, task.shm_);\
+    return task;\
+  }\
+  template<typename ...Args>\
+  hipc::LPointer<CUSTOM##Task> Async##CUSTOM##Root(Args&& ...args) {\
+    TaskNode task_node = LABSTOR_CLIENT->MakeTaskNodeId();\
+    hipc::LPointer<CUSTOM##Task> task = Async##CUSTOM(task_node + 1, std::forward<Args>(args)...);\
+    return task;\
   }
 
 /** The default asynchronous method behavior */
@@ -202,7 +236,7 @@ class Client : public ConfigurationManager {
   template<typename ...Args>\
   hipc::LPointer<CUSTOM##Task> Async##CUSTOM##Alloc(const TaskNode &task_node,\
                                                     Args&& ...args) {\
-    hipc::LPointer<CUSTOM##Task> task = LABSTOR_CLIENT->AllocTask<CUSTOM##Task>();\
+    hipc::LPointer<CUSTOM##Task> task = LABSTOR_CLIENT->AllocateTask<CUSTOM##Task>();\
     Async##CUSTOM##Construct(task.ptr_, task_node, std::forward<Args>(args)...);\
     return task;\
   }\

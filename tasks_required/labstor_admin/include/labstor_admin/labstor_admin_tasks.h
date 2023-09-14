@@ -372,8 +372,7 @@ struct SetWorkOrchestratorPolicyTask : public Task, TaskFlags<TF_SRL_SYM> {
     lane_hash_ = 0;
     prio_ = TaskPrio::kAdmin;
     task_state_ = LABSTOR_QM_CLIENT->admin_task_state_;
-    if constexpr(method == 0)
-    {
+    if constexpr(method == 0) {
       method_ = Method::kSetWorkOrchQueuePolicy;
     } else {
       method_ = Method::kSetWorkOrchProcPolicy;

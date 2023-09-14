@@ -271,6 +271,20 @@ class Bucket {
   }
 
   /**
+   * Serialized PUT
+   * */
+  template<typename T>
+  BlobId Put(const std::string &blob_name,
+             const T &data,
+             Context &ctx) {
+    std::stringstream ss;
+    cereal::BinaryOutputArchive ar(ss);
+    ar << data;
+    Blob blob(ss.str());
+    return Put(blob_name, blob, ctx);
+  }
+
+  /**
    * Append \a blob_name Blob into the bucket
    * */
   Status Append(const Blob &blob, size_t page_size, Context &ctx) {

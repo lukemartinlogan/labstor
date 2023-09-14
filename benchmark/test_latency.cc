@@ -44,8 +44,7 @@ TEST_CASE("TestHshmAllocateFree") {
   for (size_t i = 0; i < reps; ++i) {
     std::vector<labstor::Task*> tasks(count);
     for (size_t j = 0; j < count; ++j) {
-      hipc::Pointer p;
-      tasks[j] = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>(p);
+      tasks[j] = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>().ptr_;
     }
     for (size_t j = 0; j < count; ++j) {
       LABSTOR_CLIENT->DelTask(tasks[j]);
@@ -102,7 +101,8 @@ TEST_CASE("TestHshmQueueEmplacePop") {
   auto queue = hipc::make_uptr<labstor::MultiQueue>(
       qid, queue_info);
   labstor::LaneData entry;
-  auto *task = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>(entry.p_);
+  auto task = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>();
+  entry.p_ = task.shm_;
 
   hshm::Timer t;
   t.Resume();
@@ -153,7 +153,8 @@ TEST_CASE("TestHshmQueueAllocateEmplacePop") {
   t.Resume();
   for (size_t i = 0; i < ops; ++i) {
     labstor::LaneData entry;
-    auto *task = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>(entry.p_);
+    auto task = LABSTOR_CLIENT->NewTaskRoot<labstor::Task>();
+    entry.p_ = task.shm_;
     queue->Emplace(0, 0, entry);
     lane.pop();
     LABSTOR_CLIENT->DelTask(task);
@@ -220,7 +221,7 @@ void TestWorkerIterationLatency(u32 num_queues, u32 num_lanes) {
   }
 
   labstor::small_message::Client client;
-  LABSTOR_ADMIN->RegisterTaskLibraryRoot(labstor::DomainId::GetLocal(), "small_message");\
+  LABSTOR_ADMIN->RegisterTaskLibRoot(labstor::DomainId::GetLocal(), "small_message");\
   client.CreateRoot(labstor::DomainId::GetLocal(), "ipc_test");
 
   hshm::Timer t;
@@ -253,7 +254,7 @@ TEST_CASE("TestWorkerLatency") {
 TEST_CASE("TestRoundTripLatency") {
   HERMES->ClientInit();
   labstor::small_message::Client client;
-  LABSTOR_ADMIN->RegisterTaskLibraryRoot(labstor::DomainId::GetLocal(), "small_message");
+  LABSTOR_ADMIN->RegisterTaskLibRoot(labstor::DomainId::GetLocal(), "small_message");
 //  int count = 25;
 //  for (int i = 0; i < count; ++i) {
 //    labstor::small_message::Client client2;
@@ -307,7 +308,7 @@ TEST_CASE("TestHermesFsWriteLatency") {
   hermes::Bucket bkt = HERMES_FILESYSTEM_API->Open("/home/lukemartinlogan/hi.txt");
 
   t.Resume();
-  size_t ops = 1024;
+  size_t ops = 150;
   hermes::Context ctx;
   ctx.page_size_ = 4096;
   std::string data(ctx.page_size_, 0);

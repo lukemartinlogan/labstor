@@ -52,14 +52,11 @@ class WorkOrchestrator {
     kill_requested_ = false;
 
     // Schedule admin queue on worker 0
-    u32 count = 0;
     MultiQueue *admin_queue = qm.GetQueue(qm.admin_queue_);
     LaneGroup *admin_group = &admin_queue->GetGroup(0);
     for (u32 lane_id = 0; lane_id < admin_group->num_lanes_; ++lane_id) {
-      u32 worker_id = count % workers_.size();
-      Worker &worker = workers_[worker_id];
+      Worker &worker = workers_[0];
       worker.PollQueues({WorkEntry(0, lane_id, admin_queue)});
-      count += 1;
     }
     admin_group->num_scheduled_ = admin_group->num_lanes_;
 

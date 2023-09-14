@@ -27,9 +27,9 @@ class Client : public TaskLibClient {
 
   /** Create a hermes_blob_mdm */
   HSHM_ALWAYS_INLINE
-      ConstructTask* AsyncCreate(const TaskNode &task_node,
-                                 const DomainId &domain_id,
-                                 const std::string &state_name) {
+  LPointer<ConstructTask> AsyncCreate(const TaskNode &task_node,
+                                      const DomainId &domain_id,
+                                      const std::string &state_name) {
     id_ = TaskStateId::GetNull();
     QueueManagerInfo &qm = LABSTOR_CLIENT->server_config_.queue_manager_;
     std::vector<PriorityInfo> queue_info = {
@@ -40,9 +40,6 @@ class Client : public TaskLibClient {
     return LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
         task_node, domain_id, state_name, id_, queue_info);
   }
-  LABSTOR_TASK_NODE_ROOT(AsyncCreate);
-
-  /** Complete async create task */
   void AsyncCreateComplete(ConstructTask *task) {
     if (task->IsComplete()) {
       id_ = task->id_;
@@ -50,13 +47,13 @@ class Client : public TaskLibClient {
       LABSTOR_CLIENT->DelTask(task);
     }
   }
-
+  LABSTOR_TASK_NODE_ROOT(AsyncCreate);
   template<typename ...Args>
   HSHM_ALWAYS_INLINE
   void CreateRoot(Args&& ...args) {
-    auto *task = AsyncCreateRoot(std::forward<Args>(args)...);
+    LPointer<ConstructTask> task = AsyncCreateRoot(std::forward<Args>(args)...);
     task->Wait();
-    AsyncCreateComplete(task);
+    AsyncCreateComplete(task.ptr_);
   }
 
   /** Destroy task state + queue */

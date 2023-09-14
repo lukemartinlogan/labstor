@@ -21,9 +21,9 @@ class Client : public TaskLibClient {
 
   /** Async create a task state */
   HSHM_ALWAYS_INLINE
-  ConstructTask* AsyncCreate(const TaskNode &task_node,
-                             const DomainId &domain_id,
-                             const std::string &state_name) {
+  LPointer<ConstructTask> AsyncCreate(const TaskNode &task_node,
+                                      const DomainId &domain_id,
+                                      const std::string &state_name) {
     id_ = TaskStateId::GetNull();
     QueueManagerInfo &qm = LABSTOR_CLIENT->server_config_.queue_manager_;
     std::vector<PriorityInfo> queue_info = {
@@ -34,8 +34,7 @@ class Client : public TaskLibClient {
     return LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
         task_node, domain_id, state_name, id_, queue_info);
   }
-
-  /** Create a TASK_NAME */
+  LABSTOR_TASK_NODE_ROOT(AsyncCreate)
   template<typename ...Args>
   HSHM_ALWAYS_INLINE
   void CreateRoot(Args&& ...args) {

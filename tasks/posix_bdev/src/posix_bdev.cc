@@ -45,7 +45,7 @@ class Server : public TaskLib {
     task->SetModuleComplete();
   }
 
-  void Alloc(AllocTask *task) {
+  void Alloc(AllocateTask *task) {
     alloc_.Allocate(task->size_, *task->buffers_, task->alloc_size_);
     HILOG(kDebug, "Allocated {}/{} bytes ({})", task->alloc_size_, task->size_, path_);
     task->SetModuleComplete();

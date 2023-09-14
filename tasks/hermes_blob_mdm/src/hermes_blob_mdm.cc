@@ -68,7 +68,7 @@ class Server : public TaskLib {
               DomainId::GetLocal(),
               "hermes_" + dev.dev_name_,
               dev_type,
-              dev);
+              dev).ptr_;
           target_tasks_.emplace_back(create_task);
         }
         task->phase_ = ConstructTaskPhase::kWaitForTaskStates;
@@ -82,7 +82,6 @@ class Server : public TaskLib {
           }
           bdev::Client &client = targets_[i];
           client.AsyncCreateComplete(tgt_task);
-          client.AsyncMonitor(task->task_node_ + 1, 100);
           target_map_.emplace(client.id_, &client);
           target_tasks_.pop_back();
         }
@@ -202,7 +201,8 @@ class Server : public TaskLib {
   void PutBlobFreeBuffersPhase(BlobInfo &blob_info, PutBlobTask *task) {
     for (BufferInfo &buf : blob_info.buffers_) {
       TargetInfo &target = *target_map_[buf.tid_];
-      target.AsyncFree(task->task_node_ + 1, {buf}, true);
+      std::vector<BufferInfo> buf_vec = {buf};
+      target.AsyncFree(task->task_node_ + 1, std::move(buf_vec), true);
     }
     blob_info.buffers_.clear();
     blob_info.max_blob_size_ = 0;
@@ -218,7 +218,7 @@ class Server : public TaskLib {
     HILOG(kDebug, "Allocating {} bytes of blob {}", placement.size_, task->blob_id_);
     task->cur_bdev_alloc_ = bdev.AsyncAllocate(task->task_node_ + 1,
                                                placement.size_,
-                                               blob_info.buffers_);
+                                               blob_info.buffers_).ptr_;
     task->phase_ = PutBlobPhase::kWaitAllocate;
   }
 
@@ -268,7 +268,7 @@ class Server : public TaskLib {
         TargetInfo &target = *target_map_[buf.tid_];
         bdev::WriteTask *write_task = target.AsyncWrite(task->task_node_ + 1,
                                                         blob_buf + buf_off,
-                                                        tgt_off, buf_size);
+                                                        tgt_off, buf_size).ptr_;
         write_tasks.emplace_back(write_task);
         buf_off += buf_size;
       }
@@ -326,7 +326,7 @@ class Server : public TaskLib {
             TargetInfo &target = *target_map_[buf.tid_];
             bdev::ReadTask *read_task = target.AsyncRead(task->task_node_ + 1,
                                                          blob_buf + buf_off,
-                                                         tgt_off, buf_size);
+                                                         tgt_off, buf_size).ptr_;
             read_tasks.emplace_back(read_task);
             buf_off += buf_size;
           }
@@ -522,7 +522,9 @@ class Server : public TaskLib {
         task->free_tasks_->reserve(blob_info.buffers_.size());
         for (BufferInfo &buf : blob_info.buffers_) {
           TargetInfo &tgt_info = *target_map_[buf.tid_];
-          bdev::FreeTask *free_task = tgt_info.AsyncFree(task->task_node_ + 1, {buf}, false);
+          std::vector<BufferInfo> buf_vec = {buf};
+          bdev::FreeTask *free_task = tgt_info.AsyncFree(
+              task->task_node_ + 1, std::move(buf_vec), false).ptr_;
           task->free_tasks_->emplace_back(free_task);
         }
         task->phase_ = DestroyBlobPhase::kWaitFreeBuffers;

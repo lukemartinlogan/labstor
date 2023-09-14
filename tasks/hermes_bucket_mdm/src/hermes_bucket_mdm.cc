@@ -34,7 +34,7 @@ class Server : public TaskLib {
         id_alloc_ = 0;
         node_id_ = LABSTOR_CLIENT->node_id_;
         blob_mdm_task_ = blob_mdm_.AsyncCreateRoot(
-            DomainId::GetGlobal(), "hermes_blob_mdm");
+            DomainId::GetGlobal(), "hermes_blob_mdm").ptr_;
         task->phase_ = ConstructTaskPhase::kWait;
       }
       case ConstructTaskPhase::kWait: {

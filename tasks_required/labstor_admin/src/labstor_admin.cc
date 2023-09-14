@@ -56,7 +56,7 @@ class Server : public TaskLib {
             HILOG(kDebug, "Domain ID is global for {} (task_node={})", state_name, task->task_node_);
             DomainId domain = DomainId::GetNode(1);
             task->get_id_task_ = LABSTOR_ADMIN->AsyncGetOrCreateTaskStateId(
-                task->task_node_ + 1, domain, state_name);
+                task->task_node_ + 1, domain, state_name).ptr_;
             task->phase_ = CreateTaskStatePhase::kIdAllocWait;
 //          }
         } else {
@@ -147,11 +147,11 @@ class Server : public TaskLib {
     if (queue_sched_ && !queue_sched_->IsComplete()) {
       return;
     }
-    hipc::Pointer p;
-    queue_sched_ = LABSTOR_CLIENT->NewTask<ScheduleTask>(
-        p, task->task_node_, DomainId::GetLocal(), task->policy_id_);
+    auto queue_sched = LABSTOR_CLIENT->NewTask<ScheduleTask>(
+        task->task_node_, DomainId::GetLocal(), task->policy_id_);
+    queue_sched_ = queue_sched.ptr_;
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    queue->Emplace(0, 0, p);
+    queue->Emplace(0, 0, queue_sched.shm_);
     task->SetModuleComplete();
   }
 
@@ -162,11 +162,11 @@ class Server : public TaskLib {
     if (proc_sched_ && !proc_sched_->IsComplete()) {
       return;
     }
-    hipc::Pointer p;
-    proc_sched_ = LABSTOR_CLIENT->NewTask<ScheduleTask>(
-        p, task->task_node_, DomainId::GetLocal(), task->policy_id_);
+    auto proc_sched = LABSTOR_CLIENT->NewTask<ScheduleTask>(
+        task->task_node_, DomainId::GetLocal(), task->policy_id_);
+    proc_sched_ = proc_sched.ptr_;
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    queue->Emplace(0, 0, p);
+    queue->Emplace(0, 0, proc_sched.shm_);
     task->SetModuleComplete();
   }
 

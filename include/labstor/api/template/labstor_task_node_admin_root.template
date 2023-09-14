@@ -22,12 +22,8 @@ hipc::LPointer<CUSTOM##Task> Async##CUSTOM##Emplace(MultiQueue *queue,
   return task;
 }
 template<typename ...Args>
-hipc::LPointer<labpq::TypedPushTask<CUSTOM##Task>> Async##CUSTOM##Root(Args&& ...args) {
+hipc::LPointer<CUSTOM##Task> Async##CUSTOM##Root(Args&& ...args) {
   TaskNode task_node = LABSTOR_CLIENT->MakeTaskNodeId();
-  hipc::LPointer<CUSTOM##Task> task = Async##CUSTOM##Alloc(task_node + 1, std::forward<Args>(args)...);
-  hipc::LPointer<labpq::TypedPushTask<CUSTOM##Task>> push_task =
-    LABSTOR_PROCESS_QUEUE->AsyncPush<CUSTOM##Task>(task_node,
-                                                   DomainId::GetLocal(),
-                                                   task.shm_);
-    return push_task;
+  hipc::LPointer<CUSTOM##Task> task = Async##CUSTOM(task_node + 1, std::forward<Args>(args)...);
+  return task;
 }

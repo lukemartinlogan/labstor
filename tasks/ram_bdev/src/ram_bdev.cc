@@ -29,7 +29,7 @@ class Server : public TaskLib {
     task->SetModuleComplete();
   }
 
-  void Alloc(AllocTask *task) {
+  void Alloc(AllocateTask *task) {
     HILOG(kDebug, "Allocating {} bytes (RAM)", task->size_);
     alloc_.Allocate(task->size_, *task->buffers_, task->alloc_size_);
     HILOG(kDebug, "Allocated {} bytes (RAM)", task->alloc_size_);

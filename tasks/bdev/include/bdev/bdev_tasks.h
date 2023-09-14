@@ -77,18 +77,18 @@ struct DestructTask : public DestroyTaskStateTask {
 /**
  * A custom task in bdev
  * */
-struct AllocTask : public Task, TaskFlags<TF_LOCAL> {
+struct AllocateTask : public Task, TaskFlags<TF_LOCAL> {
   IN size_t size_;  /**< Size in buf */
   OUT std::vector<BufferInfo> *buffers_;
   OUT size_t alloc_size_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
-  AllocTask(hipc::Allocator *alloc) : Task(alloc) {}
+  AllocateTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
-  AllocTask(hipc::Allocator *alloc,
+  AllocateTask(hipc::Allocator *alloc,
             const TaskNode &task_node,
             const DomainId &domain_id,
             const TaskStateId &state_id,

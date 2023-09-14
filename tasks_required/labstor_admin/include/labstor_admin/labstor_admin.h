@@ -23,68 +23,58 @@ class Client : public TaskLibClient {
 
   /** Register a task library */
   HSHM_ALWAYS_INLINE
-  RegisterTaskLibTask* AsyncRegisterTaskLibrary(const TaskNode &task_node,
-                                                const DomainId &domain_id,
-                                                const std::string &lib_name) {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<RegisterTaskLibTask>(
-        p, task_node, domain_id, lib_name);
-    queue->Emplace(0, 0, p);
-    return task;
+  void AsyncRegisterTaskLibConstruct(RegisterTaskLibTask *task,
+                                     const TaskNode &task_node,
+                                     const DomainId &domain_id,
+                                     const std::string &lib_name) {
+    LABSTOR_CLIENT->ConstructTask<RegisterTaskLibTask>(
+        task, task_node, domain_id, lib_name);
   }
-  LABSTOR_TASK_NODE_ROOT(AsyncRegisterTaskLibrary);
   HSHM_ALWAYS_INLINE
-  void RegisterTaskLibraryRoot(const DomainId &domain_id,
-                               const std::string &lib_name) {
-    RegisterTaskLibTask *task = AsyncRegisterTaskLibraryRoot(domain_id, lib_name);
+  void RegisterTaskLibRoot(const DomainId &domain_id,
+                           const std::string &lib_name) {
+    LPointer<RegisterTaskLibTask> task = AsyncRegisterTaskLibRoot(domain_id, lib_name);
     task->Wait();
     LABSTOR_CLIENT->DelTask(task);
   }
+  LABSTOR_TASK_NODE_ADMIN_ROOT(RegisterTaskLib)
 
   /** Unregister a task */
   HSHM_ALWAYS_INLINE
-  DestroyTaskLibTask* AsyncDestroyTaskLibrary(const TaskNode &task_node,
-                                              const DomainId &domain_id,
-                                              const std::string &lib_name) {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<DestroyTaskLibTask>(
-        p, task_node, domain_id, lib_name);
-    queue->Emplace(0, 0, p);
-    return task;
+  void AsyncDestroyTaskLibConstruct(DestroyTaskLibTask *task,
+                                    const TaskNode &task_node,
+                                    const DomainId &domain_id,
+                                    const std::string &lib_name) {
+    LABSTOR_CLIENT->ConstructTask<DestroyTaskLibTask>(
+        task, task_node, domain_id, lib_name);
   }
-  LABSTOR_TASK_NODE_ROOT(AsyncDestroyTaskLibrary);
   HSHM_ALWAYS_INLINE
-  void DestroyTaskLibraryRoot(const TaskNode &task_node,
+  void DestroyTaskLibRoot(const TaskNode &task_node,
                               const DomainId &domain_id,
                               const std::string &lib_name) {
-    DestroyTaskLibTask *task = AsyncDestroyTaskLibraryRoot(domain_id, lib_name);
+    LPointer<DestroyTaskLibTask> task =
+        AsyncDestroyTaskLibRoot(domain_id, lib_name);
     task->Wait();
     LABSTOR_CLIENT->DelTask(task);
   }
+  LABSTOR_TASK_NODE_ADMIN_ROOT(DestroyTaskLib)
 
   /** Spawn a task state */
-  template<typename CreateTaskStateT, typename ...Args>
+  template<typename CreateTaskT, typename ...Args>
   HSHM_ALWAYS_INLINE
-  CreateTaskStateT* AsyncCreateTaskState(const TaskNode &task_node,
-                                         Args&& ...args) {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<CreateTaskStateT>(p, task_node, std::forward<Args>(args)...);
-    queue->Emplace(0, 0, p);
-    return task;
+  void AsyncCreateTaskStateConstruct(CreateTaskT *task,
+                                     const TaskNode &task_node,
+                                     const DomainId &domain_id,
+                                     Args&& ...args) {
+    LABSTOR_CLIENT->ConstructTask<CreateTaskT>(
+        task, task_node, domain_id, std::forward<Args>(args)...);
   }
-  template<typename CreateTaskStateT, typename ...Args>
+  template<typename CreateTaskT, typename ...Args>
   HSHM_ALWAYS_INLINE
-  CreateTaskStateT* AsyncCreateTaskStateRoot(Args&& ...args) {
-    TaskNode new_task_node = LABSTOR_CLIENT->MakeTaskNodeId();
-    return AsyncCreateTaskState<CreateTaskStateT>(new_task_node, std::forward<Args>(args)...);
-  }
-  template<typename CreateTaskStateT, typename ...Args>
-  HSHM_ALWAYS_INLINE
-  TaskStateId CreateTaskStateRoot(Args&& ...args) {
-    auto *task = AsyncCreateTaskStateRoot<CreateTaskStateT>(std::forward<Args>(args)...);
+  TaskStateId CreateTaskStateRoot(const DomainId &domain_id,
+                                  Args&& ...args) {
+    LPointer<CreateTaskT> task = AsyncCreateTaskStateRoot<CreateTaskT>(
+        domain_id, std::forward<Args>(args)...);
     task->Wait();
     TaskStateId new_id = task->id_;
     LABSTOR_CLIENT->DelTask(task);
@@ -93,120 +83,138 @@ class Client : public TaskLibClient {
     }
     return new_id;
   }
-
-  /** Get the ID of a task state */
-  GetOrCreateTaskStateIdTask* AsyncGetOrCreateTaskStateId(const TaskNode &task_node,
-                                                          const DomainId &domain_id,
-                                                          const std::string &state_name) {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<GetOrCreateTaskStateIdTask>(
-        p, task_node, domain_id, state_name);
-    queue->Emplace(0, 0, p);
+  template<typename CreateTaskT, typename ...Args>
+  hipc::LPointer<CreateTaskT> AsyncCreateTaskStateAlloc(const TaskNode &task_node,
+                                                        Args&& ...args) {
+    hipc::LPointer<CreateTaskT> task = LABSTOR_CLIENT->AllocateTask<CreateTaskT>();
+    AsyncCreateTaskStateConstruct<CreateTaskT>(task.ptr_, task_node, std::forward<Args>(args)...);
     return task;
   }
-  LABSTOR_TASK_NODE_ROOT(AsyncGetOrCreateTaskStateId);
+  template<typename CreateTaskT, typename ...Args>
+  hipc::LPointer<CreateTaskT> AsyncCreateTaskState(const TaskNode &task_node,
+                                                   Args&& ...args) {
+    hipc::LPointer<CreateTaskT> task =
+        AsyncCreateTaskStateAlloc<CreateTaskT>(task_node, std::forward<Args>(args)...);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
+    queue->Emplace(task.ptr_->prio_, task.ptr_->lane_hash_, task.shm_);
+    return task;
+  }
+  template<typename CreateTaskT, typename ...Args>
+  hipc::LPointer<CreateTaskT> AsyncCreateTaskStateEmplace(MultiQueue *queue,
+                                                      const TaskNode &task_node,
+                                                      Args&& ...args) {
+    hipc::LPointer<CreateTaskT> task =
+        AsyncCreateTaskStateAllocCreateTaskT(task_node, std::forward<Args>(args)...);
+    queue->Emplace(task.ptr_->prio_, task.ptr_->lane_hash_, task.shm_);
+    return task;
+  }
+  template<typename CreateTaskT, typename ...Args>
+  hipc::LPointer<CreateTaskT> AsyncCreateTaskStateRoot(Args&& ...args) {
+    TaskNode task_node = LABSTOR_CLIENT->MakeTaskNodeId();
+    hipc::LPointer<CreateTaskT> task =
+        AsyncCreateTaskState<CreateTaskT>(task_node, std::forward<Args>(args)...);
+    return task;
+  }
+
+  /** Get the ID of a task state */
+  void AsyncGetOrCreateTaskStateIdConstruct(GetOrCreateTaskStateIdTask *task,
+                                            const TaskNode &task_node,
+                                            const DomainId &domain_id,
+                                            const std::string &state_name) {
+    LABSTOR_CLIENT->ConstructTask<GetOrCreateTaskStateIdTask>(
+        task, task_node, domain_id, state_name);
+  }
   TaskStateId GetOrCreateTaskStateIdRoot(const DomainId &domain_id,
                                          const std::string &state_name) {
-    GetOrCreateTaskStateIdTask *task = AsyncGetOrCreateTaskStateIdRoot(domain_id, state_name);
+    LPointer<GetOrCreateTaskStateIdTask> task =
+        AsyncGetOrCreateTaskStateIdRoot(domain_id, state_name);
     task->Wait();
     TaskStateId new_id = task->id_;
     LABSTOR_CLIENT->DelTask(task);
     return new_id;
   }
+  LABSTOR_TASK_NODE_ADMIN_ROOT(GetOrCreateTaskStateId)
 
   /** Get the ID of a task state */
-  GetTaskStateIdTask* AsyncGetTaskStateId(const TaskNode &task_node,
-                                          const DomainId &domain_id,
-                                          const std::string &state_name) {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<GetTaskStateIdTask>(
-        p, task_node, domain_id, state_name);
-    queue->Emplace(0, 0, p);
-    return task;
+  void AsyncGetTaskStateIdConstruct(GetTaskStateIdTask *task,
+                                    const TaskNode &task_node,
+                                    const DomainId &domain_id,
+                                    const std::string &state_name) {
+    LABSTOR_CLIENT->ConstructTask<GetTaskStateIdTask>(
+        task, task_node, domain_id, state_name);
   }
-  LABSTOR_TASK_NODE_ROOT(AsyncGetTaskStateId);
   TaskStateId GetTaskStateIdRoot(const DomainId &domain_id,
                                  const std::string &state_name) {
-    GetTaskStateIdTask *task = AsyncGetTaskStateIdRoot(domain_id, state_name);
+    LPointer<GetTaskStateIdTask> task =
+        AsyncGetTaskStateIdRoot(domain_id, state_name);
     task->Wait();
     TaskStateId new_id = task->id_;
     LABSTOR_CLIENT->DelTask(task);
     return new_id;
   }
+  LABSTOR_TASK_NODE_ADMIN_ROOT(GetTaskStateId)
 
   /** Terminate a task state */
   HSHM_ALWAYS_INLINE
-  DestroyTaskStateTask* AsyncDestroyTaskState(const TaskNode &task_node,
-                                              const DomainId &domain_id,
-                                              const TaskStateId &id) {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<DestroyTaskStateTask>(
-        p, task_node, domain_id, id);
-    queue->Emplace(0, 0, p);
-    return task;
+  void AsyncDestroyTaskStateConstruct(DestroyTaskStateTask *task,
+                                      const TaskNode &task_node,
+                                      const DomainId &domain_id,
+                                      const TaskStateId &id) {
+    LABSTOR_CLIENT->ConstructTask<DestroyTaskStateTask>(
+        task, task_node, domain_id, id);
   }
-  LABSTOR_TASK_NODE_ROOT(AsyncDestroyTaskState);
   HSHM_ALWAYS_INLINE
   void DestroyTaskStateRoot(const DomainId &domain_id,
                             const TaskStateId &id) {
-    DestroyTaskStateTask *task = AsyncDestroyTaskStateRoot(domain_id, id);
+    LPointer<DestroyTaskStateTask> task =
+        AsyncDestroyTaskStateRoot(domain_id, id);
     task->Wait();
     LABSTOR_CLIENT->DelTask(task);
   }
+  LABSTOR_TASK_NODE_ADMIN_ROOT(DestroyTaskState)
 
   /** Terminate the runtime */
-  void AsyncStopRuntime(const TaskNode &task_node,
-                        const DomainId &domain_id) {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    LABSTOR_CLIENT->NewTask<StopRuntimeTask>(
-        p, task_node, domain_id);
-    queue->Emplace(0, 0, p);
+  void AsyncStopRuntimeConstruct(StopRuntimeTask *task,
+                                 const TaskNode &task_node,
+                                 const DomainId &domain_id) {
+    LABSTOR_CLIENT->ConstructTask<StopRuntimeTask>(
+        task, task_node, domain_id);
   }
-  LABSTOR_TASK_NODE_ROOT(AsyncStopRuntime);
+  LABSTOR_TASK_NODE_ADMIN_ROOT(StopRuntime);
 
   /** Set work orchestrator queue policy */
-  SetWorkOrchQueuePolicyTask*
-  AsyncSetWorkOrchQueuePolicy(const TaskNode &task_node,
-                              const DomainId &domain_id,
-                              const TaskStateId &policy) {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<SetWorkOrchQueuePolicyTask>(
-        p, task_node, domain_id, policy);
-    queue->Emplace(0, 0, p);
-    return task;
+  void AsyncSetWorkOrchQueuePolicyConstruct(SetWorkOrchQueuePolicyTask *task,
+                                            const TaskNode &task_node,
+                                            const DomainId &domain_id,
+                                            const TaskStateId &policy) {
+    LABSTOR_CLIENT->ConstructTask<SetWorkOrchQueuePolicyTask>(
+        task, task_node, domain_id, policy);
   }
-  LABSTOR_TASK_NODE_ROOT(AsyncSetWorkOrchQueuePolicy);
   void SetWorkOrchQueuePolicyRoot(const DomainId &domain_id,
                                   const TaskStateId &policy) {
-    SetWorkOrchQueuePolicyTask *task = AsyncSetWorkOrchQueuePolicyRoot(domain_id, policy);
+    LPointer<SetWorkOrchQueuePolicyTask> task =
+        AsyncSetWorkOrchQueuePolicyRoot(domain_id, policy);
     task->Wait();
     LABSTOR_CLIENT->DelTask(task);
   }
+  LABSTOR_TASK_NODE_ADMIN_ROOT(SetWorkOrchQueuePolicy);
 
   /** Set work orchestrator process policy */
-  SetWorkOrchProcPolicyTask*
-  AsyncSetWorkOrchProcPolicy(const TaskNode &task_node,
-                             const DomainId &domain_id,
-                             const TaskStateId &policy) {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<SetWorkOrchProcPolicyTask>(
-        p, task_node, domain_id, policy);
-    queue->Emplace(0, 0, p);
-    return task;
+  void AsyncSetWorkOrchProcPolicyConstruct(SetWorkOrchProcPolicyTask *task,
+                                           const TaskNode &task_node,
+                                           const DomainId &domain_id,
+                                           const TaskStateId &policy) {
+    LABSTOR_CLIENT->ConstructTask<SetWorkOrchProcPolicyTask>(
+        task, task_node, domain_id, policy);
   }
-  LABSTOR_TASK_NODE_ROOT(AsyncSetWorkOrchProcPolicy);
   void SetWorkOrchProcPolicyRoot(const DomainId &domain_id,
                                  const TaskStateId &policy) {
-    SetWorkOrchProcPolicyTask *task = AsyncSetWorkOrchProcPolicyRoot(domain_id, policy);
+    LPointer<SetWorkOrchProcPolicyTask> task =
+        AsyncSetWorkOrchProcPolicyRoot(domain_id, policy);
     task->Wait();
     LABSTOR_CLIENT->DelTask(task);
   }
+  LABSTOR_TASK_NODE_ADMIN_ROOT(SetWorkOrchProcPolicy);
 };
 
 }  // namespace labstor::Admin

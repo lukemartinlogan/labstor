@@ -23,9 +23,9 @@ class Client : public TaskLibClient {
 
   /** Async create a task state */
   HSHM_ALWAYS_INLINE
-      ConstructTask* AsyncCreate(const TaskNode &task_node,
-                                 const DomainId &domain_id,
-                                 const std::string &state_name) {
+  LPointer<ConstructTask> AsyncCreate(const TaskNode &task_node,
+                                      const DomainId &domain_id,
+                                      const std::string &state_name) {
     id_ = TaskStateId::GetNull();
     QueueManagerInfo &qm = LABSTOR_CLIENT->server_config_.queue_manager_;
     std::vector<PriorityInfo> queue_info = {
@@ -65,11 +65,12 @@ class Client : public TaskLibClient {
   }
   template<typename TaskT>
   HSHM_ALWAYS_INLINE
-      LPointer<labpq::TypedPushTask<TaskT>> AsyncPush(const TaskNode &task_node,
-                                                      const DomainId &domain_id,
-                                                      const hipc::Pointer &subtask) {
+  LPointer<labpq::TypedPushTask<TaskT>>
+  AsyncPush(const TaskNode &task_node,
+            const DomainId &domain_id,
+            const hipc::Pointer &subtask) {
     LPointer<labpq::TypedPushTask<TaskT>> push_task =
-        LABSTOR_CLIENT->AllocTask<labpq::TypedPushTask<TaskT>>();
+        LABSTOR_CLIENT->AllocateTask<labpq::TypedPushTask<TaskT>>();
     AsyncPushConstruct(push_task.ptr_, task_node, domain_id, subtask);
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
     queue->Emplace(push_task->prio_, push_task->lane_hash_, push_task.shm_);

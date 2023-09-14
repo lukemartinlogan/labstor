@@ -42,19 +42,17 @@ class Client : public TaskLibClient {
   }
 
   /** Metadata task */
-  MdTask* AsyncMd(const TaskNode &task_node,
-                  const DomainId &domain_id) {
-    hipc::Pointer p;
+  LPointer<MdTask> AsyncMd(const TaskNode &task_node,
+                           const DomainId &domain_id) {
     MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-    auto *task = LABSTOR_CLIENT->NewTask<MdTask>(
-        p,
+    auto task = LABSTOR_CLIENT->NewTask<MdTask>(
         task_node, domain_id, id_);
-    queue->Emplace(TaskPrio::kLowLatency, 3, p);
+    queue->Emplace(TaskPrio::kLowLatency, 3, task.shm_);
     return task;
   }
   LABSTOR_TASK_NODE_ROOT(AsyncMd);
   int MdRoot(const DomainId &domain_id) {
-    auto *task = AsyncMdRoot(domain_id);
+    LPointer<MdTask> task = AsyncMdRoot(domain_id);
     task->Wait();
     int ret = task->ret_[0];
     LABSTOR_CLIENT->DelTask(task);

@@ -26,10 +26,10 @@ class Client : public TaskLibClient {
 
   /** Async create a task state */
   HSHM_ALWAYS_INLINE
-  ConstructTask* AsyncCreate(const TaskNode &task_node,
-                             const DomainId &domain_id,
-                             const std::string &state_name,
-                             const TaskStateId &state_id) {
+  LPointer<ConstructTask> AsyncCreate(const TaskNode &task_node,
+                                      const DomainId &domain_id,
+                                      const std::string &state_name,
+                                      const TaskStateId &state_id) {
     id_ = state_id;
     QueueManagerInfo &qm = LABSTOR_CLIENT->server_config_.queue_manager_;
     std::vector<PriorityInfo> queue_info = {
@@ -40,23 +40,16 @@ class Client : public TaskLibClient {
     return LABSTOR_ADMIN->AsyncCreateTaskState<ConstructTask>(
         task_node, domain_id, state_name, id_, queue_info);
   }
-
-  /** Create a remote_queue */
+  LABSTOR_TASK_NODE_ROOT(AsyncCreate);
   template<typename ...Args>
   HSHM_ALWAYS_INLINE
-  void Create(Args&& ...args) {
-    auto *task = AsyncCreate(std::forward<Args>(args)...);
+  void CreateRoot(Args&& ...args) {
+    LPointer<ConstructTask> task =
+        AsyncCreateRoot(std::forward<Args>(args)...);
     task->Wait();
     id_ = task->id_;
     queue_id_ = QueueId(id_);
     LABSTOR_CLIENT->DelTask(task);
-  }
-  LABSTOR_TASK_NODE_ROOT(Create);
-
-  /** Init */
-  void Init(TaskStateId state_id) {
-    id_ = state_id;
-    queue_id_ = QueueId(id_);
   }
 
   /** Destroy task state + queue */
@@ -70,9 +63,6 @@ class Client : public TaskLibClient {
   void Disperse(Task *orig_task,
                 TaskState *exec,
                 std::vector<DomainId> &domain_ids) {
-    hipc::Pointer p;
-    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
-
     // Serialize task + create the wait task
     HILOG(kDebug, "Beginning dispersion for (task_node={}, task_state={}, method={})",
           orig_task->task_node_ + 1, orig_task->task_state_, orig_task->method_)
@@ -81,12 +71,12 @@ class Client : public TaskLibClient {
 
     // Create subtasks
     exec->ReplicateStart(orig_task->method_, domain_ids.size(), orig_task);
-    LABSTOR_CLIENT->NewTask<PushTask>(
-        p, orig_task->task_node_ + 1, DomainId::GetLocal(), id_,
+    auto push_task = LABSTOR_CLIENT->NewTask<PushTask>(
+        orig_task->task_node_ + 1, DomainId::GetLocal(), id_,
         domain_ids, orig_task, exec, orig_task->method_, xfer);
-    queue->Emplace(orig_task->prio_, orig_task->lane_hash_, p);
+    MultiQueue *queue = LABSTOR_CLIENT->GetQueue(queue_id_);
+    queue->Emplace(orig_task->prio_, orig_task->lane_hash_, push_task.shm_);
   }
-  LABSTOR_TASK_NODE_ROOT(Custom);
 
   /** Spawn task to accept new connections */
 //  HSHM_ALWAYS_INLINE

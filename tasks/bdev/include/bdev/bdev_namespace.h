@@ -13,7 +13,7 @@
 using ::hermes::bdev::Method;
 using ::hermes::bdev::ConstructTask;
 using ::hermes::bdev::DestructTask;
-using ::hermes::bdev::AllocTask;
+using ::hermes::bdev::AllocateTask;
 using ::hermes::bdev::FreeTask;
 using ::hermes::bdev::ReadTask;
 using ::hermes::bdev::WriteTask;
