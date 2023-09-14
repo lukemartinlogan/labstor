@@ -104,20 +104,22 @@ class Client : public TaskLibClient {
                                     const hshm::charbuf &tag_name,
                                     bool blob_owner,
                                     const std::vector<TraitId> &traits,
-                                    size_t backend_size) {
+                                    size_t backend_size,
+                                    u32 flags) {
     HILOG(kDebug, "Creating a tag {}", tag_name.str());
     u32 hash = std::hash<hshm::charbuf>{}(tag_name);
     LABSTOR_CLIENT->ConstructTask<GetOrCreateTagTask>(
         task, task_node, DomainId::GetNode(HASH_TO_NODE_ID(hash)), id_,
-        tag_name, blob_owner, traits, backend_size);
+        tag_name, blob_owner, traits, backend_size, flags);
   }
   HSHM_ALWAYS_INLINE
   TagId GetOrCreateTagRoot(const hshm::charbuf &tag_name,
                            bool blob_owner,
                            const std::vector<TraitId> &traits,
-                           size_t backend_size) {
+                           size_t backend_size,
+                           u32 flags) {
     LPointer<labpq::TypedPushTask<GetOrCreateTagTask>> push_task = 
-        AsyncGetOrCreateTagRoot(tag_name, blob_owner, traits, backend_size);
+        AsyncGetOrCreateTagRoot(tag_name, blob_owner, traits, backend_size, flags);
     push_task->Wait();
     GetOrCreateTagTask *task = push_task->get();
     TagId tag_id = task->tag_id_;

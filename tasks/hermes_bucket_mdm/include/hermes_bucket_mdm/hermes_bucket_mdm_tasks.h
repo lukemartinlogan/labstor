@@ -305,6 +305,7 @@ struct GetOrCreateTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN bool blob_owner_;
   IN hipc::ShmArchive<hipc::vector<TraitId>> traits_;
   IN size_t backend_size_;
+  IN bitfield32_t flags_;
   OUT TagId tag_id_;
 
   /** SHM default constructor */
@@ -320,7 +321,8 @@ struct GetOrCreateTagTask : public Task, TaskFlags<TF_SRL_SYM> {
                      const hshm::charbuf &tag_name,
                      bool blob_owner,
                      const std::vector<TraitId> &traits,
-                     size_t backend_size) : Task(alloc) {
+                     size_t backend_size,
+                     u32 flags) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = std::hash<hshm::charbuf>{}(tag_name);
@@ -335,6 +337,7 @@ struct GetOrCreateTagTask : public Task, TaskFlags<TF_SRL_SYM> {
     backend_size_ = backend_size;
     HSHM_MAKE_AR(tag_name_, alloc, tag_name)
     HSHM_MAKE_AR(traits_, alloc, traits)
+    flags_ = bitfield32_t(flags);
   }
 
   /** Destructor */
@@ -347,7 +350,7 @@ struct GetOrCreateTagTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar(tag_name_, blob_owner_, traits_, backend_size_);
+    ar(tag_name_, blob_owner_, traits_, backend_size_, flags_);
   }
 
   /** (De)serialize message return */

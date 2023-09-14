@@ -35,12 +35,13 @@ class Bucket {
    * be used directly.
    * */
   explicit Bucket(const std::string &bkt_name,
-                  size_t backend_size = 0) {
+                  size_t backend_size = 0,
+                  u32 flags = 0) {
     mdm_ = &HERMES->mdm_;
     blob_mdm_ = &HERMES->blob_mdm_;
     bkt_mdm_ = &HERMES->bkt_mdm_;
     id_ = bkt_mdm_->GetOrCreateTagRoot(hshm::charbuf(bkt_name), true,
-                                       std::vector<TraitId>(), backend_size);
+                                       std::vector<TraitId>(), backend_size, flags);
     name_ = bkt_name;
   }
 

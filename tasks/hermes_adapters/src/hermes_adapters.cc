@@ -13,23 +13,6 @@ class Server : public TaskLib {
  public:
   Server() = default;
 
-  void Run(u32 method, Task *task) override {
-    switch (method) {
-      case Method::kConstruct: {
-        Construct(reinterpret_cast<ConstructTask *>(task));
-        break;
-      }
-      case Method::kDestruct: {
-        Destruct(reinterpret_cast<DestructTask *>(task));
-        break;
-      }
-      case Method::kCustom: {
-        Custom(reinterpret_cast<CustomTask *>(task));
-        break;
-      }
-    }
-  }
-
   void Construct(ConstructTask *task) {
     task->SetModuleComplete();
   }
@@ -41,6 +24,8 @@ class Server : public TaskLib {
   void Custom(CustomTask *task) {
     task->SetModuleComplete();
   }
+
+#include "hermes_adapters/hermes_adapters_lib_exec.h"
 };
 
 }  // namespace labstor
