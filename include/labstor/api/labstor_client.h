@@ -269,13 +269,16 @@ class Client : public ConfigurationManager {
 
 }  // namespace labstor
 
-#define TRANSPARENT_LABSTOR\
-  if (!LABSTOR_CLIENT->IsInitialized() && \
-      !LABSTOR_CLIENT->IsBeingInitialized() && \
-      !LABSTOR_CLIENT->IsTerminated()) {\
-    LABSTOR_CLIENT->Create();\
-    LABSTOR_CLIENT->is_transparent_ = true;\
+static inline bool TRANSPARENT_LABSTOR() {
+  if (!LABSTOR_CLIENT->IsInitialized() &&
+      !LABSTOR_CLIENT->IsBeingInitialized() &&
+      !LABSTOR_CLIENT->IsTerminated()) {
+    LABSTOR_CLIENT->Create();
+    LABSTOR_CLIENT->is_transparent_ = true;
+    return true;
   }
+  return false;
+}
 
 #define HASH_TO_NODE_ID(hash) (1 + ((hash) % LABSTOR_CLIENT->GetNumNodes()))
 

@@ -24,7 +24,7 @@ class Server : public TaskLib {
   void Construct(ConstructTask *task) {
     HILOG(kDebug, "ConstructTaskPhase::kLoadConfig")
     std::string config_path = task->server_config_path_->str();
-    HERMES->LoadServerConfig(config_path);
+    HERMES_CONF->LoadServerConfig(config_path);
     node_id_ = LABSTOR_CLIENT->node_id_;
     task->phase_ = ConstructTaskPhase::kCreateTaskStates;
     task->SetModuleComplete();

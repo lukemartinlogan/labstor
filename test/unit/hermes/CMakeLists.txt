@@ -13,9 +13,9 @@ add_executable(test_hermes_exec
         test_bucket.cc
 )
 add_dependencies(test_hermes_exec
-        ${Labstor_CLIENT_DEPS} hermes_config_manager)
+        ${Labstor_CLIENT_DEPS} hermes)
 target_link_libraries(test_hermes_exec
-        ${Labstor_CLIENT_LIBRARIES} hermes_config_manager Catch2::Catch2 MPI::MPI_CXX)
+        ${Labstor_CLIENT_LIBRARIES} hermes Catch2::Catch2 MPI::MPI_CXX)
 
 #------------------------------------------------------------------------------
 # Test Cases

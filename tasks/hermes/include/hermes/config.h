@@ -22,7 +22,7 @@
 #include <limits>
 #include "hermes_shm/util/config_parse.h"
 
-#include "hermes_types.h"
+#include "hermes/hermes_types.h"
 
 namespace hermes::config {
 

@@ -1,6 +1,6 @@
 #ifndef LABSTOR_SRC_CONFIG_SERVER_DEFAULT_H_
 #define LABSTOR_SRC_CONFIG_SERVER_DEFAULT_H_
-const char* kHermesServerDefaultConfigStr = 
+static inline const char* kHermesServerDefaultConfigStr =
 "# Example Hermes configuration file\n"
 "\n"
 "### Define properties of the storage devices\n"

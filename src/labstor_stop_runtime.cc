@@ -5,6 +5,6 @@
 #include "labstor_admin/labstor_admin.h"
 
 int main() {
-  TRANSPARENT_LABSTOR
+  TRANSPARENT_LABSTOR();
   LABSTOR_ADMIN->AsyncStopRuntimeRoot(labstor::DomainId::GetLocal());
 }

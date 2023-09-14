@@ -2,10 +2,10 @@
 // Created by lukemartinlogan on 7/9/23.
 //
 
-#ifndef LABSTOR_TASKS_HERMES_INCLUDE_HERMES_CONFIG_MANAGER_H_
-#define LABSTOR_TASKS_HERMES_INCLUDE_HERMES_CONFIG_MANAGER_H_
+#ifndef LABSTOR_TASKS_HERMES_INCLUDE_hermes_H_
+#define LABSTOR_TASKS_HERMES_INCLUDE_hermes_H_
 
-#include "hermes_types.h"
+#include "hermes/hermes_types.h"
 #include "labstor_admin/labstor_admin.h"
 #include "hermes_mdm/hermes_mdm.h"
 #include "hermes_bucket_mdm/hermes_bucket_mdm.h"
@@ -22,11 +22,15 @@ class ConfigurationManager {
   blob_mdm::Client blob_mdm_;
   ServerConfig server_config_;
   ClientConfig client_config_;
+  bool is_initialized_ = false;
 
  public:
   ConfigurationManager() = default;
 
   void ClientInit() {
+    if (is_initialized_) {
+      return;
+    }
     // Create connection to MDM
     std::string config_path = "";
     LoadClientConfig(config_path);
@@ -34,13 +38,18 @@ class ConfigurationManager {
     mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_mdm");
     blob_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_blob_mdm");
     bkt_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_bkt_mdm");
+    is_initialized_ = true;
   }
 
   void ServerInit() {
+    if (is_initialized_) {
+      return;
+    }
     // Create connection to MDM
     mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_mdm");
     blob_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_blob_mdm");
     bkt_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_bkt_mdm");
+    is_initialized_ = true;
   }
 
   void LoadClientConfig(std::string &config_path) {
@@ -64,6 +73,15 @@ class ConfigurationManager {
 
 }  // namespace hermes
 
-#define HERMES hshm::Singleton<hermes::ConfigurationManager>::GetInstance()
+#define HERMES_CONF hshm::Singleton<hermes::ConfigurationManager>::GetInstance()
 
-#endif  // LABSTOR_TASKS_HERMES_INCLUDE_HERMES_CONFIG_MANAGER_H_
+/** Initialize client-side Hermes transparently */
+static inline bool TRANSPARENT_HERMES() {
+  if (TRANSPARENT_LABSTOR()) {
+    HERMES_CONF->ClientInit();
+    return true;
+  }
+  return false;
+}
+
+#endif  // LABSTOR_TASKS_HERMES_INCLUDE_hermes_H_

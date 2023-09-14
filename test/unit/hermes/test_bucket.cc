@@ -5,7 +5,7 @@
 #include "basic_test.h"
 #include "labstor/api/labstor_client.h"
 #include "labstor_admin/labstor_admin.h"
-#include "hermes_mdm/hermes_mdm.h"
+#include "hermes/hermes.h"
 #include "hermes/bucket.h"
 #include <mpi.h>
 

@@ -2,16 +2,16 @@
 // Created by lukemartinlogan on 7/9/23.
 //
 
-#ifndef LABSTOR_TASKS_HERMES_INCLUDE_HERMES_BUCKET_H_
-#define LABSTOR_TASKS_HERMES_INCLUDE_HERMES_BUCKET_H_
+#ifndef LABSTOR_TASKS_HERMES_CONF_INCLUDE_HERMES_CONF_BUCKET_H_
+#define LABSTOR_TASKS_HERMES_CONF_INCLUDE_HERMES_CONF_BUCKET_H_
 
-#include "hermes_types.h"
+#include "hermes/hermes_types.h"
 #include "hermes_mdm/hermes_mdm.h"
 #include "hermes/config_manager.h"
 
 namespace hermes {
 
-#define HERMES_BUCKET_IS_FILE (1 << 1)
+#define HERMES_BUCKET_IS_FILE BIT_OPT(u32, 1)
 
 class Bucket {
  public:
@@ -37,9 +37,9 @@ class Bucket {
   explicit Bucket(const std::string &bkt_name,
                   size_t backend_size = 0,
                   u32 flags = 0) {
-    mdm_ = &HERMES->mdm_;
-    blob_mdm_ = &HERMES->blob_mdm_;
-    bkt_mdm_ = &HERMES->bkt_mdm_;
+    mdm_ = &HERMES_CONF->mdm_;
+    blob_mdm_ = &HERMES_CONF->blob_mdm_;
+    bkt_mdm_ = &HERMES_CONF->bkt_mdm_;
     id_ = bkt_mdm_->GetOrCreateTagRoot(hshm::charbuf(bkt_name), true,
                                        std::vector<TraitId>(), backend_size, flags);
     name_ = bkt_name;
@@ -55,9 +55,9 @@ class Bucket {
                   Context &ctx,
                   size_t backend_size = 0,
                   u32 flags = 0) {
-    mdm_ = &HERMES->mdm_;
-    blob_mdm_ = &HERMES->blob_mdm_;
-    bkt_mdm_ = &HERMES->bkt_mdm_;
+    mdm_ = &HERMES_CONF->mdm_;
+    blob_mdm_ = &HERMES_CONF->blob_mdm_;
+    bkt_mdm_ = &HERMES_CONF->bkt_mdm_;
     id_ = bkt_mdm_->GetOrCreateTagRoot(hshm::charbuf(bkt_name), true,
                                        std::vector<TraitId>(), backend_size, flags);
     name_ = bkt_name;
@@ -68,9 +68,9 @@ class Bucket {
    * */
   explicit Bucket(TagId tag_id) {
     id_ = tag_id;
-    mdm_ = &HERMES->mdm_;
-    blob_mdm_ = &HERMES->blob_mdm_;
-    bkt_mdm_ = &HERMES->bkt_mdm_;
+    mdm_ = &HERMES_CONF->mdm_;
+    blob_mdm_ = &HERMES_CONF->blob_mdm_;
+    bkt_mdm_ = &HERMES_CONF->bkt_mdm_;
   }
 
   /** Default constructor */
@@ -418,4 +418,4 @@ class Bucket {
 
 }  // namespace hermes
 
-#endif  // LABSTOR_TASKS_HERMES_INCLUDE_HERMES_BUCKET_H_
+#endif  // LABSTOR_TASKS_HERMES_CONF_INCLUDE_HERMES_CONF_BUCKET_H_

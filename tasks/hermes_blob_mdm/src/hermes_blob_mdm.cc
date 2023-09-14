@@ -52,8 +52,8 @@ class Server : public TaskLib {
     node_id_ = LABSTOR_CLIENT->node_id_;
     switch (task->phase_) {
       case ConstructTaskPhase::kCreateTaskStates: {
-        target_tasks_.reserve(HERMES->server_config_.devices_.size());
-        for (DeviceInfo &dev : HERMES->server_config_.devices_) {
+        target_tasks_.reserve(HERMES_CONF->server_config_.devices_.size());
+        for (DeviceInfo &dev : HERMES_CONF->server_config_.devices_) {
           std::string dev_type;
           if (dev.mount_dir_.empty()) {
             dev_type = "ram_bdev";
