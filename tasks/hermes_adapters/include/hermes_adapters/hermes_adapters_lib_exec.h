@@ -1,5 +1,5 @@
-#ifndef LABSTOR_HERMES_ADAPTERS_LIB_EXEC_H_
-#define LABSTOR_HERMES_ADAPTERS_LIB_EXEC_H_
+#ifndef LABSTOR_hermes_adapters_LIB_EXEC_H_
+#define LABSTOR_hermes_adapters_LIB_EXEC_H_
 
 /** Execute a task */
 void Run(u32 method, Task *task) override {
@@ -143,4 +143,4 @@ u32 GetGroup(u32 method, Task *task, hshm::charbuf &group) override {
   return -1;
 }
 
-#endif  // LABSTOR_HERMES_ADAPTERS_METHODS_H_
+#endif  // LABSTOR_hermes_adapters_METHODS_H_

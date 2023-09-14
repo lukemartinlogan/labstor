@@ -5,7 +5,6 @@
 #include "labstor_admin/labstor_admin.h"
 #include "labstor/api/labstor_runtime.h"
 #include "hermes_adapters/hermes_adapters.h"
-#include "hermes_adapters/filesystem.h"
 
 namespace labstor::hermes_adapters {
 
@@ -25,9 +24,10 @@ class Server : public TaskLib {
     task->SetModuleComplete();
   }
 
+ public:
 #include "hermes_adapters/hermes_adapters_lib_exec.h"
 };
 
-}  // namespace labstor
+}  // namespace labstor::hermes_adapters
 
 LABSTOR_TASK_CC(labstor::hermes_adapters::Server, "hermes_adapters");
