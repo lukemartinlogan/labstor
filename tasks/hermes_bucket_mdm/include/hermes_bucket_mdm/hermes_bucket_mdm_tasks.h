@@ -129,10 +129,8 @@ struct SetBlobMdmTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
 /** Update bucket size */
 struct UpdateSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN TagId tag_id_;
-  IN size_t blob_off_;
-  IN size_t data_size_;
+  IN size_t update_;
   IN bitfield32_t flags_;
-  IN BlobId blob_id_;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -145,13 +143,11 @@ struct UpdateSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
               const DomainId &domain_id,
               const TaskStateId &state_id,
               const TagId &tag_id,
-              const BlobId &blob_id,
-              size_t blob_off,
-              size_t data_size,
+              size_t update,
               bitfield32_t flags) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
-    lane_hash_ = blob_id.unique_;
+    lane_hash_ = tag_id.unique_;
     prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kUpdateSize;
@@ -160,9 +156,7 @@ struct UpdateSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
 
     // Custom params
     tag_id_ = tag_id;
-    blob_id_ = blob_id;
-    blob_off_ = blob_off;
-    data_size_ = data_size;
+    update_ = update;
     flags_ = flags;
   }
 
@@ -173,14 +167,12 @@ struct UpdateSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
   template<typename Ar>
   void SerializeStart(Ar &ar) {
     task_serialize<Ar>(ar);
-    ar(tag_id_, blob_id_, blob_off_, data_size_, flags_);
+    ar(tag_id_, update_, flags_);
   }
 
   /** (De)serialize message return */
   template<typename Ar>
-  void SerializeEnd(u32 replica, Ar &ar) {
-    ar(blob_id_);
-  }
+  void SerializeEnd(u32 replica, Ar &ar) {}
 
    /** Create group */
   HSHM_ALWAYS_INLINE
@@ -821,7 +813,7 @@ struct GetSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
     lane_hash_ = tag_id.unique_;
     prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
-    method_ = Method::kTagClearBlobs;
+    method_ = Method::kGetSize;
     task_flags_.SetBits(TASK_LOW_LATENCY);
     domain_id_ = domain_id;
 

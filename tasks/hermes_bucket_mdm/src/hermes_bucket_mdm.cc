@@ -43,12 +43,13 @@ class Server : public TaskLib {
    * */
   void SetBlobMdm(SetBlobMdmTask *task) {
     blob_mdm_.Init(task->blob_mdm_);
+    task->SetModuleComplete();
   }
 
   /** Update the size of the bucket */
   void UpdateSize(UpdateSizeTask *task) {
     TagInfo &tag_info = tag_map_[task->tag_id_];
-    tag_info.internal_size_ = std::max(task->blob_off_ + task->data_size_,
+    tag_info.internal_size_ = std::max(task->update_,
                                        tag_info.internal_size_);
     task->SetModuleComplete();
   }

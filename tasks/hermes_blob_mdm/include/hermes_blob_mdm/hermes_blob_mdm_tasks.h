@@ -233,7 +233,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   TEMP int plcmnt_idx_ = 0;
   TEMP int sub_plcmnt_idx_ = 0;
   TEMP LPointer<char> data_ptr_;
-  TEMP PutBlobTask *stage_task_ = nullptr;
+  TEMP size_t data_off_;
   TEMP hermes::bdev::AllocateTask *cur_bdev_alloc_;
   TEMP hipc::ShmArchive<std::vector<PlacementSchema>> schema_;
   TEMP hipc::ShmArchive<std::vector<hermes::bdev::WriteTask*>> bdev_writes_;

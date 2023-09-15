@@ -65,13 +65,11 @@ class Client : public TaskLibClient {
   HSHM_ALWAYS_INLINE
   void AsyncUpdateSizeConstruct(UpdateSizeTask *task,
                                 const TaskNode &task_node,
-                                TagId tag_id, const BlobId &blob_id,
-                                size_t blob_off, size_t blob_size,
-                                bitfield32_t flags) {
+                                TagId tag_id,
+                                size_t update, bitfield32_t flags = bitfield32_t(0)) {
     LABSTOR_CLIENT->ConstructTask<UpdateSizeTask>(
         task, task_node, DomainId::GetNode(tag_id.node_id_), id_,
-        tag_id, blob_id,
-        blob_off, blob_size, flags);
+        tag_id, update, flags);
   }
   LABSTOR_TASK_NODE_PUSH_ROOT(UpdateSize);
 

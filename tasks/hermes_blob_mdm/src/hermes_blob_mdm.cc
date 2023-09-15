@@ -118,6 +118,7 @@ class Server : public TaskLib {
    * */
   void SetBucketMdm(SetBucketMdmTask *task) {
     bkt_mdm_.Init(task->bkt_mdm_);
+    task->SetModuleComplete();
   }
 
   /**
@@ -185,6 +186,7 @@ class Server : public TaskLib {
     // Stage in blob data from FS
     task->data_ptr_.ptr_ = LABSTOR_CLIENT->GetPrivatePointer<char>(task->data_);
     task->data_ptr_.shm_ = task->data_;
+    task->data_off_ = 0;
     if (task->filename_->size() > 0 && blob_info.blob_size_ == 0) {
       adapter::BlobPlacement plcmnt;
       plcmnt.DecodeBlobName(*task->blob_name_);
@@ -200,6 +202,7 @@ class Server : public TaskLib {
       task->data_ptr_ = new_data_ptr;
       task->blob_off_ = 0;
       task->data_size_ = task->page_size_;
+      task->data_off_ = plcmnt.bucket_off_ + task->blob_off_ + task->data_size_;
       task->flags_.SetBits(HERMES_DID_STAGE_IN);
     }
 
@@ -327,6 +330,17 @@ class Server : public TaskLib {
     HSHM_DESTROY_AR(task->bdev_writes_);
     if (task->flags_.Any(HERMES_DID_STAGE_IN)) {
       LABSTOR_CLIENT->FreeBuffer(task->data_ptr_);
+    }
+    // Update the bucket statistics
+    if (task->data_off_) {
+      bkt_mdm_.AsyncUpdateSize(task->task_node_ + 1,
+                               task->tag_id_,
+                               task->data_off_);
+    }
+    if (task->flags_.Any(HERMES_BLOB_DID_CREATE)) {
+      bkt_mdm_.AsyncTagAddBlob(task->task_node_ + 1,
+                               task->tag_id_,
+                               task->blob_id_);
     }
     task->SetModuleComplete();
   }
