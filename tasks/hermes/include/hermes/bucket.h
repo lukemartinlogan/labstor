@@ -122,8 +122,7 @@ class Bucket {
    * Get the current size of the bucket
    * */
   size_t GetSize() {
-    // TODO(llogan)
-    return 0;
+    return bkt_mdm_->GetSizeRoot(id_);
   }
 
   /**

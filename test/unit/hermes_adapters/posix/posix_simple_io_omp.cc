@@ -15,6 +15,7 @@
 #include <dlfcn.h>
 #include <iostream>
 #include "hermes_shm/util/logging.h"
+#include "hermes_shm/util/config_parse.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -23,7 +24,7 @@
 #include <cstring>
 #include "basic_test.h"
 
-static const int kNumProcs = 4;
+static const int kNumProcs = 1;
 
 void TestThread(char *path,
                 int do_read,
@@ -130,14 +131,14 @@ void TestThread(char *path,
 int main(int argc, char **argv) {
   if (argc != 6) {
     std::cout << "USAGE: ./posix_simple_io"
-              << " [path] [read] [block_size (kb)] [count]"
+              << " [path] [read] [block_size] [count]"
               << " [off (blocks)]";
     exit(1);
   }
 
   char *path = argv[1];
   int do_read = atoi(argv[2]);
-  int block_size = atoi(argv[3])*1024;
+  int block_size = hshm::ConfigParse::ParseSize(argv[3]);
   int count = atoi(argv[4]);
   int block_off = atoi(argv[5]);
   if (do_read) {

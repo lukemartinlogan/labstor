@@ -232,7 +232,7 @@ class Client : public TaskLibClient {
         task, task_node, DomainId::GetNode(HASH_TO_NODE_ID(hash)), id_,
         tag_id, blob_id);
   }
-  void TagRemoveBlobRootConstruct(const TagId &tag_id, const BlobId &blob_id) {
+  void TagRemoveBlobRoot(const TagId &tag_id, const BlobId &blob_id) {
     LPointer<labpq::TypedPushTask<TagRemoveBlobTask>> push_task = 
         AsyncTagRemoveBlobRoot(tag_id, blob_id);
     push_task->Wait();
@@ -256,6 +256,26 @@ class Client : public TaskLibClient {
     LABSTOR_CLIENT->DelTask(push_task);
   }
   LABSTOR_TASK_NODE_PUSH_ROOT(TagClearBlobs);
+
+  /** Get the size of a bucket */
+  void AsyncGetSizeConstruct(GetSizeTask *task,
+                             const TaskNode &task_node,
+                             const TagId &tag_id) {
+    u32 hash = tag_id.unique_;
+    LABSTOR_CLIENT->ConstructTask<GetSizeTask>(
+        task, task_node, DomainId::GetNode(HASH_TO_NODE_ID(hash)), id_,
+        tag_id);
+  }
+  size_t GetSizeRoot(const TagId &tag_id) {
+    LPointer<labpq::TypedPushTask<GetSizeTask>> push_task =
+        AsyncGetSizeRoot(tag_id);
+    push_task->Wait();
+    GetSizeTask *task = push_task->get();
+    size_t size = task->size_;
+    LABSTOR_CLIENT->DelTask(push_task);
+    return size;
+  }
+  LABSTOR_TASK_NODE_PUSH_ROOT(GetSize);
 };
 
 }  // namespace labstor

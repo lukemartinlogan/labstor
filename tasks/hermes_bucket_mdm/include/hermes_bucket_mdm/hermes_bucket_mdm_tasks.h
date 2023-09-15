@@ -760,6 +760,58 @@ struct TagClearBlobsTask : public Task, TaskFlags<TF_SRL_SYM> {
   }
 };
 
+/** A task to destroy all blobs in the tag */
+struct GetSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
+  IN TagId tag_id_;
+  OUT size_t size_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  GetSizeTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
+  GetSizeTask(hipc::Allocator *alloc,
+                    const TaskNode &task_node,
+                    const DomainId &domain_id,
+                    const TaskStateId &state_id,
+                    TagId tag_id) : Task(alloc) {
+    // Initialize task
+    task_node_ = task_node;
+    lane_hash_ = tag_id.unique_;
+    prio_ = TaskPrio::kLowLatency;
+    task_state_ = state_id;
+    method_ = Method::kTagClearBlobs;
+    task_flags_.SetBits(TASK_LOW_LATENCY);
+    domain_id_ = domain_id;
+
+    // Custom params
+    tag_id_ = tag_id;
+  }
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(tag_id_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(u32 replica, Ar &ar) {
+    ar(size_);
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  u32 GetGroup(hshm::charbuf &group) {
+    labstor::LocalSerialize srl(group);
+    srl << tag_id_.unique_;
+    srl << tag_id_.node_id_;
+    return 0;
+  }
+};
+
 }  // namespace hermes::bucket_mdm
 
 #endif  // LABSTOR_TASKS_HERMES_BUCKET_MDM_INCLUDE_HERMES_BUCKET_MDM_HERMES_BUCKET_MDM_TASKS_H_
