@@ -155,6 +155,7 @@ class Server : public TaskLib {
                                                     task->data_ + buf_off,
                                                     task->score_,
                                                     bitfield32_t(0),
+                                                    Context(),
                                                     bitfield32_t(0)).ptr_;
           HILOG(kDebug, "(node {}) Finished spawning blob {} of size {} for tag {} (task_node={} blob_mdm={})",
                 LABSTOR_CLIENT->node_id_, append.blob_name_.str(), append.data_size_,

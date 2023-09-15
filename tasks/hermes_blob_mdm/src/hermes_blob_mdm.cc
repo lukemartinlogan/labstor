@@ -5,7 +5,9 @@
 #include "labstor/api/labstor_runtime.h"
 #include "hermes/config_server.h"
 #include "hermes_blob_mdm/hermes_blob_mdm.h"
+#include "hermes_adapters/mapper/mapper_factory.h"
 #include "hermes/dpe/dpe_factory.h"
+#include "hermes_adapters/posix/posix_api.h"
 #include "bdev/bdev.h"
 
 namespace hermes::blob_mdm {
@@ -141,19 +143,18 @@ class Server : public TaskLib {
   void PutBlobCreatePhase(PutBlobTask *task) {
     HILOG(kDebug, "PutBlobPhase::kCreate {}", task->blob_id_);
     // Get the blob info data structure
-    task->did_create_ = false;
     hshm::charbuf blob_name = hshm::to_charbuf(*task->blob_name_);
     auto it = blob_map_.find(task->blob_id_);
     if (it == blob_map_.end()) {
-      task->did_create_ = true;
+      task->flags_.SetBits(HERMES_BLOB_DID_CREATE);
     }
-    if (task->did_create_) {
+    if (task->flags_.Any(HERMES_BLOB_DID_CREATE)) {
       blob_map_.emplace(task->blob_id_, BlobInfo());
     }
     BlobInfo &blob_info = blob_map_[task->blob_id_];
 
     // Update the blob info
-    if (task->did_create_) {
+    if (task->flags_.Any(HERMES_BLOB_DID_CREATE)) {
       // Update blob info
       blob_info.name_ = std::move(blob_name);
       blob_info.blob_id_ = task->blob_id_;
@@ -558,7 +559,7 @@ class Server : public TaskLib {
           return;
         }
         BlobInfo &blob_info = it->second;
-        task->data_ = LABSTOR_CLIENT->AllocateBuffer(blob_info.blob_size_);
+        task->data_ = LABSTOR_CLIENT->AllocateBuffer(blob_info.blob_size_).shm_;
         task->data_size_ = blob_info.blob_size_;
         task->get_task_ = blob_mdm_.AsyncGetBlob(task->task_node_ + 1,
                                                  task->tag_id_,

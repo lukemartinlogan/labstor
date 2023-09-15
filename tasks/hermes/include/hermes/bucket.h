@@ -213,8 +213,8 @@ class Bucket {
                  Context &ctx) {
     BlobId blob_id = orig_blob_id;
     // Copy data to shared memory
-    hipc::Pointer p = LABSTOR_CLIENT->AllocateBuffer(blob.size());
-    char *data = LABSTOR_CLIENT->GetPrivatePointer(p);
+    LPointer<char> p = LABSTOR_CLIENT->AllocateBuffer(blob.size());
+    char *data = p.ptr_;
     memcpy(data, blob.data(), blob.size());
     // Put to shared memory
     hshm::charbuf blob_name_buf = hshm::to_charbuf(blob_name);
@@ -224,12 +224,14 @@ class Bucket {
     HILOG(kDebug, "The bucket's ID is: {}", blob_id);
     if constexpr(!PARTIAL) {
       blob_mdm_->AsyncPutBlobRoot(id_, blob_name_buf,
-                                  blob_id, 0, blob.size(), p, ctx.blob_score_,
-                                  bitfield32_t(HERMES_BLOB_REPLACE));
+                                  blob_id, 0, blob.size(), p.shm_, ctx.blob_score_,
+                                  bitfield32_t(HERMES_BLOB_REPLACE),
+                                  ctx);
     } else {
       blob_mdm_->AsyncPutBlobRoot(id_, blob_name_buf,
-                                  blob_id, blob_off, blob.size(), p, ctx.blob_score_,
-                                  bitfield32_t(0));
+                                  blob_id, blob_off, blob.size(), p.shm_, ctx.blob_score_,
+                                  bitfield32_t(0),
+                                  ctx);
     }
     return blob_id;
   }
@@ -290,10 +292,10 @@ class Bucket {
    * Append \a blob_name Blob into the bucket
    * */
   Status Append(const Blob &blob, size_t page_size, Context &ctx) {
-    hipc::Pointer p = LABSTOR_CLIENT->AllocateBuffer(blob.size());
-    char *data = LABSTOR_CLIENT->GetPrivatePointer(p);
+    LPointer<char> p = LABSTOR_CLIENT->AllocateBuffer(blob.size());
+    char *data = p.ptr_;
     memcpy(data, blob.data(), blob.size());
-    bkt_mdm_->AppendBlobRoot(id_, blob.size(), p, page_size, ctx.blob_score_, ctx.node_id_);
+    bkt_mdm_->AppendBlobRoot(id_, blob.size(), p.shm_, page_size, ctx.blob_score_, ctx.node_id_, ctx);
     return Status();
   }
 
@@ -335,9 +337,9 @@ class Bucket {
     if (data_size == 0) {
       data_size = GetBlobSize(blob_id);
     }
-    hipc::Pointer data_p = LABSTOR_CLIENT->AllocateBuffer(data_size);
-    data_size = blob_mdm_->GetBlobRoot(id_, blob_id, blob_off, data_size, data_p);
-    char *data = LABSTOR_CLIENT->GetPrivatePointer(data_p);
+    LPointer data_p = LABSTOR_CLIENT->AllocateBuffer(data_size);
+    data_size = blob_mdm_->GetBlobRoot(id_, blob_id, blob_off, data_size, data_p.shm_, ctx);
+    char *data = data_p.ptr_;
     // Copy data to blob
     // TODO(llogan): intercept mmap to avoid copy
     blob.resize(data_size);

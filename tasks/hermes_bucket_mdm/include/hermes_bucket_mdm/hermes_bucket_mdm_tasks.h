@@ -263,7 +263,8 @@ struct AppendBlobTask : public Task, TaskFlags<TF_LOCAL> {
                  const hipc::Pointer &data,
                  size_t page_size,
                  float score,
-                 u32 node_id) : Task(alloc) {
+                 u32 node_id,
+                 const Context &ctx) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = tag_id.unique_;

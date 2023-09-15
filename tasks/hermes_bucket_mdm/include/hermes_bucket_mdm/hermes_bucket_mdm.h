@@ -81,10 +81,11 @@ class Client : public TaskLibClient {
       const hipc::Pointer &data,
       size_t page_size,
       float score,
-      u32 node_id) {
+      u32 node_id,
+      const Context &ctx) {
     LABSTOR_CLIENT->ConstructTask<AppendBlobTask>(
         task, task_node, DomainId::GetLocal(), id_,
-        tag_id, data_size, data, page_size, score, node_id);
+        tag_id, data_size, data, page_size, score, node_id, ctx);
   }
   HSHM_ALWAYS_INLINE
   void AppendBlobRoot(TagId tag_id,
@@ -92,8 +93,9 @@ class Client : public TaskLibClient {
                       const hipc::Pointer &data,
                       size_t page_size,
                       float score,
-                      u32 node_id) {
-    AsyncAppendBlobRoot(tag_id, data_size, data, page_size, score, node_id);
+                      u32 node_id,
+                      const Context &ctx) {
+    AsyncAppendBlobRoot(tag_id, data_size, data, page_size, score, node_id, ctx);
   }
   LABSTOR_TASK_NODE_PUSH_ROOT(AppendBlob);
 

@@ -58,12 +58,12 @@ void Filesystem::Open(AdapterStat &stat, File &f, const std::string &path) {
     // Get or create the bucket
     if (stat.hflags_.Any(HERMES_FS_TRUNC)) {
       // The file was opened with TRUNCATION
-      stat.bkt_id_ = HERMES->GetBucket(stat.path_, ctx, 0);
+      stat.bkt_id_ = HERMES->GetBucket(stat.path_, ctx, 0, HERMES_BUCKET_IS_FILE);
       stat.bkt_id_.Clear();
     } else {
       // The file was opened regularly
       stat.file_size_ = io_client_->GetSize(*path_shm);
-      stat.bkt_id_ = HERMES->GetBucket(stat.path_, ctx, stat.file_size_);
+      stat.bkt_id_ = HERMES->GetBucket(stat.path_, ctx, stat.file_size_, HERMES_BUCKET_IS_FILE);
     }
     HILOG(kDebug, "File has size: {}", stat.bkt_id_.GetSize());
     // Update file position pointer
@@ -124,7 +124,9 @@ size_t Filesystem::Write(File &f, AdapterStat &stat, const void *ptr,
 
   // Perform a PartialPut for each page
   Context ctx;
-  for (const auto &p : mapping) {
+  ctx.page_size_ = stat.page_size_;
+  ctx.filename_ = stat.path_;
+  for (const BlobPlacement &p : mapping) {
     const Blob page((const char*)ptr + data_offset, p.blob_size_);
     if (!is_append) {
       std::string blob_name(p.CreateBlobName().str());
@@ -149,14 +151,12 @@ size_t Filesystem::Read(File &f, AdapterStat &stat, void *ptr,
                         IoStatus &io_status, FsIoOptions opts) {
   (void) f;
   hapi::Bucket &bkt = stat.bkt_id_;
-  std::string filename = bkt.GetName();
-  size_t file_size = stat.bkt_id_.GetSize();
 
   HILOG(kDebug, "Read called for filename: {}"
                 " on offset: {}"
                 " from position: {}"
                 " and size: {}",
-        filename, off, stat.st_ptr_, total_size)
+        stat.path_, off, stat.st_ptr_, total_size)
 
   // SEEK_END is not a valid read position
   if (off == std::numeric_limits<size_t>::max()) {
@@ -164,9 +164,6 @@ size_t Filesystem::Read(File &f, AdapterStat &stat, void *ptr,
   }
 
   // Ensure the amount being read makes sense
-  if (off + total_size > file_size) {
-    total_size = file_size - off;
-  }
   if (total_size == 0) {
     return 0;
   }
@@ -196,7 +193,9 @@ size_t Filesystem::Read(File &f, AdapterStat &stat, void *ptr,
 
   // Perform a PartialPut for each page
   Context ctx;
-  for (const auto &p : mapping) {
+  ctx.page_size_ = stat.page_size_;
+  ctx.filename_ = stat.path_;
+  for (const BlobPlacement &p : mapping) {
     Blob page((const char*)ptr + data_offset, p.blob_size_);
     std::string blob_name(p.CreateBlobName().str());
     bkt.PartialGet(blob_name, page, p.blob_off_, ctx);

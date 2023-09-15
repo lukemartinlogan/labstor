@@ -156,6 +156,9 @@ class PutBlobPhase {
 
 #define HERMES_BLOB_REPLACE BIT_OPT(u32, 0)
 #define HERMES_BLOB_APPEND BIT_OPT(u32, 1)
+#define HERMES_DID_STAGE_IN BIT_OPT(u32, 2)
+#define HERMES_BLOB_DID_CREATE BIT_OPT(u32, 3)
+
 
 /** A task to put data in a blob */
 struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> {
@@ -167,7 +170,9 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   IN float score_;
   IN bitfield32_t flags_;
   IN BlobId blob_id_;
-  TEMP bool did_create_;
+  IN hipc::ShmArchive<hipc::charbuf> filename_;
+  IN size_t page_size_;
+
   TEMP int phase_ = PutBlobPhase::kCreate;
   TEMP int plcmnt_idx_ = 0;
   TEMP int sub_plcmnt_idx_ = 0;
@@ -192,7 +197,8 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
               size_t data_size,
               const hipc::Pointer &data,
               float score,
-              bitfield32_t flags) : Task(alloc) {
+              bitfield32_t flags,
+              const Context &ctx) : Task(alloc) {
     // Initialize task
     HILOG(kDebug, "Beginning PUT task constructor")
     task_node_ = task_node;
@@ -213,12 +219,15 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     data_ = data;
     score_ = score;
     flags_ = flags;
+    HSHM_MAKE_AR(filename_, alloc, ctx.filename_);
+    page_size_ = ctx.page_size_;
     HILOG(kDebug, "Finished setting blob name {}", blob_name.str());
   }
 
   /** Destructor */
   ~PutBlobTask() {
     HSHM_DESTROY_AR(blob_name_);
+    HSHM_DESTROY_AR(filename_);
     if (IsDataOwner()) {
       LABSTOR_CLIENT->FreeBuffer(data_);
     }
@@ -275,6 +284,7 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   INOUT ssize_t data_size_;
   TEMP int phase_ = GetBlobPhase::kStart;
   TEMP hipc::ShmArchive<std::vector<bdev::ReadTask*>> bdev_reads_;
+  TEMP PutBlobTask *stage_task_ = nullptr;
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
@@ -290,7 +300,8 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
               const BlobId &blob_id,
               size_t off,
               ssize_t data_size,
-              hipc::Pointer &data) : Task(alloc) {
+              hipc::Pointer &data,
+              const Context &ctx) : Task(alloc) {
     // Initialize task
     task_node_ = task_node;
     lane_hash_ = blob_id.unique_;

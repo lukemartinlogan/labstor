@@ -169,9 +169,9 @@ class Client : public ConfigurationManager {
 
   /** Allocate a buffer */
   HSHM_ALWAYS_INLINE
-  hipc::Pointer AllocateBuffer(size_t size) {
-    hipc::Pointer p = main_alloc_->Allocate(size);
-    if (p.IsNull()) {
+  LPointer<char> AllocateBuffer(size_t size) {
+    LPointer<char> p = main_alloc_->AllocateLocalPtr<char>(size);
+    if (p.ptr_ == nullptr) {
       throw std::runtime_error("Could not allocate buffer");
     }
     return p;
@@ -188,6 +188,12 @@ class Client : public ConfigurationManager {
   HSHM_ALWAYS_INLINE
   void FreeBuffer(hipc::Pointer &p) {
     main_alloc_->Free(p);
+  }
+
+  /** Free a buffer */
+  HSHM_ALWAYS_INLINE
+  void FreeBuffer(LPointer<char> &p) {
+    main_alloc_->FreeLocalPtr(p);
   }
 };
 
