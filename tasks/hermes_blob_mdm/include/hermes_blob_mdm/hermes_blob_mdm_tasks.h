@@ -81,6 +81,62 @@ struct DestructTask : public DestroyTaskStateTask {
   }
 };
 
+/** Set the BUCKET MDM ID */
+struct SetBucketMdmTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
+  IN TaskStateId bkt_mdm_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  SetBucketMdmTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
+  SetBucketMdmTask(hipc::Allocator *alloc,
+                   const TaskNode &task_node,
+                   const DomainId &domain_id,
+                   const TaskStateId &state_id,
+                   const TaskStateId &bkt_mdm) : Task(alloc) {
+    // Initialize task
+    task_node_ = task_node;
+    lane_hash_ = 0;
+    prio_ = TaskPrio::kAdmin;
+    task_state_ = state_id;
+    method_ = Method::kSetBucketMdm;
+    task_flags_.SetBits(TASK_LOW_LATENCY);
+    domain_id_ = domain_id;
+
+    // Custom params
+    bkt_mdm_ = bkt_mdm;
+  }
+
+  /** Destructor */
+  ~SetBucketMdmTask() {}
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(bkt_mdm_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(u32 replica, Ar &ar) {
+  }
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  u32 GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
+
+  /** Begin replication */
+  void ReplicateStart(u32 count) {}
+
+  /** Finalize replication */
+  void ReplicateEnd() {}
+};
+
 /**====================================
  * Blob Operations
  * ===================================*/

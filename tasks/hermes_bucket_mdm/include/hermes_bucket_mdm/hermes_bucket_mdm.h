@@ -44,19 +44,36 @@ class Client : public TaskLibClient {
    * Tag Operations
    * ===================================*/
 
+  /** Sets the BLOB MDM */
+  void AsyncSetBlobMdmConstruct(SetBlobMdmTask *task,
+                                const TaskNode &task_node,
+                                const DomainId &domain_id,
+                                const TaskStateId &blob_mdm_id) {
+    LABSTOR_CLIENT->ConstructTask<SetBlobMdmTask>(
+        task, task_node, domain_id, id_, blob_mdm_id);
+  }
+  void SetBlobMdmRoot(const DomainId &domain_id,
+                      const TaskStateId &blob_mdm_id) {
+    LPointer<labpq::TypedPushTask<SetBlobMdmTask>> push_task =
+        AsyncSetBlobMdmRoot(domain_id, blob_mdm_id);
+    push_task->Wait();
+    LABSTOR_CLIENT->DelTask(push_task);
+  }
+  LABSTOR_TASK_NODE_PUSH_ROOT(SetBlobMdm);
+
   /** Update statistics after blob PUT (fire & forget) */
   HSHM_ALWAYS_INLINE
-  void AsyncPutBlobConstruct(PutBlobTask *task,
-                             const TaskNode &task_node,
-                             TagId tag_id, const BlobId &blob_id,
-                             size_t blob_off, size_t blob_size,
-                             bitfield32_t flags) {
-    LABSTOR_CLIENT->ConstructTask<PutBlobTask>(
+  void AsyncUpdateSizeConstruct(UpdateSizeTask *task,
+                                const TaskNode &task_node,
+                                TagId tag_id, const BlobId &blob_id,
+                                size_t blob_off, size_t blob_size,
+                                bitfield32_t flags) {
+    LABSTOR_CLIENT->ConstructTask<UpdateSizeTask>(
         task, task_node, DomainId::GetNode(tag_id.node_id_), id_,
         tag_id, blob_id,
         blob_off, blob_size, flags);
   }
-  LABSTOR_TASK_NODE_PUSH_ROOT(PutBlob);
+  LABSTOR_TASK_NODE_PUSH_ROOT(UpdateSize);
 
   /** Append data to the bucket (fire & forget) */
   HSHM_ALWAYS_INLINE

@@ -18,17 +18,6 @@ namespace hermes::mdm {
 #include "hermes_mdm_methods.h"
 #include "labstor/labstor_namespace.h"
 
-/** Phases of the construct task */
-using labstor::Admin::CreateTaskStatePhase;
-class ConstructTaskPhase : public CreateTaskStatePhase {
- public:
-  TASK_METHOD_T kLoadConfig = kLast;
-  TASK_METHOD_T kCreateTaskStates = kLast + 1;
-  TASK_METHOD_T kWaitForTaskStates = kLast + 2;
-  TASK_METHOD_T kCreateQueues = kLast + 3;
-  TASK_METHOD_T kWaitForQueues = kLast + 4;
-};
-
 /**
  * A task to create hermes_mdm
  * */

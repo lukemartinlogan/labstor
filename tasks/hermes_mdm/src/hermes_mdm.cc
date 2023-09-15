@@ -6,6 +6,8 @@
 #include "labstor/api/labstor_runtime.h"
 #include "hermes/config_server.h"
 #include "hermes_mdm/hermes_mdm.h"
+#include "hermes_blob_mdm/hermes_blob_mdm.h"
+#include "hermes_bucket_mdm/hermes_bucket_mdm.h"
 #include "hermes/dpe/dpe_factory.h"
 #include "bdev/bdev.h"
 
@@ -17,6 +19,8 @@ class Server : public TaskLib {
    * Configuration
    * ===================================*/
    u32 node_id_;
+   blob_mdm::Client blob_mdm_;
+   bucket_mdm::Client bkt_mdm_;
 
  public:
   Server() = default;
@@ -26,7 +30,6 @@ class Server : public TaskLib {
     std::string config_path = task->server_config_path_->str();
     HERMES_CONF->LoadServerConfig(config_path);
     node_id_ = LABSTOR_CLIENT->node_id_;
-    task->phase_ = ConstructTaskPhase::kCreateTaskStates;
     task->SetModuleComplete();
   }
 

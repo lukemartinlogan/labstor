@@ -9,7 +9,8 @@ kTagRemoveBlob: 6
 # kTagAddTrait: 8
 # kTagRemoveTrait: 9
 kTagClearBlobs: 10
-kPutBlob: 11
+kUpdateSize: 11
 kAppendBlobSchema: 12
 kAppendBlob: 13
 kGetSize: 14
+kSetBlobMdm: 15

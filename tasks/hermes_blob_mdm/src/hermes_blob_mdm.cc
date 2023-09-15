@@ -45,6 +45,7 @@ class Server : public TaskLib {
   std::vector<bdev::Client> targets_;
   std::unordered_map<TargetId, TargetInfo*> target_map_;
   Client blob_mdm_;
+  bucket_mdm::Client bkt_mdm_;
 
  public:
   Server() = default;
@@ -112,6 +113,13 @@ class Server : public TaskLib {
   }
 
  public:
+  /**
+   * Set the Bucket MDM
+   * */
+  void SetBucketMdm(SetBucketMdmTask *task) {
+    bkt_mdm_.Init(task->bkt_mdm_);
+  }
+
   /**
    * Create a blob's metadata
    * */

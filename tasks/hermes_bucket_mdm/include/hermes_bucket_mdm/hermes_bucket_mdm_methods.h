@@ -11,9 +11,11 @@ struct Method : public TaskMethod {
   TASK_METHOD_T kTagAddBlob = kLast + 5;
   TASK_METHOD_T kTagRemoveBlob = kLast + 6;
   TASK_METHOD_T kTagClearBlobs = kLast + 10;
-  TASK_METHOD_T kPutBlob = kLast + 11;
+  TASK_METHOD_T kUpdateSize = kLast + 11;
   TASK_METHOD_T kAppendBlobSchema = kLast + 12;
   TASK_METHOD_T kAppendBlob = kLast + 13;
+  TASK_METHOD_T kGetSize = kLast + 14;
+  TASK_METHOD_T kSetBlobMdm = kLast + 15;
 };
 
 #endif  // LABSTOR_HERMES_BUCKET_MDM_METHODS_H_

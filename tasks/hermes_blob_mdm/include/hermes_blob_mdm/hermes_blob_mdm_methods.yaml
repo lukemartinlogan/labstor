@@ -14,3 +14,4 @@ kGetBlobScore: 12
 kGetBlobBuffers: 13
 kRenameBlob: 14
 kReorganizeBlob: 15
+kSetBucketMdm: 16

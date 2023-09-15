@@ -17,6 +17,7 @@ struct Method : public TaskMethod {
   TASK_METHOD_T kGetBlobBuffers = kLast + 13;
   TASK_METHOD_T kRenameBlob = kLast + 14;
   TASK_METHOD_T kReorganizeBlob = kLast + 15;
+  TASK_METHOD_T kSetBucketMdm = kLast + 16;
 };
 
 #endif  // LABSTOR_HERMES_BLOB_MDM_METHODS_H_

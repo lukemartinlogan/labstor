@@ -66,6 +66,23 @@ class Client : public TaskLibClient {
    * Blob Operations
    * ===================================*/
 
+  /** Sets the BUCKET MDM */
+  void AsyncSetBucketMdmConstruct(SetBucketMdmTask *task,
+                                  const TaskNode &task_node,
+                                  const DomainId &domain_id,
+                                  const TaskStateId &blob_mdm_id) {
+    LABSTOR_CLIENT->ConstructTask<SetBucketMdmTask>(
+        task, task_node, domain_id, id_, blob_mdm_id);
+  }
+  void SetBucketMdmRoot(const DomainId &domain_id,
+                        const TaskStateId &blob_mdm_id) {
+    LPointer<labpq::TypedPushTask<SetBucketMdmTask>> push_task =
+        AsyncSetBucketMdmRoot(domain_id, blob_mdm_id);
+    push_task->Wait();
+    LABSTOR_CLIENT->DelTask(push_task);
+  }
+  LABSTOR_TASK_NODE_PUSH_ROOT(SetBucketMdm);
+
   /**
    * Get \a blob_name BLOB from \a bkt_id bucket
    * */

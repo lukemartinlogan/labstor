@@ -21,14 +21,6 @@ namespace hermes::bucket_mdm {
 #include "hermes_bucket_mdm_methods.h"
 #include "labstor/labstor_namespace.h"
 
-/** Phases of the construct task */
-using labstor::Admin::CreateTaskStatePhase;
-class ConstructTaskPhase : public CreateTaskStatePhase {
- public:
-  TASK_METHOD_T kInit = kLast + 0;
-  TASK_METHOD_T kWait = kLast + 1;
-};
-
 /**
  * A task to create hermes_bucket_mdm
  * */
@@ -79,15 +71,63 @@ struct DestructTask : public DestroyTaskStateTask {
   }
 };
 
-/** Phases for the put task */
-class PutBlobPhase {
- public:
-  TASK_METHOD_T kUpdateMdm = 0;
-  TASK_METHOD_T kWait = 1;
+/** Set the BLOB MDM ID */
+struct SetBlobMdmTask : public Task, TaskFlags<TF_SRL_SYM | TF_REPLICA> {
+  IN TaskStateId blob_mdm_;
+
+  /** SHM default constructor */
+  HSHM_ALWAYS_INLINE explicit
+  SetBlobMdmTask(hipc::Allocator *alloc) : Task(alloc) {}
+
+  /** Emplace constructor */
+  HSHM_ALWAYS_INLINE explicit
+  SetBlobMdmTask(hipc::Allocator *alloc,
+                 const TaskNode &task_node,
+                 const DomainId &domain_id,
+                 const TaskStateId &state_id,
+                 const TaskStateId &blob_mdm) : Task(alloc) {
+    // Initialize task
+    task_node_ = task_node;
+    lane_hash_ = 0;
+    prio_ = TaskPrio::kAdmin;
+    task_state_ = state_id;
+    method_ = Method::kSetBlobMdm;
+    task_flags_.SetBits(TASK_LOW_LATENCY);
+    domain_id_ = domain_id;
+
+    // Custom params
+    blob_mdm_ = blob_mdm;
+  }
+
+  /** Destructor */
+  ~SetBlobMdmTask() {}
+
+  /** (De)serialize message call */
+  template<typename Ar>
+  void SerializeStart(Ar &ar) {
+    task_serialize<Ar>(ar);
+    ar(blob_mdm_);
+  }
+
+  /** (De)serialize message return */
+  template<typename Ar>
+  void SerializeEnd(u32 replica, Ar &ar) {}
+
+  /** Create group */
+  HSHM_ALWAYS_INLINE
+  u32 GetGroup(hshm::charbuf &group) {
+    return TASK_UNORDERED;
+  }
+
+  /** Begin replication */
+  void ReplicateStart(u32 count) {}
+
+  /** Finalize replication */
+  void ReplicateEnd() {}
 };
 
-/** Put a blob in the bucket */
-struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
+/** Update bucket size */
+struct UpdateSizeTask : public Task, TaskFlags<TF_SRL_SYM> {
   IN TagId tag_id_;
   IN size_t blob_off_;
   IN size_t data_size_;
@@ -96,11 +136,11 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
 
   /** SHM default constructor */
   HSHM_ALWAYS_INLINE explicit
-  PutBlobTask(hipc::Allocator *alloc) : Task(alloc) {}
+  UpdateSizeTask(hipc::Allocator *alloc) : Task(alloc) {}
 
   /** Emplace constructor */
   HSHM_ALWAYS_INLINE explicit
-  PutBlobTask(hipc::Allocator *alloc,
+  UpdateSizeTask(hipc::Allocator *alloc,
               const TaskNode &task_node,
               const DomainId &domain_id,
               const TaskStateId &state_id,
@@ -114,7 +154,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     lane_hash_ = blob_id.unique_;
     prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
-    method_ = Method::kPutBlob;
+    method_ = Method::kUpdateSize;
     task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET);
     domain_id_ = domain_id;
 
@@ -127,7 +167,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
   }
 
   /** Destructor */
-  ~PutBlobTask() {}
+  ~UpdateSizeTask() {}
 
   /** (De)serialize message call */
   template<typename Ar>
@@ -621,7 +661,7 @@ struct TagAddBlobTask : public Task, TaskFlags<TF_SRL_SYM> {
     prio_ = TaskPrio::kLowLatency;
     task_state_ = state_id;
     method_ = Method::kTagAddBlob;
-    task_flags_.SetBits(TASK_LOW_LATENCY);
+    task_flags_.SetBits(TASK_LOW_LATENCY | TASK_FIRE_AND_FORGET);
     domain_id_ = domain_id;
 
     // Custom params

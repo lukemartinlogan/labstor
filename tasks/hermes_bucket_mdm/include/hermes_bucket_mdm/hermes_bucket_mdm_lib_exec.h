@@ -44,8 +44,8 @@ void Run(u32 method, Task *task) override {
       TagClearBlobs(reinterpret_cast<TagClearBlobsTask *>(task));
       break;
     }
-    case Method::kPutBlob: {
-      PutBlob(reinterpret_cast<PutBlobTask *>(task));
+    case Method::kUpdateSize: {
+      UpdateSize(reinterpret_cast<UpdateSizeTask *>(task));
       break;
     }
     case Method::kAppendBlobSchema: {
@@ -54,6 +54,14 @@ void Run(u32 method, Task *task) override {
     }
     case Method::kAppendBlob: {
       AppendBlob(reinterpret_cast<AppendBlobTask *>(task));
+      break;
+    }
+    case Method::kGetSize: {
+      GetSize(reinterpret_cast<GetSizeTask *>(task));
+      break;
+    }
+    case Method::kSetBlobMdm: {
+      SetBlobMdm(reinterpret_cast<SetBlobMdmTask *>(task));
       break;
     }
   }
@@ -101,8 +109,8 @@ void ReplicateStart(u32 method, u32 count, Task *task) override {
       labstor::CALL_REPLICA_START(count, reinterpret_cast<TagClearBlobsTask*>(task));
       break;
     }
-    case Method::kPutBlob: {
-      labstor::CALL_REPLICA_START(count, reinterpret_cast<PutBlobTask*>(task));
+    case Method::kUpdateSize: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<UpdateSizeTask*>(task));
       break;
     }
     case Method::kAppendBlobSchema: {
@@ -111,6 +119,14 @@ void ReplicateStart(u32 method, u32 count, Task *task) override {
     }
     case Method::kAppendBlob: {
       labstor::CALL_REPLICA_START(count, reinterpret_cast<AppendBlobTask*>(task));
+      break;
+    }
+    case Method::kGetSize: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<GetSizeTask*>(task));
+      break;
+    }
+    case Method::kSetBlobMdm: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<SetBlobMdmTask*>(task));
       break;
     }
   }
@@ -158,8 +174,8 @@ void ReplicateEnd(u32 method, Task *task) override {
       labstor::CALL_REPLICA_END(reinterpret_cast<TagClearBlobsTask*>(task));
       break;
     }
-    case Method::kPutBlob: {
-      labstor::CALL_REPLICA_END(reinterpret_cast<PutBlobTask*>(task));
+    case Method::kUpdateSize: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<UpdateSizeTask*>(task));
       break;
     }
     case Method::kAppendBlobSchema: {
@@ -168,6 +184,14 @@ void ReplicateEnd(u32 method, Task *task) override {
     }
     case Method::kAppendBlob: {
       labstor::CALL_REPLICA_END(reinterpret_cast<AppendBlobTask*>(task));
+      break;
+    }
+    case Method::kGetSize: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<GetSizeTask*>(task));
+      break;
+    }
+    case Method::kSetBlobMdm: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<SetBlobMdmTask*>(task));
       break;
     }
   }
@@ -215,8 +239,8 @@ std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, T
       ar << *reinterpret_cast<TagClearBlobsTask*>(task);
       break;
     }
-    case Method::kPutBlob: {
-      ar << *reinterpret_cast<PutBlobTask*>(task);
+    case Method::kUpdateSize: {
+      ar << *reinterpret_cast<UpdateSizeTask*>(task);
       break;
     }
     case Method::kAppendBlobSchema: {
@@ -225,6 +249,14 @@ std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, T
     }
     case Method::kAppendBlob: {
       ar << *reinterpret_cast<AppendBlobTask*>(task);
+      break;
+    }
+    case Method::kGetSize: {
+      ar << *reinterpret_cast<GetSizeTask*>(task);
+      break;
+    }
+    case Method::kSetBlobMdm: {
+      ar << *reinterpret_cast<SetBlobMdmTask*>(task);
       break;
     }
   }
@@ -284,9 +316,9 @@ TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) override {
       ar >> *reinterpret_cast<TagClearBlobsTask*>(task_ptr.task_);
       break;
     }
-    case Method::kPutBlob: {
-      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<PutBlobTask>(task_ptr.p_);
-      ar >> *reinterpret_cast<PutBlobTask*>(task_ptr.task_);
+    case Method::kUpdateSize: {
+      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<UpdateSizeTask>(task_ptr.p_);
+      ar >> *reinterpret_cast<UpdateSizeTask*>(task_ptr.task_);
       break;
     }
     case Method::kAppendBlobSchema: {
@@ -297,6 +329,16 @@ TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) override {
     case Method::kAppendBlob: {
       task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<AppendBlobTask>(task_ptr.p_);
       ar >> *reinterpret_cast<AppendBlobTask*>(task_ptr.task_);
+      break;
+    }
+    case Method::kGetSize: {
+      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<GetSizeTask>(task_ptr.p_);
+      ar >> *reinterpret_cast<GetSizeTask*>(task_ptr.task_);
+      break;
+    }
+    case Method::kSetBlobMdm: {
+      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<SetBlobMdmTask>(task_ptr.p_);
+      ar >> *reinterpret_cast<SetBlobMdmTask*>(task_ptr.task_);
       break;
     }
   }
@@ -345,8 +387,8 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
       ar << *reinterpret_cast<TagClearBlobsTask*>(task);
       break;
     }
-    case Method::kPutBlob: {
-      ar << *reinterpret_cast<PutBlobTask*>(task);
+    case Method::kUpdateSize: {
+      ar << *reinterpret_cast<UpdateSizeTask*>(task);
       break;
     }
     case Method::kAppendBlobSchema: {
@@ -355,6 +397,14 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
     }
     case Method::kAppendBlob: {
       ar << *reinterpret_cast<AppendBlobTask*>(task);
+      break;
+    }
+    case Method::kGetSize: {
+      ar << *reinterpret_cast<GetSizeTask*>(task);
+      break;
+    }
+    case Method::kSetBlobMdm: {
+      ar << *reinterpret_cast<SetBlobMdmTask*>(task);
       break;
     }
   }
@@ -403,8 +453,8 @@ void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task)
       ar.Deserialize(replica, *reinterpret_cast<TagClearBlobsTask*>(task));
       break;
     }
-    case Method::kPutBlob: {
-      ar.Deserialize(replica, *reinterpret_cast<PutBlobTask*>(task));
+    case Method::kUpdateSize: {
+      ar.Deserialize(replica, *reinterpret_cast<UpdateSizeTask*>(task));
       break;
     }
     case Method::kAppendBlobSchema: {
@@ -413,6 +463,14 @@ void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task)
     }
     case Method::kAppendBlob: {
       ar.Deserialize(replica, *reinterpret_cast<AppendBlobTask*>(task));
+      break;
+    }
+    case Method::kGetSize: {
+      ar.Deserialize(replica, *reinterpret_cast<GetSizeTask*>(task));
+      break;
+    }
+    case Method::kSetBlobMdm: {
+      ar.Deserialize(replica, *reinterpret_cast<SetBlobMdmTask*>(task));
       break;
     }
   }
@@ -450,14 +508,20 @@ u32 GetGroup(u32 method, Task *task, hshm::charbuf &group) override {
     case Method::kTagClearBlobs: {
       return reinterpret_cast<TagClearBlobsTask*>(task)->GetGroup(group);
     }
-    case Method::kPutBlob: {
-      return reinterpret_cast<PutBlobTask*>(task)->GetGroup(group);
+    case Method::kUpdateSize: {
+      return reinterpret_cast<UpdateSizeTask*>(task)->GetGroup(group);
     }
     case Method::kAppendBlobSchema: {
       return reinterpret_cast<AppendBlobSchemaTask*>(task)->GetGroup(group);
     }
     case Method::kAppendBlob: {
       return reinterpret_cast<AppendBlobTask*>(task)->GetGroup(group);
+    }
+    case Method::kGetSize: {
+      return reinterpret_cast<GetSizeTask*>(task)->GetGroup(group);
+    }
+    case Method::kSetBlobMdm: {
+      return reinterpret_cast<SetBlobMdmTask*>(task)->GetGroup(group);
     }
   }
   return -1;

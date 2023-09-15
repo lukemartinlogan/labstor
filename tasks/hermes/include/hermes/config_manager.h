@@ -38,17 +38,8 @@ class ConfigurationManager {
     mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_mdm");
     blob_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_blob_mdm");
     bkt_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_bkt_mdm");
-    is_initialized_ = true;
-  }
-
-  void ServerInit() {
-    if (is_initialized_) {
-      return;
-    }
-    // Create connection to MDM
-    mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_mdm");
-    blob_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_blob_mdm");
-    bkt_mdm_.CreateRoot(DomainId::GetGlobal(), "hermes_bkt_mdm");
+    blob_mdm_.SetBucketMdmRoot(DomainId::GetGlobal(), bkt_mdm_.id_);
+    bkt_mdm_.SetBlobMdmRoot(DomainId::GetGlobal(), blob_mdm_.id_);
     is_initialized_ = true;
   }
 

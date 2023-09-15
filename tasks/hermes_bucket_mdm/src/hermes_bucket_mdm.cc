@@ -23,39 +23,30 @@ class Server : public TaskLib {
   std::atomic<u64> id_alloc_;
   Client bkt_mdm_;
   blob_mdm::Client blob_mdm_;
-  blob_mdm::ConstructTask *blob_mdm_task_;
 
  public:
   Server() = default;
 
   void Construct(ConstructTask *task) {
-    switch (task->phase_) {
-      case ConstructTaskPhase::kInit: {
-        id_alloc_ = 0;
-        node_id_ = LABSTOR_CLIENT->node_id_;
-        blob_mdm_task_ = blob_mdm_.AsyncCreateRoot(
-            DomainId::GetGlobal(), "hermes_blob_mdm").ptr_;
-        task->phase_ = ConstructTaskPhase::kWait;
-      }
-      case ConstructTaskPhase::kWait: {
-        if (!blob_mdm_task_->IsComplete()) {
-          return;
-        }
-        HILOG(kDebug, "Bucket MDM created")
-        blob_mdm_.AsyncCreateComplete(blob_mdm_task_);
-        bkt_mdm_.Init(id_);
-        task->SetModuleComplete();
-        return;
-      }
-    }
+    id_alloc_ = 0;
+    node_id_ = LABSTOR_CLIENT->node_id_;
+    bkt_mdm_.Init(id_);
+    task->SetModuleComplete();
   }
 
   void Destruct(DestructTask *task) {
     task->SetModuleComplete();
   }
 
-  /** Put a blob */
-  void PutBlob(PutBlobTask *task) {
+  /**
+   * Set the Blob MDM
+   * */
+  void SetBlobMdm(SetBlobMdmTask *task) {
+    blob_mdm_.Init(task->blob_mdm_);
+  }
+
+  /** Update the size of the bucket */
+  void UpdateSize(UpdateSizeTask *task) {
     TagInfo &tag_info = tag_map_[task->tag_id_];
     tag_info.internal_size_ = std::max(task->blob_off_ + task->data_size_,
                                        tag_info.internal_size_);
@@ -92,7 +83,6 @@ class Server : public TaskLib {
           append.blob_id_task_ = blob_mdm_.AsyncGetOrCreateBlobId(task->task_node_ + 1,
                                                                   task->tag_id_,
                                                                   append.blob_name_).ptr_;
-          tag_info.internal_size_ += update_size;
           cur_size += update_size;
           cur_page_off = 0;
           ++cur_page;
@@ -215,7 +205,6 @@ class Server : public TaskLib {
         HILOG(kDebug, "Found existing tag: {}", task->tag_id_)
         tag_id = task->tag_id_;
       }
-      TagInfo &info = tag_map_[tag_id];
     }
 
     task->tag_id_ = tag_id;
@@ -300,6 +289,7 @@ class Server : public TaskLib {
       return;
     }
     TagInfo &tag = it->second;
+    tag.blobs_.emplace_back(task->blob_id_);
     task->SetModuleComplete();
   }
 
@@ -325,8 +315,24 @@ class Server : public TaskLib {
     }
     TagInfo &tag = it->second;
     tag.blobs_.clear();
+    tag.internal_size_ = 0;
     task->SetModuleComplete();
   }
+
+  /** Get size of the bucket */
+  void GetSize(GetSizeTask *task) {
+    auto it = tag_map_.find(task->tag_id_);
+    if (it == tag_map_.end()) {
+      task->size_ = 0;
+      task->SetModuleComplete();
+      return;
+    }
+    TagInfo &tag = it->second;
+    task->size_ = tag.internal_size_;
+    task->SetModuleComplete();
+  }
+
+
 
  public:
 #include "hermes_bucket_mdm/hermes_bucket_mdm_lib_exec.h"

@@ -68,6 +68,10 @@ void Run(u32 method, Task *task) override {
       ReorganizeBlob(reinterpret_cast<ReorganizeBlobTask *>(task));
       break;
     }
+    case Method::kSetBucketMdm: {
+      SetBucketMdm(reinterpret_cast<SetBucketMdmTask *>(task));
+      break;
+    }
   }
 }
 /** Ensure there is space to store replicated outputs */
@@ -135,6 +139,10 @@ void ReplicateStart(u32 method, u32 count, Task *task) override {
     }
     case Method::kReorganizeBlob: {
       labstor::CALL_REPLICA_START(count, reinterpret_cast<ReorganizeBlobTask*>(task));
+      break;
+    }
+    case Method::kSetBucketMdm: {
+      labstor::CALL_REPLICA_START(count, reinterpret_cast<SetBucketMdmTask*>(task));
       break;
     }
   }
@@ -206,6 +214,10 @@ void ReplicateEnd(u32 method, Task *task) override {
       labstor::CALL_REPLICA_END(reinterpret_cast<ReorganizeBlobTask*>(task));
       break;
     }
+    case Method::kSetBucketMdm: {
+      labstor::CALL_REPLICA_END(reinterpret_cast<SetBucketMdmTask*>(task));
+      break;
+    }
   }
 }
 /** Serialize a task when initially pushing into remote */
@@ -273,6 +285,10 @@ std::vector<DataTransfer> SaveStart(u32 method, BinaryOutputArchive<true> &ar, T
     }
     case Method::kReorganizeBlob: {
       ar << *reinterpret_cast<ReorganizeBlobTask*>(task);
+      break;
+    }
+    case Method::kSetBucketMdm: {
+      ar << *reinterpret_cast<SetBucketMdmTask*>(task);
       break;
     }
   }
@@ -362,6 +378,11 @@ TaskPointer LoadStart(u32 method, BinaryInputArchive<true> &ar) override {
       ar >> *reinterpret_cast<ReorganizeBlobTask*>(task_ptr.task_);
       break;
     }
+    case Method::kSetBucketMdm: {
+      task_ptr.task_ = LABSTOR_CLIENT->NewEmptyTask<SetBucketMdmTask>(task_ptr.p_);
+      ar >> *reinterpret_cast<SetBucketMdmTask*>(task_ptr.task_);
+      break;
+    }
   }
   return task_ptr;
 }
@@ -430,6 +451,10 @@ std::vector<DataTransfer> SaveEnd(u32 method, BinaryOutputArchive<false> &ar, Ta
     }
     case Method::kReorganizeBlob: {
       ar << *reinterpret_cast<ReorganizeBlobTask*>(task);
+      break;
+    }
+    case Method::kSetBucketMdm: {
+      ar << *reinterpret_cast<SetBucketMdmTask*>(task);
       break;
     }
   }
@@ -502,6 +527,10 @@ void LoadEnd(u32 replica, u32 method, BinaryInputArchive<false> &ar, Task *task)
       ar.Deserialize(replica, *reinterpret_cast<ReorganizeBlobTask*>(task));
       break;
     }
+    case Method::kSetBucketMdm: {
+      ar.Deserialize(replica, *reinterpret_cast<SetBucketMdmTask*>(task));
+      break;
+    }
   }
 }
 /** Get the grouping of the task */
@@ -554,6 +583,9 @@ u32 GetGroup(u32 method, Task *task, hshm::charbuf &group) override {
     }
     case Method::kReorganizeBlob: {
       return reinterpret_cast<ReorganizeBlobTask*>(task)->GetGroup(group);
+    }
+    case Method::kSetBucketMdm: {
+      return reinterpret_cast<SetBucketMdmTask*>(task)->GetGroup(group);
     }
   }
   return -1;
