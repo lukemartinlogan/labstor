@@ -54,8 +54,8 @@ class Server : public TaskLib {
     node_id_ = LABSTOR_CLIENT->node_id_;
     switch (task->phase_) {
       case ConstructTaskPhase::kCreateTaskStates: {
-        target_tasks_.reserve(HERMES_CONF->server_config_.devices_.size());
-        for (DeviceInfo &dev : HERMES_CONF->server_config_.devices_) {
+        target_tasks_.reserve(HERMES_SERVER_CONF.devices_.size());
+        for (DeviceInfo &dev : HERMES_SERVER_CONF.devices_) {
           std::string dev_type;
           if (dev.mount_dir_.empty()) {
             dev_type = "ram_bdev";
@@ -174,6 +174,27 @@ class Server : public TaskLib {
       PutBlobFreeBuffersPhase(blob_info, task);
     }
 
+    // Stage in blob data from FS
+    task->data_ptr_.ptr_ = LABSTOR_CLIENT->GetPrivatePointer<char>(task->data_);
+    task->data_ptr_.shm_ = task->data_;
+    if (task->filename_->size() > 0 && blob_info.blob_size_ == 0) {
+      adapter::BlobPlacement plcmnt;
+      plcmnt.DecodeBlobName(*task->blob_name_);
+      LPointer<char> new_data_ptr = LABSTOR_CLIENT->AllocateBuffer(task->page_size_);
+      int fd = HERMES_POSIX_API->open(task->filename_->c_str(), O_RDONLY);
+      int ret = HERMES_POSIX_API->pread(fd, new_data_ptr.ptr_, task->page_size_, plcmnt.bucket_off_);
+      if (ret < 0) {
+        // TODO(llogan): ret != page_size_ will require knowing file size before-hand
+        HELOG(kError, "Failed to stage in {} bytes from {}", task->page_size_, task->filename_->str());
+      }
+      HERMES_POSIX_API->close(fd);
+      memcpy(new_data_ptr.ptr_ + plcmnt.blob_off_, task->data_ptr_.ptr_, task->page_size_);
+      task->data_ptr_ = new_data_ptr;
+      task->blob_off_ = 0;
+      task->data_size_ = task->page_size_;
+      task->flags_.SetBits(HERMES_DID_STAGE_IN);
+    }
+
     // Determine amount of additional buffering space needed
     Context ctx;
     size_t needed_space = task->blob_off_ + task->data_size_;
@@ -252,8 +273,7 @@ class Server : public TaskLib {
   /** Update the data on storage */
   void PutBlobModifyPhase(PutBlobTask *task) {
     BlobInfo &blob_info = blob_map_[task->blob_id_];
-    hipc::mptr<char> blob_data_mptr(task->data_);
-    char *blob_buf = blob_data_mptr.get();
+    char *blob_buf = task->data_ptr_.ptr_;
     std::vector<bdev::WriteTask*> &write_tasks = *task->bdev_writes_;
     size_t blob_off = 0, buf_off = 0;
     HILOG(kDebug, "Number of buffers {}", blob_info.buffers_.size());
@@ -297,6 +317,9 @@ class Server : public TaskLib {
     HILOG(kDebug, "PutBlobTask complete");
     HSHM_DESTROY_AR(task->schema_);
     HSHM_DESTROY_AR(task->bdev_writes_);
+    if (task->flags_.Any(HERMES_DID_STAGE_IN)) {
+      LABSTOR_CLIENT->FreeBuffer(task->data_ptr_);
+    }
     task->SetModuleComplete();
   }
 
@@ -304,52 +327,60 @@ class Server : public TaskLib {
   void GetBlob(GetBlobTask *task) {
     switch (task->phase_) {
       case GetBlobPhase::kStart: {
-        HILOG(kDebug, "GetBlobTask start");
-        BlobInfo &blob_info = blob_map_[task->blob_id_];
-        HSHM_MAKE_AR0(task->bdev_reads_, nullptr);
-        std::vector<bdev::ReadTask*> &read_tasks = *task->bdev_reads_;
-        read_tasks.reserve(blob_info.buffers_.size());
-        if (task->data_size_ < 0) {
-          task->data_size_ = (ssize_t)(blob_info.blob_size_ - task->blob_off_);
-        }
-        size_t blob_off = 0, buf_off = 0;
-        hipc::mptr<char> blob_data_mptr(task->data_);
-        char *blob_buf = blob_data_mptr.get();
-        for (BufferInfo &buf : blob_info.buffers_) {
-          if (task->blob_off_ <= blob_off) {
-            size_t rel_off = blob_off - task->blob_off_;
-            size_t tgt_off = buf.t_off_ + rel_off;
-            size_t buf_size = buf.t_size_ - rel_off;
-            if (blob_off + buf_size > task->blob_off_ + task->data_size_) {
-              buf_size = task->blob_off_ + task->data_size_ - blob_off;
-            }
-            HILOG(kDebug, "Loading {} bytes at off {} from target {}", buf_size, tgt_off, buf.tid_)
-            TargetInfo &target = *target_map_[buf.tid_];
-            bdev::ReadTask *read_task = target.AsyncRead(task->task_node_ + 1,
-                                                         blob_buf + buf_off,
-                                                         tgt_off, buf_size).ptr_;
-            read_tasks.emplace_back(read_task);
-            buf_off += buf_size;
-          }
-          blob_off += buf.t_size_;
-        }
-        task->phase_ = GetBlobPhase::kWait;
+        GetBlobGetPhase(task);
       }
       case GetBlobPhase::kWait: {
-        std::vector<bdev::ReadTask*> &read_tasks = *task->bdev_reads_;
-        for (auto it = read_tasks.rbegin(); it != read_tasks.rend(); ++it) {
-          bdev::ReadTask *read_task = *it;
-          if (!read_task->IsComplete()) {
-            return;
-          }
-          LABSTOR_CLIENT->DelTask(read_task);
-          read_tasks.pop_back();
-        }
-        HSHM_DESTROY_AR(task->bdev_reads_);
-        HILOG(kDebug, "GetBlobTask complete");
-        task->SetModuleComplete();
+        GetBlobWaitPhase(task);
       }
     }
+  }
+
+  void GetBlobGetPhase(GetBlobTask *task) {
+    HILOG(kDebug, "GetBlobTask start");
+    BlobInfo &blob_info = blob_map_[task->blob_id_];
+    HSHM_MAKE_AR0(task->bdev_reads_, nullptr);
+    std::vector<bdev::ReadTask*> &read_tasks = *task->bdev_reads_;
+    read_tasks.reserve(blob_info.buffers_.size());
+    if (task->data_size_ < 0) {
+      task->data_size_ = (ssize_t)(blob_info.blob_size_ - task->blob_off_);
+    }
+    size_t blob_off = 0, buf_off = 0;
+    hipc::mptr<char> blob_data_mptr(task->data_);
+    char *blob_buf = blob_data_mptr.get();
+    for (BufferInfo &buf : blob_info.buffers_) {
+      if (task->blob_off_ <= blob_off) {
+        size_t rel_off = blob_off - task->blob_off_;
+        size_t tgt_off = buf.t_off_ + rel_off;
+        size_t buf_size = buf.t_size_ - rel_off;
+        if (blob_off + buf_size > task->blob_off_ + task->data_size_) {
+          buf_size = task->blob_off_ + task->data_size_ - blob_off;
+        }
+        HILOG(kDebug, "Loading {} bytes at off {} from target {}", buf_size, tgt_off, buf.tid_)
+        TargetInfo &target = *target_map_[buf.tid_];
+        bdev::ReadTask *read_task = target.AsyncRead(task->task_node_ + 1,
+                                                     blob_buf + buf_off,
+                                                     tgt_off, buf_size).ptr_;
+        read_tasks.emplace_back(read_task);
+        buf_off += buf_size;
+      }
+      blob_off += buf.t_size_;
+    }
+    task->phase_ = GetBlobPhase::kWait;
+  }
+
+  void GetBlobWaitPhase(GetBlobTask *task) {
+    std::vector<bdev::ReadTask*> &read_tasks = *task->bdev_reads_;
+    for (auto it = read_tasks.rbegin(); it != read_tasks.rend(); ++it) {
+      bdev::ReadTask *read_task = *it;
+      if (!read_task->IsComplete()) {
+        return;
+      }
+      LABSTOR_CLIENT->DelTask(read_task);
+      read_tasks.pop_back();
+    }
+    HSHM_DESTROY_AR(task->bdev_reads_);
+    HILOG(kDebug, "GetBlobTask complete");
+    task->SetModuleComplete();
   }
 
   /**

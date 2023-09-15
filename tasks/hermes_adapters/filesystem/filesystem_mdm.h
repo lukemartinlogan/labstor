@@ -42,19 +42,19 @@ class MetadataManager {
   /** Get the current adapter mode */
   AdapterMode GetBaseAdapterMode() {
     ScopedRwReadLock md_lock(lock_, 1);
-    return HERMES_CONF->client_config_.GetBaseAdapterMode();
+    return HERMES_CLIENT_CONF.GetBaseAdapterMode();
   }
 
   /** Get the adapter mode for a particular file */
   AdapterMode GetAdapterMode(const std::string &path) {
     ScopedRwReadLock md_lock(lock_, 2);
-    return HERMES_CONF->client_config_.GetAdapterConfig(path).mode_;
+    return HERMES_CLIENT_CONF.GetAdapterConfig(path).mode_;
   }
 
   /** Get the adapter page size for a particular file */
   size_t GetAdapterPageSize(const std::string &path) {
     ScopedRwReadLock md_lock(lock_, 3);
-    return HERMES_CONF->client_config_.GetAdapterConfig(path).page_size_;
+    return HERMES_CLIENT_CONF.GetAdapterConfig(path).page_size_;
   }
 
   /**

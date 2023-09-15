@@ -36,7 +36,7 @@ class DpeFactory {
    */
   static Dpe* Get(PlacementPolicy type) {
     if (type == PlacementPolicy::kNone) {
-      type = HERMES_CONF->server_config_.dpe_.default_policy_;
+      type = HERMES_SERVER_CONF.dpe_.default_policy_;
     }
     switch (type) {
       case PlacementPolicy::kRandom: {

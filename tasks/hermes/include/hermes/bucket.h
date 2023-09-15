@@ -330,7 +330,13 @@ class Bucket {
       blob_id = blob_mdm_->GetBlobIdRoot(id_, hshm::to_charbuf(blob_name));
     }
     if (blob_id.IsNull()) {
-      return blob_id;
+      if (ctx.filename_.size() == 0) {
+        return blob_id;
+      } else {
+        // StageIn using PUT of an empty blob
+        hermes::Blob emtpy_blob;
+        blob_id = PartialPut(blob_name, emtpy_blob, 0, ctx);
+      }
     }
     // Get from shared memory
     size_t data_size = blob.size();

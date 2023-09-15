@@ -15,7 +15,7 @@
 
 #include <filesystem>
 #include "config.h"
-#include "adapter_types.h"
+#include "hermes_adapters/adapter_types.h"
 #include "config_client_default.h"
 
 namespace stdfs = std::filesystem;

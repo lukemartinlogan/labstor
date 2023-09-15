@@ -24,6 +24,12 @@ class Server : public TaskLib {
     task->SetModuleComplete();
   }
 
+  void FileStageIn() {
+  }
+
+  void FileStageOut() {
+  }
+
  public:
 #include "hermes_adapters/hermes_adapters_lib_exec.h"
 };

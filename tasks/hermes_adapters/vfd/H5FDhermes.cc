@@ -39,7 +39,7 @@
 #include "H5PLextern.h"
 #include "H5FDhermes.h"     /* Hermes file driver     */
 
-#include "adapter/posix/posix_io_client.h"
+#include "hermes_adapters/posix/posix_io_client.h"
 #include "posix/posix_fs_api.h"
 
 /**

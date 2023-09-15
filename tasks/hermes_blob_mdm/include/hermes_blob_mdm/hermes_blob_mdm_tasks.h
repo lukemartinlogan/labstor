@@ -176,6 +176,8 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   TEMP int phase_ = PutBlobPhase::kCreate;
   TEMP int plcmnt_idx_ = 0;
   TEMP int sub_plcmnt_idx_ = 0;
+  TEMP LPointer<char> data_ptr_;
+  TEMP PutBlobTask *stage_task_ = nullptr;
   TEMP hermes::bdev::AllocateTask *cur_bdev_alloc_;
   TEMP hipc::ShmArchive<std::vector<PlacementSchema>> schema_;
   TEMP hipc::ShmArchive<std::vector<hermes::bdev::WriteTask*>> bdev_writes_;
@@ -241,7 +243,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
                       data_size_, domain_id_);
     task_serialize<Ar>(ar);
     ar & xfer;
-    ar(tag_id_, blob_name_, blob_id_, blob_off_, data_size_, score_, flags_);
+    ar(tag_id_, blob_name_, blob_id_, blob_off_, data_size_, score_, flags_, filename_, page_size_);
   }
 
   /** Deserialize message call */
@@ -251,7 +253,7 @@ struct PutBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     task_serialize<Ar>(ar);
     ar & xfer;
     data_ = HERMES_MEMORY_MANAGER->Convert<void, hipc::Pointer>(xfer.data_);
-    ar(tag_id_, blob_name_, blob_id_, blob_off_, data_size_, score_, flags_);
+    ar(tag_id_, blob_name_, blob_id_, blob_off_, data_size_, score_, flags_, filename_, page_size_);
   }
 
   /** (De)serialize message return */
@@ -281,6 +283,8 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
   IN BlobId blob_id_;
   IN size_t blob_off_;
   IN hipc::Pointer data_;
+  IN hipc::ShmArchive<hipc::charbuf> filename_;
+  IN size_t page_size_;
   INOUT ssize_t data_size_;
   TEMP int phase_ = GetBlobPhase::kStart;
   TEMP hipc::ShmArchive<std::vector<bdev::ReadTask*>> bdev_reads_;
@@ -317,6 +321,8 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     blob_off_ = off;
     data_size_ = data_size;
     data_ = data;
+    HSHM_MAKE_AR(filename_, alloc, ctx.filename_);
+    page_size_ = ctx.page_size_;
   }
 
   /** (De)serialize message call */
@@ -328,7 +334,7 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
                       data_size_, domain_id_);
     task_serialize<Ar>(ar);
     ar & xfer;
-    ar(tag_id_, blob_id_, blob_off_, data_size_);
+    ar(tag_id_, blob_id_, blob_off_, data_size_, filename_, page_size_);
   }
 
   /** Deserialize message call */
@@ -338,7 +344,7 @@ struct GetBlobTask : public Task, TaskFlags<TF_SRL_ASYM_START | TF_SRL_SYM_END> 
     task_serialize<Ar>(ar);
     ar & xfer;
     data_ = HERMES_MEMORY_MANAGER->Convert<void, hipc::Pointer>(xfer.data_);
-    ar(tag_id_, blob_id_, blob_off_, data_size_);
+    ar(tag_id_, blob_id_, blob_off_, data_size_, filename_, page_size_);
   }
 
   /** (De)serialize message return */

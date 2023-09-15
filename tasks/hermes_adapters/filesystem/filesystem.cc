@@ -289,7 +289,7 @@ off_t Filesystem::Tell(File &f, AdapterStat &stat) {
 }
 
 int Filesystem::Sync(File &f, AdapterStat &stat) {
-  if (HERMES_CONF->client_config_.flushing_mode_ == FlushingMode::kSync) {
+  if (HERMES_CLIENT_CONF.flushing_mode_ == FlushingMode::kSync) {
     // NOTE(llogan): only for the unit tests
     // Please don't enable synchronous flushing
   }
@@ -312,7 +312,7 @@ int Filesystem::Close(File &f, AdapterStat &stat) {
   if (stat.amode_ & MPI_MODE_DELETE_ON_CLOSE) {
     Remove(stat.path_);
   }
-  if (HERMES_CONF->client_config_.flushing_mode_ == FlushingMode::kSync) {
+  if (HERMES_CLIENT_CONF.flushing_mode_ == FlushingMode::kSync) {
     // NOTE(llogan): only for the unit tests
     // Please don't enable synchronous flushing
     // stat.bkt_id_.Destroy();

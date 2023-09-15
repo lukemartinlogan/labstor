@@ -45,6 +45,7 @@ endif()
 #-----------------------------------------------------------------------------
 # Find Packages
 #-----------------------------------------------------------------------------
+
 # HermesShm
 find_package(HermesShm CONFIG REQUIRED)
 message(STATUS "found hermes_shm.h at ${HermesShm_INCLUDE_DIRS}")
@@ -150,7 +151,6 @@ include_directories(${CMAKE_SOURCE_DIR}/test/unit)
 
 set(Labstor_CLIENT_LIBRARIES
         ${HermesShm_LIBRARIES}
-        hermes_shm_data_structures
         yaml-cpp
         cereal::cereal
         -ldl -lrt -lc -pthread labstor_client)
@@ -172,6 +172,13 @@ add_custom_target(lint COMMAND bash ${CMAKE_SOURCE_DIR}/scripts/lint.sh ${CMAKE_
 #-----------------------------------------------------------------------------
 # Build + Enable Testing
 #-----------------------------------------------------------------------------
+# General function used to hook ctest to python test tool lib
+function(pytest test_type test_name)
+    set(script ${CMAKE_SOURCE_DIR}/scripts/ci/py_hermes_ci/bin/run_test)
+    add_test(NAME ${test_name}
+            COMMAND ${script} ${test_type} ${test_name} ${CMAKE_BINARY_DIR} ${HERMES_USE_ADDRESS_SANITIZER})
+endfunction()
+
 enable_testing()
 add_subdirectory(test)
 

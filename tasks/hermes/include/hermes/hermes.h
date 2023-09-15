@@ -33,6 +33,11 @@ class Hermes {
                            u32 flags = 0) {
     return hermes::Bucket(path, ctx, backend_size, flags);
   }
+
+  /** Clear all data from hermes */
+  void Clear() {
+    // TODO(llogan)
+  }
 };
 
 #define HERMES hshm::EasySingleton<hermes::Hermes>::GetInstance()
